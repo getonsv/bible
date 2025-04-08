@@ -1,0 +1,275 @@
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; background: #fafafa; }
+    .bible-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      background-color: #f4ecda;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    }
+    .parent-container { position: relative; }
+    .bible-sidebar { padding: 20px; }
+    .bible-main-content { padding: 20px; position: relative; }
+    .bible-dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(190,171,125,0.2);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: left;
+    }
+    /* Highlight Toolbar – Apple Pencil style */
+    #highlightToolbar {
+      position: fixed;
+      top: 20%;
+      right: 20px;
+      background: rgba(190,171,125,0.1);
+      border-radius: 100px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 500px;
+      transition: max-height 0.4s ease;
+      z-index: 1001;
+    }
+    #highlightToolbar.expanded { max-height:auto; }
+    #highlightToggle {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    #highlightOptions {
+      display: none;
+      flex-direction: column;
+      border-radius: 100px;
+      gap: 10px;
+      padding: 10px;
+    }
+    #highlightToolbar.expanded #highlightOptions { display: flex; }
+    #highlightOptions button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 0;
+      border: 0.5px solid rgba(190,171,125,0.5);
+      border-radius: 100px;
+      background: rgba(190,171,125,0.3);
+      color: #000;
+      cursor: pointer;
+    }
+    .highlighted { padding: 0 2px; }
+    .search-range-container {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    select, button, input {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px;
+      border: 0.5px solid rgba(190,171,125,0.5);
+      border-radius: 5px;
+      background: rgba(190,171,125,0.3);
+      color: #000;
+      cursor: pointer;
+    }
+    #prevProjection, #nextProjection { display: none; }
+    .selection-row { display: flex; gap: 10px; flex-wrap: wrap; overflow-x: auto; }
+    #bookSelect { flex: 2; min-width: 150px; }
+    #chapterSelect, #verseSelect { flex: 1; min-width: 80px; }
+    .button-row { display: flex; gap: 10px; flex-wrap: wrap; overflow-x: auto; }
+    .search-container {
+      display: flex;
+      align-items: center;
+      border: 0.5px solid rgba(190,171,125,0.5);
+      border-radius: 5px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 500px;
+      transition: width 0.3s ease-in-out;
+      text-align: left;
+    }
+    .search-container input {
+      border: none;
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      background: rgba(190,171,125,0.3);
+      color: #000;
+    }
+    .search-container button {
+      border: none;
+      background-color: rgba(190,171,125,1);
+      color: white;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .projection-screen {
+      margin-top: 20px;
+      background: #fff;
+      border: 2px solid rgba(190,171,125,0.7);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      font-size: 2em;
+      color: #333;
+    }
+    @media (min-width: 768px) {
+      .bible-container { flex-direction: row; }
+      .bible-dashboard { width: 60%; }
+      .bible-main-content { width: 40%; }
+    }
+    h2 { margin-bottom: 10px; }
+    #results, #searchResults { margin-top: 20px; text-align: left; width: 100%; }
+    .result-tags { margin-top: 10px; }
+    .result-tag {
+      display: inline-block;
+      background: rgba(190,171,125,0.3);
+      color: #000;
+      padding: 5px 15px;
+      border-radius: 50px;
+      margin: 5px;
+      font-size: 14px;
+    }
+    .verse-container {
+      display: flex;
+      flex-direction: column;
+      background-color: #f4f1e3;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      position: relative;
+      cursor: pointer;
+    }
+    /* Verse badge to display full reference */
+    .verse-badge {
+      font-weight: bold;
+      font-size: 1rem;
+      background-color: #ded6bc;
+      color: #333;
+      width: auto;
+      padding: 5px 10px;
+      border-radius: 100px;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+    /* For searchBible: Badge displayed at the bottom showing full reference */
+    .searchBible-badge {
+      margin-top: 10px;
+      text-align: right;
+      font-size: 14px;
+      color: #555;
+    }
+    .verse-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    #verseDisplay { text-align: left; }
+    .verse-content { color: black; }
+    .verse-text { font-size: 16px; line-height: 1.5; padding-left: 5px;}
+    .action-buttons {
+      margin-top: 5px;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .action-buttons button {
+      margin-right: 5px;
+      border: none;
+      background: rgba(190,171,125,0.7);
+      color: #fff;
+      padding: 5px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .pinned { border: 2px solid #f39c12; }
+    .note-text {
+      font-style: italic;
+      margin-top: 5px;
+      font-size: 14px;
+      color: #555;
+    }
+    .search-range-container {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    #rangeSearchInput {
+      flex-grow: 1;
+      min-width: 250px;
+      max-width: 400px;
+      width: 100%;
+    }
+    #relatedKeywordInput { width: 300px; }
+    .mini-projection {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      border: 2px solid rgba(190,171,125,0.7);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      max-width: 400px;
+      z-index: 1000;
+      display: none;
+    }
+    /* Pinned verses container (above searchBible) */
+    #pinnedVersesContainer {
+      margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pinned-verse {
+      cursor: pointer;
+    }
+    /* Hide Open Projection Screen button on mobile devices */
+    @media (max-width: 600px) {
+      #openProjectionBtn { display: none; }
+      /* Adjust highlight toolbar on small screens */
+      #highlightToolbar {
+         right: 10px;
+         top: 10%;
+      }
+      .search-range-container {
+         flex-direction: column;
+         align-items: stretch;
+      }
+      #rangeSearchInput,
+      #relatedKeywordInput,
+      .search-range-container button {
+         width: 100%;
+         margin: 5px 0;
+      }
+    }
+    @media (min-width: 601px) and (max-width: 1024px) {
+      .search-range-container {
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      #rangeSearchInput {
+        flex: 1 1 60%;
+        min-width: 200px;
+      }
+      #relatedKeywordInput {
+        flex: 1 1 60%;
+        min-width: 200px;
+      }
+      .search-range-container button {
+        flex: 0 1 35%;
+        margin: 5px 0;
+      }
+    }
+    .range-result {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    .range-result .verse-badge {
+      margin-right: 10px;
+    }
