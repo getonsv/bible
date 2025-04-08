@@ -865,14 +865,14 @@
 
       // Create a new container element to build the combined HTML.
       let container = document.createElement("div");
-      container.style.padding = "20px";
-      container.style.backgroundColor = "#fff";
-      container.style.border = "2px solid rgba(190,171,125,0.7)";
-      container.style.borderRadius = "15px";
+      container.style.padding = "30px";
+      container.style.backgroundColor = "#f4ecda";
+      container.style.border = "2px solid rgba(190,171,125,1)";
+      container.style.borderRadius = "20px";
       container.style.fontSize = "16px";
       container.style.lineHeight = "1.5";
       container.style.color = "#333";
-      container.style.maxWidth = "600px";
+      container.style.maxWidth = "500px";
 
       // Append the container off-screen so html2canvas can capture it.
       container.style.position = "absolute";
