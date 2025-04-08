@@ -872,7 +872,7 @@
       container.style.fontSize = "16px";
       container.style.lineHeight = "1.5";
       container.style.color = "#333";
-      container.style.maxWidth = "500px";
+      container.style.maxWidth = "600px";
 
       // Append the container off-screen so html2canvas can capture it.
       container.style.position = "absolute";
@@ -936,7 +936,7 @@
         }, 'image/png');
       }).catch(error => {
         console.error("Error generating image:", error);
-        alert("An error occurred while generating the image.");
+        alert("An error occurred while generating the image. Try again with fewer verse(s)");
         // Clean up by removing the container if needed.
         if (document.body.contains(container)) {
           document.body.removeChild(container);
