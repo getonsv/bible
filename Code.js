@@ -87,7 +87,7 @@
       }
     }
   
-    const xmlUrl = "https://raw.githubusercontent.com/getonsv/bible/refs/heads/main/NIV84.xml";
+    const xmlUrl = "https://cdn.jsdelivr.net/gh/getonsv/bible@refs/heads/main/NIV84.xml";
   
     function parseXML(xmlString) {
       const parser = new DOMParser();
