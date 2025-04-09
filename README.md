@@ -1,3 +1,12 @@
+Bible Version.zip
+Bible Offline Version.zip
+Bible Online Version.zip
+
+The below README is for Bible Version.zip.
+If you are downloading Bible Offline Version.zip or Bible Online Version.zip, kindly refer to it's respective README. 
+
+---
+
 There are 2 files on this version;
     1) Bible.html (this being the online version that requires an internet connection)
     2) Bible Offline.html (this being the offline version that does not require an internet connection)
