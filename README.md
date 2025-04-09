@@ -220,5 +220,5 @@ Bible/
 ---
 
 
-This service and platform is provided for free and without ads or tracking 
+This service and platform is provided for free and without ads or tracking.
 If you wish to support this initiative, channel your giving to HMBC https://www.hm-bc.org/give-to-hmbc.
