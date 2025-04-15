@@ -7,7 +7,7 @@
   
     function openProjection() {
     if (!projectionWindow || projectionWindow.closed) {
-      projectionWindow = window.open("bible/projection", "Projection", "width=800,height=600");
+      projectionWindow = window.open("Screen/bibleProjection.html", "Projection", "width=800,height=600");
     } else {
       projectionWindow.focus();
     }
@@ -94,51 +94,64 @@
       const xmlDoc = parser.parseFromString(xmlString, "text/xml");
       bibleData = {};
       const bookNumbers = {};
+    
+      // 1) Read books
       const tables = xmlDoc.getElementsByTagName("Table");
       for (let table of tables) {
         if (table.getAttribute("name") === "books") {
-          const rows = table.getElementsByTagName("Row");
-          for (let row of rows) {
-            const longNameEl = row.getElementsByTagName("long_name")[0];
+          for (let row of table.getElementsByTagName("Row")) {
+            const longNameEl   = row.getElementsByTagName("long_name")[0];
             const bookNumberEl = row.getElementsByTagName("book_number")[0];
             if (longNameEl && bookNumberEl) {
               const bookName = longNameEl.textContent.trim();
-              const bookNum = bookNumberEl.textContent.trim();
-              bibleData[bookName] = {};
-              bookNumbers[bookNum] = bookName;
+              const bookNum  = bookNumberEl.textContent.trim();
+              bibleData[bookName]   = {};
+              bookNumbers[bookNum]  = bookName;
             }
           }
         }
       }
+    
+      // 2) Read verses, rebuilding inner HTML to keep <br/>s
       for (let table of tables) {
         if (table.getAttribute("name") === "verses") {
-          const rows = table.getElementsByTagName("Row");
-          for (let row of rows) {
+          for (let row of table.getElementsByTagName("Row")) {
             const bookNumberEl = row.getElementsByTagName("book_number")[0];
-            const chapterEl = row.getElementsByTagName("chapter")[0];
-            const verseEl = row.getElementsByTagName("verse")[0];
-            const textEl = row.getElementsByTagName("text")[0];
-            if (bookNumberEl && chapterEl && verseEl && textEl) {
-              const bookNum = bookNumberEl.textContent.trim();
-              const chapter = chapterEl.textContent.trim();
-              const verse = verseEl.textContent.trim();
-              const text = textEl.textContent.trim();
-              const bookName = bookNumbers[bookNum];
-              if (bookName) {
-                if (!bibleData[bookName][chapter]) {
-                  bibleData[bookName][chapter] = {};
-                }
-                bibleData[bookName][chapter][verse] = text;
+            const chapterEl    = row.getElementsByTagName("chapter")[0];
+            const verseEl      = row.getElementsByTagName("verse")[0];
+            const textEl       = row.getElementsByTagName("text")[0];
+            if (!(bookNumberEl && chapterEl && verseEl && textEl)) continue;
+    
+            const bookNum = bookNumberEl.textContent.trim();
+            const chapter = chapterEl.textContent.trim();
+            const verse   = verseEl.textContent.trim();
+    
+            // rebuild text with <br/> preserved
+            let text = "";
+            for (let node of textEl.childNodes) {
+              if (node.nodeType === Node.TEXT_NODE) {
+                text += node.nodeValue;
+              } else if (node.nodeName.toLowerCase() === "br") {
+                text += "<br/>";
               }
+            }
+            text = text.trim();
+    
+            const bookName = bookNumbers[bookNum];
+            if (bookName) {
+              bibleData[bookName][chapter] = bibleData[bookName][chapter] || {};
+              bibleData[bookName][chapter][verse] = text;
             }
           }
         }
       }
+    
       console.log("Parsed bibleData:", bibleData);
       document.getElementById("rangeSearchInput").value = "John 1:1-18";
       searchQuery();
       updatePinnedVersesDisplay();
     }
+    
   
     document.addEventListener("DOMContentLoaded", function () {
       fetch(xmlUrl)
@@ -840,106 +853,101 @@
       });
       localStorage.removeItem('highlights');
     }
+
     function generateRangeImage() {
-      console.log("generateRangeImage called");
-      if (!currentSearchResults || currentSearchResults.length === 0) {
+      console.log("⚙️ generateRangeImage() start");
+      if (!currentSearchResults.length) {
         alert("No verses available to generate an image. Please run a search first.");
         return;
       }
-
-      // 1) Helper function to remove <br> (or any HTML) from verse text.
-      function sanitizeVerseText(text) {
-        // Simple approach: replace any <br> or <br/> tag with a space
-        return text.replace(/<br\s*\/?>/gi, " ");
+    
+      // sanity‑check html2canvas is available
+      if (typeof html2canvas !== "function") {
+        console.error("html2canvas is not loaded!");
+        alert("Error: html2canvas not found. Did you include it?");
+        return;
       }
-
-      // Group verses by book and chapter using currentSearchResults.
+    
+      // 1) group by book+chapter
       let groups = {};
       currentSearchResults.forEach(v => {
-        let key = v.book + " " + v.chapter;
-        if (!groups[key]) {
-          groups[key] = { book: v.book, chapter: v.chapter, verses: [] };
-        }
+        let key = `${v.book} ${v.chapter}`;
+        if (!groups[key]) groups[key] = { book: v.book, chapter: v.chapter, verses: [] };
         groups[key].verses.push({ verse: v.verse, text: v.text });
       });
-
-      // Create a new container element to build the combined HTML.
+      console.log("Grouped verses:", groups);
+    
+      // 2) build off‑screen container
       let container = document.createElement("div");
-      container.style.padding = "30px";
-      container.style.backgroundColor = "#f4ecda";
-      container.style.border = "2px solid rgba(190,171,125,1)";
-      container.style.borderRadius = "20px";
-      container.style.fontSize = "16px";
-      container.style.lineHeight = "1.5";
-      container.style.color = "#333";
-      container.style.maxWidth = "600px";
-
-      // Append the container off-screen so html2canvas can capture it.
-      container.style.position = "absolute";
-      container.style.left = "-9999px";
+      Object.assign(container.style, {
+        padding: "30px",
+        backgroundColor: "#f4ecda",
+        border: "2px solid rgba(190,171,125,1)",
+        borderRadius: "20px",
+        fontSize: "16px",
+        lineHeight: "1.5",
+        color: "#333",
+        maxWidth: "500px",
+        position: "absolute",
+        left: "-9999px",
+        top: "0"
+      });
       document.body.appendChild(container);
-
-      // Build HTML content for each group.
+      console.log("Container appended");
+    
+      // 3) populate, preserving <br/> in each v.text
       let firstGroup = true;
       for (let key in groups) {
-        let group = groups[key];
-
         if (!firstGroup) {
-          container.appendChild(document.createElement("br"));
+          let br = document.createElement("br");
+          container.appendChild(br);
         }
         firstGroup = false;
-
-        let header = document.createElement("h3");
-        header.textContent = `${group.book} ${group.chapter}`;
-        container.appendChild(header);
-
-        // 2) Sanitize each verse text in the .map(...) call:
-        group.verses.sort((a, b) => parseInt(a.verse) - parseInt(b.verse));
-        let combinedText = group.verses
-          .map(v => `${v.verse} ${sanitizeVerseText(v.text)}`)
-          .join("  ");
-          
+    
+        let h3 = document.createElement("h3");
+        h3.textContent = `${groups[key].book} ${groups[key].chapter}`;
+        container.appendChild(h3);
+    
+        // sort verses numerically
+        let verses = groups[key].verses.sort((a,b)=> parseInt(a.verse) - parseInt(b.verse));
+        // join with real <br/>
+        let html = verses
+          .map(v => `${v.verse} ${v.text}`)   // v.text now contains <br/> where appropriate
+          .join("<br/>");
+    
         let p = document.createElement("p");
-        p.textContent = combinedText;
+        p.innerHTML = html;                   // use innerHTML so <br/> render
         container.appendChild(p);
       }
-
-      console.log("Container built. Capturing image...");
-
-      // Use html2canvas to capture the container.
-      html2canvas(container, { backgroundColor: null }).then(canvas => {
-        // Remove the temporary container after capturing.
-        document.body.removeChild(container);
-
-        canvas.toBlob(blob => {
-          const file = new File([blob], "BibleVerses.png", { type: "image/png" });
-          console.log("Image file created. Attempting to share...");
-
-          // Use Web Share API if available.
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({
-              title: "Bible Verses",
-              text: "Sharing Bible verses",
-              files: [file]
-            }).catch(err => {
-              console.error("Error sharing:", err);
-              alert("Error sharing the image.");
-            });
-          } else {
-            alert("Sharing is not supported on this device. The image will be downloaded instead.");
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(file);
-            link.download = "BibleVerses.png";
-            link.click();
-            URL.revokeObjectURL(link.href);
-          }
-        }, 'image/png');
-      }).catch(error => {
-        console.error("Error generating image:", error);
-        alert("An error occurred while generating the image. Try again with fewer verse(s)");
-        // Clean up by removing the container if needed.
-        if (document.body.contains(container)) {
+    
+      // 4) capture with html2canvas
+      html2canvas(container, { backgroundColor: null })
+        .then(canvas => {
+          console.log("Canvas rendered");
           document.body.removeChild(container);
-        }
-      });
+    
+          canvas.toBlob(blob => {
+            console.log("Blob created");
+            const file = new File([blob], "BibleVerses.png", { type: "image/png" });
+    
+            // share or download
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              navigator.share({ title: "Bible Verses", text: "", files: [file] })
+                .catch(err => { console.error("Share error:", err); alert("Share failed"); });
+            } else {
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(file);
+              link.download = "BibleVerses.png";
+              link.click();
+              URL.revokeObjectURL(link.href);
+              console.log("Downloaded image");
+            }
+          }, "image/png");
+        })
+        .catch(err => {
+          console.error("html2canvas error:", err);
+          alert("An error occurred generating the image.");
+          if (document.body.contains(container)) document.body.removeChild(container);
+        });
     }
+    
