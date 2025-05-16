@@ -7,7 +7,7 @@
   
     function openProjection() {
     if (!projectionWindow || projectionWindow.closed) {
-      projectionWindow = window.open("Screen/bibleProjection.html", "Projection", "width=800,height=600");
+      projectionWindow = window.open("bible/projection", "Projection", "width=800,height=600");
     } else {
       projectionWindow.focus();
     }
