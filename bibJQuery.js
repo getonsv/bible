@@ -854,8 +854,6 @@
       localStorage.removeItem('highlights');
     }
 
-Replace **only** your existing `generateRangeImage()` function with this:
-
 function generateRangeImage() {
   if (!currentSearchResults.length) {
     alert("No verses available to generate an image. Please run a search first.");
@@ -931,4 +929,4 @@ function generateRangeImage() {
     alert("An error occurred generating the image.");
     if (document.body.contains(container)) document.body.removeChild(container);
   });
-}    
+}
