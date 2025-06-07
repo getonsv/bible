@@ -879,20 +879,21 @@
     
       // 2) build off‑screen container
       let container = document.createElement("div");
-      Object.assign(container.style, {
-        padding: "30px",
-        backgroundColor: "#f4ecda",
-        border: "2px solid rgba(190,171,125,1)",
-        borderRadius: "20px",
-        fontSize: "16px",
-        lineHeight: "1.5",
-        color: "#333",
-        width:    "1080px",
-        height:   "1920px",
-        position: "absolute",
-        left: "-9999px",
-        top: "0"
-      });
+        Object.assign(container.style, {
+          width:  "1080px",     // ←
+          height: "1920px",     // ←
+          padding:    "30px",
+          background: "#f4ecda",
+          border:     "2px solid rgba(190,171,125,1)",
+          borderRadius: "20px",
+          fontSize:   "16px",
+          lineHeight: "1.5",
+          color:      "#333",
+          position:   "absolute",
+          left:       "-9999px",
+          top:        "0",
+          overflowY:  "auto"    // in case your verses exceed one “screen”
+        });
       document.body.appendChild(container);
       console.log("Container appended");
     
@@ -922,21 +923,21 @@
       }
     
       // 4) capture with html2canvas
-      html2canvas(container, {
-        backgroundColor: null,
-        width:        1080,
-        height:       1920,
-        scale:        1,
-        windowWidth:  1080,
-        windowHeight: 1920 })
-        .then(canvas => {
-          console.log("Canvas rendered");
+        // … after appending container …
+        html2canvas(container, {
+          backgroundColor: null,
+          width:       1080,
+          height:      1920,
+          scale:       1,
+          windowWidth: 1080,
+          windowHeight:1920
+        }).then(canvas => {
           document.body.removeChild(container);
-    
           canvas.toBlob(blob => {
-            console.log("Blob created");
-            const file = new File([blob], "BibleVerses.png", { type: "image/png" });
-    
+            const file = new File([blob], "BibleVerses_Story.png", { type: "image/png" });
+            // … share or download as before …
+          }, "image/png");
+        });
             // share or download
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
               navigator.share({ title: "Bible Verses", text: "", files: [file] })
