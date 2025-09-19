@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zion Mission Center - Memorization Cards</title>
+    <style>
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #d64d4d 0%, #e08181 100%);
+            color: #fff;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #b41c1c 0%, #d64d4d 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: #ffe6e6;
+        }
+        
+        .instructions {
+            background-color: #fff6f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #d64d4d;
+            color: #333;
+        }
+        
+        .instructions h2 {
+            color: #b41c1c;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        /* Cards Container */
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            padding: 15px;
+            height: 220px;
+            perspective: 1000px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            overflow: auto;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-front {
+            background: linear-gradient(135deg, #d64d4d 0%, #e89393 100%);
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1rem;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .card-back {
+            background-color: #fffafa;
+            color: #333;
+            transform: rotateY(180deg);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-number {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #b41c1c;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .question {
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #b41c1c;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        
+        .answer {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #444;
+        }
+        
+        .answer-part {
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background-color: white !important;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .container {
+                max-width: 100%;
+                padding: 0;
+                background: white;
+                box-shadow: none;
+                border-radius: 0;
+            }
+            
+            header, .instructions, .no-print {
+                display: none;
+            }
+            
+            .cards-container {
+                display: grid;
+                grid-template-columns: repeat(2, 3.37in);
+                gap: 0.16in;
+                margin: 0;
+                padding: 0.2in;
+                width: 100%;
+            }
+            
+            .card {
+                width: 3.37in;
+                height: 2.12in;
+                page-break-inside: avoid;
+                break-inside: avoid;
+                margin: 0;
+                padding: 0.12in;
+                box-shadow: none;
+                border: 1px solid #ccc;
+                border-radius: 0.1in;
+                background: white;
+            }
+            
+            .card-front, .card-back {
+                padding: 0.1in;
+                font-size: 9pt;
+                box-shadow: none;
+                border: none;
+            }
+            
+            .card.flipped .card-inner {
+                transform: none;
+            }
+            
+            .card-inner {
+                transform: none;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .card-front {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: white !important;
+                color: black;
+                border: 1px solid #ccc;
+            }
+            
+            .card-back {
+                transform: none;
+                border: 1px solid #ccc;
+                background: white;
+            }
+            
+            .question {
+                font-size: 9pt;
+                color: black;
+            }
+            
+            .answer {
+                font-size: 8pt;
+                color: black;
+            }
+            
+            .card-number {
+                background: #eee !important;
+                color: black !important;
+                border: 1px solid #ccc;
+            }
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            background: linear-gradient(to right, #b41c1c, #d64d4d);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            background: linear-gradient(to right, #9a1818, #b41c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 8px rgba(0, 0, 0, 0.25);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #fff;
+            font-size: 0.9rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            gap: 10px;
+        }
+        
+        .pagination button {
+            padding: 8px 15px;
+        }
+        
+        .page-indicator {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            color: #b41c1c;
+            background: #ffe6e6;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .cards-container {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .card {
+                height: 240px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                height: 260px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 80%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Zion Christian Mission Center</h1>
+            <div class="subtitle">Comprehensive Graduation Examination - All 40 Memorization Cards</div>
+        </header>
+        
+        <div class="instructions">
+            <h2>How to Use These Cards</h2>
+            <ul>
+                <li>Click on any card to flip it and see the answer</li>
+                <li>Use the "Print All Cards" button to create a printable version</li>
+                <li>For best printing results, use heavy cardstock paper</li>
+                <li>After printing, cut along the dashed lines to create wallet-sized cards</li>
+                <li>Carry these cards with you for convenient memorization practice</li>
+            </ul>
+            <p><strong>Note:</strong> These cards are paginated with 8 cards per page. Use the navigation buttons to view all cards.</p>
+        </div>
+        
+        <div class="controls">
+            <button onclick="printAllCards()" class="no-print">Print All Cards</button>
+            <button onclick="flipAllCards()" class="no-print">Flip All Cards</button>
+            <button onclick="goToFirstPage()" class="no-print">First Page</button>
+            <button onclick="goToLastPage()" class="no-print">Last Page</button>
+        </div>
+        
+        <div class="pagination no-print">
+            <button onclick="changePage(-1)">Previous</button>
+            <div class="page-indicator">Page <span id="current-page">1</span> of 5</div>
+            <button onclick="changePage(1)">Next</button>
+        </div>
+        
+        <div class="cards-container" id="cards-container">
+            <!-- Cards will be dynamically generated by JavaScript -->
+        </div>
+        
+        <div class="pagination no-print">
+            <button onclick="changePage(-1)">Previous</button>
+            <div class="page-indicator">Page <span id="current-page-bottom">1</span> of 5</div>
+            <button onclick="changePage(1)">Next</button>
+        </div>
+        
+        <footer class="no-print">
+            <p>Zion Christian Mission Center - Comprehensive Graduation Examination</p>
+            <p>Print these cards for personal study and memorization purposes</p>
+        </footer>
+    </div>
+
+    <script>
+        // Card data - all 40 questions and answers with updated answers
+        const cardData = [
+            {
+                question: "Who am I according to the Bible? Write the answer along with a Bible chapter reference.",
+                answer: "<span class='answer-part'>I am the actual entity of the firstfruits of Rv.14 born of God's seed harvested sealed and belong to the 12 tribes of Rv.7 at the time of the fulfillment of Revelation.</span>"
+            },
+            {
+                question: "What is the proof that I have been truly created according to the Bible?",
+                answer: "<span class='answer-part'>Harvested sealed and belong to the 12 tribes of Rv.7.</span>"
+            },
+            {
+                question: "In the Bible, there is the tree of life and the tree of the knowledge of good and evil. ①Write what the fruit of the tree of life is, ②and what the fruit of the tree of good and evil is today, respectively.",
+                answer: "<span class='answer-part'>① word of the fulfilled reality of Revelation.</span><span class='answer-part'>② false doctrines (commentaries) of false pastors.</span>"
+            },
+            {
+                question: "①What are the two kinds of revelation God gives, and between the two, ② which one is the one that God's servants must receive at the time of the fulfillment of Revelation? ③Write the process of the delivery of this revelation.",
+                answer: "<span class='answer-part'>① prophetic vision revelation fulfilled reality revelation.</span><span class='answer-part'>② fulfilled reality revelation.</span><span class='answer-part'>③ God → Jesus → angel → New John → servants.</span>"
+            },
+            {
+                question: "In Rv 1:3, who is ①'the one who reads,' ②'those who hear,' and ③'those who keep'? Write the answer along with the applicable chapter (reference verse) of Revelation, respectively.",
+                answer: "<span class='answer-part'>① New John who received and ate the opened book. Rv 10.</span><span class='answer-part'>② peoples, nations, languages, and kings who learn from New John. Rv 10:11.</span><span class='answer-part'>③ Including New John, the 12 tribes, the 144,000 and the multitude in white. Rv 7.</span>"
+            },
+            {
+                question: "①Through whose appearance does the fulfillment of Revelation begin? Include a reference. Regarding this work of Revelation beginning to be fulfilled, write ②when and ③where it was fulfilled as the fulfilled reality.",
+                answer: "<span class='answer-part'>① Jesus of the second coming. Rv 1, 2, 3.</span><span class='answer-part'>② 1966.</span><span class='answer-part'>③ Tabernacle Temple in Gwacheon at the base of Mt. Cheonggye.</span>"
+            },
+            {
+                question: "①How many kinds of content and what are the contents of the letters sent in Rv 2~3? ②Write the three entities who appear in Rv 2~3 in order, and write ③what each did, respectively.",
+                answer: "<span class='answer-part'>① three kinds: what you have seen, what is now, and what will take place later.</span><span class='answer-part'>② seven messengers, Nicolaitans, John.</span><span class='answer-part'>③ seven messengers: the work of the lamp that prepares the way Nicolaitans: food sacrificed to idols and teachings, adultery John: letters of repentance and the word of promise.</span>"
+            },
+            {
+                question: "Write what the 3 mysteries of Revelation are. Include references.",
+                answer: "<span class='answer-part'>① Mystery of the seven stars and the seven golden lampstands. Rv 1:20.</span><span class='answer-part'>② Mystery of the prostitute, Babylon, and the beast with seven heads and ten horns. Rv 17:5~7.</span><span class='answer-part'>③ Mystery of the last, seventh trumpet. Rv 10:7.</span>"
+            },
+            {
+                question: "①Write the blessings promised in Rv 2~3 given to the one who overcomes. ②Besides this, write 1 more blessing the one who overcomes will receive along with the reference.",
+                answer: "<span class='answer-part'>① fruit of the tree of life, crown of life, not be hurt at all by the second death, hidden manna, white stone, iron scepter, morning star, dressed in white clothes, name written in the book of life, pillar in God's temple, write on him God's name, the name of the Holy City, new Jerusalem, and Jesus' new name right to sit on Jesus' throne.</span><span class='answer-part'>② becomes the son who receives the inheritance. Rv 21:7.</span>"
+            },
+            {
+                question: "①What does it mean to 'write on him who overcomes God's name, the name of the Holy City, new Jerusalem, and Jesus' new name'? ②Who receives the blessings Jesus promised in Rv 2~3?",
+                answer: "<span class='answer-part'>① God, heaven, and Jesus come to the one who overcomes.</span><span class='answer-part'>② the one who fights and overcomes Satan's Nicolaitans.</span>"
+            },
+            {
+                question: "Rv 4:8 says that God's throne will come down to this earth. (1) In which chapter of Revelation and to where does God's throne come down, and (2) where is the reality of that place?",
+                answer: "<span class='answer-part'>① Mt. Zion, where the 12 Tribes, the sealed 144,000 of Rv 14 are.</span><span class='answer-part'>② Shincheonji Church of Jesus, the Temple of the Tabernacle of the Testimony.</span>"
+            },
+            {
+                question: "The 'book sealed with 7 seals' in God's right hand in Rv 5 is the book of Revelation. (1) What is the reason no one in heaven or on earth knew the contents of the sealed book all this time, and (2) what is content of the sealed book?",
+                answer: "<span class='answer-part'>① because the fulfilled reality had not appeared yet.</span><span class='answer-part'>② God's mystery that must be fulfilled.</span>"
+            },
+            {
+                question: "Regarding 'the blood and flesh of Jesus' promised as the new covenant in Lk 22:14~20, write (1) when, (2) where, and (3) who is able to eat it along with 3 references.",
+                answer: "<span class='answer-part'>① at the time of the fulfillment of Revelation.</span><span class='answer-part'>② God's kingdom, the 12 tribes of Shincheonji of Rv 7.</span><span class='answer-part'>③ the 144,000 and the multitude in white, Rv 1:5~6, Rv 5:9~10, Rv 7:9~14.</span>"
+            },
+            {
+                question: "In Rv 6, (1) who and through whom judges (2) who? (3) In which 2 chapters were those who were driven out in Rv 6 killed?",
+                answer: "<span class='answer-part'>① Jesus, 4 living creatures.</span><span class='answer-part'>② the chosen people who betrayed (the 7 messengers and the saints of the tabernacle).</span><span class='answer-part'>③ Rv 8, Rv 9.</span>"
+            },
+            {
+                question: "From Mt 8, write who (1)'the subjects of the kingdom' who were thrown outside into the darkness and (2)'those who come from the east and the west and sit in the kingdom of heaven' are along with a related Bible chapter for each.",
+                answer: "<span class='answer-part'>① the traditional churches that became corrupt (Spiritual Israel), Rv 6 (Rv 13).</span><span class='answer-part'>② The harvested and sealed 12 tribes of Shincheonji (New Spiritual Israel), Rv 7 (Rv 14).</span>"
+            },
+            {
+                question: "(1) After what event do those who are sealed of Rv 7 [appear] and (2) where do they come from and how do they appear, and (3) who are the fulfilled realities of these people?",
+                answer: "<span class='answer-part'>① after the judgment of the sun, moon, and stars of the former heaven who betrayed of Rv 6.</span><span class='answer-part'>② harvested from the harvest field.</span><span class='answer-part'>③ 144,000 of the 12 tribes of Shincheonji.</span>"
+            },
+            {
+                question: "①Why do the trumpets sound in Rv 8? ②Who gets killed in Rv 8~9? ③What is the difference between the first to the sixth trumpet sounds and the seventh trumpet sound?",
+                answer: "<span class='answer-part'>① Because all the seals are opened, and the book is opened and read.</span><span class='answer-part'>② Those who were thrown out in Rv 6.</span><span class='answer-part'>③ first~sixth trumpet: death of the betrayers seventh trumpet: trumpet of salvation.</span>"
+            },
+            {
+                question: "In Revelation, ①what are the 3 chapters in which the gentile beast (destroyer) judges the tabernacle of the chosen people? ②What are the actual entities of the seven trumpets received by the seven angels? Write along with the Bible chapter.",
+                answer: "<span class='answer-part'>① Rv 8, Rv 9, Rv 13.</span><span class='answer-part'>② saints brought out through the seed of faith during judgment, Rv 6.</span>"
+            },
+            {
+                question: "①What kind of entities are the 'rider and the horse' in Rv 9 and Rv 19, and who do they belong to, respectively? What are the ②'head' and ③'tail' of the horses that appear in Rv 9 and the ④'fire, smoke, and sulfur' that come out of its mouth?",
+                answer: "<span class='answer-part'>① Rv 9: spirits and flesh that belong to the devil Rv 19: spirits and flesh that belong to God.</span><span class='answer-part'>② seven pastors of the dragon.</span><span class='answer-part'>③ false prophets.</span><span class='answer-part'>④ false doctrines and ecclesiastical laws.</span>"
+            },
+            {
+                question: "As seen in Rv 9:15, ①who are 'the people that get killed' by the four angels that sinned during the plague of the sixth trumpet, and ②when and what event is the reality of 'this very hour and day and month and year' when they get killed?",
+                answer: "<span class='answer-part'>① people of the Tabernacle Temple that betrayed.</span><span class='answer-part'>② September 20, 1981, 2 pm, pastor ordination ceremony.</span>"
+            },
+            {
+                question: "What does it mean that John 'ate the opened scroll' in Rv 10?",
+                answer: "<span class='answer-part'>to completely understand and master the true meaning and fulfilled realities of Revelation and seal it in the heart.</span>"
+            },
+            {
+                question: "At the first coming, ①who ate 'the revelation of the Old Testament fulfillment' and where did he testify it? Write along with the reference verses. At the second coming, ②who ate 'the revelation of the New Testament fulfillment' and where does he testify it? Write along with the reference verses. Also, as seen in Rv 1:2, it says one person who received the command delivered God's word. Write ③in which chapter of Revelation he received this word that he delivered.",
+                answer: "<span class='answer-part'>① Jesus, rebellious Israel, Ez 3, Mt. 15:24.</span><span class='answer-part'>② New John, Churches in the midst of sin, Rv 10, Rv 22:8,16.</span><span class='answer-part'>③ Rv 10.</span>"
+            },
+            {
+                question: "①Who is the actual entity of the seventh trumpet? ②What is the seventh trumpet sound? Furthermore, ③what are the 4 verses of the Old and New Testament where the 'seventh trumpet' appears?",
+                answer: "<span class='answer-part'>① promised pastor, New John.</span><span class='answer-part'>② revealed testimony of New John.</span><span class='answer-part'>③ Jos.6:15~16, 1 Cor.15:51~54, Rv.10:7, Rv.11:15.</span>"
+            },
+            {
+                question: "①What happens 'when the seventh trumpet sounds'? ②What is the 'mystery of the last trumpet'? Write along with 2 related verses.",
+                answer: "<span class='answer-part'>① the kingdom of the world becomes the kingdom of God.</span><span class='answer-part'>② resurrection and eternal life, that is, changing into a new creation, Rv 10:7, 1 Cor.15:51~54.</span>"
+            },
+            {
+                question: "What is ①'the blood of the Lamb' and ②'the word of testimony,' which are the weapons that the male child and his brothers use to fight and overcome the dragon's group in Rv 12:9~11? ③After what event does the kingdom of God and salvation come? Also, ④in which chapter are the promises of Rv 2~3 fulfilled?",
+                answer: "<span class='answer-part'>① Jesus' word of life.</span><span class='answer-part'>② The word of testimony of the fulfilled realities of Revelation.</span><span class='answer-part'>③ after fighting and overcoming the dragon's group.</span><span class='answer-part'>④ Rv.12.</span>"
+            },
+            {
+                question: "Where is ①'heaven,' the location of the event of Rv 13, and ②who from which chapter of Revelation are the 'seven heads and ten horns' in Rv 13?",
+                answer: "<span class='answer-part'>① Tabernacle Temple, the same location as Rv.2~3.</span><span class='answer-part'>② seven pastors and ten authority figures of Babylon in Rv.17.</span>"
+            },
+            {
+                question: "①What is 'the new song' in Rv 14:3, and only ②who in the whole world can sing it? ③What is the reality of the place where the new song is learned?",
+                answer: "<span class='answer-part'>① word of the fulfilled realities of Revelation.</span><span class='answer-part'>② sealed 144,000 of the 12 tribes.</span><span class='answer-part'>③ Zion Christian Mission Center before the throne.</span>"
+            },
+            {
+                question: "According to Mt 13, ①with what can we distinguish 'those born of God's seed' and 'those born of the devil's seed'? Also, ②what is the reality and result of each group?",
+                answer: "<span class='answer-part'>① Those who are harvested and those who are not harvested.</span><span class='answer-part'>② Those born of God's seed: those who are harvested, sealed and registered into the 12 tribes, heaven and eternal life. Those born of the devil's seed: those who are not harvested, sealed or registered into the 12 tribes, hell and eternal punishment.</span>"
+            },
+            {
+                question: "①Who are 'those who had been victorious' in Rv 15:2 and what is the related Bible chapter? Write the ②weapons they used to overcome along with 1 reference verse.",
+                answer: "<span class='answer-part'>① those who fought and overcame the dragon's group, Rv 12.</span><span class='answer-part'>② blood of the Lamb and the word of testimony, Rv 12:11.</span>"
+            },
+            {
+                question: "In the Temple of the Tabernacle of the Testimony in Rv 15:5, ①who testify ②what? ③What are the two reasons that only they can testify?",
+                answer: "<span class='answer-part'>① those who overcame.</span><span class='answer-part'>② actual entities of all the chapters of Revelation.</span><span class='answer-part'>③ Because they saw the actual entities at the site of the events, and they fought and overcame the destroyers.</span>"
+            },
+            {
+                question: "Write ①how many kinds of 'plagues' are in Revelation and what they are in order. Also, write ②who are judged in 'Rv 6' and 'Rv 16,' respectively.",
+                answer: "<span class='answer-part'>① three kinds, seven seals, seven trumpets, seven bowls.</span><span class='answer-part'>② Rv 6: betrayers. Rv 16: betrayers and destroyers.</span>"
+            },
+            {
+                question: "Write ①2 chapters that show where the seven golden bowls in Rv 16 came from, ②what is poured out from the bowls, and ③where in which chapter the bowls are poured out.",
+                answer: "<span class='answer-part'>① Rv 12, Rv 15.</span><span class='answer-part'>② God's wrath.</span><span class='answer-part'>③ the tabernacle of Rv 13 and Babylon of Rv 18.</span>"
+            },
+            {
+                question: "In the book of Revelation, what is ①the food given by the pastor chosen by Jesus and ②the food given by the pastor chosen by the devil? Write along with related verses.",
+                answer: "<span class='answer-part'>① Rv 2:17 hidden manna, Rv 10 revealed word, Rv 22 fruit of the tree of life.</span><span class='answer-part'>② Rv 17:2, Rv 18:3 wine of adulteries.</span>"
+            },
+            {
+                question: "What is ①the wine of adulteries, ②whom did all nations that have fallen and those who drank the wine of adulteries marry, and ③who are the bridegroom and the bride who are married?",
+                answer: "<span class='answer-part'>① false doctrines (fruit of good and evil).</span><span class='answer-part'>② spirit of the dragon, Satan.</span><span class='answer-part'>③ Satan and churchgoers who belong to him.</span>"
+            },
+            {
+                question: "①What is the reason God has not judged Babylon yet? Write the answer along with 1 reference verse. Regarding this judgment, ②who and ③through what is judgment given?",
+                answer: "<span class='answer-part'>① Rv.18:4, because not all of God's people have come out.</span><span class='answer-part'>② God.</span><span class='answer-part'>③ fire.</span>"
+            },
+            {
+                question: "① After what event does Rv 19 take place, and ②what are the two things that happen in Rv 19?",
+                answer: "<span class='answer-part'>① after the judgment of Babylon in Rv.18.</span><span class='answer-part'>② marriage of spirit and flesh, God comes and reigns.</span>"
+            },
+            {
+                question: "In Rv 20, ①who are seated on thrones with the authority to judge after the dragon is seized? ②Who are those that will participate in the first resurrection and reign with Christ? ③What kind of people are those who receive judgment after the thousand years?",
+                answer: "<span class='answer-part'>① Jesus' spiritual and physical 12 disciples.</span><span class='answer-part'>② the spirits of the martyrs and those who survived and did not receive the mark of the beast but received God's seal.</span><span class='answer-part'>③ Gog and Magog, the spirits whose flesh have died.</span>"
+            },
+            {
+                question: "①What event in which chapter is 'the beginning of the fulfillment of Revelation'? ②What event in which chapter is 'the completion of Revelation'?",
+                answer: "<span class='answer-part'>① the appearance of Jesus of the second coming in Rv.1.</span><span class='answer-part'>② God and heaven coming to Shincheonji in Rv.21.</span>"
+            },
+            {
+                question: "①Among the 66 books of the Bible, what is the most important prophecy? Among them, ②the content of which chapter is the most important, and ③what is the reason?",
+                answer: "<span class='answer-part'>① Book of Revelation.</span><span class='answer-part'>② Rv.21.</span><span class='answer-part'>③ Because it is the promise of creating a new heaven and a new earth, which is God's objective.</span>"
+            },
+            {
+                question: "At the time of the Lord's second coming, write ①the reason why Revelation is the most important along with a reference verse, ②what 'the highest truth' is, and ③where it is.",
+                answer: "<span class='answer-part'>① because one cannot enter heaven if one adds to or subtracts from it, Rv.22:18~19.</span><span class='answer-part'>② Rv.1 to Rv.22.</span><span class='answer-part'>③ the City of Truth, Shincheonji.</span>"
+            }
+        ];
+
+        let currentPage = 1;
+        const cardsPerPage = 8;
+        const totalPages = Math.ceil(cardData.length / cardsPerPage);
+
+        // Initialize the cards
+        function initCards() {
+            const container = document.getElementById('cards-container');
+            container.innerHTML = '';
+            
+            const startIndex = (currentPage - 1) * cardsPerPage;
+            const endIndex = Math.min(startIndex + cardsPerPage, cardData.length);
+            
+            for (let i = startIndex; i < endIndex; i++) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <div class="card-number">${i + 1}</div>
+                            ${cardData[i].question}
+                        </div>
+                        <div class="card-back">
+                            <div class="card-number">${i + 1}</div>
+                            <div class="question">${cardData[i].question}</div>
+                            <div class="answer">${cardData[i].answer}</div>
+                        </div>
+                    </div>
+                `;
+                card.onclick = function() { flipCard(this); };
+                container.appendChild(card);
+            }
+            
+            document.getElementById('current-page').textContent = currentPage;
+            document.getElementById('current-page-bottom').textContent = currentPage;
+        }
+
+        function flipCard(card) {
+            card.classList.toggle('flipped');
+        }
+        
+        function flipAllCards() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.classList.toggle('flipped');
+            });
+        }
+        
+        function printAllCards() {
+            // Flip all cards to show answers before printing
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.classList.add('flipped');
+            });
+            
+            // Wait a moment for the flip animation to complete, then print
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+        
+        function changePage(direction) {
+            const newPage = currentPage + direction;
+            if (newPage > 0 && newPage <= totalPages) {
+                currentPage = newPage;
+                initCards();
+            }
+        }
+        
+        function goToFirstPage() {
+            currentPage = 1;
+            initCards();
+        }
+        
+        function goToLastPage() {
+            currentPage = totalPages;
+            initCards();
+        }
+
+        // Initialize the first page of cards
+        initCards();
+    </script>
+</body>
+</html>
