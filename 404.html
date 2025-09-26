@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found | GetOn</title>
+    <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #222222 0%, #2F2F2F 100%);
+        }
+        
+        .floating-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .floating-animation:nth-child(2) {
+            animation-delay: -2s;
+        }
+        
+        .floating-animation:nth-child(3) {
+            animation-delay: -4s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-20px) rotate(1deg); }
+            66% { transform: translateY(-10px) rotate(-1deg); }
+        }
+        
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            80%, 100% { transform: scale(1.2); opacity: 0; }
+        }
+        
+        .countdown-circle {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            animation: countdown 10s linear forwards;
+        }
+        
+        @keyframes countdown {
+            to { stroke-dashoffset: 0; }
+        }
+        
+        .glitch {
+            position: relative;
+        }
+        
+        .glitch::before,
+        .glitch::after {
+            content: '404';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .glitch::before {
+            animation: glitch-1 2s infinite;
+            color: #2620F6;
+            z-index: -1;
+        }
+        
+        .glitch::after {
+            animation: glitch-2 2s infinite;
+            color: #FFBB00;
+            z-index: -2;
+        }
+        
+        @keyframes glitch-1 {
+            0%, 14%, 15%, 49%, 50%, 99%, 100% { transform: translate(0); }
+            15%, 49% { transform: translate(-2px, 2px); }
+        }
+        
+        @keyframes glitch-2 {
+            0%, 20%, 21%, 62%, 63%, 99%, 100% { transform: translate(0); }
+            21%, 62% { transform: translate(2px, -2px); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center overflow-hidden">
+    <!-- Background floating elements -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="floating-animation absolute top-20 left-10 w-20 h-20 bg-blue-600 rounded-full opacity-10"></div>
+        <div class="floating-animation absolute top-40 right-20 w-16 h-16 bg-yellow-400 rounded-full opacity-10"></div>
+        <div class="floating-animation absolute bottom-32 left-1/4 w-12 h-12 bg-blue-600 rounded-full opacity-10"></div>
+        <div class="floating-animation absolute bottom-20 right-1/3 w-24 h-24 bg-yellow-400 rounded-full opacity-10"></div>
+    </div>
+
+    <div class="text-center z-10 px-6 max-w-2xl mx-auto">
+        <!-- Logo -->
+        <div class="mb-8">
+            <img src="https://www.geton.asia/web/image/2819-19b879b2/2.webp" 
+                 alt="GetOn Logo" 
+                 class="h-16 mx-auto mb-6"
+                 onerror="this.style.display='none';">
+        </div>
+
+        <!-- 404 with glitch effect -->
+        <div class="relative mb-8">
+            <h1 class="glitch text-8xl md:text-9xl font-bold text-white mb-4">404</h1>
+        </div>
+
+        <!-- Main message -->
+        <h2 class="text-3xl md:text-4xl font-semibold text-white mb-4">
+            Oops! Page Not Found
+        </h2>
+        
+        <p class="text-lg text-gray-300 mb-8 leading-relaxed">
+            The page you're looking for seems to have wandered off into the digital void. 
+            Don't worry, we'll get you back on track!
+        </p>
+
+        <!-- Countdown timer with circular progress -->
+        <div class="relative inline-flex items-center justify-center mb-8">
+            <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" stroke="#2F2F2F" stroke-width="8" fill="none"/>
+                <circle cx="50" cy="50" r="45" stroke="#FFBB00" stroke-width="8" fill="none" 
+                        class="countdown-circle" stroke-linecap="round"/>
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <span id="countdown" class="text-2xl font-bold text-white">10</span>
+            </div>
+        </div>
+
+        <p class="text-gray-400 mb-8">
+            Redirecting to homepage in <span id="countdown-text" class="text-yellow-400 font-semibold">10</span> seconds
+        </p>
+
+        <!-- Action buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button onclick="goHome()" 
+                    class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg">
+                Go Home Now
+            </button>
+            
+            <button onclick="goBack()" 
+                    class="border-2 border-gray-400 hover:border-white text-gray-400 hover:text-white font-semibold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105">
+                Go Back
+            </button>
+        </div>
+
+        <!-- Additional help -->
+        <div class="mt-12 p-6 bg-gray-800 bg-opacity-50 rounded-xl backdrop-blur-sm">
+            <h3 class="text-xl font-semibold text-white mb-3">Need Help?</h3>
+            <p class="text-gray-300 text-sm mb-4">
+                If you believe this is an error, please contact our support team or try searching for what you need.
+            </p>
+            <a href="https://geton.asia/help" 
+               class="inline-flex items-center text-yellow-400 hover:text-yellow-300 font-medium text-sm transition-colors duration-300">
+                Contact Support →
+            </a>
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 10;
+        const countdownElement = document.getElementById('countdown');
+        const countdownTextElement = document.getElementById('countdown-text');
+
+        function updateCountdown() {
+            countdownElement.textContent = timeLeft;
+            countdownTextElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                goHome();
+                return;
+            }
+            
+            timeLeft--;
+            setTimeout(updateCountdown, 1000);
+        }
+
+        function goHome() {
+            // Navigate to homepage in same window
+            window.location.href = 'https://geton.asia';
+        }
+
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                goHome();
+            }
+        }
+
+        // Start countdown
+        updateCountdown();
+
+        // Add some interactive sparkle effects
+        document.addEventListener('mousemove', function(e) {
+            if (Math.random() > 0.9) {
+                createSparkle(e.clientX, e.clientY);
+            }
+        });
+
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'absolute w-2 h-2 bg-yellow-400 rounded-full pointer-events-none';
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            sparkle.style.animation = 'sparkle 1s ease-out forwards';
+            document.body.appendChild(sparkle);
+
+            setTimeout(() => sparkle.remove(), 1000);
+        }
+
+        // Add sparkle animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes sparkle {
+                0% { transform: scale(0) rotate(0deg); opacity: 1; }
+                50% { transform: scale(1) rotate(180deg); opacity: 1; }
+                100% { transform: scale(0) rotate(360deg); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98537d6ad6cdabd7',t:'MTc1ODg5NzM0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
