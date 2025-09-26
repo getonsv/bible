@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shilles Steven Albert - Resume</title>
+    <style>
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .resume-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        /* Header section */
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+        
+        .header h2 {
+            font-size: 20px;
+            font-weight: 300;
+            margin-bottom: 15px;
+            color: #ecf0f1;
+        }
+        
+        .contact-info {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        /* Section styling */
+        .section {
+            padding: 25px 30px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-title {
+            font-size: 22px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        /* Professional summary */
+        .summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .summary-text {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .summary-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-around;
+        }
+        
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            min-width: 120px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        /* Employment history */
+        .job {
+            margin-bottom: 25px;
+        }
+        
+        .job:last-child {
+            margin-bottom: 0;
+        }
+        
+        .job-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .company {
+            font-size: 16px;
+            font-weight: 600;
+            color: #3498db;
+        }
+        
+        .job-period {
+            font-style: italic;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+        
+        .job-description {
+            margin-top: 10px;
+        }
+        
+        .job-description ul {
+            padding-left: 20px;
+        }
+        
+        .job-description li {
+            margin-bottom: 8px;
+        }
+        
+        /* Skills section */
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .skill-category {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .skill-category h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .skill-name {
+            flex: 1;
+        }
+        
+        .skill-rating {
+            display: flex;
+        }
+        
+        .skill-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ecf0f1;
+            margin-left: 3px;
+        }
+        
+        .skill-dot.filled {
+            background-color: #3498db;
+        }
+        
+        /* Other sections */
+        .two-column {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+        
+        .column {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .language-item, .education-item, .reference-item {
+            margin-bottom: 15px;
+        }
+        
+        .language-item strong, .education-item strong, .reference-item strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        /* Download button */
+        .download-container {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .section {
+                padding: 20px 15px;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 28px;
+            }
+            
+            .header h2 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="resume-container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>Shilles Steven Albert</h1>
+            <h2>Senior Business Analyst & Low-Code Solutions Expert</h2>
+            <div class="contact-info">
+                Johor Bahru, Malaysia | (60) 17-788 9990 | shilles@shill.es
+            </div>
+        </div>
+        
+        <!-- Professional Summary -->
+        <div class="section">
+            <h2 class="section-title">Professional Summary</h2>
+            <div class="summary">
+                <div class="summary-text">
+                    <p>Results-driven Business Analyst with 6+ years of experience at a leading telecommunications firm, specializing in driving operational excellence through digital transformation.</p>
+                    <p>Proven expertise in developing and implementing cost-effective, low-code solutions using the Microsoft Power Platform to automate processes, enhance productivity, and improve compliance.</p>
+                    <p>A proactive problem-solver passionate about leveraging technology to create impactful business value.</p>
+                </div>
+                <div class="summary-stats">
+                    <div class="stat-box">
+                        <div class="stat-value">6+</div>
+                        <div class="stat-label">Years of Experience</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">100%</div>
+                        <div class="stat-label">Cost Savings</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">30%</div>
+                        <div class="stat-label">Error Reduction</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">15%</div>
+                        <div class="stat-label">Sales Growth</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Employment History -->
+        <div class="section">
+            <h2 class="section-title">Employment History</h2>
+            
+            <div class="job">
+                <div class="job-title">Business Analyst - Retail Operations & Compliance Specialist</div>
+                <div class="company">Maxis Berhad, Kuala Lumpur</div>
+                <div class="job-period">02/2017—06/2023</div>
+                <div class="job-description">
+                    <ul>
+                        <li><strong>Spearheaded digital transformation</strong> initiatives across 100+ retail stores, leveraging automation and process innovation to enhance customer and employee experience</li>
+                        <li><strong>Developed a gamified productivity app</strong> using Microsoft Power Platform with zero development cost, resulting in a 30% reduction in manual tasks and incentive disputes</li>
+                        <li><strong>Introduced Robotic Process Automation (RPA)</strong> that eliminated 20+ hours of manual work monthly and reduced error rates by over 95%</li>
+                        <li><strong>Led multiple retail sales campaigns</strong> that achieved consistent 10-15% quarter-over-quarter sales growth in a competitive market</li>
+                        <li><strong>Managed compliance and risk</strong> as Department Compliance & Risk Officer, ensuring adherence to MABC and MCMC governing laws</li>
+                        <li><strong>Mentored and developed teams</strong>, enhancing product knowledge and sales techniques across the telecommunications retail sector</li>
+                        <li><strong>Collaborated with brand partners</strong> (Apple, Samsung, Huawei) to drive phone sales, execute campaigns, and implement traffic-boosting strategies</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="job">
+                <div class="job-title">Customer Experience Specialist</div>
+                <div class="company">Scicom (MSC) Berhad, Kuala Lumpur</div>
+                <div class="job-period">05/2011-03/2015</div>
+                <div class="job-description">
+                    <ul>
+                        <li>Promoted to senior role within 6 months, overseeing a team of 30 employees and driving productivity improvements</li>
+                        <li>Developed comprehensive training programs that enhanced team capabilities and consistently exceeded KPIs</li>
+                        <li>Implemented customer engagement strategies that improved satisfaction scores and retention rates</li>
+                        <li>Cultivated expertise in team management, coaching, and problem-solving within a high-pressure customer service environment</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Skills Section -->
+        <div class="section">
+            <h2 class="section-title">Skills</h2>
+            <div class="skills-container">
+                <div class="skill-category">
+                    <h3>Technical Skills</h3>
+                    <div class="skill-item">
+                        <span class="skill-name">LinkedIn Profile</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Microsoft PowerApps</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Microsoft Power Automate</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Microsoft Power BI</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Microsoft Office</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Atlassian Platforms (Jira, Confluence, Trello, Bitbucket)</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Zendesk, Freshdesk, Intercom, and other CRM Software</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Low-Code Web Building, Apps</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="skill-category">
+                    <h3>Professional Skills</h3>
+                    <div class="skill-item">
+                        <span class="skill-name">Leadership Skills</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Marketing and Sales</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Digital Transformation & Strategy</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Business Intelligence & Analysis</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Decision Making</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Coaching</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Communication Skills</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Effective Time Management</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Ability to Work in a Team</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Ability to Work Under Pressure</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Fast Learner</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Customer Service</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Time Management</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Computer Skills</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Project Management</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Big Data</span>
+                        <div class="skill-rating">
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot filled"></div>
+                            <div class="skill-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Information -->
+        <div class="section">
+            <div class="two-column">
+                <div class="column">
+                    <h2 class="section-title">Languages</h2>
+                    <div class="language-item">
+                        <strong>English</strong>
+                        <span>Native speaker</span>
+                    </div>
+                    <div class="language-item">
+                        <strong>Malay</strong>
+                        <span>Native speaker</span>
+                    </div>
+                    
+                    <h2 class="section-title" style="margin-top: 30px;">Education</h2>
+                    <div class="education-item">
+                        <strong>O Levels, SMK Kota Masai, Johor Bahru</strong>
+                        <div>Primary & Secondary - Completed SPM (O Levels) in 2008</div>
+                        <div>01/1998-12/2008</div>
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <h2 class="section-title">Professional Development</h2>
+                    <div class="education-item">
+                        <div>Certification in Contact Centre Management - City & Guilds School of Management</div>
+                        <div>Psychology of Customer Service - Scicom Academy</div>
+                        <div>Behind The Curtains (Advanced Presentation Skills) - Maxis Academy</div>
+                        <div>DISC Behavioural Styles Workshop - Maxis Academy</div>
+                        <div>Manipulating Big Data Using Microsoft Excel Power Query & Power Pivot - Maxis Academy</div>
+                        <div>Coaching Teams Virtually - Maxis Academy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- References -->
+        <div class="section">
+            <h2 class="section-title">References</h2>
+            <div class="two-column">
+                <div class="column">
+                    <div class="reference-item">
+                        <strong>Mohd Ibrahim - Decathlon Group</strong>
+                        <div>(60)16-7604602</div>
+                    </div>
+                    <div class="reference-item">
+                        <strong>Koh Kit Nge - Maxis</strong>
+                        <div>(60)12-7000016</div>
+                    </div>
+                    <div class="reference-item">
+                        <strong>Bryan Cheng - Maxis</strong>
+                        <div>(60)12-6012632</div>
+                    </div>
+                    <div class="reference-item">
+                        <strong>Wong Cai Yi - Swap Asia</strong>
+                        <div>(60)14-5068689</div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="reference-item">
+                        <strong>Lim Chun Guan - Celcombigi</strong>
+                        <div>darenlim86@gmail.com</div>
+                        <div>(60)17-7000433</div>
+                    </div>
+                    <div class="reference-item">
+                        <strong>Sathiskumar Nadrasan - Maxis</strong>
+                        <div>nsathis@maxis.com.my</div>
+                        <div>(60)12-3020204</div>
+                    </div>
+                    <div class="reference-item">
+                        <strong>Kumaran Kerpaya - Maxis</strong>
+                        <div>okumaraa@maxis.com.my</div>
+                        <div>(60)17-5000272</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Download Button -->
+        <div class="download-container">
+            <a href="#" class="download-btn" id="downloadBtn">Download Resume as HTML</a>
+        </div>
+    </div>
+
+    <script>
+        // Function to download the HTML file
+        document.getElementById('downloadBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Get the HTML content
+            const htmlContent = document.documentElement.outerHTML;
+            
+            // Create a Blob with the HTML content
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            
+            // Create a temporary URL for the Blob
+            const url = URL.createObjectURL(blob);
+            
+            // Create a temporary link element
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Shilles_Steven_Albert_Resume.html';
+            
+            // Append the link to the body, click it, and remove it
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Revoke the temporary URL
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
