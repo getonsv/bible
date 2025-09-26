@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shilles Steven Albert - Resume</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --dark: #222222;
+            --accent: #FFBB00;
+            --light-gray: #F2F2F2;
+            --off-white: #F5F4F0;
+            --white: #FFFFFF;
+            --darker-gray: #2F2F2F;
+            --blue: #2620F6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: var(--off-white);
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            background: var(--white);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 20px;
+            border-left: 5px solid var(--accent);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 150px;
+            background: var(--blue);
+            opacity: 0.05;
+            border-radius: 0 0 0 100%;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .name-title {
+            flex: 1;
+        }
+
+        .name-title h1 {
+            font-size: 36px;
+            color: var(--dark);
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .name-title h2 {
+            font-size: 22px;
+            color: var(--blue);
+            font-weight: 500;
+            background: rgba(38, 32, 246, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        /* Updated Contact Info */
+        .contact-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            flex: 1;
+            justify-content: flex-end;
+        }
+
+        .contact-item {
+            background: var(--off-white);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .contact-item:hover {
+            background: var(--blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(38, 32, 246, 0.2);
+        }
+
+        .contact-item:hover i {
+            color: white;
+        }
+
+        .contact-item i {
+            color: var(--accent);
+            width: 16px;
+            text-align: center;
+        }
+
+        /* Glass Effect Navigation */
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            overflow: hidden;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-tabs.floating {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 0.95);
+            top: 10px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab:hover {
+            background: rgba(38, 32, 246, 0.05);
+            color: var(--blue);
+        }
+
+        .tab.active {
+            border-bottom: 3px solid var(--accent);
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .resume-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 22px;
+            color: var(--dark);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light-gray);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .card-title i {
+            color: var(--blue);
+            background: rgba(38, 32, 246, 0.1);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Profile Section */
+        .profile-text {
+            color: var(--darker-gray);
+            margin-bottom: 15px;
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        .highlight {
+            background: rgba(255, 187, 0, 0.1);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        /* Skills Section */
+        .skill-category {
+            margin-bottom: 20px;
+        }
+
+        .skill-category h4 {
+            margin-bottom: 10px;
+            color: var(--dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .skill-category h4::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--light-gray);
+            margin-left: 10px;
+        }
+
+        .skill-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .skill-tag {
+            background: var(--off-white);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .skill-tag:hover {
+            background: var(--blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(38, 32, 246, 0.2);
+        }
+
+        /* Experience Section */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -33px;
+            top: 5px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px var(--accent);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .job-title {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 18px;
+        }
+
+        .company {
+            font-weight: 500;
+            color: var(--blue);
+        }
+
+        .date {
+            color: var(--darker-gray);
+            font-style: italic;
+            background: var(--off-white);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .achievement-list {
+            padding-left: 20px;
+        }
+
+        .achievement-list li {
+            margin-bottom: 10px;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        .achievement-list li::marker {
+            color: var(--accent);
+        }
+
+        /* Education & Courses */
+        .education-item, .course-item {
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .education-item::before, .course-item::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        /* Progress Bars */
+        .progress-container {
+            margin-bottom: 15px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--light-gray);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            transition: width 1s ease-in-out;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--dark);
+        }
+
+        .btn-primary:hover {
+            background: var(--blue);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(38, 32, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--blue);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: var(--dark);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(34, 34, 34, 0.3);
+        }
+
+        /* Metrics Section */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric-item {
+            background: var(--off-white);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: var(--darker-gray);
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none;
+            }
+            
+            .resume-content {
+                display: block;
+            }
+            
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
+            }
+            
+            .action-buttons {
+                display: none;
+            }
+            
+            .skill-tag {
+                background: #f0f0f0;
+            }
+            
+            header {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .resume-content {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .profile-header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .contact-info {
+                justify-content: center;
+                text-align: center;
+                margin-top: 15px;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .metrics {
+                grid-template-columns: 1fr;
+            }
+            
+            .name-title h1 {
+                font-size: 28px;
+            }
+            
+            .name-title h2 {
+                font-size: 18px;
+            }
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none;
+        }
+
+        .mt-10 {
+            margin-top: 10px;
+        }
+
+        .mb-10 {
+            margin-bottom: 10px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="fade-in">
+            <div class="profile-header">
+                <div class="avatar">SA</div>
+                <div class="name-title">
+                    <h1>Shilles Steven Albert</h1>
+                    <h2>Senior Business Analyst & Low-Code Solutions Expert</h2>
+                </div>
+            </div>
+            <div class="contact-info">
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i> shilles@shill.es
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-phone"></i> (60) 17-788 9990
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-map-marker-alt"></i> Johor Bahru, Malaysia
+                </div>
+                <div class="contact-item">
+                    <i class="fab fa-linkedin"></i> 
+                    <a href="https://www.linkedin.com/in/shilles" target="_blank" style="text-decoration: none; color: inherit;">LinkedIn Profile</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs no-print" id="navTabs">
+            <div class="tab active" data-tab="resume">Resume</div>
+            <div class="tab" data-tab="skills">Skills</div>
+            <div class="tab" data-tab="experience">Experience</div>
+            <div class="tab" data-tab="achievements">Achievements</div>
+        </div>
+
+        <!-- Resume Content -->
+        <div class="resume-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Profile Card -->
+                <div class="card fade-in" style="animation-delay: 0.1s;">
+                    <h3 class="card-title"><i class="fas fa-user"></i> Professional Summary</h3>
+                    <p class="profile-text">Results-driven <span class="highlight">Business Analyst</span> with 6+ years of experience at a leading telecommunications firm, specializing in driving operational excellence through <span class="highlight">digital transformation</span>.</p>
+                    <p class="profile-text">Proven expertise in developing and implementing cost-effective, <span class="highlight">low-code solutions</span> using the Microsoft Power Platform to automate processes, enhance productivity, and improve compliance.</p>
+                    <p class="profile-text">A proactive <span class="highlight">problem-solver</span> passionate about leveraging technology to create impactful business value.</p>
+                    
+                    <div class="metrics">
+                        <div class="metric-item">
+                            <div class="metric-value">6+</div>
+                            <div class="metric-label">Years Experience</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">100%</div>
+                            <div class="metric-label">Cost Savings</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">30%</div>
+                            <div class="metric-label">Error Reduction</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">15%</div>
+                            <div class="metric-label">Sales Growth</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills Card -->
+                <div class="card fade-in" style="animation-delay: 0.2s;">
+                    <h3 class="card-title"><i class="fas fa-cogs"></i> Core Competencies</h3>
+                    
+                    <div class="skill-category">
+                        <h4>Technical Platforms</h4>
+                        <div class="skill-items">
+                            <span class="skill-tag">Microsoft Power Apps</span>
+                            <span class="skill-tag">Microsoft Power Automate</span>
+                            <span class="skill-tag">Microsoft Power BI</span>
+                            <span class="skill-tag">Microsoft Office Suite</span>
+                            <span class="skill-tag">Atlassian Platforms</span>
+                            <span class="skill-tag">Jira & Confluence</span>
+                            <span class="skill-tag">Trello & Bitbucket</span>
+                            <span class="skill-tag">Zendesk & Freshdesk</span>
+                            <span class="skill-tag">Intercom</span>
+                            <span class="skill-tag">Low-Code Development</span>
+                            <span class="skill-tag">RPA</span>
+                        </div>
+                    </div>
+                    
+                    <div class="skill-category">
+                        <h4>Business & Analysis</h4>
+                        <div class="skill-items">
+                            <span class="skill-tag">Digital Transformation</span>
+                            <span class="skill-tag">Business Intelligence</span>
+                            <span class="skill-tag">Project Management</span>
+                            <span class="skill-tag">Big Data Analysis</span>
+                            <span class="skill-tag">Marketing & Sales</span>
+                            <span class="skill-tag">Strategic Decision Making</span>
+                            <span class="skill-tag">Process Optimization</span>
+                            <span class="skill-tag">Risk Assessment</span>
+                        </div>
+                    </div>
+                    
+                    <div class="skill-category">
+                        <h4>Leadership & Soft Skills</h4>
+                        <div class="skill-items">
+                            <span class="skill-tag">Team Leadership</span>
+                            <span class="skill-tag">Coaching & Mentoring</span>
+                            <span class="skill-tag">Strategic Communication</span>
+                            <span class="skill-tag">Time Management</span>
+                            <span class="skill-tag">Cross-functional Collaboration</span>
+                            <span class="skill-tag">Problem Solving</span>
+                            <span class="skill-tag">Customer Experience</span>
+                            <span class="skill-tag">Adaptive Learning</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Languages Card -->
+                <div class="card fade-in" style="animation-delay: 0.3s;">
+                    <h3 class="card-title"><i class="fas fa-language"></i> Languages</h3>
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>English</span>
+                            <span>Native Proficiency</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Malay</span>
+                            <span>Native Proficiency</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Education Card -->
+                <div class="card fade-in" style="animation-delay: 0.4s;">
+                    <h3 class="card-title"><i class="fas fa-graduation-cap"></i> Education</h3>
+                    <div class="education-item">
+                        <p><strong>O Levels</strong></p>
+                        <p>SMK Kota Masai, Johor Bahru</p>
+                        <p class="date">1998 - 2008</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main">
+                <!-- Experience Card -->
+                <div class="card fade-in" style="animation-delay: 0.5s;">
+                    <h3 class="card-title"><i class="fas fa-briefcase"></i> Professional Experience</h3>
+                    
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="job-header">
+                                <div>
+                                    <p class="job-title">Business Analyst - Retail Operations & Compliance Specialist</p>
+                                    <p class="company">Maxis Berhad, Kuala Lumpur</p>
+                                </div>
+                                <span class="date">02/2017 — 06/2023</span>
+                            </div>
+                            <ul class="achievement-list">
+                                <li><strong>Spearheaded digital transformation</strong> initiatives across 100+ retail stores, leveraging automation and process innovation to enhance customer and employee experience</li>
+                                <li><strong>Developed a gamified productivity app</strong> using Microsoft Power Platform with <strong>zero development cost</strong>, resulting in a 30% reduction in manual tasks and incentive disputes</li>
+                                <li><strong>Introduced Robotic Process Automation (RPA)</strong> that eliminated 20+ hours of manual work monthly and reduced error rates by over 95%</li>
+                                <li><strong>Led multiple retail sales campaigns</strong> that achieved consistent 10-15% quarter-over-quarter sales growth in a competitive market</li>
+                                <li><strong>Managed compliance and risk</strong> as Department Compliance & Risk Officer, ensuring adherence to MABC and MCMC governing laws</li>
+                                <li><strong>Mentored and developed teams</strong>, enhancing product knowledge and sales techniques across the telecommunications retail sector</li>
+                                <li><strong>Collaborated with brand partners</strong> (Apple, Samsung, Huawei) to drive phone sales, execute campaigns, and implement traffic-boosting strategies</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="job-header">
+                                <div>
+                                    <p class="job-title">Customer Experience Specialist → Senior Role</p>
+                                    <p class="company">Seicom (MSC) Berhad, Kuala Lumpur</p>
+                                </div>
+                                <span class="date">05/2011 — 03/2015</span>
+                            </div>
+                            <ul class="achievement-list">
+                                <li><strong>Promoted to senior role within 6 months</strong>, overseeing a team of 30 employees and driving productivity improvements</li>
+                                <li><strong>Developed comprehensive training programs</strong> that enhanced team capabilities and consistently exceeded KPIs</li>
+                                <li><strong>Implemented customer engagement strategies</strong> that improved satisfaction scores and retention rates</li>
+                                <li><strong>Cultivated expertise in team management, coaching, and problem-solving</strong> within a high-pressure customer service environment</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Courses & Certifications Card -->
+                <div class="card fade-in" style="animation-delay: 0.6s;">
+                    <h3 class="card-title"><i class="fas fa-certificate"></i> Professional Development</h3>
+                    
+                    <div class="course-item">
+                        <p><strong>Certification in Contact Centre Management</strong> - City & Guilds School of Management</p>
+                    </div>
+                    <div class="course-item">
+                        <p><strong>Psychology of Customer Service</strong> - Scicom Academy</p>
+                    </div>
+                    <div class="course-item">
+                        <p><strong>Behind The Curtains (Advanced Presentation Skills)</strong> - Maxis Academy</p>
+                    </div>
+                    <div class="course-item">
+                        <p><strong>DISC Behavioural Styles Workshop</strong> - Maxis Academy</p>
+                    </div>
+                    <div class="course-item">
+                        <p><strong>Manipulating Big Data Using Microsoft Excel Power Query & Power Pivot</strong> - Maxis Academy</p>
+                    </div>
+                    <div class="course-item">
+                        <p><strong>Coaching Teams Virtually</strong> - Maxis Academy</p>
+                    </div>
+                </div>
+
+                <!-- References Card -->
+                <div class="card fade-in" style="animation-delay: 0.7s;">
+                    <h3 class="card-title"><i class="fas fa-users"></i> References</h3>
+                    <p class="text-center" style="font-style: italic; color: var(--darker-gray);">Professional references available upon request</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons no-print">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Resume
+            </button>
+            <button class="btn btn-secondary" id="downloadPdf">
+                <i class="fas fa-download"></i> Download PDF
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Tab navigation functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                document.querySelectorAll('.tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                
+                // Add active class to clicked tab
+                this.classList.add('active');
+                
+                // In a real implementation, you would show/hide content based on the tab
+                // For this example, we'll just scroll to the relevant section
+                const tabId = this.getAttribute('data-tab');
+                let targetElement;
+                
+                switch(tabId) {
+                    case 'skills':
+                        targetElement = document.querySelector('.card:nth-child(2)');
+                        break;
+                    case 'experience':
+                        targetElement = document.querySelector('.card:nth-child(1)');
+                        break;
+                    case 'achievements':
+                        targetElement = document.querySelector('.metrics');
+                        break;
+                    default:
+                        targetElement = document.querySelector('header');
+                }
+                
+                if(targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 20,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Floating navigation with glass effect
+        window.addEventListener('scroll', function() {
+            const navTabs = document.getElementById('navTabs');
+            if (window.scrollY > 50) {
+                navTabs.classList.add('floating');
+            } else {
+                navTabs.classList.remove('floating');
+            }
+        });
+
+        // Animate progress bars on scroll
+        function animateProgressBars() {
+            const progressBars = document.querySelectorAll('.progress');
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0';
+                
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 300);
+            });
+        }
+
+        // Initialize animations when page loads
+        window.addEventListener('load', () => {
+            animateProgressBars();
+            
+            // Add animation to metric values
+            const metricValues = document.querySelectorAll('.metric-value');
+            metricValues.forEach(value => {
+                const text = value.textContent;
+                value.textContent = '0';
+                
+                setTimeout(() => {
+                    let counter = 0;
+                    const target = parseInt(text);
+                    const increment = target / 20;
+                    const timer = setInterval(() => {
+                        counter += increment;
+                        if (counter >= target) {
+                            value.textContent = text;
+                            clearInterval(timer);
+                        } else {
+                            value.textContent = Math.round(counter) + (text.includes('%') ? '%' : '+');
+                        }
+                    }, 50);
+                }, 1000);
+            });
+        });
+
+        // PDF download functionality
+        document.getElementById('downloadPdf').addEventListener('click', function() {
+            const button = this;
+            const originalHTML = button.innerHTML;
+            
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+            button.disabled = true;
+            
+            // Use html2pdf library to generate PDF
+            const element = document.querySelector('.container');
+            const opt = {
+                margin: 10,
+                filename: 'Shilles_Steven_Albert_Resume.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+            });
+        });
+
+        // Add hover effects to skill tags
+        document.querySelectorAll('.skill-tag').forEach(tag => {
+            tag.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px)';
+            });
+            
+            tag.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>
