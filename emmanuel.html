@@ -1512,7 +1512,7 @@
             // Your Google Sheets authorization URL
             const authUsersUrl = 'https://script.google.com/macros/s/AKfycbwBhXSNtQv2Lx0mVNssjWEOYHejBHoyq9vcIDDvWyY6ID32s9GeNJR6iIDPi_xF_pfsPQ/exec';
             
-            console.log('📋 Checking authorization entirely from Google Sheets...');
+            console.log('📋 Checking authorization entirely from Google Sheets - no hardcoded emails...');
             
             try {
                 console.log('🌐 Attempting to verify with Google Apps Script...');
@@ -1716,15 +1716,10 @@
                             const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                             console.log('📄 Iframe loaded successfully');
                             
-                            // Since we can't read the content due to CORS, we'll assume success for known emails
-                            if (email === 'shillesbiz@gmail.com') {
-                                console.log('✅ Iframe method - assuming success for known email');
-                                cleanup();
-                                resolve(true);
-                            } else {
-                                cleanup();
-                                resolve(null);
-                            }
+                            // Since we can't read the content due to CORS, we cannot determine authorization
+                            console.log('❌ Iframe method - cannot determine authorization due to CORS');
+                            cleanup();
+                            resolve(null);
                         } catch (iframeError) {
                             console.log('❌ Method 5 - Iframe access blocked (expected due to CORS)');
                             cleanup();
@@ -2587,5 +2582,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98866630768fb4dc',t:'MTc1OTQzMTE3MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98866a5d445db4dc',t:'MTc1OTQzMTM0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
