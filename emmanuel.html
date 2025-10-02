@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emmanuel Transport - Payment Voucher Generator</title>
+    <title>Emmanuel Transport - Payment Voucher System</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -759,7 +759,7 @@
             <div class="company-logo">
                 <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
             </div>
-            <p><strong>202503112296 (003723051-P)</strong> </p>
+            <p><strong></strong>202503112296 (003723051-P)</strong></p>
             <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
             <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
         </div>
@@ -1240,7 +1240,13 @@
             const pdfBtn = document.getElementById('pdfBtn');
             setButtonLoading(pdfBtn, true);
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+            
+            // Create A5 size PDF (148 x 210 mm)
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a5'
+            });
 
             // Get voucher data
             const voucherNo = document.getElementById('previewVoucherNo').textContent;
@@ -1271,134 +1277,151 @@
             // Set font
             doc.setFont('helvetica');
 
-            // Try to add logo
+            // Add logo using a more reliable method
             const logoImg = document.getElementById('previewLogo');
-            let logoY = 15;
+            let logoY = 10;
             
-            if (logoImg && logoImg.complete && !logoImg.style.display.includes('none')) {
-                try {
-                    // Create canvas to convert image to base64
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = logoImg.naturalWidth || 200;
-                    canvas.height = logoImg.naturalHeight || 100;
-                    
-                    // Draw image to canvas
-                    ctx.drawImage(logoImg, 0, 0);
-                    const logoDataUrl = canvas.toDataURL('image/png');
-                    
-                    // Add logo to PDF (scaled to fit)
-                    const logoWidth = 40;
-                    const logoHeight = 20;
-                    doc.addImage(logoDataUrl, 'PNG', 105 - logoWidth/2, logoY, logoWidth, logoHeight);
-                    logoY += 25;
-                } catch (error) {
-                    // If logo fails, just continue without it
-                    logoY += 5;
+            // Function to continue PDF generation
+            function continuePDFGeneration() {
+                // Company info header (adjusted for A5)
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                doc.text('BRN: 202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
+                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
+
+                // Line separator
+                doc.line(10, logoY + 22, 138, logoY + 22);
+
+                // Payment Voucher title
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text('PAYMENT VOUCHER', 74, logoY + 30, { align: 'center' });
+
+                // Voucher details (adjusted for A5)
+                const detailsStartY = logoY + 40;
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Voucher Information:', 10, detailsStartY);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Voucher No.: ${voucherNo}`, 10, detailsStartY + 6);
+                doc.text(`Date: ${date}`, 10, detailsStartY + 12);
+                doc.text(`Reference: ${reference}`, 10, detailsStartY + 18);
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('Payment Details:', 80, detailsStartY);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Pay To: ${payTo}`, 80, detailsStartY + 6);
+                doc.text(`${idLabel} ${idNumber}`, 80, detailsStartY + 12);
+                doc.text(`Method: ${method}`, 80, detailsStartY + 18);
+
+                // Description
+                const descY = detailsStartY + 28;
+                doc.setFont('helvetica', 'bold');
+                doc.text('Description:', 10, descY);
+                doc.setFont('helvetica', 'normal');
+                const splitDescription = doc.splitTextToSize(description, 128);
+                doc.text(splitDescription, 10, descY + 6);
+
+                // Line items table
+                let currentY = descY + 12 + (splitDescription.length * 4);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Line Items:', 10, currentY);
+                currentY += 6;
+
+                // Table headers
+                doc.setFontSize(7);
+                doc.text('Date', 10, currentY);
+                doc.text('Bill No.', 35, currentY);
+                doc.text('Description', 55, currentY);
+                doc.text('Amount', 120, currentY);
+                doc.line(10, currentY + 1, 138, currentY + 1);
+                currentY += 5;
+
+                // Table rows
+                doc.setFont('helvetica', 'normal');
+                lineItems.forEach(item => {
+                    doc.text(item.date, 10, currentY);
+                    doc.text(item.billNo, 35, currentY);
+                    const itemDesc = doc.splitTextToSize(item.description, 60);
+                    doc.text(itemDesc[0], 55, currentY);
+                    doc.text(item.amount, 120, currentY);
+                    currentY += 4;
+                });
+
+                // Total line
+                doc.line(10, currentY, 138, currentY);
+                currentY += 5;
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total: ${total}`, 120, currentY);
+
+                // Signature lines (adjusted for A5)
+                const sigY = currentY + 15;
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                
+                // Approved by - dotted line
+                for (let i = 10; i <= 50; i += 2) {
+                    doc.line(i, sigY, i + 1, sigY);
                 }
+                doc.text('Approved By', 30, sigY + 5, { align: 'center' });
+                doc.text('Date: __________', 30, sigY + 10, { align: 'center' });
+
+                // Received by - dotted line
+                for (let i = 98; i <= 138; i += 2) {
+                    doc.line(i, sigY, i + 1, sigY);
+                }
+                doc.text('Received By', 118, sigY + 5, { align: 'center' });
+                doc.text('Date: __________', 118, sigY + 10, { align: 'center' });
+
+                // Save the PDF
+                doc.save(`Payment_Voucher_${voucherNo}.pdf`);
+                
+                // Reset button state and show success
+                setButtonLoading(pdfBtn, false);
+                showNotification('PDF downloaded successfully! (A5 format)', 'success');
+            }
+
+            // Try to load and add logo
+            if (logoImg && logoImg.src && !logoImg.style.display.includes('none')) {
+                // Create a new image to ensure it's loaded
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                    try {
+                        // Create canvas to convert image to base64
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = this.naturalWidth;
+                        canvas.height = this.naturalHeight;
+                        
+                        // Draw image to canvas
+                        ctx.drawImage(this, 0, 0);
+                        const logoDataUrl = canvas.toDataURL('image/png');
+                        
+                        // Add logo to PDF (scaled for A5)
+                        const logoWidth = 30;
+                        const logoHeight = 15;
+                        doc.addImage(logoDataUrl, 'PNG', 74 - logoWidth/2, logoY, logoWidth, logoHeight);
+                        logoY += 20;
+                    } catch (error) {
+                        console.log('Logo failed to load, continuing without it');
+                        logoY += 5;
+                    }
+                    continuePDFGeneration();
+                };
+                img.onerror = function() {
+                    console.log('Logo failed to load, continuing without it');
+                    logoY += 5;
+                    continuePDFGeneration();
+                };
+                img.src = logoImg.src;
             } else {
                 // No logo available, just continue
                 logoY += 5;
+                continuePDFGeneration();
             }
-
-            // Company info header
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text('BRN: 202503112296 (003723051-P)', 105, logoY + 5, { align: 'center' });
-            doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, logoY + 12, { align: 'center' });
-            doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, logoY + 19, { align: 'center' });
-
-            // Line separator
-            doc.line(20, logoY + 29, 190, logoY + 29);
-
-            // Payment Voucher title (smaller and below line)
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text('PAYMENT VOUCHER', 105, logoY + 39, { align: 'center' });
-
-            // Voucher details (adjusted Y positions)
-            const detailsStartY = logoY + 55;
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Voucher Information:', 20, detailsStartY);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Voucher No.: ${voucherNo}`, 20, detailsStartY + 10);
-            doc.text(`Date: ${date}`, 20, detailsStartY + 18);
-            doc.text(`Reference: ${reference}`, 20, detailsStartY + 26);
-
-            doc.setFont('helvetica', 'bold');
-            doc.text('Payment Details:', 110, detailsStartY);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Pay To: ${payTo}`, 110, detailsStartY + 10);
-            doc.text(`${idLabel} ${idNumber}`, 110, detailsStartY + 18);
-            doc.text(`Method: ${method}`, 110, detailsStartY + 26);
-
-            // Description
-            const descY = detailsStartY + 40;
-            doc.setFont('helvetica', 'bold');
-            doc.text('Description:', 20, descY);
-            doc.setFont('helvetica', 'normal');
-            const splitDescription = doc.splitTextToSize(description, 170);
-            doc.text(splitDescription, 20, descY + 10);
-
-            // Line items table
-            let currentY = descY + 20 + (splitDescription.length * 7);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Line Items:', 20, currentY);
-            currentY += 10;
-
-            // Table headers
-            doc.setFontSize(9);
-            doc.text('Date', 20, currentY);
-            doc.text('Bill No.', 50, currentY);
-            doc.text('Description', 80, currentY);
-            doc.text('Amount', 160, currentY);
-            doc.line(20, currentY + 2, 190, currentY + 2);
-            currentY += 8;
-
-            // Table rows
-            doc.setFont('helvetica', 'normal');
-            lineItems.forEach(item => {
-                doc.text(item.date, 20, currentY);
-                doc.text(item.billNo, 50, currentY);
-                const itemDesc = doc.splitTextToSize(item.description, 70);
-                doc.text(itemDesc[0], 80, currentY);
-                doc.text(item.amount, 160, currentY);
-                currentY += 6;
-            });
-
-            // Total line
-            doc.line(20, currentY, 190, currentY);
-            currentY += 8;
-            doc.setFont('helvetica', 'bold');
-            doc.text(`Total: ${total}`, 160, currentY);
-
-            // Signature lines
-            const sigY = currentY + 30;
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'normal');
-            
-            // Approved by - dotted line
-            for (let i = 20; i <= 80; i += 3) {
-                doc.line(i, sigY, i + 1, sigY);
-            }
-            doc.text('Approved By', 50, sigY + 8, { align: 'center' });
-            doc.text('Date: _______________', 50, sigY + 18, { align: 'center' });
-
-            // Received by - dotted line
-            for (let i = 130; i <= 190; i += 3) {
-                doc.line(i, sigY, i + 1, sigY);
-            }
-            doc.text('Received By', 160, sigY + 8, { align: 'center' });
-            doc.text('Date: _______________', 160, sigY + 18, { align: 'center' });
-
-            // Save the PDF
-            doc.save(`Payment_Voucher_${voucherNo}.pdf`);
-            
-            // Reset button state and show success
-            setButtonLoading(pdfBtn, false);
-            showNotification('PDF downloaded successfully!', 'success');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988515d88680b4dc',t:'MTc1OTQxNzM5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98851e5b34aeb4dc',t:'MTc1OTQxNzc0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
