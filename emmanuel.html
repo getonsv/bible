@@ -1168,13 +1168,13 @@
             <div class="company-logo">
                 <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
             </div>
-            <p>202503112296 (003723051-P)</p>
-            <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
+            <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
+            <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
             <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
         </div>
 
         <div class="form-section">
-            <h2>Payment Voucher</h2>
+            <h2>Payment Voucher Generator</h2>
             
             <!-- Google Sheets Configuration (Hidden) -->
             <div style="display: none; background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
@@ -1322,8 +1322,8 @@
                 <div class="company-info">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
                     BRN: 202503112296 (003723051-P)<br>
-                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR<br>
-                    LOWRENCE 0182202582 | PREMA 01126360442
+                    LOWRENCE 0182202582 | PREMA 01126360442<br>
+                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
                 </div>
                 <div class="voucher-title">PAYMENT VOUCHER</div>
             </div>
@@ -1522,37 +1522,58 @@
 
                 if (response.ok) {
                     const result = await response.text();
-                    console.log('Google Sheets response:', result);
+                    console.log('Raw Google Sheets response:', result);
                     
                     try {
                         // Try to parse as JSON first
                         const jsonResponse = JSON.parse(result);
-                        const isAuthorized = jsonResponse.authorized === true || jsonResponse.authorized === 'true';
-                        
                         console.log('Parsed JSON response:', jsonResponse);
-                        console.log('Is authorized by Google Sheets:', isAuthorized);
                         
-                        if (!isAuthorized) {
-                            console.log('Authorization failed. Response:', jsonResponse);
+                        // Check for authorization in multiple ways
+                        const isAuthorized = jsonResponse.authorized === true || 
+                                           jsonResponse.authorized === 'true' ||
+                                           jsonResponse.authorized === 1 ||
+                                           (jsonResponse.message && jsonResponse.message.toLowerCase().includes('access granted'));
+                        
+                        console.log('Is authorized by JSON parsing:', isAuthorized);
+                        
+                        if (isAuthorized) {
+                            showAuthStatus(`Welcome ${email}! Access granted.`, 'success');
+                            return true;
+                        } else {
+                            console.log('Authorization denied. Full JSON response:', jsonResponse);
                             showAuthStatus(`Access denied. ${jsonResponse.message || 'Your email is not in the authorized users list.'}`, 'error');
+                            return false;
                         }
-                        
-                        return isAuthorized;
                     } catch (parseError) {
                         // Fallback to text parsing if JSON parsing fails
-                        console.log('JSON parsing failed, trying text parsing:', parseError);
+                        console.log('JSON parsing failed, trying text parsing. Parse error:', parseError);
+                        console.log('Raw response for text parsing:', result);
+                        
                         const resultLower = result.toLowerCase();
-                        const isAuthorized = resultLower.includes('authorized') && 
-                                           (resultLower.includes('true') || resultLower.includes('yes') || resultLower.includes('allowed'));
+                        
+                        // More comprehensive text-based checking
+                        const isAuthorized = (resultLower.includes('authorized') && resultLower.includes('true')) ||
+                                           resultLower.includes('access granted') ||
+                                           resultLower.includes('"authorized":true') ||
+                                           (resultLower.includes('authorized') && (resultLower.includes('yes') || resultLower.includes('allowed')));
                         
                         console.log('Is authorized by text parsing:', isAuthorized);
+                        console.log('Text parsing details:', {
+                            hasAuthorized: resultLower.includes('authorized'),
+                            hasTrue: resultLower.includes('true'),
+                            hasAccessGranted: resultLower.includes('access granted'),
+                            hasJsonTrue: resultLower.includes('"authorized":true')
+                        });
                         
-                        if (!isAuthorized) {
+                        if (isAuthorized) {
+                            showAuthStatus(`Welcome ${email}! Access granted.`, 'success');
+                            return true;
+                        } else {
                             console.log('Authorization failed. Full response:', result);
-                            showAuthStatus(`Access denied. Your email (${email}) is not in the authorized users list.`, 'error');
+                            showAuthStatus(`Access denied. Your email (${email}) is not in the authorized users list. Response: ${result}`, 'error');
+                            return false;
                         }
-                        
-                        return isAuthorized;
                     }
                 } else {
                     console.log('Google Sheets authorization check failed - HTTP error:', response.status);
@@ -1928,8 +1949,8 @@
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'normal');
                 doc.text('BRN: 202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
-                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
                 doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
 
                 // Line separator
                 doc.line(10, logoY + 22, 138, logoY + 22);
@@ -2288,5 +2309,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98865301e080b4dc',t:'MTc1OTQzMDM4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9886585af52ab4dc',t:'MTc1OTQzMDYwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
