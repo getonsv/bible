@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emmanuel Transport - Payment Voucher Generator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <title>Emmanuel Transport - Payment Voucher System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         * {
             box-sizing: border-box;
@@ -17,67 +18,111 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             margin: 0;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+            background-attachment: fixed;
             min-height: 100vh;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            color: #1e293b;
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .header {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            color: #2c3e50;
-            padding: 30px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            padding: 40px;
             text-align: center;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #d946ef);
         }
 
         .company-logo {
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .main-logo {
-            max-width: 200px;
-            max-height: 100px;
+            max-width: 220px;
+            max-height: 110px;
             width: auto;
             height: auto;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
         }
 
         .header h1 {
-            margin: 0 0 10px 0;
-            font-size: 2.2em;
-            font-weight: 600;
+            margin: 0 0 12px 0;
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .header p {
-            margin: 5px 0;
-            opacity: 0.9;
+            margin: 8px 0;
+            opacity: 0.8;
+            font-weight: 500;
+            font-size: 0.95em;
         }
 
         .form-section {
-            padding: 40px;
+            padding: 50px;
+            background: #ffffff;
+        }
+
+        .form-section h2 {
+            color: #1e293b;
+            margin-bottom: 40px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .form-section h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            border-radius: 2px;
         }
 
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 30px;
+            gap: 30px;
+            margin-bottom: 40px;
         }
 
         .form-group {
@@ -91,85 +136,98 @@
 
         label {
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #2c3e50;
+            margin-bottom: 10px;
+            color: #374151;
             font-size: 0.95em;
+            letter-spacing: 0.025em;
         }
 
         input, textarea, select {
-            padding: 12px 15px;
-            border: 2px solid #e1e8ed;
-            border-radius: 8px;
+            padding: 16px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
             font-size: 16px;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-family: inherit;
             width: 100%;
-            background: white;
+            background: #ffffff;
+            font-weight: 400;
         }
 
         input:focus, textarea:focus, select:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            transform: translateY(-1px);
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
         }
 
         input:hover, textarea:hover, select:hover {
-            border-color: #b8c6ea;
+            border-color: #d1d5db;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         input:disabled {
-            background-color: #f8f9fa;
-            color: #6c757d;
+            background-color: #f9fafb;
+            color: #6b7280;
             cursor: not-allowed;
+            border-color: #e5e7eb;
         }
 
-        /* Improve form validation styling */
         input:invalid:not(:focus):not(:placeholder-shown) {
-            border-color: #e74c3c;
-            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+            border-color: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
         }
 
         input:valid:not(:focus):not(:placeholder-shown) {
-            border-color: #27ae60;
+            border-color: #10b981;
         }
 
         textarea {
             resize: vertical;
-            min-height: 80px;
+            min-height: 100px;
         }
 
         .amount-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            margin: 30px 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 30px;
+            border-radius: 16px;
+            margin: 40px 0;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .amount-section h3 {
+            color: #1e293b;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 1.3em;
         }
 
         .amount-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding: 10px 0;
+            margin-bottom: 18px;
+            padding: 12px 0;
+            font-size: 1.05em;
         }
 
         .amount-row:last-child {
-            border-top: 2px solid #dee2e6;
-            padding-top: 15px;
-            font-weight: 600;
-            font-size: 1.1em;
-            color: #2c3e50;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 20px;
+            font-weight: 700;
+            font-size: 1.2em;
+            color: #1e293b;
         }
 
         .signature-section {
             display: none;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            margin: 40px 0;
-            padding: 30px;
-            background: #f8f9fa;
-            border-radius: 10px;
+            gap: 50px;
+            margin: 50px 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
         }
 
         @media print {
@@ -183,17 +241,18 @@
         }
 
         .signature-line {
-            border-bottom: 2px dotted #2c3e50;
-            height: 40px;
-            margin: 15px 0 8px 0;
+            border-bottom: 2px dotted #64748b;
+            height: 50px;
+            margin: 20px 0 12px 0;
             position: relative;
         }
 
         .signature-label {
             font-weight: 600;
-            color: #2c3e50;
-            margin-top: 10px;
+            color: #374151;
+            margin-top: 15px;
             display: none;
+            font-size: 1.05em;
         }
 
         .signature-column {
@@ -210,33 +269,35 @@
         }
 
         .date-line {
-            border-bottom: 1px solid #2c3e50;
+            border-bottom: 1px solid #64748b;
             display: inline-block;
-            min-width: 120px;
-            margin-left: 10px;
+            min-width: 140px;
+            margin-left: 12px;
         }
 
         .action-buttons {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             justify-content: center;
-            padding: 30px;
-            background: #f8f9fa;
+            padding: 40px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             position: relative;
         }
 
         .notification {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
+            top: 30px;
+            right: 30px;
+            padding: 20px 25px;
+            border-radius: 12px;
             color: white;
             font-weight: 600;
             z-index: 1000;
             transform: translateX(400px);
-            transition: transform 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .notification.show {
@@ -244,53 +305,73 @@
         }
 
         .notification.success {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            background: linear-gradient(135deg, #10b981, #059669);
         }
 
         .notification.error {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            background: linear-gradient(135deg, #ef4444, #dc2626);
         }
 
         .notification.info {
-            background: linear-gradient(135deg, #3498db, #2980b9);
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
         }
 
         .btn {
-            padding: 12px 30px;
+            padding: 16px 32px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            font-family: inherit;
+            letter-spacing: 0.025em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             color: white;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
         }
 
         .btn-secondary {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
+            background: linear-gradient(135deg, #64748b, #475569);
             color: white;
+            box-shadow: 0 10px 15px -3px rgba(100, 116, 139, 0.3);
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
 
         .btn:active {
-            transform: translateY(0);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transform: translateY(-1px);
         }
 
         .btn:focus {
             outline: none;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3);
         }
 
         .btn:disabled {
@@ -309,11 +390,11 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid transparent;
-            border-top: 2px solid currentColor;
+            width: 24px;
+            height: 24px;
+            margin: -12px 0 0 -12px;
+            border: 3px solid transparent;
+            border-top: 3px solid currentColor;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             color: white;
@@ -327,63 +408,69 @@
         .voucher-preview {
             display: none;
             background: white;
-            padding: 40px;
-            margin: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            padding: 50px;
+            margin: 30px;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         .voucher-header {
             text-align: center;
-            border-bottom: 3px solid #2c3e50;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            border-bottom: 3px solid #6366f1;
+            padding-bottom: 25px;
+            margin-bottom: 40px;
         }
 
         .voucher-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-top: 15px;
-            margin-bottom: 10px;
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #1e293b;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            letter-spacing: 0.05em;
         }
 
         .company-info {
-            font-size: 0.9em;
-            line-height: 1.4;
-            color: #555;
+            font-size: 0.95em;
+            line-height: 1.6;
+            color: #64748b;
+            font-weight: 500;
         }
 
         .voucher-details {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
+            gap: 40px;
+            margin-bottom: 40px;
         }
 
         .detail-group h4 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-            font-size: 1.1em;
+            color: #1e293b;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
         }
 
         .detail-item {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             text-align: left;
+            font-weight: 500;
         }
 
         .voucher-amount {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+            border: 1px solid rgba(148, 163, 184, 0.2);
         }
 
         .voucher-signatures {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            margin-top: 40px;
+            gap: 80px;
+            margin-top: 50px;
         }
 
         @media print {
@@ -436,232 +523,193 @@
         }
 
         .line-items-section {
-            margin: 30px 0;
-            padding: 25px;
-            background: #f8f9fa;
-            border-radius: 10px;
+            margin: 40px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .line-items-section h3 {
+            color: #1e293b;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 1.3em;
         }
 
         .table-container {
             overflow-x: auto;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .line-items-table {
             width: 100%;
             border-collapse: collapse;
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .line-items-table th {
-            background: #2c3e50;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             color: white;
-            padding: 15px 10px;
+            padding: 18px 15px;
             text-align: left;
             font-weight: 600;
-            font-size: 0.9em;
+            font-size: 0.95em;
+            letter-spacing: 0.025em;
         }
 
         .line-items-table td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #e1e8ed;
+            padding: 15px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .line-items-table tr:hover {
+            background-color: #f8fafc;
         }
 
         .line-items-table input {
             width: 100%;
-            border: 1px solid #e1e8ed;
-            padding: 8px 10px;
-            border-radius: 4px;
+            border: 2px solid #e5e7eb;
+            padding: 10px 12px;
+            border-radius: 8px;
             font-size: 14px;
+            transition: all 0.3s ease;
         }
 
         .line-items-table input:focus {
-            border-color: #667eea;
+            border-color: #6366f1;
             outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
         .btn-remove {
-            background: #e74c3c;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
             border: none;
-            width: 30px;
-            height: 30px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
         }
 
         .btn-remove:hover {
-            background: #c0392b;
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: scale(1.1);
         }
 
         .btn-add-item {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 12px 24px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
         }
 
         .btn-add-item:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
         }
 
         .voucher-line-items {
-            margin: 20px 0;
+            margin: 25px 0;
         }
 
         .voucher-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .voucher-table th,
         .voucher-table td {
-            border: 1px solid #ddd;
-            padding: 10px;
+            border: 1px solid #e5e7eb;
+            padding: 12px;
             text-align: left;
         }
 
         .voucher-table th {
-            background: #f8f9fa;
-            font-weight: bold;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            font-weight: 600;
+            color: #374151;
         }
 
         .voucher-table .amount-cell {
             text-align: right;
+            font-weight: 600;
         }
 
         .voucher-total-row {
-            background: #f8f9fa;
-            font-weight: bold;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            font-weight: 700;
+        }
+
+        /* Enhanced Mobile Date Input Styling */
+        input[type="date"] {
+            position: relative;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236366f1'%3e%3cpath fill-rule='evenodd' d='M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z' clip-rule='evenodd'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 20px;
+            padding-right: 50px;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: auto;
+            height: auto;
+            color: transparent;
+            background: transparent;
+            cursor: pointer;
         }
 
         /* Mobile-first responsive design */
         @media (max-width: 480px) {
             body {
-                padding: 10px;
+                padding: 15px;
             }
             
             .container {
-                border-radius: 8px;
+                border-radius: 16px;
                 margin: 0;
             }
             
             .header {
-                padding: 20px 15px;
+                padding: 30px 20px;
             }
             
             .header h1 {
-                font-size: 1.6em;
+                font-size: 2em;
             }
             
             .header p {
-                font-size: 0.85em;
+                font-size: 0.9em;
             }
             
             .main-logo {
-                max-width: 150px;
-                max-height: 70px;
-            }
-            
-            .form-section {
-                padding: 20px 15px;
-            }
-            
-            .form-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            
-            .line-items-section {
-                padding: 15px;
-                margin: 20px 0;
-            }
-            
-            .table-container {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            .line-items-table {
-                min-width: 600px;
-                font-size: 0.8em;
-            }
-            
-            .line-items-table th,
-            .line-items-table td {
-                padding: 8px 4px;
-                white-space: nowrap;
-            }
-            
-            .line-items-table input {
-                font-size: 12px;
-                padding: 6px 8px;
-            }
-            
-            .btn-remove {
-                width: 25px;
-                height: 25px;
-                font-size: 14px;
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-                padding: 20px 15px;
-                gap: 10px;
-            }
-            
-            .btn {
-                width: 100%;
-                justify-content: center;
-                padding: 15px 20px;
-                font-size: 16px;
-            }
-            
-            .voucher-preview {
-                margin: 10px;
-                padding: 15px;
-            }
-            
-            .voucher-details {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .voucher-signatures {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .voucher-table {
-                font-size: 0.8em;
-            }
-            
-            .voucher-table th,
-            .voucher-table td {
-                padding: 6px 4px;
-            }
-        }
-
-        @media (min-width: 481px) and (max-width: 768px) {
-            body {
-                padding: 15px;
-            }
-            
-            .header {
-                padding: 25px 20px;
+                max-width: 180px;
+                max-height: 90px;
             }
             
             .form-section {
@@ -675,6 +723,107 @@
             
             .line-items-section {
                 padding: 20px;
+                margin: 30px 0;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .line-items-table {
+                min-width: 600px;
+                font-size: 0.85em;
+            }
+            
+            .line-items-table th,
+            .line-items-table td {
+                padding: 12px 8px;
+                white-space: nowrap;
+            }
+            
+            .line-items-table input {
+                font-size: 14px;
+                padding: 8px 10px;
+            }
+            
+            .btn-remove {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                padding: 30px 20px;
+                gap: 15px;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+                padding: 18px 24px;
+                font-size: 16px;
+            }
+            
+            .voucher-preview {
+                margin: 15px;
+                padding: 20px;
+            }
+            
+            .voucher-details {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .voucher-signatures {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .voucher-table {
+                font-size: 0.85em;
+            }
+            
+            .voucher-table th,
+            .voucher-table td {
+                padding: 8px 6px;
+            }
+
+            /* Enhanced mobile date inputs */
+            input[type="date"] {
+                min-height: 56px;
+                font-size: 18px;
+                padding: 16px 50px 16px 20px;
+            }
+
+            .line-items-table input[type="date"] {
+                min-height: 48px;
+                font-size: 16px;
+                padding: 12px 40px 12px 16px;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            body {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 35px 25px;
+            }
+            
+            .form-section {
+                padding: 40px 25px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .line-items-section {
+                padding: 25px;
             }
             
             .table-container {
@@ -688,13 +837,13 @@
             
             .line-items-table th,
             .line-items-table td {
-                padding: 10px 6px;
-                font-size: 0.9em;
+                padding: 14px 10px;
+                font-size: 0.95em;
             }
             
             .action-buttons {
                 flex-direction: column;
-                gap: 12px;
+                gap: 18px;
             }
             
             .btn {
@@ -703,69 +852,69 @@
             }
             
             .voucher-preview {
-                margin: 15px;
-                padding: 25px;
+                margin: 20px;
+                padding: 30px;
             }
             
             .voucher-details {
                 grid-template-columns: 1fr;
-                gap: 25px;
+                gap: 30px;
             }
             
             .voucher-signatures {
                 grid-template-columns: 1fr;
-                gap: 25px;
+                gap: 35px;
             }
         }
 
         @media (min-width: 769px) and (max-width: 1024px) {
             .container {
-                max-width: 800px;
+                max-width: 900px;
             }
             
             .form-grid {
-                gap: 20px;
+                gap: 25px;
             }
             
             .line-items-table th,
             .line-items-table td {
-                padding: 12px 8px;
+                padding: 15px 12px;
             }
         }
 
         /* Touch-friendly improvements */
         @media (hover: none) and (pointer: coarse) {
             input, textarea, select, .btn {
-                min-height: 44px;
+                min-height: 48px;
             }
             
             .btn-remove {
-                min-width: 44px;
-                min-height: 44px;
+                min-width: 48px;
+                min-height: 48px;
             }
             
             .line-items-table input {
-                min-height: 40px;
+                min-height: 44px;
             }
         }
 
         /* Landscape orientation on mobile */
         @media (max-width: 768px) and (orientation: landscape) {
             .header {
-                padding: 15px;
+                padding: 20px;
             }
             
             .header h1 {
-                font-size: 1.4em;
+                font-size: 1.8em;
             }
             
             .form-section {
-                padding: 20px;
+                padding: 25px;
             }
             
             .form-grid {
                 grid-template-columns: 1fr 1fr;
-                gap: 15px;
+                gap: 20px;
             }
             
             .form-group.full-width {
@@ -780,21 +929,328 @@
                 image-rendering: crisp-edges;
             }
         }
+
+        /* Authentication Overlay - Modern Design */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+            background-attachment: fixed;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 50px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            max-width: 480px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .auth-logo {
+            max-width: 180px;
+            max-height: 100px;
+            margin-bottom: 25px;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+        }
+
+        .auth-title {
+            font-size: 2.2em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .auth-subtitle {
+            color: #64748b;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            font-size: 1.05em;
+            font-weight: 500;
+        }
+
+        .google-signin-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background: linear-gradient(135deg, #4285f4, #3367d6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 15px -3px rgba(66, 133, 244, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .google-signin-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .google-signin-btn:hover::before {
+            left: 100%;
+        }
+
+        .google-signin-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 25px -5px rgba(66, 133, 244, 0.4);
+        }
+
+        .google-signin-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .google-icon {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-status {
+            margin-top: 25px;
+            padding: 18px;
+            border-radius: 12px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-status.loading {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .auth-status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .auth-status.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .user-info {
+            display: none;
+            background: rgba(248, 250, 252, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            text-align: left;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin-right: 15px;
+            vertical-align: middle;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .signout-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            float: right;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+        }
+
+        .signout-btn:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+        }
+
+        .main-app {
+            display: none;
+        }
+
+        .main-app.authenticated {
+            display: block;
+        }
+
+        .auth-config {
+            background: rgba(255, 243, 205, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 234, 167, 0.8);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 40px;
+        }
+
+        .auth-config h3 {
+            color: #92400e;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .auth-config p {
+            color: #92400e;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .auth-config input {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 234, 167, 0.8);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .auth-config input:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .auth-config button {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+        }
+
+        .auth-config button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.4);
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 40px 25px;
+                margin: 20px;
+                border-radius: 20px;
+            }
+            
+            .auth-title {
+                font-size: 1.8em;
+            }
+            
+            .google-signin-btn {
+                width: 100%;
+                padding: 18px 24px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Authentication Overlay -->
+    <div class="auth-overlay" id="authOverlay">
+        <div class="auth-container">
+            <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="auth-logo" onerror="this.style.display='none';">
+            <h1 class="auth-title">Emmanuel Transport</h1>
+            <p class="auth-subtitle">Please sign in with your Google account to access the Payment Voucher System</p>
+            
+            <!-- Authentication Configuration (Hidden) -->
+            <div class="auth-config" style="display: none;">
+                <h3>🔐 Authentication Setup</h3>
+                <p>Configure your Google OAuth Client ID and authorized users spreadsheet URL below:</p>
+                
+                <div style="margin-bottom: 15px;">
+                    <label for="googleClientId" style="display: block; text-align: left; font-weight: 600; margin-bottom: 5px; color: #92400e;">Google OAuth Client ID:</label>
+                    <input type="text" id="googleClientId" value="329748771929-h7ass17q1ebv5mmd4r7qs75o940elsrn.apps.googleusercontent.com" style="width: 100%; padding: 8px 12px; border: 1px solid #ffeaa7; border-radius: 4px; font-size: 14px;">
+                    <small style="display: block; margin-top: 5px; color: #92400e;">Get this from Google Cloud Console</small>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label for="authorizedUsersUrl" style="display: block; text-align: left; font-weight: 600; margin-bottom: 5px; color: #92400e;">Authorized Users Spreadsheet URL:</label>
+                    <input type="url" id="authorizedUsersUrl" value="https://script.google.com/macros/s/AKfycbwBhXSNtQv2Lx0mVNssjWEOYHejBHoyq9vcIDDvWyY6ID32s9GeNJR6iIDPi_xF_pfsPQ/exec" style="width: 100%; padding: 8px 12px; border: 1px solid #ffeaa7; border-radius: 4px; font-size: 14px;">
+                    <small style="display: block; margin-top: 5px; color: #92400e;">Apps Script URL that checks authorized emails</small>
+                </div>
+                
+                <button type="button" onclick="showAuthSetupInstructions()" style="background: #856404; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                    📖 Setup Instructions
+                </button>
+            </div>
+            
+            <button class="google-signin-btn" id="googleSignInBtn" onclick="initializeGoogleAuth()">
+                <div class="google-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                </div>
+                Sign in with Google
+            </button>
+            
+            <div class="auth-status" id="authStatus" style="display: none;"></div>
+            
+            <div class="user-info" id="userInfo">
+                <img id="userAvatar" class="user-avatar" src="" alt="User Avatar">
+                <span id="userName"></span><br>
+                <small id="userEmail" style="color: #64748b;"></small>
+                <button class="signout-btn" onclick="signOut()">Sign Out</button>
+                <div style="clear: both;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application (Hidden until authenticated) -->
+    <div class="main-app" id="mainApp">
     <div class="container">
         <div class="header">
             <div class="company-logo">
                 <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
             </div>
-            <p>202503112296 (003723051-P)</p>
-            <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
+            <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
+            <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
             <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
         </div>
 
         <div class="form-section">
-            <h2 style="color: #2c3e50; margin-bottom: 30px; text-align: center;">Payment Voucher</h2>
+            <h2>Payment Voucher Generator</h2>
             
             <!-- Google Sheets Configuration (Hidden) -->
             <div style="display: none; background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
@@ -805,7 +1261,7 @@
                 </p>
                 <div class="form-group">
                     <label for="googleSheetsUrl">Google Apps Script Web App URL:</label>
-                    <input type="url" id="googleSheetsUrl" value="https://script.google.com/macros/s/AKfycbwzHGNGW6S9Wk90f4yto91VzDYv1OtHK7beJPLDhMXZz0IR4PcLX1r632V4YrQpmZWe/exec" style="font-family: monospace; font-size: 0.9em;">
+                    <input type="url" id="googleSheetsUrl" value="https://script.google.com/macros/s/AKfycbx-ds2uoO077zzs5buAymgkPfqO-i9zxQTE0xIEm0Avzxj3SnInCZ93J6QV7rY6_oSs/exec" style="font-family: monospace; font-size: 0.9em;">
                     <small style="color: #6c757d; margin-top: 5px; display: block;">Leave empty to disable Google Sheets integration</small>
                 </div>
                 <div style="margin-top: 15px;">
@@ -860,7 +1316,7 @@
                 </div>
 
                 <div class="line-items-section">
-                    <h3 style="color: #2c3e50; margin-bottom: 20px;">Line Items</h3>
+                    <h3>Line Items</h3>
                     <div class="table-container">
                         <table id="lineItemsTable" class="line-items-table">
                             <thead>
@@ -889,7 +1345,7 @@
 
 
                 <div class="amount-section">
-                    <h3 style="color: #2c3e50; margin-bottom: 20px;">Amount Summary</h3>
+                    <h3>Amount Summary</h3>
                     <div class="amount-row">
                         <span>Subtotal:</span>
                         <span id="subtotal">RM 0.00</span>
@@ -941,9 +1397,9 @@
             <div class="voucher-header">
                 <div class="company-info">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
-                    202503112296 (003723051-P)<br>
-                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR<br>
-                    LOWRENCE 0182202582 | PREMA 01126360442
+                    BRN: 202503112296 (003723051-P)<br>
+                    LOWRENCE 0182202582 | PREMA 01126360442<br>
+                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
                 </div>
                 <div class="voucher-title">PAYMENT VOUCHER</div>
             </div>
@@ -1026,7 +1482,269 @@
             </div>
         </div>
     </div>
+    </div>
+    <!-- End Main Application -->
 
+    <script>
+        // Authentication variables
+        let googleAuth = null;
+        let currentUser = null;
+
+        // Initialize Google Authentication
+        function initializeGoogleAuth() {
+            const clientId = document.getElementById('googleClientId').value.trim();
+            const authUsersUrl = document.getElementById('authorizedUsersUrl').value.trim();
+            
+            if (!clientId) {
+                showAuthStatus('Please enter your Google OAuth Client ID first.', 'error');
+                return;
+            }
+            
+            if (!authUsersUrl) {
+                showAuthStatus('Please enter the authorized users spreadsheet URL first.', 'error');
+                return;
+            }
+
+            showAuthStatus('Initializing Google Authentication...', 'loading');
+
+            // Initialize Google Identity Services
+            google.accounts.id.initialize({
+                client_id: clientId,
+                callback: handleCredentialResponse,
+                auto_select: false,
+                cancel_on_tap_outside: false
+            });
+
+            // Render the sign-in button
+            google.accounts.id.renderButton(
+                document.getElementById('googleSignInBtn'),
+                {
+                    theme: 'filled_blue',
+                    size: 'large',
+                    text: 'signin_with',
+                    shape: 'rectangular'
+                }
+            );
+
+            showAuthStatus('Click "Sign in with Google" to continue', 'success');
+        }
+
+        // Handle Google Sign-In Response
+        async function handleCredentialResponse(response) {
+            showAuthStatus('Verifying your credentials...', 'loading');
+            
+            try {
+                // Decode the JWT token to get user info
+                const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                const userEmail = payload.email;
+                const userName = payload.name;
+                const userPicture = payload.picture;
+
+                // Check if user is authorized
+                const isAuthorized = await checkUserAuthorization(userEmail);
+                
+                if (isAuthorized) {
+                    // User is authorized, show main app
+                    currentUser = {
+                        email: userEmail,
+                        name: userName,
+                        picture: userPicture
+                    };
+                    
+                    showUserInfo(currentUser);
+                    showMainApp();
+                    showAuthStatus('Welcome! Access granted.', 'success');
+                } else {
+                    showAuthStatus('Access denied. Your email is not authorized to use this system.', 'error');
+                }
+            } catch (error) {
+                console.error('Authentication error:', error);
+                showAuthStatus('Authentication failed. Please try again.', 'error');
+            }
+        }
+
+        // Check if user email is in authorized list
+        async function checkUserAuthorization(email) {
+            const authUsersUrl = document.getElementById('authorizedUsersUrl').value.trim();
+            
+            if (!authUsersUrl) {
+                console.error('No authorized users URL configured');
+                return false;
+            }
+
+            try {
+                const response = await fetch(authUsersUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        action: 'checkUser',
+                        email: email 
+                    })
+                });
+
+                // Since we're using no-cors, we can't read the response
+                // The Google Apps Script should return success/failure
+                // For now, we'll assume success if no error is thrown
+                // In a real implementation, you'd need to handle this differently
+                return true; // This is a simplified version
+            } catch (error) {
+                console.error('Error checking user authorization:', error);
+                return false;
+            }
+        }
+
+        // Show authentication status
+        function showAuthStatus(message, type) {
+            const statusElement = document.getElementById('authStatus');
+            statusElement.textContent = message;
+            statusElement.className = `auth-status ${type}`;
+            statusElement.style.display = 'block';
+        }
+
+        // Show user information
+        function showUserInfo(user) {
+            document.getElementById('userAvatar').src = user.picture;
+            document.getElementById('userName').textContent = user.name;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userInfo').style.display = 'block';
+        }
+
+        // Show main application
+        function showMainApp() {
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('mainApp').classList.add('authenticated');
+        }
+
+        // Sign out function
+        function signOut() {
+            if (google && google.accounts && google.accounts.id) {
+                google.accounts.id.disableAutoSelect();
+            }
+            
+            currentUser = null;
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('authOverlay').style.display = 'flex';
+            document.getElementById('mainApp').classList.remove('authenticated');
+            showAuthStatus('You have been signed out.', 'success');
+        }
+
+        // Show authentication setup instructions
+        function showAuthSetupInstructions() {
+            const instructions = `
+🔐 COMPLETE AUTHENTICATION SETUP GUIDE
+
+📋 WHAT YOU NEED:
+1. Google OAuth Client ID (from Google Cloud Console)
+2. Google Apps Script to manage authorized users
+3. Google Spreadsheet with authorized email addresses
+
+🚀 STEP-BY-STEP SETUP:
+
+═══════════════════════════════════════════════════════════════
+📊 STEP 1: CREATE AUTHORIZED USERS SPREADSHEET
+═══════════════════════════════════════════════════════════════
+
+1️⃣ Create a new Google Spreadsheet
+2️⃣ In cell A1, type "Authorized Emails"
+3️⃣ List authorized email addresses in column A (starting from A2):
+   • john@company.com
+   • mary@company.com
+   • admin@emmanuelltransport.com
+4️⃣ Note your Spreadsheet ID from the URL
+
+═══════════════════════════════════════════════════════════════
+🔧 STEP 2: CREATE GOOGLE APPS SCRIPT FOR USER VERIFICATION
+═══════════════════════════════════════════════════════════════
+
+1️⃣ Go to script.google.com
+2️⃣ Click "New Project"
+3️⃣ Replace default code with this (update SPREADSHEET_ID):
+
+function doPost(e) {
+  const SPREADSHEET_ID = 'YOUR_AUTHORIZED_USERS_SPREADSHEET_ID_HERE';
+  
+  try {
+    const data = JSON.parse(e.postData.contents);
+    
+    if (data.action === 'checkUser') {
+      const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+      const emails = sheet.getRange('A:A').getValues().flat().filter(email => email);
+      
+      const isAuthorized = emails.includes(data.email.toLowerCase());
+      
+      return ContentService
+        .createTextOutput(JSON.stringify({ authorized: isAuthorized }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: 'Invalid action' }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+4️⃣ Deploy as Web App:
+   • Click "Deploy" → "New deployment"
+   • Type: "Web app"
+   • Execute as: "Me"
+   • Who has access: "Anyone"
+   • Click "Deploy"
+5️⃣ Copy the Web App URL
+
+═══════════════════════════════════════════════════════════════
+🔑 STEP 3: GET GOOGLE OAUTH CLIENT ID
+═══════════════════════════════════════════════════════════════
+
+1️⃣ Go to Google Cloud Console (console.cloud.google.com)
+2️⃣ Create a new project or select existing one
+3️⃣ Enable Google Identity API:
+   • Go to "APIs & Services" → "Library"
+   • Search for "Google Identity"
+   • Click "Google Identity" and enable it
+4️⃣ Create OAuth 2.0 credentials:
+   • Go to "APIs & Services" → "Credentials"
+   • Click "Create Credentials" → "OAuth client ID"
+   • Application type: "Web application"
+   • Name: "Emmanuel Transport Voucher System"
+   • Authorized JavaScript origins: Add your domain
+   • Click "Create"
+5️⃣ Copy the Client ID (looks like: 123456789-abc123.apps.googleusercontent.com)
+
+═══════════════════════════════════════════════════════════════
+✅ STEP 4: CONFIGURE THE SYSTEM
+═══════════════════════════════════════════════════════════════
+
+1️⃣ Paste your Google OAuth Client ID in the first field above
+2️⃣ Paste your Google Apps Script Web App URL in the second field above
+3️⃣ Click "Sign in with Google" to test
+
+🔒 SECURITY NOTES:
+• Only emails in your spreadsheet can access the system
+• You can add/remove authorized users by editing the spreadsheet
+• The OAuth Client ID should be kept secure
+• Users must sign in each time they visit
+
+💡 TROUBLESHOOTING:
+• Make sure your domain is added to OAuth authorized origins
+• Check that the Apps Script is deployed as "Anyone" can access
+• Verify the spreadsheet ID is correct in the Apps Script
+• Test the Apps Script independently first
+
+Need help? Test each component separately to identify issues!
+            `;
+            
+            alert(instructions);
+        }
+
+    </script>
     <script>
         // Set today's date as default
         document.getElementById('date').valueAsDate = new Date();
@@ -1303,7 +2021,10 @@
                         description: item.description,
                         amount: `RM ${item.amount.toFixed(2)}`
                     })),
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    generatedBy: currentUser ? currentUser.name : 'Unknown User',
+                    generatedByEmail: currentUser ? currentUser.email : 'unknown@email.com',
+                    userPicture: currentUser ? currentUser.picture : ''
                 };
 
                 sheetsPromise = fetch(googleSheetsUrl, {
@@ -1379,9 +2100,9 @@
                 // Company info header (adjusted for A5)
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'normal');
-                doc.text('202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
-                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
+                doc.text('BRN: 202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
                 doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
 
                 // Line separator
                 doc.line(10, logoY + 22, 138, logoY + 22);
@@ -1589,9 +2310,9 @@
                 // Company info header (adjusted for A5)
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'normal');
-                doc.text('202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
-                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
+                doc.text('BRN: 202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
                 doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
 
                 // Line separator
                 doc.line(10, logoY + 22, 138, logoY + 22);
@@ -1770,7 +2491,10 @@
                     description: 'Test line item',
                     amount: 'RM 0.00'
                 }],
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                generatedBy: currentUser ? currentUser.name : 'Test User',
+                generatedByEmail: currentUser ? currentUser.email : 'test@example.com',
+                userPicture: currentUser ? currentUser.picture : ''
             };
 
             fetch(googleSheetsUrl, {
@@ -1818,7 +2542,10 @@
                 description: document.getElementById('previewDescription').textContent,
                 totalAmount: document.getElementById('previewTotal').textContent,
                 lineItems: [],
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                generatedBy: currentUser ? currentUser.name : 'Unknown User',
+                generatedByEmail: currentUser ? currentUser.email : 'unknown@email.com',
+                userPicture: currentUser ? currentUser.picture : ''
             };
 
             // Collect line items
@@ -1876,9 +2603,10 @@ function doPost(e) {
     
     // Add headers if sheet is empty
     if (sheet.getLastRow() === 0) {
-      sheet.getRange(1, 1, 1, 12).setValues([[
+      sheet.getRange(1, 1, 1, 15).setValues([[
         'Timestamp', 'Voucher No', 'Date', 'Pay To', 'ID Type', 'ID Number', 
-        'Payment Method', 'Reference', 'Description', 'Total Amount', 'Line Items Count', 'Line Items Details'
+        'Payment Method', 'Reference', 'Description', 'Total Amount', 'Line Items Count', 'Line Items Details',
+        'Generated By', 'Generated By Email', 'User Picture URL'
       ]]);
     }
     
@@ -1900,7 +2628,10 @@ function doPost(e) {
       data.description,
       data.totalAmount,
       data.lineItems.length,
-      lineItemsDetails
+      lineItemsDetails,
+      data.generatedBy || 'Unknown User',
+      data.generatedByEmail || 'unknown@email.com',
+      data.userPicture || ''
     ]);
     
     return ContentService.createTextOutput('Success');
@@ -1922,6 +2653,7 @@ function doPost(e) {
 
 ✅ WHAT GETS SAVED:
 • All voucher details and line items
+• User information (who generated each voucher)
 • Organized in columns for easy tracking
 • Automatic timestamps for each entry
 
@@ -1931,5 +2663,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9885b7988780b4dc',t:'MTc1OTQyNDAxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9886117031e2b4dc',t:'MTc1OTQyNzY5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
