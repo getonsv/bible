@@ -796,6 +796,26 @@
         <div class="form-section">
             <h2 style="color: #2c3e50; margin-bottom: 30px; text-align: center;">Payment Voucher</h2>
             
+            <!-- Google Sheets Configuration -->
+            <div style="background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                <h3 style="color: #0c5460; margin-bottom: 15px;">📊 Google Sheets Integration (Optional)</h3>
+                <p style="color: #0c5460; margin-bottom: 15px; font-size: 0.9em;">
+                    To save voucher data to Google Sheets, you'll need to set up a Google Apps Script web app. 
+                    <a href="#" onclick="showGoogleSheetsInstructions()" style="color: #0c5460; text-decoration: underline;">Click here for complete setup guide</a>
+                </p>
+                <div class="form-group">
+                    <label for="googleSheetsUrl">Google Apps Script Web App URL:</label>
+                    <input type="url" id="googleSheetsUrl" value="https://script.google.com/macros/s/AKfycbwzHGNGW6S9Wk90f4yto91VzDYv1OtHK7beJPLDhMXZz0IR4PcLX1r632V4YrQpmZWe/exec" style="font-family: monospace; font-size: 0.9em;">
+                    <small style="color: #6c757d; margin-top: 5px; display: block;">Leave empty to disable Google Sheets integration</small>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="testGoogleSheetsConnection()" id="testConnectionBtn" style="font-size: 0.9em; padding: 8px 16px;">
+                        🔗 Test Connection
+                    </button>
+                    <span id="connectionStatus" style="margin-left: 10px; font-weight: 600;"></span>
+                </div>
+            </div>
+            
             <form id="voucherForm">
                 <div class="form-grid">
                     <div class="form-group">
@@ -910,6 +930,10 @@
 
             <button type="button" class="btn btn-primary" onclick="savePDF()" id="pdfBtn" style="display: none;">
                 📥 Save as PDF
+            </button>
+            
+            <button type="button" class="btn btn-secondary" onclick="saveToGoogleSheets()" id="sheetsBtn" style="display: none;">
+                📊 Save to Google Sheets
             </button>
         </div>
 
@@ -1252,6 +1276,12 @@
             // Show preview and buttons
             document.getElementById('voucherPreview').style.display = 'block';
             document.getElementById('pdfBtn').style.display = 'inline-flex';
+            
+            // Show Google Sheets button if URL is configured
+            const googleSheetsUrl = document.getElementById('googleSheetsUrl').value.trim();
+            if (googleSheetsUrl) {
+                document.getElementById('sheetsBtn').style.display = 'inline-flex';
+            }
 
             // Show success notification
             showNotification('Payment voucher generated successfully!', 'success');
@@ -1466,6 +1496,198 @@
                 continuePDFGeneration();
             }
         }
+
+        // Test Google Sheets connection
+        function testGoogleSheetsConnection() {
+            const googleSheetsUrl = document.getElementById('googleSheetsUrl').value.trim();
+            const statusElement = document.getElementById('connectionStatus');
+            const testBtn = document.getElementById('testConnectionBtn');
+            
+            if (!googleSheetsUrl) {
+                statusElement.innerHTML = '<span style="color: #e74c3c;">❌ Please enter a URL first</span>';
+                return;
+            }
+
+            setButtonLoading(testBtn, true);
+            statusElement.innerHTML = '<span style="color: #f39c12;">🔄 Testing connection...</span>';
+
+            // Send test data
+            const testData = {
+                voucherNo: 'TEST-CONNECTION',
+                date: new Date().toLocaleDateString('en-GB'),
+                payTo: 'Test Connection',
+                idType: 'Test',
+                idNumber: 'TEST123',
+                paymentMethod: 'Test',
+                reference: 'Connection Test',
+                description: 'This is a test connection from the voucher system',
+                totalAmount: 'RM 0.00',
+                lineItems: [{
+                    date: new Date().toLocaleDateString('en-GB'),
+                    billNo: 'TEST001',
+                    description: 'Test line item',
+                    amount: 'RM 0.00'
+                }],
+                timestamp: new Date().toISOString()
+            };
+
+            fetch(googleSheetsUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(testData)
+            })
+            .then(() => {
+                setButtonLoading(testBtn, false);
+                statusElement.innerHTML = '<span style="color: #27ae60;">✅ Connection successful!</span>';
+                showNotification('Test data sent to Google Sheets! Check your spreadsheet.', 'success');
+            })
+            .catch(error => {
+                console.error('Connection test failed:', error);
+                setButtonLoading(testBtn, false);
+                statusElement.innerHTML = '<span style="color: #e74c3c;">❌ Connection failed</span>';
+                showNotification('Connection test failed. Please check your URL and setup.', 'error');
+            });
+        }
+
+        // Google Sheets Integration Functions
+        function saveToGoogleSheets() {
+            const googleSheetsUrl = document.getElementById('googleSheetsUrl').value.trim();
+            
+            if (!googleSheetsUrl) {
+                showNotification('Please configure Google Sheets URL first.', 'error');
+                return;
+            }
+
+            const sheetsBtn = document.getElementById('sheetsBtn');
+            setButtonLoading(sheetsBtn, true);
+
+            // Collect all voucher data
+            const voucherData = {
+                voucherNo: document.getElementById('previewVoucherNo').textContent,
+                date: document.getElementById('previewDate').textContent,
+                payTo: document.getElementById('previewPayTo').textContent,
+                idType: document.getElementById('idType').value,
+                idNumber: document.getElementById('previewIdNumber').textContent,
+                paymentMethod: document.getElementById('previewMethod').textContent,
+                reference: document.getElementById('previewReference').textContent,
+                description: document.getElementById('previewDescription').textContent,
+                totalAmount: document.getElementById('previewTotal').textContent,
+                lineItems: [],
+                timestamp: new Date().toISOString()
+            };
+
+            // Collect line items
+            const lineItemRows = document.querySelectorAll('#previewLineItemsBody tr');
+            lineItemRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    voucherData.lineItems.push({
+                        date: cells[0].textContent,
+                        billNo: cells[1].textContent,
+                        description: cells[2].textContent,
+                        amount: cells[3].textContent
+                    });
+                }
+            });
+
+            // Send data to Google Sheets
+            fetch(googleSheetsUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(voucherData)
+            })
+            .then(() => {
+                setButtonLoading(sheetsBtn, false);
+                showNotification('Data saved to Google Sheets successfully!', 'success');
+            })
+            .catch(error => {
+                console.error('Error saving to Google Sheets:', error);
+                setButtonLoading(sheetsBtn, false);
+                showNotification('Failed to save to Google Sheets. Please check your configuration.', 'error');
+            });
+        }
+
+        function showGoogleSheetsInstructions() {
+            const instructions = `
+📊 Complete Google Sheets Setup Guide:
+
+🎯 YOUR SPREADSHEET ID: 1D1sodswMfwrHEWU_4KVaytwCf-Nk66mdo3V14N0zqfU
+
+📝 STEP-BY-STEP SETUP:
+
+1️⃣ Go to Google Apps Script:
+   • Visit: script.google.com
+   • Click "New Project"
+
+2️⃣ Replace the default code with this (your spreadsheet ID is already included):
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const sheet = SpreadsheetApp.openById('1D1sodswMfwrHEWU_4KVaytwCf-Nk66mdo3V14N0zqfU').getActiveSheet();
+    
+    // Add headers if sheet is empty
+    if (sheet.getLastRow() === 0) {
+      sheet.getRange(1, 1, 1, 12).setValues([[
+        'Timestamp', 'Voucher No', 'Date', 'Pay To', 'ID Type', 'ID Number', 
+        'Payment Method', 'Reference', 'Description', 'Total Amount', 'Line Items Count', 'Line Items Details'
+      ]]);
+    }
+    
+    // Prepare line items summary
+    const lineItemsDetails = data.lineItems.map(item => 
+      \`\${item.date} | \${item.billNo} | \${item.description} | \${item.amount}\`
+    ).join(' || ');
+    
+    // Add data row
+    sheet.appendRow([
+      data.timestamp,
+      data.voucherNo,
+      data.date,
+      data.payTo,
+      data.idType,
+      data.idNumber,
+      data.paymentMethod,
+      data.reference,
+      data.description,
+      data.totalAmount,
+      data.lineItems.length,
+      lineItemsDetails
+    ]);
+    
+    return ContentService.createTextOutput('Success');
+  } catch (error) {
+    return ContentService.createTextOutput('Error: ' + error.toString());
+  }
+}
+
+3️⃣ Deploy the script:
+   • Click "Deploy" → "New deployment"
+   • Type: "Web app"
+   • Execute as: "Me"
+   • Who has access: "Anyone"
+   • Click "Deploy"
+
+4️⃣ Copy the web app URL and paste it above
+
+5️⃣ Click "Test Connection" to verify it works!
+
+✅ WHAT GETS SAVED:
+• All voucher details and line items
+• Organized in columns for easy tracking
+• Automatic timestamps for each entry
+
+Need help? The connection test will show you if everything is working correctly!
+            `;
+            
+            alert(instructions);
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9885817ae543b4dc',t:'MTc1OTQyMTgwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9885af0477e7b4dc',t:'MTc1OTQyMzY2OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
