@@ -1168,13 +1168,13 @@
             <div class="company-logo">
                 <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
             </div>
-            <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
-            <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
+            <p>202503112296 (003723051-P)</p>
+            <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
             <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
         </div>
 
         <div class="form-section">
-            <h2>Payment Voucher Generator</h2>
+            <h2>Payment Voucher</h2>
             
             <!-- Google Sheets Configuration (Hidden) -->
             <div style="display: none; background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
@@ -1322,8 +1322,8 @@
                 <div class="company-info">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
                     BRN: 202503112296 (003723051-P)<br>
-                    LOWRENCE 0182202582 | PREMA 01126360442<br>
-                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
+                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR<br>
+                    LOWRENCE 0182202582 | PREMA 01126360442
                 </div>
                 <div class="voucher-title">PAYMENT VOUCHER</div>
             </div>
@@ -1524,19 +1524,36 @@
                     const result = await response.text();
                     console.log('Google Sheets response:', result);
                     
-                    // More flexible checking for authorization response
-                    const resultLower = result.toLowerCase();
-                    const isAuthorized = resultLower.includes('authorized') && 
-                                       (resultLower.includes('true') || resultLower.includes('yes') || resultLower.includes('allowed'));
-                    
-                    console.log('Is authorized by Google Sheets:', isAuthorized);
-                    
-                    if (!isAuthorized) {
-                        console.log('Authorization failed. Full response:', result);
-                        showAuthStatus(`Access denied. Your email (${email}) is not in the authorized users list.`, 'error');
+                    try {
+                        // Try to parse as JSON first
+                        const jsonResponse = JSON.parse(result);
+                        const isAuthorized = jsonResponse.authorized === true || jsonResponse.authorized === 'true';
+                        
+                        console.log('Parsed JSON response:', jsonResponse);
+                        console.log('Is authorized by Google Sheets:', isAuthorized);
+                        
+                        if (!isAuthorized) {
+                            console.log('Authorization failed. Response:', jsonResponse);
+                            showAuthStatus(`Access denied. ${jsonResponse.message || 'Your email is not in the authorized users list.'}`, 'error');
+                        }
+                        
+                        return isAuthorized;
+                    } catch (parseError) {
+                        // Fallback to text parsing if JSON parsing fails
+                        console.log('JSON parsing failed, trying text parsing:', parseError);
+                        const resultLower = result.toLowerCase();
+                        const isAuthorized = resultLower.includes('authorized') && 
+                                           (resultLower.includes('true') || resultLower.includes('yes') || resultLower.includes('allowed'));
+                        
+                        console.log('Is authorized by text parsing:', isAuthorized);
+                        
+                        if (!isAuthorized) {
+                            console.log('Authorization failed. Full response:', result);
+                            showAuthStatus(`Access denied. Your email (${email}) is not in the authorized users list.`, 'error');
+                        }
+                        
+                        return isAuthorized;
                     }
-                    
-                    return isAuthorized;
                 } else {
                     console.log('Google Sheets authorization check failed - HTTP error:', response.status);
                     showAuthStatus('Unable to verify authorization. Please check your internet connection and try again.', 'error');
@@ -1911,8 +1928,8 @@
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'normal');
                 doc.text('BRN: 202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
-                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
                 doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
+                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
 
                 // Line separator
                 doc.line(10, logoY + 22, 138, logoY + 22);
@@ -2271,5 +2288,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988648881356b4dc',t:'MTc1OTQyOTk1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98865301e080b4dc',t:'MTc1OTQzMDM4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
