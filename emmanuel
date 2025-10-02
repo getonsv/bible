@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emmanuel Transport - Payment Voucher System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.2em;
+            font-weight: 600;
+        }
+
+        .header p {
+            margin: 5px 0;
+            opacity: 0.9;
+        }
+
+        .form-section {
+            padding: 40px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-size: 0.95em;
+        }
+
+        input, textarea, select {
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .amount-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+
+        .amount-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px 0;
+        }
+
+        .amount-row:last-child {
+            border-top: 2px solid #dee2e6;
+            padding-top: 15px;
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #2c3e50;
+        }
+
+        .signature-section {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 40px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        @media print {
+            .signature-section {
+                display: grid !important;
+            }
+        }
+
+        .signature-box {
+            text-align: center;
+        }
+
+        .signature-line {
+            border-bottom: 2px dotted #2c3e50;
+            height: 60px;
+            margin: 20px 0 10px 0;
+            position: relative;
+        }
+
+        .signature-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .signature-column {
+            display: none;
+        }
+
+        @media print {
+            .signature-label {
+                display: block !important;
+            }
+            .signature-column {
+                display: block !important;
+            }
+        }
+
+        .date-line {
+            border-bottom: 1px solid #2c3e50;
+            display: inline-block;
+            min-width: 120px;
+            margin-left: 10px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .voucher-preview {
+            display: none;
+            background: white;
+            padding: 40px;
+            margin: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .voucher-header {
+            text-align: center;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .voucher-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .company-info {
+            font-size: 0.9em;
+            line-height: 1.4;
+            color: #555;
+        }
+
+        .voucher-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .detail-group h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .detail-item {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .voucher-amount {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .voucher-signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            margin-top: 40px;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+            .form-section, .action-buttons {
+                display: none;
+            }
+            .voucher-preview {
+                display: block !important;
+                margin: 0;
+                padding: 20px;
+            }
+        }
+
+        .line-items-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        .line-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .line-items-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .line-items-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .line-items-table input {
+            width: 100%;
+            border: 1px solid #e1e8ed;
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .line-items-table input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-remove:hover {
+            background: #c0392b;
+        }
+
+        .btn-add-item {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-add-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .voucher-line-items {
+            margin: 20px 0;
+        }
+
+        .voucher-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .voucher-table th,
+        .voucher-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .voucher-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .voucher-table .amount-cell {
+            text-align: right;
+        }
+
+        .voucher-total-row {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .signature-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+            .voucher-details {
+                grid-template-columns: 1fr;
+            }
+            .voucher-signatures {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            .line-items-table th,
+            .line-items-table td {
+                padding: 8px 5px;
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Emmanuel Transport</h1>
+            <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
+            <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
+            <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
+        </div>
+
+        <div class="form-section">
+            <h2 style="color: #2c3e50; margin-bottom: 30px; text-align: center;">Payment Voucher Generator</h2>
+            
+            <form id="voucherForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="voucherNo">Voucher No.</label>
+                        <input type="text" id="voucherNo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reference">Reference No. (Optional)</label>
+                        <input type="text" id="reference">
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="paymentMethod">Payment Method</label>
+                        <select id="paymentMethod" required>
+                            <option value="">Select Method</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Online Banking">Online Banking</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="payTo">Pay To</label>
+                        <input type="text" id="payTo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="idType">ID Type</label>
+                        <select id="idType" required onchange="updateIdField()">
+                            <option value="">Select ID Type</option>
+                            <option value="NRIC">NRIC</option>
+                            <option value="Passport">Passport</option>
+                        </select>
+                        <input type="text" id="idNumber" placeholder="Select ID type first" required style="margin-top: 10px;" disabled>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="description">General Description / Purpose</label>
+                        <textarea id="description" placeholder="Enter general payment description or purpose" required></textarea>
+                    </div>
+                </div>
+
+                <div class="line-items-section">
+                    <h3 style="color: #2c3e50; margin-bottom: 20px;">Line Items</h3>
+                    <div class="table-container">
+                        <table id="lineItemsTable" class="line-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Bill No.</th>
+                                    <th>Description</th>
+                                    <th>Amount (RM)</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lineItemsBody">
+                                <tr class="line-item-row">
+                                    <td><input type="date" class="item-date" required></td>
+                                    <td><input type="text" class="item-bill" placeholder="Bill number (optional)"></td>
+                                    <td><input type="text" class="item-desc" placeholder="Item description" required></td>
+                                    <td><input type="number" class="item-amount" step="0.01" placeholder="0.00" required></td>
+                                    <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-add-item" onclick="addLineItem()">+ Add Line Item</button>
+                </div>
+
+
+
+                <div class="amount-section">
+                    <h3 style="color: #2c3e50; margin-bottom: 20px;">Amount Summary</h3>
+                    <div class="amount-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">RM 0.00</span>
+                    </div>
+                    <div class="amount-row">
+                        <span>Tax (if applicable):</span>
+                        <span id="tax">RM 0.00</span>
+                    </div>
+                    <div class="amount-row">
+                        <span><strong>Total Amount:</strong></span>
+                        <span id="total"><strong>RM 0.00</strong></span>
+                    </div>
+                </div>
+
+                <div class="signature-section">
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Approved By</div>
+                        <div style="margin-top: 15px;">
+                            Date: <span class="date-line"></span>
+                        </div>
+                    </div>
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Received By</div>
+                        <div style="margin-top: 15px;">
+                            Date: <span class="date-line"></span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="action-buttons">
+            <button type="button" class="btn btn-primary" onclick="generateVoucher()">
+                📄 Generate Voucher
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="printVoucher()" id="printBtn" style="display: none;">
+                🖨️ Print Voucher
+            </button>
+            <button type="button" class="btn btn-primary" onclick="savePDF()" id="pdfBtn" style="display: none;">
+                📥 Save as PDF
+            </button>
+        </div>
+
+        <div class="voucher-preview" id="voucherPreview">
+            <div class="voucher-header">
+                <div class="voucher-title">PAYMENT VOUCHER</div>
+                <div class="company-info">
+                    <strong>Emmanuel Transport</strong><br>
+                    BRN: 202503112296 (003723051-P)<br>
+                    LOWRENCE 0182202582 | PREMA 01126360442<br>
+                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
+                </div>
+            </div>
+
+            <div class="voucher-details">
+                <div class="detail-group">
+                    <h4>Voucher Information</h4>
+                    <div class="detail-item">
+                        <span>Voucher No.:</span>
+                        <span id="previewVoucherNo">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Date:</span>
+                        <span id="previewDate">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Reference:</span>
+                        <span id="previewReference">-</span>
+                    </div>
+                </div>
+                <div class="detail-group">
+                    <h4>Payment Details</h4>
+                    <div class="detail-item">
+                        <span>Pay To:</span>
+                        <span id="previewPayTo">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span id="previewIdLabel">ID No.:</span>
+                        <span id="previewIdNumber">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Method:</span>
+                        <span id="previewMethod">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Amount:</span>
+                        <span id="previewAmount">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h4 style="color: #2c3e50;">Description:</h4>
+                <p id="previewDescription" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">-</p>
+            </div>
+
+            <div class="voucher-line-items">
+                <h4 style="color: #2c3e50;">Line Items:</h4>
+                <table class="voucher-table" id="previewLineItems">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Bill No.</th>
+                            <th>Description</th>
+                            <th class="amount-cell">Amount (RM)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewLineItemsBody">
+                    </tbody>
+                    <tfoot>
+                        <tr class="voucher-total-row">
+                            <td colspan="3" style="text-align: right; font-weight: bold;">Total:</td>
+                            <td class="amount-cell" id="previewLineItemsTotal">RM 0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="voucher-amount">
+                <div style="display: flex; justify-content: space-between; font-size: 1.2em; font-weight: bold;">
+                    <span>Total Amount:</span>
+                    <span id="previewTotal">RM 0.00</span>
+                </div>
+            </div>
+
+            <div class="voucher-signatures">
+                <div style="text-align: center;" class="signature-column">
+                    <div style="border-bottom: 2px dotted #000; height: 60px; margin-bottom: 10px;"></div>
+                    <div style="font-weight: bold;" class="signature-label">Approved By</div>
+                    <div style="margin-top: 10px;" class="signature-label">Date: _______________</div>
+                </div>
+                <div style="text-align: center;" class="signature-column">
+                    <div style="border-bottom: 2px dotted #000; height: 60px; margin-bottom: 10px;"></div>
+                    <div style="font-weight: bold;" class="signature-label">Received By</div>
+                    <div style="margin-top: 10px;" class="signature-label">Date: _______________</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set today's date as default
+        document.getElementById('date').valueAsDate = new Date();
+
+        // Auto-generate voucher number
+        function generateVoucherNumber() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            return `ET${year}${month}${day}${random}`;
+        }
+
+        // Set auto-generated voucher number
+        document.getElementById('voucherNo').value = generateVoucherNumber();
+
+        // Update ID field based on selection
+        function updateIdField() {
+            const idType = document.getElementById('idType').value;
+            const idInput = document.getElementById('idNumber');
+            
+            if (idType === 'NRIC') {
+                idInput.placeholder = 'e.g. 123456-78-9012';
+                idInput.disabled = false;
+                idInput.maxLength = 14;
+                idInput.addEventListener('input', formatNRIC);
+            } else if (idType === 'Passport') {
+                idInput.placeholder = 'e.g. A12345678';
+                idInput.disabled = false;
+                idInput.maxLength = 20;
+                idInput.removeEventListener('input', formatNRIC);
+            } else {
+                idInput.placeholder = 'Select ID type first';
+                idInput.disabled = true;
+                idInput.value = '';
+            }
+        }
+
+        // Format NRIC with automatic dashes
+        function formatNRIC(event) {
+            let value = event.target.value.replace(/\D/g, ''); // Remove non-digits
+            
+            if (value.length >= 6) {
+                value = value.substring(0, 6) + '-' + value.substring(6);
+            }
+            if (value.length >= 9) {
+                value = value.substring(0, 9) + '-' + value.substring(9, 13);
+            }
+            
+            event.target.value = value;
+        }
+
+        // Add line item functionality
+        function addLineItem() {
+            const tbody = document.getElementById('lineItemsBody');
+            const newRow = document.createElement('tr');
+            newRow.className = 'line-item-row';
+            newRow.innerHTML = `
+                <td><input type="date" class="item-date" required></td>
+                <td><input type="text" class="item-bill" placeholder="Bill number (optional)"></td>
+                <td><input type="text" class="item-desc" placeholder="Item description" required></td>
+                <td><input type="number" class="item-amount" step="0.01" placeholder="0.00" required></td>
+                <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
+            `;
+            tbody.appendChild(newRow);
+            
+            // Add event listener to new amount input
+            const amountInput = newRow.querySelector('.item-amount');
+            amountInput.addEventListener('input', calculateTotal);
+            
+            // Set today's date for new row
+            newRow.querySelector('.item-date').valueAsDate = new Date();
+        }
+
+        function removeLineItem(button) {
+            const row = button.closest('tr');
+            row.remove();
+            calculateTotal();
+        }
+
+        // Calculate total from all line items
+        function calculateTotal() {
+            const amountInputs = document.querySelectorAll('.item-amount');
+            let total = 0;
+            
+            amountInputs.forEach(input => {
+                const value = parseFloat(input.value) || 0;
+                total += value;
+            });
+            
+            const subtotal = total;
+            const tax = 0; // No tax for this example
+            const finalTotal = subtotal + tax;
+
+            document.getElementById('subtotal').textContent = `RM ${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `RM ${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `RM ${finalTotal.toFixed(2)}`;
+        }
+
+        // Add event listeners to existing amount inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            const existingAmountInputs = document.querySelectorAll('.item-amount');
+            existingAmountInputs.forEach(input => {
+                input.addEventListener('input', calculateTotal);
+            });
+            
+            // Set today's date for initial row
+            const initialDateInput = document.querySelector('.item-date');
+            if (initialDateInput) {
+                initialDateInput.valueAsDate = new Date();
+            }
+        });
+
+        function generateVoucher() {
+            const form = document.getElementById('voucherForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Get form values
+            const voucherNo = document.getElementById('voucherNo').value;
+            const date = document.getElementById('date').value;
+            const payTo = document.getElementById('payTo').value;
+            const idType = document.getElementById('idType').value;
+            const idNumber = document.getElementById('idNumber').value;
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const description = document.getElementById('description').value;
+            const reference = document.getElementById('reference').value || 'N/A';
+
+            // Get line items
+            const lineItemRows = document.querySelectorAll('.line-item-row');
+            const lineItems = [];
+            let totalAmount = 0;
+
+            lineItemRows.forEach(row => {
+                const itemDate = row.querySelector('.item-date').value;
+                const billNo = row.querySelector('.item-bill').value;
+                const itemDesc = row.querySelector('.item-desc').value;
+                const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
+
+                if (itemDate && itemDesc && amount !== 0) {
+                    lineItems.push({
+                        date: new Date(itemDate).toLocaleDateString('en-GB'),
+                        billNo: billNo || 'N/A',
+                        description: itemDesc,
+                        amount: amount
+                    });
+                    totalAmount += amount;
+                }
+            });
+
+            if (lineItems.length === 0) {
+                alert('Please add at least one line item with valid data.');
+                return;
+            }
+
+            // Format date
+            const formattedDate = new Date(date).toLocaleDateString('en-GB');
+
+            // Update preview
+            document.getElementById('previewVoucherNo').textContent = voucherNo;
+            document.getElementById('previewDate').textContent = formattedDate;
+            document.getElementById('previewPayTo').textContent = payTo;
+            document.getElementById('previewIdLabel').textContent = `${idType} No.:`;
+            document.getElementById('previewIdNumber').textContent = idNumber;
+            document.getElementById('previewMethod').textContent = paymentMethod;
+            document.getElementById('previewAmount').textContent = `RM ${totalAmount.toFixed(2)}`;
+            document.getElementById('previewReference').textContent = reference;
+            document.getElementById('previewDescription').textContent = description;
+            document.getElementById('previewTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
+
+            // Update line items table in preview
+            const previewBody = document.getElementById('previewLineItemsBody');
+            previewBody.innerHTML = '';
+            
+            lineItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.billNo}</td>
+                    <td>${item.description}</td>
+                    <td class="amount-cell">RM ${item.amount.toFixed(2)}</td>
+                `;
+                previewBody.appendChild(row);
+            });
+
+            document.getElementById('previewLineItemsTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
+
+            // Show preview and buttons
+            document.getElementById('voucherPreview').style.display = 'block';
+            document.getElementById('printBtn').style.display = 'inline-flex';
+            document.getElementById('pdfBtn').style.display = 'inline-flex';
+
+            // Scroll to preview
+            document.getElementById('voucherPreview').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function printVoucher() {
+            window.print();
+        }
+
+        function savePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Get voucher data
+            const voucherNo = document.getElementById('previewVoucherNo').textContent;
+            const date = document.getElementById('previewDate').textContent;
+            const payTo = document.getElementById('previewPayTo').textContent;
+            const idLabel = document.getElementById('previewIdLabel').textContent;
+            const idNumber = document.getElementById('previewIdNumber').textContent;
+            const method = document.getElementById('previewMethod').textContent;
+            const reference = document.getElementById('previewReference').textContent;
+            const description = document.getElementById('previewDescription').textContent;
+            const total = document.getElementById('previewTotal').textContent;
+
+            // Get line items
+            const lineItemRows = document.querySelectorAll('#previewLineItemsBody tr');
+            const lineItems = [];
+            lineItemRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    lineItems.push({
+                        date: cells[0].textContent,
+                        billNo: cells[1].textContent,
+                        description: cells[2].textContent,
+                        amount: cells[3].textContent
+                    });
+                }
+            });
+
+            // Set font
+            doc.setFont('helvetica');
+
+            // Header
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('PAYMENT VOUCHER', 105, 30, { align: 'center' });
+
+            // Company info
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Emmanuel Transport', 105, 45, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text('BRN: 202503112296 (003723051-P)', 105, 52, { align: 'center' });
+            doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, 58, { align: 'center' });
+            doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, 64, { align: 'center' });
+
+            // Line separator
+            doc.line(20, 75, 190, 75);
+
+            // Voucher details
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Voucher Information:', 20, 90);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Voucher No.: ${voucherNo}`, 20, 100);
+            doc.text(`Date: ${date}`, 20, 108);
+            doc.text(`Reference: ${reference}`, 20, 116);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('Payment Details:', 110, 90);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Pay To: ${payTo}`, 110, 100);
+            doc.text(`${idLabel} ${idNumber}`, 110, 108);
+            doc.text(`Method: ${method}`, 110, 116);
+
+            // Description
+            doc.setFont('helvetica', 'bold');
+            doc.text('Description:', 20, 135);
+            doc.setFont('helvetica', 'normal');
+            const splitDescription = doc.splitTextToSize(description, 170);
+            doc.text(splitDescription, 20, 145);
+
+            // Line items table
+            let currentY = 155 + (splitDescription.length * 7);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Line Items:', 20, currentY);
+            currentY += 10;
+
+            // Table headers
+            doc.setFontSize(9);
+            doc.text('Date', 20, currentY);
+            doc.text('Bill No.', 50, currentY);
+            doc.text('Description', 80, currentY);
+            doc.text('Amount', 160, currentY);
+            doc.line(20, currentY + 2, 190, currentY + 2);
+            currentY += 8;
+
+            // Table rows
+            doc.setFont('helvetica', 'normal');
+            lineItems.forEach(item => {
+                doc.text(item.date, 20, currentY);
+                doc.text(item.billNo, 50, currentY);
+                const itemDesc = doc.splitTextToSize(item.description, 70);
+                doc.text(itemDesc[0], 80, currentY);
+                doc.text(item.amount, 160, currentY);
+                currentY += 6;
+            });
+
+            // Total line
+            doc.line(20, currentY, 190, currentY);
+            currentY += 8;
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Total: ${total}`, 160, currentY);
+
+            // Signature lines
+            const sigY = currentY + 30;
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            
+            // Approved by - dotted line
+            for (let i = 20; i <= 80; i += 3) {
+                doc.line(i, sigY, i + 1, sigY);
+            }
+            doc.text('Approved By', 50, sigY + 8, { align: 'center' });
+            doc.text('Date: _______________', 50, sigY + 18, { align: 'center' });
+
+            // Received by - dotted line
+            for (let i = 130; i <= 190; i += 3) {
+                doc.line(i, sigY, i + 1, sigY);
+            }
+            doc.text('Received By', 160, sigY + 8, { align: 'center' });
+            doc.text('Date: _______________', 160, sigY + 18, { align: 'center' });
+
+            // Save the PDF
+            doc.save(`Payment_Voucher_${voucherNo}.pdf`);
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9884d909c1a8b4dc',t:'MTc1OTQxNDkwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
