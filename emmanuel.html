@@ -904,46 +904,51 @@
             // Set font
             doc.setFont('helvetica');
 
+            // Company logo space (placeholder for logo)
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('EMMANUEL TRANSPORT', 105, 20, { align: 'center' });
+
             // Company info header
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.text('BRN: 202503112296 (003723051-P)', 105, 25, { align: 'center' });
-            doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, 32, { align: 'center' });
-            doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, 38, { align: 'center' });
+            doc.text('BRN: 202503112296 (003723051-P)', 105, 30, { align: 'center' });
+            doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, 37, { align: 'center' });
+            doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, 44, { align: 'center' });
 
             // Line separator
-            doc.line(20, 48, 190, 48);
+            doc.line(20, 54, 190, 54);
 
             // Payment Voucher title
-            doc.setFontSize(16);
+            doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
-            doc.text('PAYMENT VOUCHER', 105, 58, { align: 'center' });
+            doc.text('PAYMENT VOUCHER', 105, 64, { align: 'center' });
 
             // Voucher details
             doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
-            doc.text('Voucher Information:', 20, 75);
+            doc.text('Voucher Information:', 20, 80);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Voucher No.: ${voucherNo}`, 20, 85);
-            doc.text(`Date: ${date}`, 20, 93);
-            doc.text(`Reference: ${reference}`, 20, 101);
+            doc.text(`Voucher No.: ${voucherNo}`, 20, 90);
+            doc.text(`Date: ${date}`, 20, 98);
+            doc.text(`Reference: ${reference}`, 20, 106);
 
             doc.setFont('helvetica', 'bold');
-            doc.text('Payment Details:', 110, 75);
+            doc.text('Payment Details:', 110, 80);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Pay To: ${payTo}`, 110, 85);
-            doc.text(`${idLabel} ${idNumber}`, 110, 93);
-            doc.text(`Method: ${method}`, 110, 101);
+            doc.text(`Pay To: ${payTo}`, 110, 90);
+            doc.text(`${idLabel} ${idNumber}`, 110, 98);
+            doc.text(`Method: ${method}`, 110, 106);
 
             // Description
             doc.setFont('helvetica', 'bold');
-            doc.text('Description:', 20, 115);
+            doc.text('Description:', 20, 120);
             doc.setFont('helvetica', 'normal');
             const splitDescription = doc.splitTextToSize(description, 170);
-            doc.text(splitDescription, 20, 125);
+            doc.text(splitDescription, 20, 130);
 
             // Line items table
-            let currentY = 135 + (splitDescription.length * 7);
+            let currentY = 140 + (splitDescription.length * 7);
             doc.setFont('helvetica', 'bold');
             doc.text('Line Items:', 20, currentY);
             currentY += 10;
@@ -997,5 +1002,5 @@
             doc.save(`Payment_Voucher_${voucherNo}.pdf`);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98850149b131b4dc',t:'MTc1OTQxNjU1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988504dc5448b4dc',t:'MTc1OTQxNjY5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
