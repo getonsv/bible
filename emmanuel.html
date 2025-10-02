@@ -7,13 +7,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body {
+        * {
             box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .container {
@@ -26,10 +37,11 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            color: #2c3e50;
             padding: 30px;
             text-align: center;
+            border-bottom: 3px solid #667eea;
         }
 
         .company-logo {
@@ -91,12 +103,35 @@
             font-size: 16px;
             transition: all 0.3s ease;
             font-family: inherit;
+            width: 100%;
+            background: white;
         }
 
         input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        input:hover, textarea:hover, select:hover {
+            border-color: #b8c6ea;
+        }
+
+        input:disabled {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        /* Improve form validation styling */
+        input:invalid:not(:focus):not(:placeholder-shown) {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+
+        input:valid:not(:focus):not(:placeholder-shown) {
+            border-color: #27ae60;
         }
 
         textarea {
@@ -187,6 +222,37 @@
             justify-content: center;
             padding: 30px;
             background: #f8f9fa;
+            position: relative;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .notification.info {
+            background: linear-gradient(135deg, #3498db, #2980b9);
         }
 
         .btn {
@@ -215,6 +281,47 @@
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            color: white;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .voucher-preview {
@@ -412,28 +519,236 @@
             font-weight: bold;
         }
 
-        @media (max-width: 768px) {
+        /* Mobile-first responsive design */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                border-radius: 8px;
+                margin: 0;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.6em;
+            }
+            
+            .header p {
+                font-size: 0.85em;
+            }
+            
+            .main-logo {
+                max-width: 150px;
+                max-height: 70px;
+            }
+            
+            .form-section {
+                padding: 20px 15px;
+            }
+            
             .form-grid {
                 grid-template-columns: 1fr;
+                gap: 15px;
             }
-            .signature-section {
+            
+            .line-items-section {
+                padding: 15px;
+                margin: 20px 0;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .line-items-table {
+                min-width: 600px;
+                font-size: 0.8em;
+            }
+            
+            .line-items-table th,
+            .line-items-table td {
+                padding: 8px 4px;
+                white-space: nowrap;
+            }
+            
+            .line-items-table input {
+                font-size: 12px;
+                padding: 6px 8px;
+            }
+            
+            .btn-remove {
+                width: 25px;
+                height: 25px;
+                font-size: 14px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                padding: 20px 15px;
+                gap: 10px;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+                padding: 15px 20px;
+                font-size: 16px;
+            }
+            
+            .voucher-preview {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .voucher-details {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
-            .action-buttons {
-                flex-direction: column;
-            }
-            .voucher-details {
-                grid-template-columns: 1fr;
-            }
+            
             .voucher-signatures {
                 grid-template-columns: 1fr;
-                gap: 30px;
+                gap: 20px;
             }
+            
+            .voucher-table {
+                font-size: 0.8em;
+            }
+            
+            .voucher-table th,
+            .voucher-table td {
+                padding: 6px 4px;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            .header {
+                padding: 25px 20px;
+            }
+            
+            .form-section {
+                padding: 30px 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .line-items-section {
+                padding: 20px;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .line-items-table {
+                min-width: 700px;
+            }
+            
             .line-items-table th,
             .line-items-table td {
-                padding: 8px 5px;
-                font-size: 0.85em;
+                padding: 10px 6px;
+                font-size: 0.9em;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .voucher-preview {
+                margin: 15px;
+                padding: 25px;
+            }
+            
+            .voucher-details {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .voucher-signatures {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                max-width: 800px;
+            }
+            
+            .form-grid {
+                gap: 20px;
+            }
+            
+            .line-items-table th,
+            .line-items-table td {
+                padding: 12px 8px;
+            }
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+            input, textarea, select, .btn {
+                min-height: 44px;
+            }
+            
+            .btn-remove {
+                min-width: 44px;
+                min-height: 44px;
+            }
+            
+            .line-items-table input {
+                min-height: 40px;
+            }
+        }
+
+        /* Landscape orientation on mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .header {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.4em;
+            }
+            
+            .form-section {
+                padding: 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+            
+            .form-group.full-width {
+                grid-column: 1 / -1;
+            }
+        }
+
+        /* High DPI displays */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .main-logo, #previewLogo {
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: crisp-edges;
             }
         }
     </style>
@@ -444,8 +759,8 @@
             <div class="company-logo">
                 <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
             </div>
-            <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
-            <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
+            <p><strong>202503112296 (003723051-P)</strong> </p>
+            <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
             <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
         </div>
 
@@ -782,10 +1097,45 @@
             }
         });
 
+        // Notification system
+        function showNotification(message, type = 'success') {
+            // Remove existing notifications
+            const existing = document.querySelector('.notification');
+            if (existing) {
+                existing.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Show notification
+            setTimeout(() => notification.classList.add('show'), 100);
+
+            // Hide notification after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Loading state management
+        function setButtonLoading(button, loading) {
+            if (loading) {
+                button.classList.add('loading');
+                button.disabled = true;
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
+            }
+        }
+
         function generateVoucher() {
             const form = document.getElementById('voucherForm');
             if (!form.checkValidity()) {
                 form.reportValidity();
+                showNotification('Please fill in all required fields correctly.', 'error');
                 return;
             }
 
@@ -822,7 +1172,7 @@
             });
 
             if (lineItems.length === 0) {
-                alert('Please add at least one line item with valid data.');
+                showNotification('Please add at least one line item with valid data.', 'error');
                 return;
             }
 
@@ -863,15 +1213,32 @@
             document.getElementById('printBtn').style.display = 'inline-flex';
             document.getElementById('pdfBtn').style.display = 'inline-flex';
 
-            // Scroll to preview
-            document.getElementById('voucherPreview').scrollIntoView({ behavior: 'smooth' });
+            // Show success notification
+            showNotification('Payment voucher generated successfully!', 'success');
+
+            // Scroll to preview with delay for better UX
+            setTimeout(() => {
+                document.getElementById('voucherPreview').scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 500);
         }
 
         function printVoucher() {
-            window.print();
+            const printBtn = document.getElementById('printBtn');
+            setButtonLoading(printBtn, true);
+            
+            setTimeout(() => {
+                window.print();
+                setButtonLoading(printBtn, false);
+                showNotification('Print dialog opened!', 'info');
+            }, 500);
         }
 
         function savePDF() {
+            const pdfBtn = document.getElementById('pdfBtn');
+            setButtonLoading(pdfBtn, true);
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
@@ -926,18 +1293,12 @@
                     doc.addImage(logoDataUrl, 'PNG', 105 - logoWidth/2, logoY, logoWidth, logoHeight);
                     logoY += 25;
                 } catch (error) {
-                    // If logo fails, add company name instead
-                    doc.setFontSize(12);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('EMMANUEL TRANSPORT', 105, logoY + 10, { align: 'center' });
-                    logoY += 20;
+                    // If logo fails, just continue without it
+                    logoY += 5;
                 }
             } else {
-                // No logo, add company name
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.text('EMMANUEL TRANSPORT', 105, logoY + 10, { align: 'center' });
-                logoY += 20;
+                // No logo available, just continue
+                logoY += 5;
             }
 
             // Company info header
@@ -1033,7 +1394,11 @@
 
             // Save the PDF
             doc.save(`Payment_Voucher_${voucherNo}.pdf`);
+            
+            // Reset button state and show success
+            setButtonLoading(pdfBtn, false);
+            showNotification('PDF downloaded successfully!', 'success');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98850f6017a0b4dc',t:'MTc1OTQxNzEyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988515d88680b4dc',t:'MTc1OTQxNzM5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
