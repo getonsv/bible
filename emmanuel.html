@@ -234,7 +234,7 @@
         }
 
         .voucher-title {
-            font-size: 1.4em;
+            font-size: 1.2em;
             font-weight: bold;
             color: #2c3e50;
             margin-top: 15px;
@@ -574,7 +574,7 @@
         <div class="voucher-preview" id="voucherPreview">
             <div class="voucher-header">
                 <div class="company-info">
-                    <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';"><br>
+                    <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
                     BRN: 202503112296 (003723051-P)<br>
                     LOWRENCE 0182202582 | PREMA 01126360442<br>
                     NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
@@ -904,51 +904,84 @@
             // Set font
             doc.setFont('helvetica');
 
-            // Company logo space (placeholder for logo)
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text('EMMANUEL TRANSPORT', 105, 20, { align: 'center' });
+            // Try to add logo
+            const logoImg = document.getElementById('previewLogo');
+            let logoY = 15;
+            
+            if (logoImg && logoImg.complete && !logoImg.style.display.includes('none')) {
+                try {
+                    // Create canvas to convert image to base64
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = logoImg.naturalWidth || 200;
+                    canvas.height = logoImg.naturalHeight || 100;
+                    
+                    // Draw image to canvas
+                    ctx.drawImage(logoImg, 0, 0);
+                    const logoDataUrl = canvas.toDataURL('image/png');
+                    
+                    // Add logo to PDF (scaled to fit)
+                    const logoWidth = 40;
+                    const logoHeight = 20;
+                    doc.addImage(logoDataUrl, 'PNG', 105 - logoWidth/2, logoY, logoWidth, logoHeight);
+                    logoY += 25;
+                } catch (error) {
+                    // If logo fails, add company name instead
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('EMMANUEL TRANSPORT', 105, logoY + 10, { align: 'center' });
+                    logoY += 20;
+                }
+            } else {
+                // No logo, add company name
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('EMMANUEL TRANSPORT', 105, logoY + 10, { align: 'center' });
+                logoY += 20;
+            }
 
             // Company info header
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.text('BRN: 202503112296 (003723051-P)', 105, 30, { align: 'center' });
-            doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, 37, { align: 'center' });
-            doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, 44, { align: 'center' });
+            doc.text('BRN: 202503112296 (003723051-P)', 105, logoY + 5, { align: 'center' });
+            doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, logoY + 12, { align: 'center' });
+            doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, logoY + 19, { align: 'center' });
 
             // Line separator
-            doc.line(20, 54, 190, 54);
+            doc.line(20, logoY + 29, 190, logoY + 29);
 
-            // Payment Voucher title
-            doc.setFontSize(14);
+            // Payment Voucher title (smaller and below line)
+            doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text('PAYMENT VOUCHER', 105, 64, { align: 'center' });
+            doc.text('PAYMENT VOUCHER', 105, logoY + 39, { align: 'center' });
 
-            // Voucher details
+            // Voucher details (adjusted Y positions)
+            const detailsStartY = logoY + 55;
             doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
-            doc.text('Voucher Information:', 20, 80);
+            doc.text('Voucher Information:', 20, detailsStartY);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Voucher No.: ${voucherNo}`, 20, 90);
-            doc.text(`Date: ${date}`, 20, 98);
-            doc.text(`Reference: ${reference}`, 20, 106);
+            doc.text(`Voucher No.: ${voucherNo}`, 20, detailsStartY + 10);
+            doc.text(`Date: ${date}`, 20, detailsStartY + 18);
+            doc.text(`Reference: ${reference}`, 20, detailsStartY + 26);
 
             doc.setFont('helvetica', 'bold');
-            doc.text('Payment Details:', 110, 80);
+            doc.text('Payment Details:', 110, detailsStartY);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Pay To: ${payTo}`, 110, 90);
-            doc.text(`${idLabel} ${idNumber}`, 110, 98);
-            doc.text(`Method: ${method}`, 110, 106);
+            doc.text(`Pay To: ${payTo}`, 110, detailsStartY + 10);
+            doc.text(`${idLabel} ${idNumber}`, 110, detailsStartY + 18);
+            doc.text(`Method: ${method}`, 110, detailsStartY + 26);
 
             // Description
+            const descY = detailsStartY + 40;
             doc.setFont('helvetica', 'bold');
-            doc.text('Description:', 20, 120);
+            doc.text('Description:', 20, descY);
             doc.setFont('helvetica', 'normal');
             const splitDescription = doc.splitTextToSize(description, 170);
-            doc.text(splitDescription, 20, 130);
+            doc.text(splitDescription, 20, descY + 10);
 
             // Line items table
-            let currentY = 140 + (splitDescription.length * 7);
+            let currentY = descY + 20 + (splitDescription.length * 7);
             doc.setFont('helvetica', 'bold');
             doc.text('Line Items:', 20, currentY);
             currentY += 10;
@@ -1002,5 +1035,5 @@
             doc.save(`Payment_Voucher_${voucherNo}.pdf`);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988504dc5448b4dc',t:'MTc1OTQxNjY5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98850f6017a0b4dc',t:'MTc1OTQxNzEyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
