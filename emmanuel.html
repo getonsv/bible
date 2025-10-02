@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emmanuel Transport - Payment Voucher System</title>
+    <title>Emmanuel Transport - Payment Voucher Generator</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -184,8 +184,8 @@
 
         .signature-line {
             border-bottom: 2px dotted #2c3e50;
-            height: 60px;
-            margin: 20px 0 10px 0;
+            height: 40px;
+            margin: 15px 0 8px 0;
             position: relative;
         }
 
@@ -369,8 +369,7 @@
 
         .detail-item {
             margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
+            text-align: left;
         }
 
         .voucher-amount {
@@ -391,10 +390,12 @@
             body {
                 background: white;
                 padding: 0;
+                font-size: 12px;
             }
             .container {
                 box-shadow: none;
                 border-radius: 0;
+                max-width: none;
             }
             .header, .form-section, .action-buttons {
                 display: none !important;
@@ -402,7 +403,35 @@
             .voucher-preview {
                 display: block !important;
                 margin: 0;
-                padding: 20px;
+                padding: 15px;
+                max-width: none;
+            }
+            .voucher-header {
+                margin-bottom: 20px;
+            }
+            .voucher-details {
+                margin-bottom: 20px;
+            }
+            .voucher-line-items {
+                margin: 15px 0;
+            }
+            .voucher-table {
+                font-size: 11px;
+            }
+            .voucher-table th,
+            .voucher-table td {
+                padding: 4px 6px;
+            }
+            .voucher-amount {
+                margin: 15px 0;
+                padding: 10px;
+            }
+            .voucher-signatures {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 40px !important;
+                margin-top: 25px !important;
+                page-break-inside: avoid;
             }
         }
 
@@ -759,7 +788,7 @@
             <div class="company-logo">
                 <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
             </div>
-            <p><strong></strong>202503112296 (003723051-P)</strong></p>
+            <p>202503112296 (003723051-P)</p>
             <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
             <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
         </div>
@@ -774,22 +803,22 @@
                         <input type="text" id="voucherNo" required>
                     </div>
                     <div class="form-group">
-                        <label for="reference">Reference No. (Optional)</label>
-                        <input type="text" id="reference">
-                    </div>
-                    <div class="form-group">
                         <label for="date">Date</label>
                         <input type="date" id="date" required>
                     </div>
                     <div class="form-group">
                         <label for="paymentMethod">Payment Method</label>
-                        <select id="paymentMethod" required>
+                        <select id="paymentMethod" required onchange="updateReferenceRequirement()">
                             <option value="">Select Method</option>
                             <option value="Cash">Cash</option>
                             <option value="Bank Transfer">Bank Transfer</option>
                             <option value="Cheque">Cheque</option>
                             <option value="Online Banking">Online Banking</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reference">Reference No. <span id="referenceLabel">(Optional)</span></label>
+                        <input type="text" id="reference">
                     </div>
                     <div class="form-group">
                         <label for="payTo">Pay To</label>
@@ -878,9 +907,7 @@
             <button type="button" class="btn btn-primary" onclick="generateVoucher()">
                 📄 Generate Voucher
             </button>
-            <button type="button" class="btn btn-secondary" onclick="printVoucher()" id="printBtn" style="display: none;">
-                🖨️ Print Voucher
-            </button>
+
             <button type="button" class="btn btn-primary" onclick="savePDF()" id="pdfBtn" style="display: none;">
                 📥 Save as PDF
             </button>
@@ -901,35 +928,28 @@
                 <div class="detail-group">
                     <h4>Voucher Information</h4>
                     <div class="detail-item">
-                        <span>Voucher No.:</span>
-                        <span id="previewVoucherNo">-</span>
+                        <span>Voucher No.: <span id="previewVoucherNo">-</span></span>
                     </div>
                     <div class="detail-item">
-                        <span>Date:</span>
-                        <span id="previewDate">-</span>
+                        <span>Date: <span id="previewDate">-</span></span>
                     </div>
                     <div class="detail-item">
-                        <span>Reference:</span>
-                        <span id="previewReference">-</span>
+                        <span>Reference: <span id="previewReference">-</span></span>
                     </div>
                 </div>
                 <div class="detail-group">
                     <h4>Payment Details</h4>
                     <div class="detail-item">
-                        <span>Pay To:</span>
-                        <span id="previewPayTo">-</span>
+                        <span>Pay To: <span id="previewPayTo">-</span></span>
                     </div>
                     <div class="detail-item">
-                        <span id="previewIdLabel">ID No.:</span>
-                        <span id="previewIdNumber">-</span>
+                        <span><span id="previewIdLabel">ID No.</span> <span id="previewIdNumber">-</span></span>
                     </div>
                     <div class="detail-item">
-                        <span>Method:</span>
-                        <span id="previewMethod">-</span>
+                        <span>Method: <span id="previewMethod">-</span></span>
                     </div>
                     <div class="detail-item">
-                        <span>Amount:</span>
-                        <span id="previewAmount">-</span>
+                        <span>Amount: <span id="previewAmount">-</span></span>
                     </div>
                 </div>
             </div>
@@ -970,14 +990,14 @@
 
             <div class="voucher-signatures">
                 <div style="text-align: center;" class="signature-column">
-                    <div style="border-bottom: 2px dotted #000; height: 60px; margin-bottom: 10px;"></div>
+                    <div style="border-bottom: 2px dotted #000; height: 40px; margin-bottom: 8px;"></div>
                     <div style="font-weight: bold;" class="signature-label">Approved By</div>
-                    <div style="margin-top: 10px;" class="signature-label">Date: _______________</div>
+                    <div style="margin-top: 8px;" class="signature-label">Date: _______________</div>
                 </div>
                 <div style="text-align: center;" class="signature-column">
-                    <div style="border-bottom: 2px dotted #000; height: 60px; margin-bottom: 10px;"></div>
+                    <div style="border-bottom: 2px dotted #000; height: 40px; margin-bottom: 8px;"></div>
                     <div style="font-weight: bold;" class="signature-label">Received By</div>
-                    <div style="margin-top: 10px;" class="signature-label">Date: _______________</div>
+                    <div style="margin-top: 8px;" class="signature-label">Date: _______________</div>
                 </div>
             </div>
         </div>
@@ -999,6 +1019,27 @@
 
         // Set auto-generated voucher number
         document.getElementById('voucherNo').value = generateVoucherNumber();
+
+        // Update reference field requirement based on payment method
+        function updateReferenceRequirement() {
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const referenceInput = document.getElementById('reference');
+            const referenceLabel = document.getElementById('referenceLabel');
+            
+            if (paymentMethod === 'Cash') {
+                referenceInput.required = false;
+                referenceLabel.textContent = '(Optional)';
+                referenceLabel.style.color = '#6c757d';
+            } else if (paymentMethod && paymentMethod !== 'Cash') {
+                referenceInput.required = true;
+                referenceLabel.textContent = '(Required)';
+                referenceLabel.style.color = '#e74c3c';
+            } else {
+                referenceInput.required = false;
+                referenceLabel.textContent = '(Optional)';
+                referenceLabel.style.color = '#6c757d';
+            }
+        }
 
         // Update ID field based on selection
         function updateIdField() {
@@ -1210,7 +1251,6 @@
 
             // Show preview and buttons
             document.getElementById('voucherPreview').style.display = 'block';
-            document.getElementById('printBtn').style.display = 'inline-flex';
             document.getElementById('pdfBtn').style.display = 'inline-flex';
 
             // Show success notification
@@ -1225,16 +1265,7 @@
             }, 500);
         }
 
-        function printVoucher() {
-            const printBtn = document.getElementById('printBtn');
-            setButtonLoading(printBtn, true);
-            
-            setTimeout(() => {
-                window.print();
-                setButtonLoading(printBtn, false);
-                showNotification('Print dialog opened!', 'info');
-            }, 500);
-        }
+
 
         function savePDF() {
             const pdfBtn = document.getElementById('pdfBtn');
@@ -1399,9 +1430,22 @@
                         ctx.drawImage(this, 0, 0);
                         const logoDataUrl = canvas.toDataURL('image/png');
                         
-                        // Add logo to PDF (scaled for A5)
-                        const logoWidth = 30;
-                        const logoHeight = 15;
+                        // Add logo to PDF maintaining aspect ratio
+                        const aspectRatio = this.naturalWidth / this.naturalHeight;
+                        const maxWidth = 40;
+                        const maxHeight = 20;
+                        
+                        let logoWidth, logoHeight;
+                        if (aspectRatio > maxWidth / maxHeight) {
+                            // Logo is wider, constrain by width
+                            logoWidth = maxWidth;
+                            logoHeight = maxWidth / aspectRatio;
+                        } else {
+                            // Logo is taller, constrain by height
+                            logoHeight = maxHeight;
+                            logoWidth = maxHeight * aspectRatio;
+                        }
+                        
                         doc.addImage(logoDataUrl, 'PNG', 74 - logoWidth/2, logoY, logoWidth, logoHeight);
                         logoY += 20;
                     } catch (error) {
@@ -1423,5 +1467,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98851e5b34aeb4dc',t:'MTc1OTQxNzc0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9885817ae543b4dc',t:'MTc1OTQyMTgwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
