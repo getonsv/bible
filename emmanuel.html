@@ -1111,60 +1111,6 @@
             display: block;
         }
 
-        .auth-config {
-            background: rgba(255, 243, 205, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 234, 167, 0.8);
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 40px;
-        }
-
-        .auth-config h3 {
-            color: #92400e;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        .auth-config p {
-            color: #92400e;
-            margin-bottom: 20px;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .auth-config input {
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid rgba(255, 234, 167, 0.8);
-            border-radius: 8px;
-            padding: 12px 16px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .auth-config input:focus {
-            border-color: #f59e0b;
-            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
-        }
-
-        .auth-config button {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
-        }
-
-        .auth-config button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.4);
-        }
-
         @media (max-width: 480px) {
             .auth-container {
                 padding: 40px 25px;
@@ -1191,29 +1137,7 @@
             <h1 class="auth-title">Emmanuel Transport</h1>
             <p class="auth-subtitle">Please sign in with your Google account to access the Payment Voucher System</p>
             
-            <!-- Authentication Configuration (Hidden) -->
-            <div class="auth-config" style="display: none;">
-                <h3>🔐 Authentication Setup</h3>
-                <p>Configure your Google OAuth Client ID and authorized users spreadsheet URL below:</p>
-                
-                <div style="margin-bottom: 15px;">
-                    <label for="googleClientId" style="display: block; text-align: left; font-weight: 600; margin-bottom: 5px; color: #92400e;">Google OAuth Client ID:</label>
-                    <input type="text" id="googleClientId" value="329748771929-h7ass17q1ebv5mmd4r7qs75o940elsrn.apps.googleusercontent.com" style="width: 100%; padding: 8px 12px; border: 1px solid #ffeaa7; border-radius: 4px; font-size: 14px;">
-                    <small style="display: block; margin-top: 5px; color: #92400e;">Get this from Google Cloud Console</small>
-                </div>
-                
-                <div style="margin-bottom: 15px;">
-                    <label for="authorizedUsersUrl" style="display: block; text-align: left; font-weight: 600; margin-bottom: 5px; color: #92400e;">Authorized Users Spreadsheet URL:</label>
-                    <input type="url" id="authorizedUsersUrl" value="https://script.google.com/macros/s/AKfycbwBhXSNtQv2Lx0mVNssjWEOYHejBHoyq9vcIDDvWyY6ID32s9GeNJR6iIDPi_xF_pfsPQ/exec" style="width: 100%; padding: 8px 12px; border: 1px solid #ffeaa7; border-radius: 4px; font-size: 14px;">
-                    <small style="display: block; margin-top: 5px; color: #92400e;">Apps Script URL that checks authorized emails</small>
-                </div>
-                
-                <button type="button" onclick="showAuthSetupInstructions()" style="background: #856404; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; cursor: pointer;">
-                    📖 Setup Instructions
-                </button>
-            </div>
-            
-            <button class="google-signin-btn" id="googleSignInBtn" onclick="initializeGoogleAuth()">
+            <div class="google-signin-btn" id="googleSignInBtn">
                 <div class="google-icon">
                     <svg width="18" height="18" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -1223,7 +1147,7 @@
                     </svg>
                 </div>
                 Sign in with Google
-            </button>
+            </div>
             
             <div class="auth-status" id="authStatus" style="display: none;"></div>
             
@@ -1244,13 +1168,13 @@
             <div class="company-logo">
                 <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
             </div>
-            <p>202503112296 (003723051-P)</p>
+            <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
+            <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
             <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
-            <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
         </div>
 
         <div class="form-section">
-            <h2>Payment Voucher</h2>
+            <h2>Payment Voucher Generator</h2>
             
             <!-- Google Sheets Configuration (Hidden) -->
             <div style="display: none; background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
@@ -1398,8 +1322,8 @@
                 <div class="company-info">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
                     BRN: 202503112296 (003723051-P)<br>
-                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR<br>
-                    LOWRENCE 0182202582 | PREMA 01126360442
+                    LOWRENCE 0182202582 | PREMA 01126360442<br>
+                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
                 </div>
                 <div class="voucher-title">PAYMENT VOUCHER</div>
             </div>
@@ -1495,42 +1419,55 @@
 
         // Initialize Google Authentication
         function initializeGoogleAuth() {
-            const clientId = document.getElementById('googleClientId').value.trim();
-            const authUsersUrl = document.getElementById('authorizedUsersUrl').value.trim();
+            const clientId = '329748771929-h7ass17q1ebv5mmd4r7qs75o940elsrn.apps.googleusercontent.com';
             
-            if (!clientId) {
-                showAuthStatus('Please enter your Google OAuth Client ID first.', 'error');
-                return;
-            }
-            
-            if (!authUsersUrl) {
-                showAuthStatus('Please enter the authorized users spreadsheet URL first.', 'error');
-                return;
-            }
-
             showAuthStatus('Initializing Google Authentication...', 'loading');
 
-            // Initialize Google Identity Services
-            google.accounts.id.initialize({
-                client_id: clientId,
-                callback: handleCredentialResponse,
-                auto_select: false,
-                cancel_on_tap_outside: false
-            });
+            try {
+                console.log('Initializing Google Identity Services with Client ID:', clientId);
+                
+                // Initialize Google Identity Services
+                google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: handleCredentialResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: false
+                });
 
-            // Render the sign-in button
-            google.accounts.id.renderButton(
-                document.getElementById('googleSignInBtn'),
-                {
+                // Render the Google button
+                const signInBtn = document.getElementById('googleSignInBtn');
+                google.accounts.id.renderButton(signInBtn, {
                     theme: 'filled_blue',
                     size: 'large',
                     text: 'signin_with',
-                    shape: 'rectangular'
-                }
-            );
+                    shape: 'rectangular',
+                    width: 300
+                });
 
-            showAuthStatus('Click "Sign in with Google" to continue', 'success');
+                showAuthStatus('Ready! Click the Google sign-in button below.', 'success');
+            } catch (error) {
+                console.error('Google Auth initialization error:', error);
+                showAuthStatus('Failed to initialize Google Sign-in. Please refresh and try again.', 'error');
+            }
         }
+
+        // Wait for Google library to load
+        function waitForGoogleAndInitialize() {
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                console.log('Google Identity Services loaded successfully!');
+                initializeGoogleAuth();
+            } else {
+                console.log('Waiting for Google Identity Services to load...');
+                setTimeout(waitForGoogleAndInitialize, 500);
+            }
+        }
+
+        // Start checking for Google when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, starting Google auth initialization...');
+            showAuthStatus('Loading Google Sign-in...', 'loading');
+            waitForGoogleAndInitialize();
+        });
 
         // Handle Google Sign-In Response
         async function handleCredentialResponse(response) {
@@ -1542,6 +1479,8 @@
                 const userEmail = payload.email;
                 const userName = payload.name;
                 const userPicture = payload.picture;
+
+                console.log('User signed in:', userEmail);
 
                 // Check if user is authorized
                 const isAuthorized = await checkUserAuthorization(userEmail);
@@ -1568,16 +1507,10 @@
 
         // Check if user email is in authorized list
         async function checkUserAuthorization(email) {
-            const authUsersUrl = document.getElementById('authorizedUsersUrl').value.trim();
+            const authUsersUrl = 'https://script.google.com/macros/s/AKfycbwBhXSNtQv2Lx0mVNssjWEOYHejBHoyq9vcIDDvWyY6ID32s9GeNJR6iIDPi_xF_pfsPQ/exec';
             
-            if (!authUsersUrl) {
-                console.error('No authorized users URL configured');
-                return false;
-            }
-
             try {
-                // Use a different approach - JSONP or direct CORS-enabled request
-                const response = await fetch(authUsersUrl + '?callback=checkAuth&email=' + encodeURIComponent(email), {
+                const response = await fetch(authUsersUrl + '?email=' + encodeURIComponent(email), {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1633,177 +1566,6 @@
             document.getElementById('mainApp').classList.remove('authenticated');
             showAuthStatus('You have been signed out.', 'success');
         }
-
-        // Show authentication setup instructions
-        function showAuthSetupInstructions() {
-            const instructions = `
-🔐 COMPLETE AUTHENTICATION SETUP GUIDE
-
-📋 WHAT YOU NEED:
-1. Google OAuth Client ID (from Google Cloud Console)
-2. Google Apps Script to manage authorized users
-3. Google Spreadsheet with authorized email addresses
-
-🚀 STEP-BY-STEP SETUP:
-
-═══════════════════════════════════════════════════════════════
-📊 STEP 1: CREATE AUTHORIZED USERS SPREADSHEET
-═══════════════════════════════════════════════════════════════
-
-1️⃣ Create a new Google Spreadsheet
-2️⃣ In cell A1, type "Authorized Emails"
-3️⃣ List authorized email addresses in column A (starting from A2):
-   • john@company.com
-   • mary@company.com
-   • admin@emmanuelltransport.com
-4️⃣ Note your Spreadsheet ID from the URL
-
-═══════════════════════════════════════════════════════════════
-🔧 STEP 2: CREATE GOOGLE APPS SCRIPT FOR USER VERIFICATION
-═══════════════════════════════════════════════════════════════
-
-1️⃣ Go to script.google.com
-2️⃣ Click "New Project"
-3️⃣ Replace default code with this (update SPREADSHEET_ID):
-
-function doGet(e) {
-  const SPREADSHEET_ID = 'YOUR_AUTHORIZED_USERS_SPREADSHEET_ID_HERE';
-  
-  try {
-    const email = e.parameter.email;
-    
-    if (!email) {
-      return ContentService
-        .createTextOutput('checkAuth({"authorized": false, "error": "No email provided"})')
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
-    }
-    
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
-    const emails = sheet.getRange('A:A').getValues().flat().filter(email => email);
-    
-    // Convert all emails to lowercase for comparison
-    const normalizedEmails = emails.map(email => email.toString().toLowerCase().trim());
-    const isAuthorized = normalizedEmails.includes(email.toLowerCase().trim());
-    
-    return ContentService
-      .createTextOutput(`checkAuth({"authorized": ${isAuthorized}})`)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-      
-  } catch (error) {
-    return ContentService
-      .createTextOutput(`checkAuth({"authorized": false, "error": "${error.toString()}"})`)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-}
-
-function doPost(e) {
-  const SPREADSHEET_ID = 'YOUR_AUTHORIZED_USERS_SPREADSHEET_ID_HERE';
-  
-  try {
-    const data = JSON.parse(e.postData.contents);
-    
-    if (data.action === 'checkUser') {
-      const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
-      const emails = sheet.getRange('A:A').getValues().flat().filter(email => email);
-      
-      // Convert all emails to lowercase for comparison
-      const normalizedEmails = emails.map(email => email.toString().toLowerCase().trim());
-      const isAuthorized = normalizedEmails.includes(data.email.toLowerCase().trim());
-      
-      return ContentService
-        .createTextOutput(JSON.stringify({ authorized: isAuthorized }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({ error: 'Invalid action' }))
-      .setMimeType(ContentService.MimeType.JSON);
-      
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ error: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-4️⃣ Deploy as Web App:
-   • Click "Deploy" → "New deployment"
-   • Type: "Web app"
-   • Execute as: "Me"
-   • Who has access: "Anyone"
-   • Click "Deploy"
-5️⃣ Copy the Web App URL
-
-═══════════════════════════════════════════════════════════════
-🔑 STEP 3: GET GOOGLE OAUTH CLIENT ID (CRITICAL FOR YOUR ERROR!)
-═══════════════════════════════════════════════════════════════
-
-🚨 YOUR ERROR FIX: The "origin_mismatch" error means you need to add the correct domain to your OAuth settings!
-
-1️⃣ Go to Google Cloud Console (console.cloud.google.com)
-2️⃣ Create a new project or select existing one
-3️⃣ Enable Google Identity API:
-   • Go to "APIs & Services" → "Library"
-   • Search for "Google Identity"
-   • Click "Google Identity" and enable it
-
-4️⃣ Create OAuth 2.0 credentials:
-   • Go to "APIs & Services" → "Credentials"
-   • Click "Create Credentials" → "OAuth client ID"
-   • Application type: "Web application"
-   • Name: "Emmanuel Transport Voucher System"
-
-5️⃣ 🔥 CRITICAL: Add Authorized JavaScript Origins:
-   For Canva Code environment, add BOTH:
-   • https://canva.com
-   • https://*.canva.com
-   
-   If testing locally, also add:
-   • http://localhost
-   • http://localhost:3000
-   • http://127.0.0.1
-   
-   If you have a custom domain, add:
-   • https://yourdomain.com
-   • https://www.yourdomain.com
-
-6️⃣ Authorized redirect URIs (leave empty for this setup)
-
-7️⃣ Click "Create"
-8️⃣ Copy the Client ID (looks like: 123456789-abc123.apps.googleusercontent.com)
-
-═══════════════════════════════════════════════════════════════
-✅ STEP 4: CONFIGURE THE SYSTEM
-═══════════════════════════════════════════════════════════════
-
-1️⃣ Paste your NEW Google OAuth Client ID in the first field above
-2️⃣ Paste your Google Apps Script Web App URL in the second field above
-3️⃣ Click "Sign in with Google" to test
-
-🔒 SECURITY NOTES:
-• Only emails in your spreadsheet can access the system
-• You can add/remove authorized users by editing the spreadsheet
-• The OAuth Client ID should be kept secure
-• Users must sign in each time they visit
-
-💡 TROUBLESHOOTING YOUR SPECIFIC ERROR:
-• ❌ Error 400: origin_mismatch = Wrong domain in OAuth settings
-• ✅ Solution: Add https://canva.com and https://*.canva.com to authorized origins
-• 🔄 Changes may take 5-10 minutes to take effect
-• 🧪 Test with a fresh browser tab after making changes
-
-🆘 STILL HAVING ISSUES?
-1. Double-check the authorized JavaScript origins include Canva domains
-2. Wait 10 minutes after making changes
-3. Try in an incognito/private browser window
-4. Make sure you're using the correct Client ID
-
-Need help? The error message tells us exactly what to fix - just add the right domains!
-            `;
-            
-            alert(instructions);
-        }
-
     </script>
     <script>
         // Set today's date as default
@@ -2064,278 +1826,22 @@ Need help? The error message tells us exactly what to fix - just add the right d
 
             document.getElementById('previewLineItemsTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
 
-            // Show preview
+            // Show preview and buttons
             document.getElementById('voucherPreview').style.display = 'block';
+            document.getElementById('pdfBtn').style.display = 'inline-flex';
+            document.getElementById('sheetsBtn').style.display = 'inline-flex';
 
-            // Automatically save to Google Sheets if URL is configured
-            const googleSheetsUrl = document.getElementById('googleSheetsUrl').value.trim();
-            let sheetsPromise = Promise.resolve();
-            
-            if (googleSheetsUrl) {
-                showNotification('Saving to Google Sheets...', 'info');
-                
-                const voucherData = {
-                    voucherNo: voucherNo,
-                    date: formattedDate,
-                    payTo: payTo,
-                    idType: idType,
-                    idNumber: idNumber,
-                    paymentMethod: paymentMethod,
-                    reference: reference,
-                    description: description,
-                    totalAmount: `RM ${totalAmount.toFixed(2)}`,
-                    lineItems: lineItems.map(item => ({
-                        date: item.date,
-                        billNo: item.billNo,
-                        description: item.description,
-                        amount: `RM ${item.amount.toFixed(2)}`
-                    })),
-                    timestamp: new Date().toISOString(),
-                    generatedBy: currentUser ? currentUser.name : 'Unknown User',
-                    generatedByEmail: currentUser ? currentUser.email : 'unknown@email.com',
-                    userPicture: currentUser ? currentUser.picture : ''
-                };
+            setButtonLoading(generateBtn, false);
+            showNotification('Voucher generated successfully!', 'success');
 
-                sheetsPromise = fetch(googleSheetsUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(voucherData)
-                }).then(() => {
-                    showNotification('✅ Data saved to Google Sheets!', 'success');
-                }).catch(error => {
-                    console.error('Error saving to Google Sheets:', error);
-                    showNotification('⚠️ Google Sheets save failed, but PDF will still generate', 'error');
+            // Scroll to preview
+            setTimeout(() => {
+                document.getElementById('voucherPreview').scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
                 });
-            }
-
-            // Wait for Google Sheets save (or skip if no URL), then generate PDF
-            sheetsPromise.finally(() => {
-                setTimeout(() => {
-                    showNotification('Generating PDF...', 'info');
-                    generatePDFAutomatically(generateBtn);
-                }, 1000);
-            });
+            }, 500);
         }
-
-        // Separate function for automatic PDF generation
-        function generatePDFAutomatically(originalBtn) {
-            const { jsPDF } = window.jspdf;
-            
-            // Create A5 size PDF (148 x 210 mm)
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a5'
-            });
-
-            // Get voucher data
-            const voucherNo = document.getElementById('previewVoucherNo').textContent;
-            const date = document.getElementById('previewDate').textContent;
-            const payTo = document.getElementById('previewPayTo').textContent;
-            const idLabel = document.getElementById('previewIdLabel').textContent;
-            const idNumber = document.getElementById('previewIdNumber').textContent;
-            const method = document.getElementById('previewMethod').textContent;
-            const reference = document.getElementById('previewReference').textContent;
-            const description = document.getElementById('previewDescription').textContent;
-            const total = document.getElementById('previewTotal').textContent;
-
-            // Get line items
-            const lineItemRows = document.querySelectorAll('#previewLineItemsBody tr');
-            const lineItems = [];
-            lineItemRows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 4) {
-                    lineItems.push({
-                        date: cells[0].textContent,
-                        billNo: cells[1].textContent,
-                        description: cells[2].textContent,
-                        amount: cells[3].textContent
-                    });
-                }
-            });
-
-            // Set font
-            doc.setFont('helvetica');
-
-            // Add logo using a more reliable method
-            const logoImg = document.getElementById('previewLogo');
-            let logoY = 10;
-            
-            // Function to continue PDF generation
-            function continuePDFGeneration() {
-                // Company info header (adjusted for A5)
-                doc.setFontSize(8);
-                doc.setFont('helvetica', 'normal');
-                doc.text('BRN: 202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
-                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
-                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
-
-                // Line separator
-                doc.line(10, logoY + 22, 138, logoY + 22);
-
-                // Payment Voucher title
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'bold');
-                doc.text('PAYMENT VOUCHER', 74, logoY + 30, { align: 'center' });
-
-                // Voucher details (adjusted for A5)
-                const detailsStartY = logoY + 40;
-                doc.setFontSize(8);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Voucher Information:', 10, detailsStartY);
-                doc.setFont('helvetica', 'normal');
-                doc.text(`Voucher No.: ${voucherNo}`, 10, detailsStartY + 6);
-                doc.text(`Date: ${date}`, 10, detailsStartY + 12);
-                doc.text(`Reference: ${reference}`, 10, detailsStartY + 18);
-
-                doc.setFont('helvetica', 'bold');
-                doc.text('Payment Details:', 80, detailsStartY);
-                doc.setFont('helvetica', 'normal');
-                doc.text(`Pay To: ${payTo}`, 80, detailsStartY + 6);
-                doc.text(`${idLabel} ${idNumber}`, 80, detailsStartY + 12);
-                doc.text(`Method: ${method}`, 80, detailsStartY + 18);
-
-                // Generated by information
-                const generatedByY = detailsStartY + 28;
-                doc.setFontSize(7);
-                doc.setFont('helvetica', 'normal');
-                const generatedByText = currentUser ? `Generated by: ${currentUser.name} (${currentUser.email})` : 'Generated by: Unknown User';
-                doc.text(generatedByText, 10, generatedByY, { maxWidth: 128 });
-
-                // Description
-                const descY = generatedByY + 8;
-                doc.setFontSize(8);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Description:', 10, descY);
-                doc.setFont('helvetica', 'normal');
-                const splitDescription = doc.splitTextToSize(description, 128);
-                doc.text(splitDescription, 10, descY + 6);
-
-                // Line items table
-                let currentY = descY + 12 + (splitDescription.length * 4);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Line Items:', 10, currentY);
-                currentY += 6;
-
-                // Table headers
-                doc.setFontSize(7);
-                doc.text('Date', 10, currentY);
-                doc.text('Bill No.', 35, currentY);
-                doc.text('Description', 55, currentY);
-                doc.text('Amount', 120, currentY);
-                doc.line(10, currentY + 1, 138, currentY + 1);
-                currentY += 5;
-
-                // Table rows
-                doc.setFont('helvetica', 'normal');
-                lineItems.forEach(item => {
-                    doc.text(item.date, 10, currentY);
-                    doc.text(item.billNo, 35, currentY);
-                    const itemDesc = doc.splitTextToSize(item.description, 60);
-                    doc.text(itemDesc[0], 55, currentY);
-                    doc.text(item.amount, 120, currentY);
-                    currentY += 4;
-                });
-
-                // Total line
-                doc.line(10, currentY, 138, currentY);
-                currentY += 5;
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Total: ${total}`, 120, currentY);
-
-                // Signature lines (adjusted for A5)
-                const sigY = currentY + 15;
-                doc.setFontSize(8);
-                doc.setFont('helvetica', 'normal');
-                
-                // Approved by - dotted line
-                for (let i = 10; i <= 50; i += 2) {
-                    doc.line(i, sigY, i + 1, sigY);
-                }
-                doc.text('Approved By', 30, sigY + 5, { align: 'center' });
-                doc.text('Date: __________', 30, sigY + 10, { align: 'center' });
-
-                // Received by - dotted line
-                for (let i = 98; i <= 138; i += 2) {
-                    doc.line(i, sigY, i + 1, sigY);
-                }
-                doc.text('Received By', 118, sigY + 5, { align: 'center' });
-                doc.text('Date: __________', 118, sigY + 10, { align: 'center' });
-
-                // Save the PDF
-                doc.save(`Payment_Voucher_${voucherNo}.pdf`);
-                
-                // Reset button state and show final success
-                setButtonLoading(originalBtn, false);
-                showNotification('🎉 Voucher generated! PDF downloaded and data saved to Google Sheets!', 'success');
-
-                // Scroll to preview
-                setTimeout(() => {
-                    document.getElementById('voucherPreview').scrollIntoView({ 
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }, 500);
-            }
-
-            // Try to load and add logo
-            if (logoImg && logoImg.src && !logoImg.style.display.includes('none')) {
-                // Create a new image to ensure it's loaded
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = function() {
-                    try {
-                        // Create canvas to convert image to base64
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = this.naturalWidth;
-                        canvas.height = this.naturalHeight;
-                        
-                        // Draw image to canvas
-                        ctx.drawImage(this, 0, 0);
-                        const logoDataUrl = canvas.toDataURL('image/png');
-                        
-                        // Add logo to PDF maintaining aspect ratio
-                        const aspectRatio = this.naturalWidth / this.naturalHeight;
-                        const maxWidth = 40;
-                        const maxHeight = 20;
-                        
-                        let logoWidth, logoHeight;
-                        if (aspectRatio > maxWidth / maxHeight) {
-                            // Logo is wider, constrain by width
-                            logoWidth = maxWidth;
-                            logoHeight = maxWidth / aspectRatio;
-                        } else {
-                            // Logo is taller, constrain by height
-                            logoHeight = maxHeight;
-                            logoWidth = maxHeight * aspectRatio;
-                        }
-                        
-                        doc.addImage(logoDataUrl, 'PNG', 74 - logoWidth/2, logoY, logoWidth, logoHeight);
-                        logoY += 20;
-                    } catch (error) {
-                        console.log('Logo failed to load, continuing without it');
-                        logoY += 5;
-                    }
-                    continuePDFGeneration();
-                };
-                img.onerror = function() {
-                    console.log('Logo failed to load, continuing without it');
-                    logoY += 5;
-                    continuePDFGeneration();
-                };
-                img.src = logoImg.src;
-            } else {
-                // No logo available, just continue
-                logoY += 5;
-                continuePDFGeneration();
-            }
-        }
-
-
 
         function savePDF() {
             const pdfBtn = document.getElementById('pdfBtn');
@@ -2388,8 +1894,8 @@ Need help? The error message tells us exactly what to fix - just add the right d
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'normal');
                 doc.text('BRN: 202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
-                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
                 doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
 
                 // Line separator
                 doc.line(10, logoY + 22, 138, logoY + 22);
@@ -2748,5 +2254,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9886244355b6b4dc',t:'MTc1OTQyODQ3MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98863752a5e3b4dc',t:'MTc1OTQyOTI1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
