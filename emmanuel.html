@@ -1505,23 +1505,11 @@
             }
         }
 
-        // Check if user email is in authorized list
+        // Check if user email is in authorized list via Google Sheets
         async function checkUserAuthorization(email) {
-            // Hardcoded authorized emails for now (you can expand this list)
-            const authorizedEmails = [
-                'lowrenceemmanuel@gmail.com',
-                'prema.emmanuel@gmail.com',
-                'emmanuellogistics2020@gmail.com',
-                'admin@emmanuel-transport.com'
-            ];
-            
-            // Check if email is in the authorized list
-            const isAuthorized = authorizedEmails.includes(email.toLowerCase());
-            
             console.log('Checking authorization for:', email);
-            console.log('Is authorized:', isAuthorized);
             
-            // Optional: Also try to check with Google Sheets if available
+            // Google Sheets authorization URL
             const authUsersUrl = 'https://script.google.com/macros/s/AKfycbwBhXSNtQv2Lx0mVNssjWEOYHejBHoyq9vcIDDvWyY6ID32s9GeNJR6iIDPi_xF_pfsPQ/exec';
             
             try {
@@ -1535,20 +1523,21 @@
                 if (response.ok) {
                     const result = await response.text();
                     console.log('Google Sheets response:', result);
-                    // Check if Google Sheets also authorizes this user
-                    const sheetsAuthorized = result.includes('"authorized":true') || result.includes('authorized: true');
                     
-                    // Return true if either hardcoded list OR Google Sheets authorizes the user
-                    return isAuthorized || sheetsAuthorized;
+                    // Check if Google Sheets authorizes this user
+                    const sheetsAuthorized = result.includes('"authorized":true') || result.includes('authorized: true');
+                    console.log('Is authorized by Google Sheets:', sheetsAuthorized);
+                    
+                    return sheetsAuthorized;
                 } else {
-                    console.log('Google Sheets check failed, using hardcoded list only');
-                    // If Google Sheets fails, fall back to hardcoded list
-                    return isAuthorized;
+                    console.log('Google Sheets authorization check failed - HTTP error');
+                    showAuthStatus('Unable to verify authorization. Please check your internet connection and try again.', 'error');
+                    return false;
                 }
             } catch (error) {
-                console.log('Google Sheets check error, using hardcoded list only:', error);
-                // If Google Sheets check fails, fall back to hardcoded list
-                return isAuthorized;
+                console.log('Google Sheets authorization check error:', error);
+                showAuthStatus('Authorization system unavailable. Please check your internet connection and try again.', 'error');
+                return false;
             }
         }
 
@@ -2274,5 +2263,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98863f20d1a7b4dc',t:'MTc1OTQyOTU3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988642e77414b4dc',t:'MTc1OTQyOTcyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
