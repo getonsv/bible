@@ -796,8 +796,8 @@
         <div class="form-section">
             <h2 style="color: #2c3e50; margin-bottom: 30px; text-align: center;">Payment Voucher</h2>
             
-            <!-- Google Sheets Configuration -->
-            <div style="background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+            <!-- Google Sheets Configuration (Hidden) -->
+            <div style="display: none; background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
                 <h3 style="color: #0c5460; margin-bottom: 15px;">📊 Google Sheets Integration (Optional)</h3>
                 <p style="color: #0c5460; margin-bottom: 15px; font-size: 0.9em;">
                     To save voucher data to Google Sheets, you'll need to set up a Google Apps Script web app. 
@@ -941,9 +941,9 @@
             <div class="voucher-header">
                 <div class="company-info">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
-                    BRN: 202503112296 (003723051-P)<br>
-                    LOWRENCE 0182202582 | PREMA 01126360442<br>
-                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
+                    202503112296 (003723051-P)<br>
+                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR<br>
+                    LOWRENCE 0182202582 | PREMA 01126360442
                 </div>
                 <div class="voucher-title">PAYMENT VOUCHER</div>
             </div>
@@ -1204,6 +1204,9 @@
                 return;
             }
 
+            const generateBtn = document.querySelector('.btn-primary');
+            setButtonLoading(generateBtn, true);
+
             // Get form values
             const voucherNo = document.getElementById('voucherNo').value;
             const date = document.getElementById('date').value;
@@ -1237,6 +1240,7 @@
             });
 
             if (lineItems.length === 0) {
+                setButtonLoading(generateBtn, false);
                 showNotification('Please add at least one line item with valid data.', 'error');
                 return;
             }
@@ -1273,26 +1277,264 @@
 
             document.getElementById('previewLineItemsTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
 
-            // Show preview and buttons
+            // Show preview
             document.getElementById('voucherPreview').style.display = 'block';
-            document.getElementById('pdfBtn').style.display = 'inline-flex';
-            
-            // Show Google Sheets button if URL is configured
+
+            // Automatically save to Google Sheets if URL is configured
             const googleSheetsUrl = document.getElementById('googleSheetsUrl').value.trim();
+            let sheetsPromise = Promise.resolve();
+            
             if (googleSheetsUrl) {
-                document.getElementById('sheetsBtn').style.display = 'inline-flex';
+                showNotification('Saving to Google Sheets...', 'info');
+                
+                const voucherData = {
+                    voucherNo: voucherNo,
+                    date: formattedDate,
+                    payTo: payTo,
+                    idType: idType,
+                    idNumber: idNumber,
+                    paymentMethod: paymentMethod,
+                    reference: reference,
+                    description: description,
+                    totalAmount: `RM ${totalAmount.toFixed(2)}`,
+                    lineItems: lineItems.map(item => ({
+                        date: item.date,
+                        billNo: item.billNo,
+                        description: item.description,
+                        amount: `RM ${item.amount.toFixed(2)}`
+                    })),
+                    timestamp: new Date().toISOString()
+                };
+
+                sheetsPromise = fetch(googleSheetsUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(voucherData)
+                }).then(() => {
+                    showNotification('✅ Data saved to Google Sheets!', 'success');
+                }).catch(error => {
+                    console.error('Error saving to Google Sheets:', error);
+                    showNotification('⚠️ Google Sheets save failed, but PDF will still generate', 'error');
+                });
             }
 
-            // Show success notification
-            showNotification('Payment voucher generated successfully!', 'success');
+            // Wait for Google Sheets save (or skip if no URL), then generate PDF
+            sheetsPromise.finally(() => {
+                setTimeout(() => {
+                    showNotification('Generating PDF...', 'info');
+                    generatePDFAutomatically(generateBtn);
+                }, 1000);
+            });
+        }
 
-            // Scroll to preview with delay for better UX
-            setTimeout(() => {
-                document.getElementById('voucherPreview').scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
+        // Separate function for automatic PDF generation
+        function generatePDFAutomatically(originalBtn) {
+            const { jsPDF } = window.jspdf;
+            
+            // Create A5 size PDF (148 x 210 mm)
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a5'
+            });
+
+            // Get voucher data
+            const voucherNo = document.getElementById('previewVoucherNo').textContent;
+            const date = document.getElementById('previewDate').textContent;
+            const payTo = document.getElementById('previewPayTo').textContent;
+            const idLabel = document.getElementById('previewIdLabel').textContent;
+            const idNumber = document.getElementById('previewIdNumber').textContent;
+            const method = document.getElementById('previewMethod').textContent;
+            const reference = document.getElementById('previewReference').textContent;
+            const description = document.getElementById('previewDescription').textContent;
+            const total = document.getElementById('previewTotal').textContent;
+
+            // Get line items
+            const lineItemRows = document.querySelectorAll('#previewLineItemsBody tr');
+            const lineItems = [];
+            lineItemRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    lineItems.push({
+                        date: cells[0].textContent,
+                        billNo: cells[1].textContent,
+                        description: cells[2].textContent,
+                        amount: cells[3].textContent
+                    });
+                }
+            });
+
+            // Set font
+            doc.setFont('helvetica');
+
+            // Add logo using a more reliable method
+            const logoImg = document.getElementById('previewLogo');
+            let logoY = 10;
+            
+            // Function to continue PDF generation
+            function continuePDFGeneration() {
+                // Company info header (adjusted for A5)
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                doc.text('202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
+                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
+
+                // Line separator
+                doc.line(10, logoY + 22, 138, logoY + 22);
+
+                // Payment Voucher title
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text('PAYMENT VOUCHER', 74, logoY + 30, { align: 'center' });
+
+                // Voucher details (adjusted for A5)
+                const detailsStartY = logoY + 40;
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Voucher Information:', 10, detailsStartY);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Voucher No.: ${voucherNo}`, 10, detailsStartY + 6);
+                doc.text(`Date: ${date}`, 10, detailsStartY + 12);
+                doc.text(`Reference: ${reference}`, 10, detailsStartY + 18);
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('Payment Details:', 80, detailsStartY);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Pay To: ${payTo}`, 80, detailsStartY + 6);
+                doc.text(`${idLabel} ${idNumber}`, 80, detailsStartY + 12);
+                doc.text(`Method: ${method}`, 80, detailsStartY + 18);
+
+                // Description
+                const descY = detailsStartY + 28;
+                doc.setFont('helvetica', 'bold');
+                doc.text('Description:', 10, descY);
+                doc.setFont('helvetica', 'normal');
+                const splitDescription = doc.splitTextToSize(description, 128);
+                doc.text(splitDescription, 10, descY + 6);
+
+                // Line items table
+                let currentY = descY + 12 + (splitDescription.length * 4);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Line Items:', 10, currentY);
+                currentY += 6;
+
+                // Table headers
+                doc.setFontSize(7);
+                doc.text('Date', 10, currentY);
+                doc.text('Bill No.', 35, currentY);
+                doc.text('Description', 55, currentY);
+                doc.text('Amount', 120, currentY);
+                doc.line(10, currentY + 1, 138, currentY + 1);
+                currentY += 5;
+
+                // Table rows
+                doc.setFont('helvetica', 'normal');
+                lineItems.forEach(item => {
+                    doc.text(item.date, 10, currentY);
+                    doc.text(item.billNo, 35, currentY);
+                    const itemDesc = doc.splitTextToSize(item.description, 60);
+                    doc.text(itemDesc[0], 55, currentY);
+                    doc.text(item.amount, 120, currentY);
+                    currentY += 4;
                 });
-            }, 500);
+
+                // Total line
+                doc.line(10, currentY, 138, currentY);
+                currentY += 5;
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total: ${total}`, 120, currentY);
+
+                // Signature lines (adjusted for A5)
+                const sigY = currentY + 15;
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                
+                // Approved by - dotted line
+                for (let i = 10; i <= 50; i += 2) {
+                    doc.line(i, sigY, i + 1, sigY);
+                }
+                doc.text('Approved By', 30, sigY + 5, { align: 'center' });
+                doc.text('Date: __________', 30, sigY + 10, { align: 'center' });
+
+                // Received by - dotted line
+                for (let i = 98; i <= 138; i += 2) {
+                    doc.line(i, sigY, i + 1, sigY);
+                }
+                doc.text('Received By', 118, sigY + 5, { align: 'center' });
+                doc.text('Date: __________', 118, sigY + 10, { align: 'center' });
+
+                // Save the PDF
+                doc.save(`Payment_Voucher_${voucherNo}.pdf`);
+                
+                // Reset button state and show final success
+                setButtonLoading(originalBtn, false);
+                showNotification('🎉 Voucher generated! PDF downloaded and data saved to Google Sheets!', 'success');
+
+                // Scroll to preview
+                setTimeout(() => {
+                    document.getElementById('voucherPreview').scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 500);
+            }
+
+            // Try to load and add logo
+            if (logoImg && logoImg.src && !logoImg.style.display.includes('none')) {
+                // Create a new image to ensure it's loaded
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                    try {
+                        // Create canvas to convert image to base64
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = this.naturalWidth;
+                        canvas.height = this.naturalHeight;
+                        
+                        // Draw image to canvas
+                        ctx.drawImage(this, 0, 0);
+                        const logoDataUrl = canvas.toDataURL('image/png');
+                        
+                        // Add logo to PDF maintaining aspect ratio
+                        const aspectRatio = this.naturalWidth / this.naturalHeight;
+                        const maxWidth = 40;
+                        const maxHeight = 20;
+                        
+                        let logoWidth, logoHeight;
+                        if (aspectRatio > maxWidth / maxHeight) {
+                            // Logo is wider, constrain by width
+                            logoWidth = maxWidth;
+                            logoHeight = maxWidth / aspectRatio;
+                        } else {
+                            // Logo is taller, constrain by height
+                            logoHeight = maxHeight;
+                            logoWidth = maxHeight * aspectRatio;
+                        }
+                        
+                        doc.addImage(logoDataUrl, 'PNG', 74 - logoWidth/2, logoY, logoWidth, logoHeight);
+                        logoY += 20;
+                    } catch (error) {
+                        console.log('Logo failed to load, continuing without it');
+                        logoY += 5;
+                    }
+                    continuePDFGeneration();
+                };
+                img.onerror = function() {
+                    console.log('Logo failed to load, continuing without it');
+                    logoY += 5;
+                    continuePDFGeneration();
+                };
+                img.src = logoImg.src;
+            } else {
+                // No logo available, just continue
+                logoY += 5;
+                continuePDFGeneration();
+            }
         }
 
 
@@ -1347,9 +1589,9 @@
                 // Company info header (adjusted for A5)
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'normal');
-                doc.text('BRN: 202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
-                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
+                doc.text('202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
                 doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
+                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
 
                 // Line separator
                 doc.line(10, logoY + 22, 138, logoY + 22);
@@ -1689,5 +1931,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9885af0477e7b4dc',t:'MTc1OTQyMzY2OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9885b7988780b4dc',t:'MTc1OTQyNDAxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
