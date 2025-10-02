@@ -234,9 +234,10 @@
         }
 
         .voucher-title {
-            font-size: 1.8em;
+            font-size: 1.4em;
             font-weight: bold;
             color: #2c3e50;
+            margin-top: 15px;
             margin-bottom: 10px;
         }
 
@@ -288,8 +289,8 @@
                 box-shadow: none;
                 border-radius: 0;
             }
-            .form-section, .action-buttons {
-                display: none;
+            .header, .form-section, .action-buttons {
+                display: none !important;
             }
             .voucher-preview {
                 display: block !important;
@@ -449,7 +450,7 @@
         </div>
 
         <div class="form-section">
-            <h2 style="color: #2c3e50; margin-bottom: 30px; text-align: center;">Payment Voucher Generator</h2>
+            <h2 style="color: #2c3e50; margin-bottom: 30px; text-align: center;">Payment Voucher</h2>
             
             <form id="voucherForm">
                 <div class="form-grid">
@@ -572,13 +573,13 @@
 
         <div class="voucher-preview" id="voucherPreview">
             <div class="voucher-header">
-                <div class="voucher-title">PAYMENT VOUCHER</div>
                 <div class="company-info">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';"><br>
                     BRN: 202503112296 (003723051-P)<br>
                     LOWRENCE 0182202582 | PREMA 01126360442<br>
                     NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
                 </div>
+                <div class="voucher-title">PAYMENT VOUCHER</div>
             </div>
 
             <div class="voucher-details">
@@ -903,46 +904,46 @@
             // Set font
             doc.setFont('helvetica');
 
-            // Header
-            doc.setFontSize(20);
-            doc.setFont('helvetica', 'bold');
-            doc.text('PAYMENT VOUCHER', 105, 30, { align: 'center' });
-
-            // Company info
+            // Company info header
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.text('BRN: 202503112296 (003723051-P)', 105, 45, { align: 'center' });
-            doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, 52, { align: 'center' });
-            doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, 58, { align: 'center' });
+            doc.text('BRN: 202503112296 (003723051-P)', 105, 25, { align: 'center' });
+            doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, 32, { align: 'center' });
+            doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, 38, { align: 'center' });
 
             // Line separator
-            doc.line(20, 70, 190, 70);
+            doc.line(20, 48, 190, 48);
+
+            // Payment Voucher title
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('PAYMENT VOUCHER', 105, 58, { align: 'center' });
 
             // Voucher details
             doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
-            doc.text('Voucher Information:', 20, 85);
+            doc.text('Voucher Information:', 20, 75);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Voucher No.: ${voucherNo}`, 20, 95);
-            doc.text(`Date: ${date}`, 20, 103);
-            doc.text(`Reference: ${reference}`, 20, 111);
+            doc.text(`Voucher No.: ${voucherNo}`, 20, 85);
+            doc.text(`Date: ${date}`, 20, 93);
+            doc.text(`Reference: ${reference}`, 20, 101);
 
             doc.setFont('helvetica', 'bold');
-            doc.text('Payment Details:', 110, 85);
+            doc.text('Payment Details:', 110, 75);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Pay To: ${payTo}`, 110, 95);
-            doc.text(`${idLabel} ${idNumber}`, 110, 103);
-            doc.text(`Method: ${method}`, 110, 111);
+            doc.text(`Pay To: ${payTo}`, 110, 85);
+            doc.text(`${idLabel} ${idNumber}`, 110, 93);
+            doc.text(`Method: ${method}`, 110, 101);
 
             // Description
             doc.setFont('helvetica', 'bold');
-            doc.text('Description:', 20, 125);
+            doc.text('Description:', 20, 115);
             doc.setFont('helvetica', 'normal');
             const splitDescription = doc.splitTextToSize(description, 170);
-            doc.text(splitDescription, 20, 135);
+            doc.text(splitDescription, 20, 125);
 
             // Line items table
-            let currentY = 145 + (splitDescription.length * 7);
+            let currentY = 135 + (splitDescription.length * 7);
             doc.setFont('helvetica', 'bold');
             doc.text('Line Items:', 20, currentY);
             currentY += 10;
@@ -996,5 +997,5 @@
             doc.save(`Payment_Voucher_${voucherNo}.pdf`);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9884f7d59519b4dc',t:'MTc1OTQxNjE2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98850149b131b4dc',t:'MTc1OTQxNjU1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
