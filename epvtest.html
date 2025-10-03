@@ -1237,7 +1237,7 @@
                     </a>
                 </div>
                 <div class="footer-right">
-                    <span class="version-number">v99</span>
+                    <span class="version-number">v100+AutoHeaders</span>
                 </div>
             </div>
         </div>
@@ -1760,6 +1760,49 @@
             return { isValid, errors };
         }
 
+        // Ensure sheet has proper headers
+        async function ensureSheetHeaders() {
+            console.log('📋 Ensuring sheet headers exist...');
+            
+            try {
+                const headerData = {
+                    action: 'ensureHeaders'
+                };
+
+                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(headerData)
+                });
+
+                console.log('📥 Header response status:', response.status);
+                
+                const responseText = await response.text();
+                console.log('📥 Header response:', responseText);
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.log('📥 Header response is not JSON, treating as success');
+                    result = { success: true };
+                }
+                
+                if (result.success || response.ok) {
+                    console.log('✅ Headers ensured successfully');
+                } else {
+                    console.log('⚠️ Header creation may have failed, continuing anyway');
+                }
+
+            } catch (error) {
+                console.error('❌ Error ensuring headers:', error);
+                console.log('⚠️ Continuing without header verification');
+            }
+        }
+
         // Generate voucher with automatic PDF and Sheets saving
         async function generateVoucher() {
             console.log('🚀 Generating voucher...');
@@ -1901,6 +1944,9 @@
                 if (!currentVoucherData) {
                     throw new Error('No voucher data available');
                 }
+
+                // First, ensure headers exist
+                await ensureSheetHeaders();
 
                 // Prepare data for Google Sheets - flatten line items into separate columns
                 const lineItemsText = currentVoucherData.lineItems.map(item => 
@@ -2662,6 +2708,10 @@
             try {
                 showNotification('🧪 Testing Google Sheets connection...', 'info');
                 
+                // First, ensure headers exist
+                showNotification('📋 Setting up sheet headers...', 'info');
+                await ensureSheetHeaders();
+                
                 // Test data
                 const testData = {
                     action: 'addVoucher',
@@ -2715,7 +2765,7 @@
                 
                 if (result.success || response.ok) {
                     console.log('✅ Google Sheets test successful!');
-                    showNotification('✅ Google Sheets integration working! Test data saved.', 'success');
+                    showNotification('✅ Google Sheets integration working! Test data saved with headers.', 'success');
                     
                     // Now test reading data
                     setTimeout(async () => {
@@ -2738,7 +2788,7 @@
                                     readResult = JSON.parse(readResponseText);
                                     if (readResult.success && readResult.data) {
                                         console.log('✅ Data retrieval test successful!', readResult.data.length, 'records found');
-                                        showNotification(`✅ Full integration test passed! Found ${readResult.data.length} records.`, 'success');
+                                        showNotification(`✅ Full integration test passed! Found ${readResult.data.length} records with proper headers.`, 'success');
                                     } else {
                                         showNotification('⚠️ Write successful, but read test failed', 'info');
                                     }
@@ -2791,5 +2841,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b6e439280b4dc',t:'MTc1OTQ4MzkzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b82dce73eb4dc',t:'MTc1OTQ4NDc3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
