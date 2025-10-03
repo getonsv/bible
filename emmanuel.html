@@ -1148,6 +1148,13 @@
             font-size: 0.9em;
             color: #64748b;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .weather-icon {
+            font-size: 1.1em;
         }
 
         .welcome-name {
@@ -1632,6 +1639,21 @@
             document.getElementById('userInfo').style.display = 'block';
         }
 
+        // Get time-based greeting with weather icon
+        function getTimeBasedGreeting() {
+            const hour = new Date().getHours();
+            
+            if (hour >= 5 && hour < 12) {
+                return { text: 'Good morning', icon: '🌅' };
+            } else if (hour >= 12 && hour < 17) {
+                return { text: 'Good afternoon', icon: '☀️' };
+            } else if (hour >= 17 && hour < 21) {
+                return { text: 'Good evening', icon: '🌆' };
+            } else {
+                return { text: 'Good evening', icon: '🌙' };
+            }
+        }
+
         // Show main application
         function showMainApp() {
             document.getElementById('authOverlay').style.display = 'none';
@@ -1641,6 +1663,11 @@
             if (currentUser) {
                 document.getElementById('headerUserAvatar').src = currentUser.picture;
                 document.getElementById('headerUserName').textContent = currentUser.name;
+                
+                // Update greeting with time-based message and weather icon
+                const greeting = getTimeBasedGreeting();
+                const greetingElement = document.querySelector('.welcome-greeting');
+                greetingElement.innerHTML = `<span class="weather-icon">${greeting.icon}</span>${greeting.text},`;
             }
         }
 
@@ -1706,31 +1733,39 @@
                 idInput.placeholder = 'e.g. 123456-78-9012';
                 idInput.disabled = false;
                 idInput.removeAttribute('disabled');
-                idInput.maxLength = 14;
+                idInput.setAttribute('maxlength', '14');
                 idInput.value = ''; // Clear any existing value
+                idInput.style.backgroundColor = '#ffffff';
+                idInput.style.cursor = 'text';
                 idInput.addEventListener('input', formatNRIC);
                 console.log('NRIC field enabled'); // Debug log
             } else if (idType === 'Passport') {
                 idInput.placeholder = 'e.g. A12345678';
                 idInput.disabled = false;
                 idInput.removeAttribute('disabled');
-                idInput.maxLength = 20;
+                idInput.setAttribute('maxlength', '20');
                 idInput.value = ''; // Clear any existing value
+                idInput.style.backgroundColor = '#ffffff';
+                idInput.style.cursor = 'text';
                 idInput.removeEventListener('input', formatNRIC);
                 console.log('Passport field enabled'); // Debug log
             } else {
                 idInput.placeholder = 'Select ID type first';
                 idInput.disabled = true;
+                idInput.setAttribute('disabled', 'disabled');
                 idInput.value = '';
+                idInput.style.backgroundColor = '#f9fafb';
+                idInput.style.cursor = 'not-allowed';
                 console.log('ID field disabled'); // Debug log
             }
             
-            // Force focus to ensure the field is interactive
+            // Force the field to be interactive by triggering a reflow
             if (!idInput.disabled) {
                 setTimeout(() => {
                     idInput.focus();
+                    idInput.click();
                     idInput.blur();
-                }, 100);
+                }, 50);
             }
         }
 
@@ -2506,5 +2541,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988928bbe3e2b4dc',t:'MTc1OTQ2MDExMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889319a1563b4dc',t:'MTc1OTQ2MDQ3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
