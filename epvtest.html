@@ -755,10 +755,32 @@
         .footer-content {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             gap: 8px;
             max-width: 1000px;
             margin: 0 auto;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .version-number {
+            color: #94a3b8;
+            font-size: 0.75em;
+            font-weight: 400;
+            padding: 2px 8px;
+            background: rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
         }
 
         .footer-text {
@@ -887,11 +909,21 @@
             }
             
             .footer-content {
-                gap: 6px;
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+            
+            .footer-left {
+                justify-content: center;
             }
             
             .footer-text {
                 font-size: 0.75em;
+            }
+            
+            .version-number {
+                font-size: 0.7em;
             }
         }
     </style>
@@ -1146,10 +1178,15 @@
         <!-- Footer -->
         <div class="footer">
             <div class="footer-content">
-                <span class="footer-text">System by</span>
-                <a href="https://geton.asia" target="_blank" rel="noopener noreferrer" class="footer-link">
-                    <img src="https://www.geton.asia/web/image/2798-ec46cf49/GetOn-LS.svg" alt="GetOn" class="footer-logo" onerror="this.style.display='none';">
-                </a>
+                <div class="footer-left">
+                    <span class="footer-text">System by</span>
+                    <a href="https://geton.asia" target="_blank" rel="noopener noreferrer" class="footer-link">
+                        <img src="https://www.geton.asia/web/image/2798-ec46cf49/GetOn-LS.svg" alt="GetOn" class="footer-logo" onerror="this.style.display='none';">
+                    </a>
+                </div>
+                <div class="footer-right">
+                    <span class="version-number">v2.1.0</span>
+                </div>
             </div>
         </div>
 
@@ -2576,5 +2613,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ad3f78014b4dc',t:'MTc1OTQ3NzYxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ad7e64016b4dc',t:'MTc1OTQ3Nzc3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
