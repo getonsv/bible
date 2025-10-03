@@ -1234,7 +1234,7 @@
         <div class="auth-container">
             <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="auth-logo" onerror="this.style.display='none';">
 
-            <p class="auth-subtitle">Payment Voucher System</p>
+            <p class="auth-subtitle">Payment Voucher System.</p>
             <p style="font-size: 0.85em; color: #94a3b8; margin-top: -15px; margin-bottom: 30px;">Your information will be recorded with each voucher for tracking purposes.</p>
             
             <div class="google-signin-btn" id="googleSignInBtn">
@@ -1728,20 +1728,107 @@
             const idType = document.getElementById('idType').value;
             const idInput = document.getElementById('idNumber');
             
+            console.log('ID Type selected:', idType); // Debug log
+            
+            // Always clear the field first
+            idInput.value = '';
+            
             if (idType === 'NRIC') {
+                // Enable the field completely
+                idInput.disabled = false;
+                idInput.readOnly = false;
+                idInput.removeAttribute('disabled');
+                idInput.removeAttribute('readonly');
+                idInput.required = true;
+                
+                // Set NRIC properties
                 idInput.placeholder = 'e.g. 123456-78-9012';
-                idInput.disabled = false;
                 idInput.maxLength = 14;
-                idInput.addEventListener('input', formatNRIC);
+                
+                // Ensure field is fully editable
+                idInput.style.backgroundColor = '#ffffff';
+                idInput.style.cursor = 'text';
+                idInput.style.opacity = '1';
+                idInput.style.pointerEvents = 'auto';
+                idInput.style.color = '#1e293b';
+                
+                // Remove all existing event listeners by cloning
+                const newInput = idInput.cloneNode(true);
+                idInput.parentNode.replaceChild(newInput, idInput);
+                
+                // Get the new input reference and add NRIC formatting
+                const updatedInput = document.getElementById('idNumber');
+                updatedInput.addEventListener('input', formatNRIC);
+                updatedInput.addEventListener('keydown', function(e) {
+                    // Allow backspace, delete, tab, escape, enter
+                    if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+                        // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                        (e.keyCode === 65 && e.ctrlKey === true) ||
+                        (e.keyCode === 67 && e.ctrlKey === true) ||
+                        (e.keyCode === 86 && e.ctrlKey === true) ||
+                        (e.keyCode === 88 && e.ctrlKey === true)) {
+                        return;
+                    }
+                    // Ensure that it is a number and stop the keypress
+                    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                        e.preventDefault();
+                    }
+                });
+                
+                // Force focus after a short delay
+                setTimeout(() => {
+                    updatedInput.focus();
+                    updatedInput.click();
+                }, 100);
+                
+                console.log('NRIC field enabled and focused'); // Debug log
+                
             } else if (idType === 'Passport') {
-                idInput.placeholder = 'e.g. A12345678';
+                // Enable the field completely
                 idInput.disabled = false;
+                idInput.readOnly = false;
+                idInput.removeAttribute('disabled');
+                idInput.removeAttribute('readonly');
+                idInput.required = true;
+                
+                // Set Passport properties
+                idInput.placeholder = 'e.g. A12345678';
                 idInput.maxLength = 20;
-                idInput.removeEventListener('input', formatNRIC);
+                
+                // Ensure field is fully editable
+                idInput.style.backgroundColor = '#ffffff';
+                idInput.style.cursor = 'text';
+                idInput.style.opacity = '1';
+                idInput.style.pointerEvents = 'auto';
+                idInput.style.color = '#1e293b';
+                
+                // Remove all existing event listeners by cloning
+                const newInput = idInput.cloneNode(true);
+                idInput.parentNode.replaceChild(newInput, idInput);
+                
+                // Get the new input reference and add Passport formatting
+                const updatedInput = document.getElementById('idNumber');
+                updatedInput.addEventListener('input', formatPassport);
+                
+                // Force focus after a short delay
+                setTimeout(() => {
+                    updatedInput.focus();
+                    updatedInput.click();
+                }, 100);
+                
+                console.log('Passport field enabled and focused'); // Debug log
+                
             } else {
+                // Disable the field
                 idInput.placeholder = 'Select ID type first';
                 idInput.disabled = true;
-                idInput.value = '';
+                idInput.required = false;
+                idInput.style.backgroundColor = '#f9fafb';
+                idInput.style.cursor = 'not-allowed';
+                idInput.style.opacity = '0.6';
+                idInput.style.pointerEvents = 'none';
+                idInput.style.color = '#6b7280';
+                console.log('ID field disabled'); // Debug log
             }
         }
 
@@ -2523,5 +2610,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98893f081034b4dc',t:'MTc1OTQ2MTAyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98894ab1d3d4b4dc',t:'MTc1OTQ2MTUwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
