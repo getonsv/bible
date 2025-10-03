@@ -1524,7 +1524,39 @@
             // Reset form
             document.getElementById('voucherForm').reset();
             document.getElementById('voucherPreview').style.display = 'none';
-            document.getElementById('pdfBtn').style.display = 'none';
+            
+            // Reset voucher number and date
+            document.getElementById('voucherNo').value = generateVoucherNumber();
+            document.getElementById('date').value = getTodayDate();
+            
+            // Reset line items to just one row
+            const tbody = document.getElementById('lineItemsBody');
+            tbody.innerHTML = `
+                <tr class="line-item-row">
+                    <td><input type="date" class="item-date" value="${getTodayDate()}" required></td>
+                    <td><input type="text" class="item-bill" placeholder="Bill number (optional)"></td>
+                    <td><input type="text" class="item-desc" placeholder="Item description" required></td>
+                    <td><input type="number" class="item-amount" step="0.01" placeholder="0.00" required></td>
+                    <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
+                </tr>
+            `;
+            
+            // Re-setup event listeners for the new line item
+            const newInputs = tbody.querySelectorAll('input');
+            newInputs.forEach(input => {
+                input.addEventListener('input', calculateTotal);
+                input.addEventListener('change', calculateTotal);
+            });
+            
+            // Reset calculations
+            calculateTotal();
+            
+            // Reset ID field
+            document.getElementById('idNumber').disabled = true;
+            document.getElementById('idNumber').placeholder = 'Select ID type first';
+            
+            // Reset reference field requirement
+            updateReferenceRequirement();
             
             showLoginScreen();
             showNotification('Logged out successfully', 'info');
@@ -2543,5 +2575,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ace4c776cb4dc',t:'MTc1OTQ3NzM3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988acffda716b4dc',t:'MTc1OTQ3NzQ0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
