@@ -1702,18 +1702,27 @@
             const referenceInput = document.getElementById('reference');
             const referenceLabel = document.getElementById('referenceLabel');
             
+            console.log('Payment method changed to:', paymentMethod);
+            
             if (paymentMethod === 'Cash') {
                 referenceInput.required = false;
+                referenceInput.style.borderColor = '#e5e7eb';
                 referenceLabel.textContent = '(Optional)';
                 referenceLabel.style.color = '#6c757d';
+                console.log('Reference set to optional for Cash');
             } else if (paymentMethod && paymentMethod !== 'Cash') {
                 referenceInput.required = true;
+                referenceInput.style.borderColor = '#ef4444';
                 referenceLabel.textContent = '(Required)';
-                referenceLabel.style.color = '#e74c3c';
+                referenceLabel.style.color = '#ef4444';
+                referenceLabel.style.fontWeight = '600';
+                console.log('Reference set to required for:', paymentMethod);
             } else {
                 referenceInput.required = false;
+                referenceInput.style.borderColor = '#e5e7eb';
                 referenceLabel.textContent = '(Optional)';
                 referenceLabel.style.color = '#6c757d';
+                console.log('Reference set to optional (no method selected)');
             }
         }
 
@@ -1724,96 +1733,85 @@
             
             console.log('ID Type selected:', idType);
             
-            // Completely reset the field
+            // Clear the field value
             idInput.value = '';
-            idInput.disabled = false;
-            idInput.readOnly = false;
-            idInput.removeAttribute('disabled');
-            idInput.removeAttribute('readonly');
-            
-            // Remove all existing event listeners by cloning the element
-            const newIdInput = idInput.cloneNode(true);
-            idInput.parentNode.replaceChild(newIdInput, idInput);
-            
-            // Get reference to the new element
-            const freshIdInput = document.getElementById('idNumber');
             
             if (idType === 'NRIC') {
                 // Configure for NRIC
-                freshIdInput.placeholder = 'e.g. 123456-78-9012';
-                freshIdInput.maxLength = 14;
-                freshIdInput.required = true;
-                freshIdInput.disabled = false;
-                freshIdInput.readOnly = false;
+                idInput.placeholder = 'e.g. 123456-78-9012';
+                idInput.maxLength = 14;
+                idInput.required = true;
+                idInput.disabled = false;
+                idInput.readOnly = false;
+                
+                // Remove disabled attribute and force enable
+                idInput.removeAttribute('disabled');
+                idInput.removeAttribute('readonly');
                 
                 // Force enable the field with inline styles
-                freshIdInput.style.backgroundColor = '#ffffff';
-                freshIdInput.style.cursor = 'text';
-                freshIdInput.style.opacity = '1';
-                freshIdInput.style.pointerEvents = 'auto';
-                freshIdInput.style.color = '#1e293b';
-                freshIdInput.style.border = '2px solid #e5e7eb';
+                idInput.style.setProperty('background-color', '#ffffff', 'important');
+                idInput.style.setProperty('cursor', 'text', 'important');
+                idInput.style.setProperty('opacity', '1', 'important');
+                idInput.style.setProperty('pointer-events', 'auto', 'important');
+                idInput.style.setProperty('color', '#1e293b', 'important');
+                idInput.style.setProperty('border', '2px solid #e5e7eb', 'important');
+                
+                // Remove existing event listeners
+                idInput.removeEventListener('input', formatNRIC);
+                idInput.removeEventListener('input', formatPassport);
                 
                 // Add NRIC formatting
-                freshIdInput.addEventListener('input', formatNRIC);
-                freshIdInput.addEventListener('keydown', function(e) {
-                    // Allow navigation and editing keys
-                    if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
-                        (e.ctrlKey && [65, 67, 86, 88, 90].indexOf(e.keyCode) !== -1)) {
-                        return true;
-                    }
-                    // Only allow numbers for NRIC
-                    if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
-                        e.preventDefault();
-                        return false;
-                    }
-                });
+                idInput.addEventListener('input', formatNRIC);
                 
-                // Focus the field
-                setTimeout(() => {
-                    freshIdInput.focus();
-                    freshIdInput.click();
-                }, 100);
+                // Focus the field immediately
+                idInput.focus();
                 
-                console.log('NRIC field configured and focused');
+                console.log('NRIC field configured and enabled');
                 
             } else if (idType === 'Passport') {
                 // Configure for Passport
-                freshIdInput.placeholder = 'e.g. A12345678';
-                freshIdInput.maxLength = 20;
-                freshIdInput.required = true;
-                freshIdInput.disabled = false;
-                freshIdInput.readOnly = false;
+                idInput.placeholder = 'e.g. A12345678';
+                idInput.maxLength = 20;
+                idInput.required = true;
+                idInput.disabled = false;
+                idInput.readOnly = false;
+                
+                // Remove disabled attribute and force enable
+                idInput.removeAttribute('disabled');
+                idInput.removeAttribute('readonly');
                 
                 // Force enable the field with inline styles
-                freshIdInput.style.backgroundColor = '#ffffff';
-                freshIdInput.style.cursor = 'text';
-                freshIdInput.style.opacity = '1';
-                freshIdInput.style.pointerEvents = 'auto';
-                freshIdInput.style.color = '#1e293b';
-                freshIdInput.style.border = '2px solid #e5e7eb';
+                idInput.style.setProperty('background-color', '#ffffff', 'important');
+                idInput.style.setProperty('cursor', 'text', 'important');
+                idInput.style.setProperty('opacity', '1', 'important');
+                idInput.style.setProperty('pointer-events', 'auto', 'important');
+                idInput.style.setProperty('color', '#1e293b', 'important');
+                idInput.style.setProperty('border', '2px solid #e5e7eb', 'important');
+                
+                // Remove existing event listeners
+                idInput.removeEventListener('input', formatNRIC);
+                idInput.removeEventListener('input', formatPassport);
                 
                 // Add passport formatting
-                freshIdInput.addEventListener('input', formatPassport);
+                idInput.addEventListener('input', formatPassport);
                 
-                // Focus the field
-                setTimeout(() => {
-                    freshIdInput.focus();
-                    freshIdInput.click();
-                }, 100);
+                // Focus the field immediately
+                idInput.focus();
                 
-                console.log('Passport field configured and focused');
+                console.log('Passport field configured and enabled');
                 
             } else {
                 // Disable the field when no type is selected
-                freshIdInput.placeholder = 'Select ID type first';
-                freshIdInput.required = false;
-                freshIdInput.disabled = true;
-                freshIdInput.style.backgroundColor = '#f9fafb';
-                freshIdInput.style.cursor = 'not-allowed';
-                freshIdInput.style.opacity = '0.6';
-                freshIdInput.style.color = '#6b7280';
-                freshIdInput.style.border = '2px solid #e5e7eb';
+                idInput.placeholder = 'Select ID type first';
+                idInput.required = false;
+                idInput.disabled = true;
+                
+                // Apply disabled styles
+                idInput.style.setProperty('background-color', '#f9fafb', 'important');
+                idInput.style.setProperty('cursor', 'not-allowed', 'important');
+                idInput.style.setProperty('opacity', '0.6', 'important');
+                idInput.style.setProperty('color', '#6b7280', 'important');
+                idInput.style.setProperty('border', '2px solid #e5e7eb', 'important');
                 
                 console.log('ID field disabled');
             }
@@ -1841,6 +1839,7 @@
 
         // Add line item functionality
         function addLineItem() {
+            console.log('Adding new line item...');
             const tbody = document.getElementById('lineItemsBody');
             const newRow = document.createElement('tr');
             newRow.className = 'line-item-row';
@@ -1856,6 +1855,7 @@
             // Add event listener to new amount input
             const amountInput = newRow.querySelector('.item-amount');
             amountInput.addEventListener('input', calculateTotal);
+            console.log('Added event listener to new amount input');
             
             // Set today's date for new row - ensure it's set properly
             const dateInput = newRow.querySelector('.item-date');
@@ -1864,6 +1864,10 @@
                 String(today.getMonth() + 1).padStart(2, '0') + '-' + 
                 String(today.getDate()).padStart(2, '0');
             dateInput.value = todayString;
+            console.log('Set date for new line item:', todayString);
+            
+            // Recalculate total
+            calculateTotal();
         }
 
         function removeLineItem(button) {
@@ -1874,11 +1878,15 @@
 
         // Calculate total from all line items
         function calculateTotal() {
+            console.log('Calculating total...');
             const amountInputs = document.querySelectorAll('.item-amount');
             let total = 0;
             
-            amountInputs.forEach(input => {
+            console.log('Found', amountInputs.length, 'amount inputs');
+            
+            amountInputs.forEach((input, index) => {
                 const value = parseFloat(input.value) || 0;
+                console.log(`Amount input ${index + 1}:`, input.value, '-> parsed:', value);
                 total += value;
             });
             
@@ -1886,17 +1894,32 @@
             const tax = 0; // No tax for this example
             const finalTotal = subtotal + tax;
 
-            document.getElementById('subtotal').textContent = `RM ${subtotal.toFixed(2)}`;
-            document.getElementById('tax').textContent = `RM ${tax.toFixed(2)}`;
-            document.getElementById('total').textContent = `RM ${finalTotal.toFixed(2)}`;
+            console.log('Calculated totals - Subtotal:', subtotal, 'Tax:', tax, 'Final Total:', finalTotal);
+
+            // Update the display elements
+            const subtotalElement = document.getElementById('subtotal');
+            const taxElement = document.getElementById('tax');
+            const totalElement = document.getElementById('total');
+            
+            if (subtotalElement) {
+                subtotalElement.textContent = `RM ${subtotal.toFixed(2)}`;
+                console.log('Updated subtotal display');
+            }
+            
+            if (taxElement) {
+                taxElement.textContent = `RM ${tax.toFixed(2)}`;
+                console.log('Updated tax display');
+            }
+            
+            if (totalElement) {
+                totalElement.textContent = `RM ${finalTotal.toFixed(2)}`;
+                console.log('Updated total display');
+            }
         }
 
         // Add event listeners to existing amount inputs
         document.addEventListener('DOMContentLoaded', function() {
-            const existingAmountInputs = document.querySelectorAll('.item-amount');
-            existingAmountInputs.forEach(input => {
-                input.addEventListener('input', calculateTotal);
-            });
+            console.log('DOM loaded, initializing form...');
             
             // Set today's date properly with string format
             const today = new Date();
@@ -1904,23 +1927,39 @@
                 String(today.getMonth() + 1).padStart(2, '0') + '-' + 
                 String(today.getDate()).padStart(2, '0');
             
+            console.log('Setting date to:', todayString);
+            
             // Set main date field
             const mainDateInput = document.getElementById('date');
             if (mainDateInput) {
                 mainDateInput.value = todayString;
+                console.log('Main date field set to:', mainDateInput.value);
             }
             
             // Set initial line item date
             const initialDateInput = document.querySelector('.item-date');
             if (initialDateInput) {
                 initialDateInput.value = todayString;
+                console.log('Initial line item date set to:', initialDateInput.value);
             }
             
-            // Generate voucher number
+            // Generate and set voucher number
+            const voucherNumber = generateVoucherNumber();
             const voucherNoInput = document.getElementById('voucherNo');
             if (voucherNoInput) {
-                voucherNoInput.value = generateVoucherNumber();
+                voucherNoInput.value = voucherNumber;
+                console.log('Voucher number generated:', voucherNumber);
             }
+            
+            // Add event listeners to amount inputs for calculation
+            const existingAmountInputs = document.querySelectorAll('.item-amount');
+            existingAmountInputs.forEach(input => {
+                input.addEventListener('input', calculateTotal);
+                console.log('Added event listener to amount input');
+            });
+            
+            // Initial calculation
+            calculateTotal();
         });
 
         // Notification system
@@ -1958,8 +1997,34 @@
         }
 
         async function generateVoucher() {
+            console.log('Generate voucher function called');
+            
             const form = document.getElementById('voucherForm');
-            if (!form.checkValidity()) {
+            
+            // Check form validity with detailed logging
+            console.log('Checking form validity...');
+            const requiredFields = form.querySelectorAll('[required]');
+            let hasErrors = false;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    console.log('Missing required field:', field.id || field.name, 'Value:', field.value);
+                    hasErrors = true;
+                }
+            });
+            
+            // Special check for payment method and reference
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const reference = document.getElementById('reference').value;
+            
+            if (paymentMethod && paymentMethod !== 'Cash' && !reference.trim()) {
+                console.log('Reference is required for payment method:', paymentMethod);
+                hasErrors = true;
+                showNotification('Reference number is required for ' + paymentMethod + ' payments.', 'error');
+                return;
+            }
+            
+            if (hasErrors || !form.checkValidity()) {
                 form.reportValidity();
                 showNotification('Please fill in all required fields correctly.', 'error');
                 return;
@@ -1968,98 +2033,116 @@
             const generateBtn = document.querySelector('.btn-primary');
             setButtonLoading(generateBtn, true);
 
-            // Get form values
-            const voucherNo = document.getElementById('voucherNo').value;
-            const date = document.getElementById('date').value;
-            const payTo = document.getElementById('payTo').value;
-            const idType = document.getElementById('idType').value;
-            const idNumber = document.getElementById('idNumber').value;
-            const paymentMethod = document.getElementById('paymentMethod').value;
-            const description = document.getElementById('description').value;
-            const reference = document.getElementById('reference').value || 'N/A';
+            try {
+                // Get form values
+                const voucherNo = document.getElementById('voucherNo').value;
+                const date = document.getElementById('date').value;
+                const payTo = document.getElementById('payTo').value;
+                const idType = document.getElementById('idType').value;
+                const idNumber = document.getElementById('idNumber').value;
+                const description = document.getElementById('description').value;
+                const referenceValue = reference || 'N/A';
 
-            // Get line items
-            const lineItemRows = document.querySelectorAll('.line-item-row');
-            const lineItems = [];
-            let totalAmount = 0;
-
-            lineItemRows.forEach(row => {
-                const itemDate = row.querySelector('.item-date').value;
-                const billNo = row.querySelector('.item-bill').value;
-                const itemDesc = row.querySelector('.item-desc').value;
-                const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
-
-                if (itemDate && itemDesc && amount !== 0) {
-                    lineItems.push({
-                        date: new Date(itemDate).toLocaleDateString('en-GB'),
-                        billNo: billNo || 'N/A',
-                        description: itemDesc,
-                        amount: amount
-                    });
-                    totalAmount += amount;
-                }
-            });
-
-            if (lineItems.length === 0) {
-                setButtonLoading(generateBtn, false);
-                showNotification('Please add at least one line item with valid data.', 'error');
-                return;
-            }
-
-            // Format date
-            const formattedDate = new Date(date).toLocaleDateString('en-GB');
-
-            // Update preview
-            document.getElementById('previewVoucherNo').textContent = voucherNo;
-            document.getElementById('previewDate').textContent = formattedDate;
-            document.getElementById('previewPayTo').textContent = payTo;
-            document.getElementById('previewIdLabel').textContent = `${idType} No.:`;
-            document.getElementById('previewIdNumber').textContent = idNumber;
-            document.getElementById('previewMethod').textContent = paymentMethod;
-            document.getElementById('previewAmount').textContent = `RM ${totalAmount.toFixed(2)}`;
-            document.getElementById('previewReference').textContent = reference;
-            document.getElementById('previewDescription').textContent = description;
-            document.getElementById('previewTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
-
-            // Update line items table in preview
-            const previewBody = document.getElementById('previewLineItemsBody');
-            previewBody.innerHTML = '';
-            
-            lineItems.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.date}</td>
-                    <td>${item.billNo}</td>
-                    <td>${item.description}</td>
-                    <td class="amount-cell">RM ${item.amount.toFixed(2)}</td>
-                `;
-                previewBody.appendChild(row);
-            });
-
-            document.getElementById('previewLineItemsTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
-
-            // Show preview and buttons
-            document.getElementById('voucherPreview').style.display = 'block';
-            document.getElementById('pdfBtn').style.display = 'inline-flex';
-            document.getElementById('sheetsBtn').style.display = 'inline-flex';
-
-            // Automatically save to Google Sheets
-            showNotification('Generating voucher and saving data...', 'info');
-            await autoSaveToGoogleSheets();
-
-            // Automatically generate PDF
-            await autoSavePDF();
-
-            setButtonLoading(generateBtn, false);
-            showNotification('Voucher generated, saved to Google Sheets, and PDF downloaded!', 'success');
-
-            // Scroll to preview
-            setTimeout(() => {
-                document.getElementById('voucherPreview').scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
+                console.log('Form values collected:', {
+                    voucherNo, date, payTo, idType, idNumber, paymentMethod, description, referenceValue
                 });
-            }, 500);
+
+                // Get line items
+                const lineItemRows = document.querySelectorAll('.line-item-row');
+                const lineItems = [];
+                let totalAmount = 0;
+
+                console.log('Processing', lineItemRows.length, 'line item rows');
+
+                lineItemRows.forEach((row, index) => {
+                    const itemDate = row.querySelector('.item-date').value;
+                    const billNo = row.querySelector('.item-bill').value;
+                    const itemDesc = row.querySelector('.item-desc').value;
+                    const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
+
+                    console.log(`Line item ${index + 1}:`, { itemDate, billNo, itemDesc, amount });
+
+                    if (itemDate && itemDesc && amount > 0) {
+                        lineItems.push({
+                            date: new Date(itemDate).toLocaleDateString('en-GB'),
+                            billNo: billNo || 'N/A',
+                            description: itemDesc,
+                            amount: amount
+                        });
+                        totalAmount += amount;
+                    }
+                });
+
+                console.log('Valid line items:', lineItems.length, 'Total amount:', totalAmount);
+
+                if (lineItems.length === 0) {
+                    setButtonLoading(generateBtn, false);
+                    showNotification('Please add at least one line item with valid data.', 'error');
+                    return;
+                }
+
+                // Format date
+                const formattedDate = new Date(date).toLocaleDateString('en-GB');
+
+                // Update preview
+                document.getElementById('previewVoucherNo').textContent = voucherNo;
+                document.getElementById('previewDate').textContent = formattedDate;
+                document.getElementById('previewPayTo').textContent = payTo;
+                document.getElementById('previewIdLabel').textContent = `${idType} No.:`;
+                document.getElementById('previewIdNumber').textContent = idNumber;
+                document.getElementById('previewMethod').textContent = paymentMethod;
+                document.getElementById('previewAmount').textContent = `RM ${totalAmount.toFixed(2)}`;
+                document.getElementById('previewReference').textContent = referenceValue;
+                document.getElementById('previewDescription').textContent = description;
+                document.getElementById('previewTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
+
+                // Update line items table in preview
+                const previewBody = document.getElementById('previewLineItemsBody');
+                previewBody.innerHTML = '';
+                
+                lineItems.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.date}</td>
+                        <td>${item.billNo}</td>
+                        <td>${item.description}</td>
+                        <td class="amount-cell">RM ${item.amount.toFixed(2)}</td>
+                    `;
+                    previewBody.appendChild(row);
+                });
+
+                document.getElementById('previewLineItemsTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
+
+                // Show preview and buttons
+                document.getElementById('voucherPreview').style.display = 'block';
+                document.getElementById('pdfBtn').style.display = 'inline-flex';
+                document.getElementById('sheetsBtn').style.display = 'inline-flex';
+
+                console.log('Voucher preview updated successfully');
+
+                // Automatically save to Google Sheets
+                showNotification('Generating voucher and saving data...', 'info');
+                await autoSaveToGoogleSheets();
+
+                // Automatically generate PDF
+                await autoSavePDF();
+
+                setButtonLoading(generateBtn, false);
+                showNotification('Voucher generated, saved to Google Sheets, and PDF downloaded!', 'success');
+
+                // Scroll to preview
+                setTimeout(() => {
+                    document.getElementById('voucherPreview').scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 500);
+
+            } catch (error) {
+                console.error('Error generating voucher:', error);
+                setButtonLoading(generateBtn, false);
+                showNotification('Error generating voucher. Please try again.', 'error');
+            }
         }
 
         // Automatic PDF generation (called during generation)
@@ -2620,5 +2703,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889568a55b5b4dc',t:'MTc1OTQ2MTk4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988a4d248278b4dc',t:'MTc1OTQ3MjA4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
