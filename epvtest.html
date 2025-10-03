@@ -908,16 +908,6 @@
                 padding: 12px 15px;
             }
             
-            .footer-content {
-                flex-direction: column;
-                gap: 8px;
-                text-align: center;
-            }
-            
-            .footer-left {
-                justify-content: center;
-            }
-            
             .footer-text {
                 font-size: 0.75em;
             }
@@ -1214,53 +1204,16 @@
 
         // Google Sheets Configuration
         const GOOGLE_SHEETS_CONFIG = {
-            apiKey: 'AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Replace with your API key
-            spreadsheetId: '1O-4lyQ9Xs5tzo-sBbXFvywKYB8NHrMvemhDywdCvPoU',
-            range: 'Sheet1!A:O', // Updated range for all columns
-            discoveryDoc: 'https://sheets.googleapis.com/$discovery/rest?version=v4'
+            // Your actual Web App URL from Google Apps Script
+            webAppUrl: 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec',
+            spreadsheetId: '1O-4lyQ9Xs5tzo-sBbXFvywKYB8NHrMvemhDywdCvPoU'
         };
-
-        // Initialize Google APIs
-        let gapi;
-        let gapiInited = false;
-        let gisInited = false;
 
         // Initialize the app when page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 App loading...');
-            initializeGoogleAPIs();
             checkExistingLogin();
         });
-
-        // Initialize Google APIs
-        async function initializeGoogleAPIs() {
-            console.log('🔧 Initializing Google APIs...');
-            
-            try {
-                // Initialize Google API
-                if (typeof gapi !== 'undefined') {
-                    await new Promise((resolve) => {
-                        gapi.load('client', resolve);
-                    });
-                    
-                    await gapi.client.init({
-                        apiKey: GOOGLE_SHEETS_CONFIG.apiKey,
-                        discoveryDocs: [GOOGLE_SHEETS_CONFIG.discoveryDoc],
-                    });
-                    
-                    gapiInited = true;
-                    console.log('✅ Google Sheets API initialized');
-                } else {
-                    console.log('⚠️ Google API not available, using fallback');
-                }
-                
-                gisInited = true;
-                
-            } catch (error) {
-                console.error('❌ Error initializing Google APIs:', error);
-                showNotification('Google services initialization failed. Some features may not work.', 'error');
-            }
-        }
 
         // Check for existing login
         function checkExistingLogin() {
@@ -1309,31 +1262,34 @@
         // Separate function for logging to sheets (non-blocking)
         async function logLoginToSheets() {
             try {
-                if (gapiInited && gapi.client.sheets && currentUser) {
-                    const timestamp = new Date().toISOString();
-                    const values = [[
-                        timestamp,
-                        'LOGIN',
-                        currentUser.name,
-                        currentUser.email,
-                        'User Login',
-                        'User successfully logged in',
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        currentUser.name,
-                        currentUser.email,
-                        currentUser.picture
-                    ]];
+                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
+                    const loginData = {
+                        action: 'addRecord',
+                        data: {
+                            timestamp: new Date().toISOString(),
+                            voucherNo: 'LOGIN',
+                            date: new Date().toISOString().split('T')[0],
+                            payTo: currentUser.name,
+                            idType: 'LOGIN',
+                            idNumber: 'User Login',
+                            paymentMethod: 'System',
+                            reference: 'User successfully logged in',
+                            description: `User ${currentUser.name} logged in`,
+                            totalAmount: 'N/A',
+                            lineItemsCount: '0',
+                            lineItemsDetails: '[]',
+                            generatedBy: currentUser.name,
+                            generatedByEmail: currentUser.email,
+                            userPictureURL: currentUser.picture
+                        }
+                    };
 
-                    await gapi.client.sheets.spreadsheets.values.append({
-                        spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
-                        range: 'Sheet1!A:O',
-                        valueInputOption: 'USER_ENTERED',
-                        resource: { values: values }
+                    await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(loginData)
                     });
                     
                     console.log('✅ Login logged to Google Sheets');
@@ -1362,9 +1318,6 @@
             
             updateUserBanner();
             initializeForm();
-            
-            // Initialize spreadsheet headers
-            await initializeSpreadsheetHeaders();
         }
 
         // Update user banner with weather and greeting
@@ -1400,44 +1353,51 @@
 
         // Save voucher data to Google Sheets
         async function saveVoucherToGoogleSheets(voucherData) {
-            if (!gapiInited || !gapi.client.sheets) {
-                console.log('⚠️ Google Sheets API not available, saving locally');
+            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
+                console.log('⚠️ Google Sheets Web App URL not configured');
                 console.log('📊 Voucher Data:', voucherData);
                 return false;
             }
 
             try {
-                const timestamp = new Date().toISOString();
-                const values = [[
-                    timestamp,
-                    voucherData.voucherNo,
-                    voucherData.date,
-                    voucherData.payTo,
-                    voucherData.idType,
-                    voucherData.idNumber,
-                    voucherData.paymentMethod,
-                    voucherData.reference,
-                    voucherData.description,
-                    voucherData.totalAmount,
-                    voucherData.lineItemsCount,
-                    voucherData.lineItemsDetails,
-                    voucherData.generatedBy,
-                    voucherData.generatedByEmail,
-                    voucherData.userPictureURL
-                ]];
-
-                const request = {
-                    spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
-                    range: 'Sheet1!A:O',
-                    valueInputOption: 'USER_ENTERED',
-                    resource: {
-                        values: values
+                const requestData = {
+                    action: 'addRecord',
+                    data: {
+                        timestamp: new Date().toISOString(),
+                        voucherNo: voucherData.voucherNo,
+                        date: voucherData.date,
+                        payTo: voucherData.payTo,
+                        idType: voucherData.idType,
+                        idNumber: voucherData.idNumber,
+                        paymentMethod: voucherData.paymentMethod,
+                        reference: voucherData.reference,
+                        description: voucherData.description,
+                        totalAmount: voucherData.totalAmount,
+                        lineItemsCount: voucherData.lineItemsCount.toString(),
+                        lineItemsDetails: voucherData.lineItemsDetails,
+                        generatedBy: voucherData.generatedBy,
+                        generatedByEmail: voucherData.generatedByEmail,
+                        userPictureURL: voucherData.userPictureURL
                     }
                 };
 
-                await gapi.client.sheets.spreadsheets.values.append(request);
-                console.log('✅ Voucher saved to Google Sheets');
-                return true;
+                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ Voucher saved to Google Sheets');
+                    return true;
+                } else {
+                    console.error('❌ Error from Google Sheets:', result.error);
+                    return false;
+                }
                 
             } catch (error) {
                 console.error('❌ Error saving to Google Sheets:', error);
@@ -1448,44 +1408,41 @@
 
         // Get voucher data from Google Sheets
         async function getVouchersFromGoogleSheets() {
-            if (!gapiInited || !gapi.client.sheets) {
-                console.log('⚠️ Google Sheets API not available');
+            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
+                console.log('⚠️ Google Sheets Web App URL not configured');
                 return [];
             }
 
             try {
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
-                    range: GOOGLE_SHEETS_CONFIG.range,
+                const requestData = {
+                    action: 'getRecords'
+                };
+
+                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
                 });
 
-                const rows = response.result.values;
-                if (!rows || rows.length === 0) {
-                    console.log('📊 No data found in spreadsheet');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    // Filter out login records and return only vouchers
+                    const vouchers = result.data.filter(row => 
+                        row.voucherNo && 
+                        row.voucherNo !== 'LOGIN' && 
+                        row.voucherNo !== 'PDF_DOWNLOADED' &&
+                        row.voucherNo !== 'LOGOUT'
+                    );
+                    
+                    console.log('✅ Retrieved vouchers from Google Sheets:', vouchers.length);
+                    return vouchers;
+                } else {
+                    console.error('❌ Error from Google Sheets:', result.error);
                     return [];
                 }
-
-                // Skip header row and return data
-                const vouchers = rows.slice(1).map(row => ({
-                    timestamp: row[0] || '',
-                    voucherNo: row[1] || '',
-                    date: row[2] || '',
-                    payTo: row[3] || '',
-                    idType: row[4] || '',
-                    idNumber: row[5] || '',
-                    paymentMethod: row[6] || '',
-                    reference: row[7] || '',
-                    description: row[8] || '',
-                    totalAmount: row[9] || '',
-                    lineItemsCount: row[10] || '',
-                    lineItemsDetails: row[11] || '',
-                    generatedBy: row[12] || '',
-                    generatedByEmail: row[13] || '',
-                    userPictureURL: row[14] || ''
-                }));
-
-                console.log('✅ Retrieved vouchers from Google Sheets:', vouchers.length);
-                return vouchers;
                 
             } catch (error) {
                 console.error('❌ Error retrieving from Google Sheets:', error);
@@ -1493,58 +1450,7 @@
             }
         }
 
-        // Initialize spreadsheet headers if needed
-        async function initializeSpreadsheetHeaders() {
-            if (!gapiInited || !gapi.client.sheets) {
-                console.log('⚠️ Google Sheets API not available');
-                return;
-            }
 
-            try {
-                // Check if headers exist
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
-                    range: 'Sheet1!A1:O1',
-                });
-
-                const rows = response.result.values;
-                
-                // If no headers or incomplete headers, add them
-                if (!rows || rows.length === 0 || rows[0].length < 15) {
-                    const headers = [
-                        'Timestamp',
-                        'Voucher No',
-                        'Date', 
-                        'Pay To',
-                        'ID Type',
-                        'ID Number',
-                        'Payment Method',
-                        'Reference',
-                        'Description',
-                        'Total Amount',
-                        'Line Items Count',
-                        'Line Items Details',
-                        'Generated By',
-                        'Generated By Email',
-                        'User Picture URL'
-                    ];
-
-                    await gapi.client.sheets.spreadsheets.values.update({
-                        spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
-                        range: 'Sheet1!A1:O1',
-                        valueInputOption: 'USER_ENTERED',
-                        resource: {
-                            values: [headers]
-                        }
-                    });
-
-                    console.log('✅ Spreadsheet headers initialized');
-                }
-                
-            } catch (error) {
-                console.error('❌ Error initializing headers:', error);
-            }
-        }
 
         // Logout function
         function logout() {
@@ -1602,31 +1508,34 @@
         // Log logout (non-blocking)
         async function logLogoutToSheets() {
             try {
-                if (gapiInited && gapi.client.sheets && currentUser) {
-                    const timestamp = new Date().toISOString();
-                    const values = [[
-                        timestamp,
-                        'LOGOUT',
-                        currentUser.name,
-                        currentUser.email,
-                        'User Logout',
-                        'User logged out',
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        currentUser.name,
-                        currentUser.email,
-                        currentUser.picture
-                    ]];
+                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
+                    const logoutData = {
+                        action: 'addRecord',
+                        data: {
+                            timestamp: new Date().toISOString(),
+                            voucherNo: 'LOGOUT',
+                            date: new Date().toISOString().split('T')[0],
+                            payTo: currentUser.name,
+                            idType: 'LOGOUT',
+                            idNumber: 'User Logout',
+                            paymentMethod: 'System',
+                            reference: 'User logged out',
+                            description: `User ${currentUser.name} logged out`,
+                            totalAmount: 'N/A',
+                            lineItemsCount: '0',
+                            lineItemsDetails: '[]',
+                            generatedBy: currentUser.name,
+                            generatedByEmail: currentUser.email,
+                            userPictureURL: currentUser.picture
+                        }
+                    };
 
-                    await gapi.client.sheets.spreadsheets.values.append({
-                        spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
-                        range: 'Sheet1!A:O',
-                        valueInputOption: 'USER_ENTERED',
-                        resource: { values: values }
+                    await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(logoutData)
                     });
                     
                     console.log('✅ Logout logged to Google Sheets');
@@ -1832,6 +1741,8 @@
             newInputs.forEach(input => {
                 input.addEventListener('input', calculateTotal);
                 input.addEventListener('change', calculateTotal);
+                input.addEventListener('keyup', calculateTotal);
+                input.addEventListener('blur', calculateTotal);
             });
             
             calculateTotal();
@@ -1850,15 +1761,17 @@
         // Calculate total
         function calculateTotal() {
             let total = 0;
+            let itemCount = 0;
             
             // Get all line item rows and calculate total
             const lineItemRows = document.querySelectorAll('.line-item-row');
-            lineItemRows.forEach(row => {
+            lineItemRows.forEach((row, index) => {
                 const amountInput = row.querySelector('.item-amount');
                 if (amountInput && amountInput.value) {
                     const amount = parseFloat(amountInput.value) || 0;
                     if (amount > 0) {
                         total += amount;
+                        itemCount++;
                     }
                 }
             });
@@ -1872,7 +1785,7 @@
             document.getElementById('tax').textContent = `RM ${tax.toFixed(2)}`;
             document.getElementById('total').textContent = `RM ${finalTotal.toFixed(2)}`;
             
-            console.log('💰 Total calculated:', finalTotal.toFixed(2));
+            console.log(`💰 Total calculated: RM ${finalTotal.toFixed(2)} from ${itemCount} items`);
         }
 
         // Validate form
@@ -1958,11 +1871,13 @@
                 const lineItems = [];
                 let totalAmount = 0;
 
-                lineItemRows.forEach(row => {
+                lineItemRows.forEach((row, index) => {
                     const itemDate = row.querySelector('.item-date').value;
                     const billNo = row.querySelector('.item-bill').value;
                     const itemDesc = row.querySelector('.item-desc').value;
                     const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
+
+                    console.log(`Line item ${index + 1}:`, { itemDate, itemDesc, amount });
 
                     if (itemDate && itemDesc.trim() && amount > 0) {
                         lineItems.push({
@@ -2450,32 +2365,34 @@
         // Log PDF download (non-blocking)
         async function logPDFDownload(voucherNo, totalAmount, payTo) {
             try {
-                if (gapiInited && gapi.client.sheets && currentUser) {
-                    const timestamp = new Date().toISOString();
-                    const values = [[
-                        timestamp,
-                        'PDF_DOWNLOADED',
-                        currentUser.name,
-                        currentUser.email,
-                        'PDF Downloaded',
-                        `PDF downloaded for voucher ${voucherNo}`,
-                        voucherNo,
-                        '',
-                        payTo,
-                        '',
-                        '',
-                        totalAmount,
-                        '',
-                        currentUser.name,
-                        currentUser.email,
-                        currentUser.picture
-                    ]];
+                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
+                    const pdfData = {
+                        action: 'addRecord',
+                        data: {
+                            timestamp: new Date().toISOString(),
+                            voucherNo: 'PDF_DOWNLOADED',
+                            date: new Date().toISOString().split('T')[0],
+                            payTo: payTo,
+                            idType: 'PDF',
+                            idNumber: voucherNo,
+                            paymentMethod: 'Download',
+                            reference: `PDF downloaded for voucher ${voucherNo}`,
+                            description: `PDF downloaded for voucher ${voucherNo} - ${payTo}`,
+                            totalAmount: totalAmount,
+                            lineItemsCount: '1',
+                            lineItemsDetails: `[{"description": "PDF Download", "amount": "${totalAmount}"}]`,
+                            generatedBy: currentUser.name,
+                            generatedByEmail: currentUser.email,
+                            userPictureURL: currentUser.picture
+                        }
+                    };
 
-                    await gapi.client.sheets.spreadsheets.values.append({
-                        spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
-                        range: 'Sheet1!A:O',
-                        valueInputOption: 'USER_ENTERED',
-                        resource: { values: values }
+                    await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(pdfData)
                     });
                     
                     console.log('✅ PDF download logged to Google Sheets');
@@ -2613,5 +2530,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ad7e64016b4dc',t:'MTc1OTQ3Nzc3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ae52ad47eb4dc',t:'MTc1OTQ3ODMxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
