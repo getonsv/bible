@@ -841,10 +841,10 @@
         <!-- Login Screen -->
         <div class="login-screen" id="loginScreen">
             <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="login-logo" onerror="this.style.display='none';">
-            <h1 class="login-title">Payment Voucher System</h1>
+            <h3 class="login-title">Payment Voucher System</h3>
             <p class="login-subtitle">By accessing this system, you agree to GetOn's and Emmanuel Transport's terms of use and privacy policy.</p>
             <div id="g_id_onload"
-                 data-client_id="1234567890-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com"
+                 data-client_id="329748771929-h7ass17q1ebv5mmd4r7qs75o940elsrn.apps.googleusercontent.com"
                  data-context="signin"
                  data-ux_mode="popup"
                  data-callback="handleCredentialResponse"
@@ -985,6 +985,10 @@
                     📄 Generate Voucher
                 </button>
 
+                <button type="button" class="btn btn-secondary" onclick="viewVouchers()">
+                    📊 View All Vouchers
+                </button>
+
                 <button type="button" class="btn btn-primary" onclick="savePDF()" id="pdfBtn" style="display: none;">
                     📥 Save as PDF
                 </button>
@@ -1082,6 +1086,23 @@
                 </div>
             </div>
         </div>
+
+        <!-- Vouchers Modal -->
+        <div id="vouchersModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(5px);">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; width: 90%; max-width: 1000px; max-height: 80vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                <div style="padding: 30px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
+                    <h2 style="margin: 0; font-size: 1.5em; font-weight: 600;">All Vouchers</h2>
+                    <button onclick="closeVouchersModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; font-weight: bold; transition: all 0.3s ease;">×</button>
+                </div>
+                <div id="vouchersContent" style="padding: 30px; max-height: 60vh; overflow-y: auto;">
+                    <div id="vouchersLoading" style="text-align: center; padding: 40px;">
+                        <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f4f6; border-top: 4px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <p style="margin-top: 20px; color: #64748b;">Loading vouchers...</p>
+                    </div>
+                    <div id="vouchersTable" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1091,8 +1112,8 @@
         // Google Sheets Configuration
         const GOOGLE_SHEETS_CONFIG = {
             apiKey: 'AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Replace with your API key
-            spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', // Replace with your spreadsheet ID
-            range: 'Sheet1!A:Z', // Adjust range as needed
+            spreadsheetId: '1O-4lyQ9Xs5tzo-sBbXFvywKYB8NHrMvemhDywdCvPoU',
+            range: 'Sheet1!A:O', // Updated range for all columns
             discoveryDoc: 'https://sheets.googleapis.com/$discovery/rest?version=v4'
         };
 
@@ -1196,7 +1217,7 @@
         }
 
         // Show main application
-        function showMainApp() {
+        async function showMainApp() {
             console.log('🏠 Showing main app');
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('userBanner').style.display = 'block';
@@ -1204,6 +1225,9 @@
             
             updateUserBanner();
             initializeForm();
+            
+            // Initialize spreadsheet headers
+            await initializeSpreadsheetHeaders();
         }
 
         // Update user banner with weather and greeting
@@ -1237,32 +1261,37 @@
             document.getElementById('userAvatar').alt = currentUser.name;
         }
 
-        // Google Sheets logging function
-        async function logToGoogleSheets(type, data) {
+        // Save voucher data to Google Sheets
+        async function saveVoucherToGoogleSheets(voucherData) {
             if (!gapiInited || !gapi.client.sheets) {
-                console.log('⚠️ Google Sheets API not available, logging locally');
-                console.log(`📊 ${type} Log:`, data);
-                return;
+                console.log('⚠️ Google Sheets API not available, saving locally');
+                console.log('📊 Voucher Data:', voucherData);
+                return false;
             }
 
             try {
                 const timestamp = new Date().toISOString();
                 const values = [[
                     timestamp,
-                    type,
-                    data.action || '',
-                    data.user || '',
-                    data.email || '',
-                    data.voucherNo || '',
-                    data.amount || '',
-                    data.payTo || '',
-                    data.details || '',
-                    JSON.stringify(data)
+                    voucherData.voucherNo,
+                    voucherData.date,
+                    voucherData.payTo,
+                    voucherData.idType,
+                    voucherData.idNumber,
+                    voucherData.paymentMethod,
+                    voucherData.reference,
+                    voucherData.description,
+                    voucherData.totalAmount,
+                    voucherData.lineItemsCount,
+                    voucherData.lineItemsDetails,
+                    voucherData.generatedBy,
+                    voucherData.generatedByEmail,
+                    voucherData.userPictureURL
                 ]];
 
                 const request = {
                     spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
-                    range: 'Logs!A:J',
+                    range: 'Sheet1!A:O',
                     valueInputOption: 'USER_ENTERED',
                     resource: {
                         values: values
@@ -1270,12 +1299,113 @@
                 };
 
                 await gapi.client.sheets.spreadsheets.values.append(request);
-                console.log('✅ Logged to Google Sheets:', type);
+                console.log('✅ Voucher saved to Google Sheets');
+                return true;
                 
             } catch (error) {
-                console.error('❌ Error logging to Google Sheets:', error);
-                // Fallback to local logging
-                console.log(`📊 ${type} Log (Fallback):`, data);
+                console.error('❌ Error saving to Google Sheets:', error);
+                console.log('📊 Voucher Data (Fallback):', voucherData);
+                return false;
+            }
+        }
+
+        // Get voucher data from Google Sheets
+        async function getVouchersFromGoogleSheets() {
+            if (!gapiInited || !gapi.client.sheets) {
+                console.log('⚠️ Google Sheets API not available');
+                return [];
+            }
+
+            try {
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
+                    range: GOOGLE_SHEETS_CONFIG.range,
+                });
+
+                const rows = response.result.values;
+                if (!rows || rows.length === 0) {
+                    console.log('📊 No data found in spreadsheet');
+                    return [];
+                }
+
+                // Skip header row and return data
+                const vouchers = rows.slice(1).map(row => ({
+                    timestamp: row[0] || '',
+                    voucherNo: row[1] || '',
+                    date: row[2] || '',
+                    payTo: row[3] || '',
+                    idType: row[4] || '',
+                    idNumber: row[5] || '',
+                    paymentMethod: row[6] || '',
+                    reference: row[7] || '',
+                    description: row[8] || '',
+                    totalAmount: row[9] || '',
+                    lineItemsCount: row[10] || '',
+                    lineItemsDetails: row[11] || '',
+                    generatedBy: row[12] || '',
+                    generatedByEmail: row[13] || '',
+                    userPictureURL: row[14] || ''
+                }));
+
+                console.log('✅ Retrieved vouchers from Google Sheets:', vouchers.length);
+                return vouchers;
+                
+            } catch (error) {
+                console.error('❌ Error retrieving from Google Sheets:', error);
+                return [];
+            }
+        }
+
+        // Initialize spreadsheet headers if needed
+        async function initializeSpreadsheetHeaders() {
+            if (!gapiInited || !gapi.client.sheets) {
+                console.log('⚠️ Google Sheets API not available');
+                return;
+            }
+
+            try {
+                // Check if headers exist
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
+                    range: 'Sheet1!A1:O1',
+                });
+
+                const rows = response.result.values;
+                
+                // If no headers or incomplete headers, add them
+                if (!rows || rows.length === 0 || rows[0].length < 15) {
+                    const headers = [
+                        'Timestamp',
+                        'Voucher No',
+                        'Date', 
+                        'Pay To',
+                        'ID Type',
+                        'ID Number',
+                        'Payment Method',
+                        'Reference',
+                        'Description',
+                        'Total Amount',
+                        'Line Items Count',
+                        'Line Items Details',
+                        'Generated By',
+                        'Generated By Email',
+                        'User Picture URL'
+                    ];
+
+                    await gapi.client.sheets.spreadsheets.values.update({
+                        spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
+                        range: 'Sheet1!A1:O1',
+                        valueInputOption: 'USER_ENTERED',
+                        resource: {
+                            values: [headers]
+                        }
+                    });
+
+                    console.log('✅ Spreadsheet headers initialized');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error initializing headers:', error);
             }
         }
 
@@ -1615,19 +1745,31 @@
                 // Update preview
                 updateVoucherPreview(formData, lineItems, totalAmount);
 
-                // Log voucher generation to Google Sheets
-                await logToGoogleSheets('VOUCHER_GENERATED', {
-                    action: 'Voucher Generated',
-                    user: currentUser ? currentUser.name : 'Unknown',
-                    email: currentUser ? currentUser.email : '',
+                // Prepare voucher data for Google Sheets
+                const voucherData = {
                     voucherNo: formData.voucherNo,
-                    amount: `RM ${totalAmount.toFixed(2)}`,
+                    date: formData.date,
                     payTo: formData.payTo,
+                    idType: formData.idType,
+                    idNumber: formData.idNumber,
                     paymentMethod: formData.paymentMethod,
-                    timestamp: new Date().toISOString(),
-                    details: `Voucher created for ${formData.payTo} - ${formData.description}`,
-                    lineItemsCount: lineItems.length
-                });
+                    reference: formData.reference,
+                    description: formData.description,
+                    totalAmount: `RM ${totalAmount.toFixed(2)}`,
+                    lineItemsCount: lineItems.length,
+                    lineItemsDetails: JSON.stringify(lineItems),
+                    generatedBy: currentUser ? currentUser.name : 'Unknown User',
+                    generatedByEmail: currentUser ? currentUser.email : '',
+                    userPictureURL: currentUser ? currentUser.picture : ''
+                };
+
+                // Save voucher to Google Sheets
+                const saved = await saveVoucherToGoogleSheets(voucherData);
+                if (saved) {
+                    showNotification('Voucher saved to Google Sheets!', 'success');
+                } else {
+                    showNotification('Voucher generated but not saved to sheets', 'info');
+                }
 
                 // Show preview and PDF button
                 document.getElementById('voucherPreview').style.display = 'block';
@@ -1879,6 +2021,103 @@
             }, 3000);
         }
 
+        // View all vouchers
+        async function viewVouchers() {
+            console.log('📊 Opening vouchers modal...');
+            
+            // Show modal
+            document.getElementById('vouchersModal').style.display = 'block';
+            document.getElementById('vouchersLoading').style.display = 'block';
+            document.getElementById('vouchersTable').style.display = 'none';
+            
+            try {
+                // Get vouchers from Google Sheets
+                const vouchers = await getVouchersFromGoogleSheets();
+                
+                if (vouchers.length === 0) {
+                    document.getElementById('vouchersContent').innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #64748b;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">📄</div>
+                            <h3>No vouchers found</h3>
+                            <p>Generate your first voucher to see it here!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Create table
+                let tableHTML = `
+                    <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                        <table style="width: 100%; border-collapse: collapse; background: white; font-size: 0.9em;">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
+                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Voucher No</th>
+                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Date</th>
+                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Pay To</th>
+                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Amount</th>
+                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Method</th>
+                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Generated By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                vouchers.forEach((voucher, index) => {
+                    const rowStyle = index % 2 === 0 ? 'background: #f8fafc;' : 'background: white;';
+                    const formattedDate = voucher.date ? new Date(voucher.date).toLocaleDateString('en-GB') : 'N/A';
+                    
+                    tableHTML += `
+                        <tr style="${rowStyle} transition: all 0.3s ease;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='${index % 2 === 0 ? '#f8fafc' : 'white'}'">
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #6366f1;">${voucher.voucherNo}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${formattedDate}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${voucher.payTo}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #059669;">${voucher.totalAmount}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${voucher.paymentMethod}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${voucher.generatedBy}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 20px; text-align: center; color: #64748b; font-size: 0.9em;">
+                        Total: ${vouchers.length} voucher${vouchers.length !== 1 ? 's' : ''}
+                    </div>
+                `;
+                
+                document.getElementById('vouchersLoading').style.display = 'none';
+                document.getElementById('vouchersTable').innerHTML = tableHTML;
+                document.getElementById('vouchersTable').style.display = 'block';
+                
+                console.log('✅ Vouchers displayed successfully');
+                
+            } catch (error) {
+                console.error('❌ Error loading vouchers:', error);
+                document.getElementById('vouchersContent').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ef4444;">
+                        <div style="font-size: 3em; margin-bottom: 20px;">⚠️</div>
+                        <h3>Error loading vouchers</h3>
+                        <p>Please check your Google Sheets API configuration.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Close vouchers modal
+        function closeVouchersModal() {
+            document.getElementById('vouchersModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('vouchersModal');
+            if (event.target === modal) {
+                closeVouchersModal();
+            }
+        });
+
         // Loading state management
         function setButtonLoading(button, loading) {
             if (loading) {
@@ -1890,5 +2129,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988aa33a278fb4dc',t:'MTc1OTQ3NTYxNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ab0f50433b4dc',t:'MTc1OTQ3NjE3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
