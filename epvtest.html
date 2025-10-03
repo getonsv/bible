@@ -1076,12 +1076,18 @@
                     <h2 style="text-align: center; margin-bottom: 30px; color: #1e293b;">Voucher Records</h2>
                     
                     <!-- Search Controls -->
-                    <div style="display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;">
-                        <input type="text" id="searchVoucher" placeholder="Search by voucher number..." style="flex: 1; min-width: 200px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                        <input type="text" id="searchPayTo" placeholder="Search by pay to..." style="flex: 1; min-width: 200px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                        <input type="date" id="searchDate" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                        <button type="button" class="btn btn-primary" onclick="searchRecords()" style="padding: 12px 24px;">🔍 Search</button>
-                        <button type="button" class="btn btn-secondary" onclick="loadAllRecords()" style="padding: 12px 24px;">📋 Load All</button>
+                    <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="globalSearch" placeholder="Search by any field (voucher, name, ID, method, reference, creator...)" style="flex: 2; min-width: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                        <input type="date" id="searchDate" placeholder="Filter by date" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <button type="button" class="btn btn-primary" onclick="searchRecords()" style="padding: 12px 20px; font-size: 14px;">🔍 Search</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearSearch()" style="padding: 12px 20px; font-size: 14px;">🗑️ Clear</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadAllRecords()" style="padding: 12px 20px; font-size: 14px;">📋 Load All</button>
+                    </div>
+                    
+                    <!-- Search Results Info -->
+                    <div id="searchInfo" style="display: none; margin-bottom: 20px; padding: 12px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                        <span id="searchResultText" style="color: #0c4a6e; font-weight: 500;"></span>
+                        <button onclick="clearSearch()" style="background: none; border: none; color: #0ea5e9; cursor: pointer; margin-left: 10px; font-weight: 600;">✕ Clear</button>
                     </div>
                     
                     <!-- Loading indicator -->
@@ -1533,6 +1539,9 @@
             // Setup event listeners
             setupEventListeners();
             
+            // Setup search event listeners
+            setupSearchListeners();
+            
             // Initial calculation
             calculateTotal();
             
@@ -1557,6 +1566,45 @@
             });
             
             console.log('✅ Event listeners set up');
+        }
+        
+        // Setup search event listeners for real-time search
+        function setupSearchListeners() {
+            console.log('🔗 Setting up search listeners...');
+            
+            // Real-time search as user types (with debounce)
+            let searchTimeout;
+            const globalSearchInput = document.getElementById('globalSearch');
+            const dateSearchInput = document.getElementById('searchDate');
+            
+            if (globalSearchInput) {
+                globalSearchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        if (document.getElementById('recordsSection').style.display !== 'none') {
+                            searchRecords();
+                        }
+                    }, 300); // 300ms debounce
+                });
+                
+                // Search on Enter key
+                globalSearchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        clearTimeout(searchTimeout);
+                        searchRecords();
+                    }
+                });
+            }
+            
+            if (dateSearchInput) {
+                dateSearchInput.addEventListener('change', function() {
+                    if (document.getElementById('recordsSection').style.display !== 'none') {
+                        searchRecords();
+                    }
+                });
+            }
+            
+            console.log('✅ Search listeners set up');
         }
 
         // Update reference field requirement
@@ -2704,12 +2752,11 @@
             }
         }
 
-        // Search records
+        // Search records with dynamic global search
         function searchRecords() {
             console.log('🔍 Searching records...');
             
-            const voucherSearch = document.getElementById('searchVoucher').value.toLowerCase();
-            const payToSearch = document.getElementById('searchPayTo').value.toLowerCase();
+            const globalSearch = document.getElementById('globalSearch').value.toLowerCase().trim();
             const dateSearch = document.getElementById('searchDate').value;
             
             showRecordsLoading(true);
@@ -2717,15 +2764,46 @@
             try {
                 // Get all records
                 const allRecords = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                console.log('🔍 Total records to search:', allRecords.length);
                 
-                // Filter records
+                // Filter records with global search
                 const filteredRecords = allRecords.filter(record => {
-                    const matchesVoucher = !voucherSearch || record.voucherNo.toLowerCase().includes(voucherSearch);
-                    const matchesPayTo = !payToSearch || record.payTo.toLowerCase().includes(payToSearch);
-                    const matchesDate = !dateSearch || record.date === dateSearch;
+                    // Date filter
+                    if (dateSearch && record.date !== dateSearch) {
+                        return false;
+                    }
                     
-                    return matchesVoucher && matchesPayTo && matchesDate;
+                    // If no global search term, return true (only date filter applied)
+                    if (!globalSearch) {
+                        return true;
+                    }
+                    
+                    // Global search - check all searchable fields
+                    const searchableFields = [
+                        record.voucherNo || '',
+                        record.payTo || '',
+                        record.idType || '',
+                        record.idNumber || '',
+                        record.paymentMethod || '',
+                        record.reference || '',
+                        record.description || '',
+                        record.createdBy || '',
+                        record.lineItems || '',
+                        record.totalAmount ? record.totalAmount.toString() : ''
+                    ];
+                    
+                    // Check if any field contains the search term
+                    const matchesGlobal = searchableFields.some(field => 
+                        field.toLowerCase().includes(globalSearch)
+                    );
+                    
+                    return matchesGlobal;
                 });
+                
+                console.log('🔍 Filtered records:', filteredRecords.length);
+                
+                // Show search info
+                showSearchInfo(globalSearch, dateSearch, filteredRecords.length, allRecords.length);
                 
                 displayRecords(filteredRecords);
                 showRecordsLoading(false);
@@ -2734,6 +2812,40 @@
                 console.error('❌ Error searching records:', error);
                 showRecordsLoading(false);
                 showNotification('Error searching records', 'error');
+            }
+        }
+        
+        // Clear search and show all records
+        function clearSearch() {
+            console.log('🗑️ Clearing search...');
+            
+            document.getElementById('globalSearch').value = '';
+            document.getElementById('searchDate').value = '';
+            document.getElementById('searchInfo').style.display = 'none';
+            
+            loadAllRecords();
+        }
+        
+        // Show search information
+        function showSearchInfo(searchTerm, dateFilter, resultCount, totalCount) {
+            const searchInfo = document.getElementById('searchInfo');
+            const searchResultText = document.getElementById('searchResultText');
+            
+            if (searchTerm || dateFilter) {
+                let infoText = `Found ${resultCount} of ${totalCount} records`;
+                
+                if (searchTerm && dateFilter) {
+                    infoText += ` matching "${searchTerm}" on ${new Date(dateFilter).toLocaleDateString('en-GB')}`;
+                } else if (searchTerm) {
+                    infoText += ` matching "${searchTerm}"`;
+                } else if (dateFilter) {
+                    infoText += ` from ${new Date(dateFilter).toLocaleDateString('en-GB')}`;
+                }
+                
+                searchResultText.textContent = infoText;
+                searchInfo.style.display = 'block';
+            } else {
+                searchInfo.style.display = 'none';
             }
         }
 
@@ -3051,5 +3163,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988baab3e681b4dc',t:'MTc1OTQ4NjQwNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bae7b54abb4dc',t:'MTc1OTQ4NjU2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
