@@ -963,6 +963,7 @@
                 <div class="company-logo">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
                 </div>
+                <h1>Emmanuel Transport</h1>
                 <p>202503112296 (003723051-P)</p>
                 <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
                 <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
@@ -1140,8 +1141,8 @@
                     <div class="company-info">
                         <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
                         BRN: 202503112296 (003723051-P)<br>
-                        LOWRENCE 0182202582 | PREMA 01126360442<br>
-                        NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
+                        NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR<br>
+                        LOWRENCE 0182202582 | PREMA 01126360442
                     </div>
                     <div class="voucher-title">PAYMENT VOUCHER</div>
                 </div>
@@ -2124,13 +2125,13 @@
                                 
                                 // Get image data and add to PDF
                                 const imgData = canvas.toDataURL('image/png');
-                                const imgWidth = 60;
+                                const imgWidth = 40;
                                 const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
                                 
                                 // Center the logo
                                 const logoX = (210 - imgWidth) / 2; // A4 width is 210mm
                                 doc.addImage(imgData, 'PNG', logoX, currentY, imgWidth, imgHeight);
-                                currentY += imgHeight + 10;
+                                currentY += imgHeight + 8;
                                 resolve();
                             } catch (error) {
                                 console.log('Logo processing failed, continuing without logo');
@@ -2156,11 +2157,12 @@
                 doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
                 
                 currentY += 5;
-                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, currentY, { align: 'center' });
-                
-                currentY += 5;
                 doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, currentY, { align: 'center' });
 
+
+                currentY += 5;
+                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, currentY, { align: 'center' });
+                
                 // Line separator
                 currentY += 10;
                 doc.line(20, currentY, 190, currentY);
@@ -2314,10 +2316,12 @@
                                 
                                 // Get image data and add to PDF
                                 const imgData = canvas.toDataURL('image/png');
-                                const imgWidth = 50;
+                                const imgWidth = 35;
                                 const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
                                 
-                                doc.addImage(imgData, 'PNG', 80, currentY, imgWidth, imgHeight);
+                                // Center the logo
+                                const logoX = (210 - imgWidth) / 2; // A4 width is 210mm
+                                doc.addImage(imgData, 'PNG', logoX, currentY, imgWidth, imgHeight);
                                 currentY += imgHeight + 8;
                                 resolve();
                             } catch (error) {
@@ -3156,5 +3160,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bae7b54abb4dc',t:'MTc1OTQ4NjU2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bb75a2404b4dc',t:'MTc1OTQ4NjkyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
