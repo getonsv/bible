@@ -1233,7 +1233,7 @@
                     </a>
                 </div>
                 <div class="footer-right">
-                    <span class="version-number">v25.100</span>
+                    <span class="version-number">v100+AutoHeaders</span>
                 </div>
             </div>
         </div>
@@ -2465,47 +2465,126 @@
             try {
                 // Try to load from Google Sheets first
                 console.log('📤 Requesting records from Google Sheets...');
-                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl + '?action=getVouchers', {
-                    method: 'GET',
-                    mode: 'cors'
+                
+                // Use POST method with action parameter in body for better compatibility
+                const requestData = {
+                    action: 'getVouchers'
+                };
+                
+                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(requestData)
                 });
                 
                 console.log('📥 Response status:', response.status);
+                console.log('📥 Response headers:', [...response.headers.entries()]);
                 
                 if (response.ok) {
                     const responseText = await response.text();
-                    console.log('📥 Response text:', responseText);
+                    console.log('📥 Raw response text:', responseText);
                     
                     let result;
                     try {
                         result = JSON.parse(responseText);
+                        console.log('📥 Parsed result:', result);
                     } catch (parseError) {
-                        console.log('📥 Response is not JSON, using fallback');
-                        throw new Error('Invalid JSON response');
+                        console.log('📥 Response is not JSON, trying to parse as CSV or raw data');
+                        
+                        // Try to parse as CSV-like data if it's not JSON
+                        if (responseText.includes('\n') && responseText.includes(',')) {
+                            const lines = responseText.trim().split('\n');
+                            const records = [];
+                            
+                            // Skip header row if it exists
+                            const dataLines = lines.slice(1);
+                            
+                            dataLines.forEach(line => {
+                                const values = line.split(',');
+                                if (values.length >= 9 && values[0] && values[0] !== '') {
+                                    records.push({
+                                        voucherNo: values[0],
+                                        date: values[1],
+                                        payTo: values[2],
+                                        idType: values[3],
+                                        idNumber: values[4],
+                                        paymentMethod: values[5],
+                                        reference: values[6],
+                                        description: values[7],
+                                        totalAmount: parseFloat(values[8]) || 0,
+                                        createdBy: values[9] || 'Unknown',
+                                        createdAt: values[10] || '',
+                                        lineItems: values[11] || ''
+                                    });
+                                }
+                            });
+                            
+                            if (records.length > 0) {
+                                console.log('✅ Parsed CSV data:', records.length, 'records');
+                                displayRecords(records);
+                                showRecordsLoading(false);
+                                showNotification(`✅ Loaded ${records.length} records from Google Sheets`, 'success');
+                                return;
+                            }
+                        }
+                        
+                        throw new Error('Invalid response format');
                     }
                     
                     if (result.success && result.data && Array.isArray(result.data)) {
                         console.log('✅ Records loaded from Google Sheets:', result.data.length, 'records');
                         
-                        // Also sync to localStorage
-                        localStorage.setItem('voucherRecords', JSON.stringify(result.data));
+                        // Convert array format to object format for consistency
+                        const formattedRecords = result.data.map(row => {
+                            if (Array.isArray(row) && row.length >= 9) {
+                                return {
+                                    voucherNo: row[0],
+                                    date: row[1],
+                                    payTo: row[2],
+                                    idType: row[3],
+                                    idNumber: row[4],
+                                    paymentMethod: row[5],
+                                    reference: row[6],
+                                    description: row[7],
+                                    totalAmount: parseFloat(row[8]) || 0,
+                                    createdBy: row[9] || 'Unknown',
+                                    createdAt: row[10] || '',
+                                    lineItems: row[11] || ''
+                                };
+                            }
+                            return row;
+                        });
                         
+                        // Also sync to localStorage
+                        localStorage.setItem('voucherRecords', JSON.stringify(formattedRecords));
+                        
+                        displayRecords(formattedRecords);
+                        showRecordsLoading(false);
+                        showNotification(`✅ Loaded ${formattedRecords.length} records from Google Sheets`, 'success');
+                        return;
+                    } else if (result.data && Array.isArray(result.data)) {
+                        // Handle case where success flag might be missing but data exists
+                        console.log('✅ Records found (no success flag):', result.data.length, 'records');
                         displayRecords(result.data);
                         showRecordsLoading(false);
+                        showNotification(`✅ Loaded ${result.data.length} records from Google Sheets`, 'success');
                         return;
                     }
                 }
                 
-                // Fallback to localStorage
-                console.log('📋 Loading from local storage as fallback');
+                // If we get here, Google Sheets didn't work, try localStorage
+                console.log('📋 Google Sheets failed, loading from local storage');
                 const records = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
                 displayRecords(records);
                 showRecordsLoading(false);
                 
                 if (records.length === 0) {
-                    showNotification('No records found. Create your first voucher!', 'info');
+                    showNotification('No records found. Create your first voucher to see it here!', 'info');
                 } else {
-                    showNotification('⚠️ Loaded local records - Google Sheets connection issue', 'info');
+                    showNotification(`⚠️ Loaded ${records.length} local records - Google Sheets connection issue`, 'info');
                 }
                 
             } catch (error) {
@@ -2517,9 +2596,9 @@
                 showRecordsLoading(false);
                 
                 if (records.length > 0) {
-                    showNotification('⚠️ Loaded local records - Google Sheets connection issue', 'info');
+                    showNotification(`⚠️ Loaded ${records.length} local records - Google Sheets connection issue`, 'info');
                 } else {
-                    showNotification('No records found. Create your first voucher!', 'info');
+                    showNotification('No records found. Google Sheets connection failed.', 'error');
                 }
             }
         }
@@ -2871,5 +2950,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b962fe0e9b4dc',t:'MTc1OTQ4NTU2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b9bec1313b4dc',t:'MTc1OTQ4NTgwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
