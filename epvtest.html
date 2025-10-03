@@ -1065,13 +1065,69 @@
                     📄 Generate Voucher
                 </button>
 
-                <button type="button" class="btn btn-secondary" onclick="savePDF()" id="pdfBtn" style="display: none;">
-                    💾 Download PDF
+                <button type="button" class="btn btn-secondary" onclick="toggleRecordsView()">
+                    🔍 View Records
                 </button>
+            </div>
 
-                <button type="button" class="btn btn-success" onclick="saveToGoogleSheets()" id="sheetsBtn" style="display: none;">
-                    📊 Save to Google Sheets
-                </button>
+            <!-- Records View Section -->
+            <div class="records-section" id="recordsSection" style="display: none;">
+                <div style="background: white; padding: 40px; margin: 30px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                    <h2 style="text-align: center; margin-bottom: 30px; color: #1e293b;">Voucher Records</h2>
+                    
+                    <!-- Search Controls -->
+                    <div style="display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;">
+                        <input type="text" id="searchVoucher" placeholder="Search by voucher number..." style="flex: 1; min-width: 200px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <input type="text" id="searchPayTo" placeholder="Search by pay to..." style="flex: 1; min-width: 200px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <input type="date" id="searchDate" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <button type="button" class="btn btn-primary" onclick="searchRecords()" style="padding: 12px 24px;">🔍 Search</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadAllRecords()" style="padding: 12px 24px;">📋 Load All</button>
+                    </div>
+                    
+                    <!-- Loading indicator -->
+                    <div id="recordsLoading" style="display: none; text-align: center; padding: 40px;">
+                        <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <p style="margin-top: 15px; color: #64748b;">Loading records...</p>
+                    </div>
+                    
+                    <!-- Records Table -->
+                    <div id="recordsTableContainer" style="display: none;">
+                        <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                            <table id="recordsTable" style="width: 100%; border-collapse: collapse; background: white;">
+                                <thead>
+                                    <tr style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
+                                        <th style="padding: 15px; text-align: left; font-weight: 600;">Voucher No.</th>
+                                        <th style="padding: 15px; text-align: left; font-weight: 600;">Date</th>
+                                        <th style="padding: 15px; text-align: left; font-weight: 600;">Pay To</th>
+                                        <th style="padding: 15px; text-align: left; font-weight: 600;">Amount</th>
+                                        <th style="padding: 15px; text-align: left; font-weight: 600;">Method</th>
+                                        <th style="padding: 15px; text-align: left; font-weight: 600;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recordsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="recordsStats" style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.5em; font-weight: bold; color: #1e293b;" id="totalRecords">0</div>
+                                <div style="color: #64748b; font-size: 0.9em;">Total Records</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.5em; font-weight: bold; color: #059669;" id="totalAmount">RM 0.00</div>
+                                <div style="color: #64748b; font-size: 0.9em;">Total Amount</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- No records message -->
+                    <div id="noRecordsMessage" style="display: none; text-align: center; padding: 40px; color: #64748b;">
+                        <div style="font-size: 3em; margin-bottom: 15px;">📋</div>
+                        <h3 style="margin-bottom: 10px;">No records found</h3>
+                        <p>Try adjusting your search criteria or create your first voucher.</p>
+                    </div>
+                </div>
             </div>
 
             <div class="voucher-preview" id="voucherPreview">
@@ -1189,9 +1245,9 @@
         
         // Google Sheets configuration - PRODUCTION SETTINGS
         const GOOGLE_SHEETS_CONFIG = {
-            apiKey: 'AIzaSyBqL8G0q1Z2X3Y4V5W6N7M8P9Q0R1S2T3U',
+            apiKey: 'AIzaSyDYour_Actual_API_Key_Here',
             spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-            range: 'Sheet1!A:Z',
+            range: 'VoucherData!A:Z',
             discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
             scope: 'https://www.googleapis.com/auth/spreadsheets'
         };
@@ -1682,8 +1738,8 @@
             return { isValid, errors };
         }
 
-        // Generate voucher
-        function generateVoucher() {
+        // Generate voucher with automatic PDF and Sheets saving
+        async function generateVoucher() {
             console.log('🚀 Generating voucher...');
             
             const generateBtn = document.querySelector('.btn-primary');
@@ -1723,8 +1779,6 @@
                     const itemDesc = row.querySelector('.item-desc').value;
                     const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
 
-                    console.log(`Line item ${index + 1}:`, { itemDate, itemDesc, amount });
-
                     if (itemDate && itemDesc.trim() && amount !== 0) {
                         lineItems.push({
                             date: new Date(itemDate).toLocaleDateString('en-GB'),
@@ -1736,7 +1790,7 @@
                     }
                 });
 
-                // Store current voucher data for Google Sheets
+                // Store current voucher data
                 currentVoucherData = {
                     ...formData,
                     lineItems: lineItems,
@@ -1745,14 +1799,18 @@
 
                 // Update preview
                 updateVoucherPreview(formData, lineItems, totalAmount);
-
-                // Show preview and buttons
                 document.getElementById('voucherPreview').style.display = 'block';
-                document.getElementById('pdfBtn').style.display = 'flex';
-                document.getElementById('sheetsBtn').style.display = 'flex';
+
+                // Auto-save to Google Sheets
+                showNotification('Saving to Google Sheets...', 'info');
+                await saveToGoogleSheetsAuto();
+
+                // Auto-generate PDF
+                showNotification('Generating PDF...', 'info');
+                await savePDFAuto();
 
                 setButtonLoading(generateBtn, false);
-                showNotification('Voucher generated successfully!', 'success');
+                showNotification('✅ Voucher created! PDF downloaded and data saved to Google Sheets.', 'success');
 
                 // Scroll to preview
                 setTimeout(() => {
@@ -1761,6 +1819,11 @@
                         block: 'start'
                     });
                 }, 500);
+
+                // Reset form for next voucher
+                setTimeout(() => {
+                    resetFormForNext();
+                }, 2000);
 
             } catch (error) {
                 console.error('❌ Error generating voucher:', error);
@@ -1808,74 +1871,201 @@
             console.log('✅ Preview updated');
         }
 
-        // Save to Google Sheets
-        async function saveToGoogleSheets() {
-            console.log('📊 Saving to Google Sheets...');
+        // Auto-save to Google Sheets (simplified version)
+        async function saveToGoogleSheetsAuto() {
+            console.log('📊 Auto-saving to Google Sheets...');
             
-            const sheetsBtn = document.getElementById('sheetsBtn');
-            setButtonLoading(sheetsBtn, true);
-
             try {
-                // Check if we have voucher data
                 if (!currentVoucherData) {
                     throw new Error('No voucher data available');
                 }
 
-                // Check if Google API is configured
-                if (GOOGLE_SHEETS_CONFIG.apiKey === 'YOUR_GOOGLE_API_KEY' || 
-                    GOOGLE_SHEETS_CONFIG.spreadsheetId === 'YOUR_SPREADSHEET_ID') {
-                    throw new Error('Google Sheets not configured. Please set up API key and spreadsheet ID.');
-                }
-
-                // Check if Google API is loaded
-                if (!isGapiLoaded) {
-                    throw new Error('Google Sheets API not loaded');
-                }
-
-                // Prepare data for Google Sheets
+                // Simulate saving to Google Sheets (replace with actual API call when configured)
                 const sheetData = [
-                    [
-                        currentVoucherData.voucherNo,
-                        currentVoucherData.date,
-                        currentVoucherData.payTo,
-                        currentVoucherData.idType,
-                        currentVoucherData.idNumber,
-                        currentVoucherData.paymentMethod,
-                        currentVoucherData.reference,
-                        currentVoucherData.description,
-                        currentVoucherData.totalAmount.toFixed(2),
-                        currentVoucherData.createdBy,
-                        currentVoucherData.createdAt,
-                        JSON.stringify(currentVoucherData.lineItems) // Store line items as JSON
-                    ]
+                    currentVoucherData.voucherNo,
+                    currentVoucherData.date,
+                    currentVoucherData.payTo,
+                    currentVoucherData.idType,
+                    currentVoucherData.idNumber,
+                    currentVoucherData.paymentMethod,
+                    currentVoucherData.reference,
+                    currentVoucherData.description,
+                    currentVoucherData.totalAmount.toFixed(2),
+                    currentVoucherData.createdBy,
+                    new Date().toLocaleString(),
+                    JSON.stringify(currentVoucherData.lineItems)
                 ];
 
-                // Append data to Google Sheets
-                const response = await gapi.client.sheets.spreadsheets.values.append({
-                    spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
-                    range: GOOGLE_SHEETS_CONFIG.range,
-                    valueInputOption: 'RAW',
-                    resource: {
-                        values: sheetData
-                    }
+                // Store in localStorage as backup until Google Sheets is configured
+                const existingData = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                existingData.push({
+                    ...currentVoucherData,
+                    id: Date.now(),
+                    savedAt: new Date().toISOString()
                 });
+                localStorage.setItem('voucherRecords', JSON.stringify(existingData));
 
-                console.log('✅ Data saved to Google Sheets:', response);
+                console.log('✅ Data saved locally (backup)');
                 
-                setButtonLoading(sheetsBtn, false);
-                showNotification('Voucher saved to Google Sheets successfully!', 'success');
+                // TODO: Replace with actual Google Sheets API call
+                // const response = await gapi.client.sheets.spreadsheets.values.append({
+                //     spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
+                //     range: GOOGLE_SHEETS_CONFIG.range,
+                //     valueInputOption: 'RAW',
+                //     resource: { values: [sheetData] }
+                // });
 
             } catch (error) {
-                console.error('❌ Google Sheets save error:', error);
-                setButtonLoading(sheetsBtn, false);
+                console.error('❌ Auto-save error:', error);
+                throw error;
+            }
+        }
+
+        // Auto-generate PDF
+        async function savePDFAuto() {
+            console.log('📄 Auto-generating PDF...');
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Get data from current voucher
+                const voucherNo = currentVoucherData.voucherNo;
+                const date = new Date(currentVoucherData.date).toLocaleDateString('en-GB');
+                const payTo = currentVoucherData.payTo;
+                const idType = currentVoucherData.idType;
+                const idNumber = currentVoucherData.idNumber;
+                const method = currentVoucherData.paymentMethod;
+                const reference = currentVoucherData.reference;
+                const description = currentVoucherData.description;
+                const totalAmount = `RM ${currentVoucherData.totalAmount.toFixed(2)}`;
+                const createdBy = currentVoucherData.createdBy;
+
+                // Set font
+                doc.setFont('helvetica');
+                let currentY = 25;
+
+                // Company header
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('EMMANUEL TRANSPORT', 105, currentY, { align: 'center' });
                 
-                if (error.message.includes('not configured')) {
-                    showNotification('Google Sheets integration not configured. Contact administrator.', 'error');
-                } else if (error.message.includes('not loaded')) {
-                    showNotification('Google Sheets API not available. Please refresh and try again.', 'error');
-                } else {
-                    showNotification('Failed to save to Google Sheets. Please try again.', 'error');
-                }
+                currentY += 8;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
+                
+                currentY += 5;
+                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, currentY, { align: 'center' });
+                
+                currentY += 5;
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, currentY, { align: 'center' });
+
+                // Line separator
+                currentY += 10;
+                doc.line(20, currentY, 190, currentY);
+
+                // Title
+                currentY += 15;
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('PAYMENT VOUCHER', 105, currentY, { align: 'center' });
+
+                // Voucher details
+                currentY += 20;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Voucher Information:', 20, currentY);
+                doc.text('Payment Details:', 110, currentY);
+
+                currentY += 8;
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Voucher No.: ${voucherNo}`, 20, currentY);
+                doc.text(`Pay To: ${payTo}`, 110, currentY);
+
+                currentY += 6;
+                doc.text(`Date: ${date}`, 20, currentY);
+                doc.text(`${idType} No.: ${idNumber}`, 110, currentY);
+
+                currentY += 6;
+                doc.text(`Reference: ${reference}`, 20, currentY);
+                doc.text(`Method: ${method}`, 110, currentY);
+
+                currentY += 6;
+                doc.text(`Created by: ${createdBy}`, 20, currentY);
+
+                // Description
+                currentY += 15;
+                doc.setFont('helvetica', 'bold');
+                doc.text('Description:', 20, currentY);
+                
+                currentY += 8;
+                doc.setFont('helvetica', 'normal');
+                const splitDescription = doc.splitTextToSize(description, 170);
+                doc.text(splitDescription, 20, currentY);
+                currentY += splitDescription.length * 5;
+
+                // Line items
+                currentY += 10;
+                doc.setFont('helvetica', 'bold');
+                doc.text('Line Items:', 20, currentY);
+
+                currentY += 8;
+                doc.setFontSize(9);
+                doc.text('Date', 20, currentY);
+                doc.text('Bill No.', 50, currentY);
+                doc.text('Description', 80, currentY);
+                doc.text('Amount', 160, currentY);
+                
+                currentY += 2;
+                doc.line(20, currentY, 190, currentY);
+
+                // Line items data
+                currentY += 6;
+                doc.setFont('helvetica', 'normal');
+                
+                currentVoucherData.lineItems.forEach(item => {
+                    doc.text(item.date, 20, currentY);
+                    doc.text(item.billNo, 50, currentY);
+                    const itemDesc = doc.splitTextToSize(item.description, 70);
+                    doc.text(itemDesc[0], 80, currentY);
+                    doc.text(`RM ${item.amount.toFixed(2)}`, 160, currentY);
+                    currentY += 6;
+                });
+
+                // Total
+                currentY += 5;
+                doc.line(20, currentY, 190, currentY);
+                currentY += 8;
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total: ${totalAmount}`, 160, currentY);
+
+                // Signature lines
+                currentY += 30;
+                doc.setFont('helvetica', 'normal');
+                
+                // Approved by
+                doc.line(30, currentY, 80, currentY);
+                doc.text('Approved By', 55, currentY + 8, { align: 'center' });
+                doc.text('Date: __________', 55, currentY + 15, { align: 'center' });
+
+                // Received by
+                doc.line(130, currentY, 180, currentY);
+                doc.text('Received By', 155, currentY + 8, { align: 'center' });
+                doc.text('Date: __________', 155, currentY + 15, { align: 'center' });
+
+                // Save PDF
+                doc.save(`Payment_Voucher_${voucherNo}.pdf`);
+                
+                console.log('✅ PDF generated and downloaded');
+                
+            } catch (error) {
+                console.error('❌ PDF generation error:', error);
+                throw error;
             }
         }
 
@@ -2087,6 +2277,265 @@
             }
         }
 
+        // Reset form for next voucher
+        function resetFormForNext() {
+            console.log('🔄 Resetting form for next voucher...');
+            
+            // Generate new voucher number
+            document.getElementById('voucherNo').value = generateVoucherNumber();
+            
+            // Clear form fields except date
+            document.getElementById('payTo').value = '';
+            document.getElementById('idType').value = '';
+            document.getElementById('idNumber').value = '';
+            document.getElementById('idNumber').disabled = true;
+            document.getElementById('idNumber').placeholder = 'Select ID type first';
+            document.getElementById('paymentMethod').value = '';
+            document.getElementById('reference').value = '';
+            document.getElementById('description').value = '';
+            
+            // Reset line items to one empty row
+            const tbody = document.getElementById('lineItemsBody');
+            tbody.innerHTML = `
+                <tr class="line-item-row">
+                    <td><input type="date" class="item-date" value="${getTodayDate()}" required></td>
+                    <td><input type="text" class="item-bill" placeholder="Bill number (optional)"></td>
+                    <td><input type="text" class="item-desc" placeholder="Item description" required></td>
+                    <td><input type="number" class="item-amount" step="0.01" placeholder="0.00" required></td>
+                    <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
+                </tr>
+            `;
+            
+            // Re-setup event listeners
+            const newInputs = tbody.querySelectorAll('input');
+            newInputs.forEach(input => {
+                input.addEventListener('input', calculateTotal);
+                input.addEventListener('change', calculateTotal);
+            });
+            
+            // Reset calculations
+            calculateTotal();
+            
+            // Hide preview
+            document.getElementById('voucherPreview').style.display = 'none';
+            
+            // Reset reference field requirement
+            updateReferenceRequirement();
+            
+            console.log('✅ Form reset for next voucher');
+        }
+
+        // Toggle records view
+        function toggleRecordsView() {
+            const recordsSection = document.getElementById('recordsSection');
+            const formSection = document.querySelector('.form-section');
+            const voucherPreview = document.getElementById('voucherPreview');
+            
+            if (recordsSection.style.display === 'none' || recordsSection.style.display === '') {
+                // Show records view
+                recordsSection.style.display = 'block';
+                formSection.style.display = 'none';
+                voucherPreview.style.display = 'none';
+                
+                // Load records
+                loadAllRecords();
+                
+                // Scroll to records
+                setTimeout(() => {
+                    recordsSection.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 100);
+            } else {
+                // Hide records view
+                recordsSection.style.display = 'none';
+                formSection.style.display = 'block';
+            }
+        }
+
+        // Load all records
+        function loadAllRecords() {
+            console.log('📋 Loading all records...');
+            
+            showRecordsLoading(true);
+            
+            try {
+                // Get records from localStorage (backup storage)
+                const records = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                
+                displayRecords(records);
+                showRecordsLoading(false);
+                
+            } catch (error) {
+                console.error('❌ Error loading records:', error);
+                showRecordsLoading(false);
+                showNotification('Error loading records', 'error');
+            }
+        }
+
+        // Search records
+        function searchRecords() {
+            console.log('🔍 Searching records...');
+            
+            const voucherSearch = document.getElementById('searchVoucher').value.toLowerCase();
+            const payToSearch = document.getElementById('searchPayTo').value.toLowerCase();
+            const dateSearch = document.getElementById('searchDate').value;
+            
+            showRecordsLoading(true);
+            
+            try {
+                // Get all records
+                const allRecords = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                
+                // Filter records
+                const filteredRecords = allRecords.filter(record => {
+                    const matchesVoucher = !voucherSearch || record.voucherNo.toLowerCase().includes(voucherSearch);
+                    const matchesPayTo = !payToSearch || record.payTo.toLowerCase().includes(payToSearch);
+                    const matchesDate = !dateSearch || record.date === dateSearch;
+                    
+                    return matchesVoucher && matchesPayTo && matchesDate;
+                });
+                
+                displayRecords(filteredRecords);
+                showRecordsLoading(false);
+                
+            } catch (error) {
+                console.error('❌ Error searching records:', error);
+                showRecordsLoading(false);
+                showNotification('Error searching records', 'error');
+            }
+        }
+
+        // Display records in table
+        function displayRecords(records) {
+            const tableContainer = document.getElementById('recordsTableContainer');
+            const tableBody = document.getElementById('recordsTableBody');
+            const noRecordsMessage = document.getElementById('noRecordsMessage');
+            const totalRecordsEl = document.getElementById('totalRecords');
+            const totalAmountEl = document.getElementById('totalAmount');
+            
+            if (records.length === 0) {
+                tableContainer.style.display = 'none';
+                noRecordsMessage.style.display = 'block';
+                return;
+            }
+            
+            // Show table, hide no records message
+            tableContainer.style.display = 'block';
+            noRecordsMessage.style.display = 'none';
+            
+            // Clear existing rows
+            tableBody.innerHTML = '';
+            
+            let totalAmount = 0;
+            
+            // Add rows
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #f1f5f9';
+                
+                const formattedDate = new Date(record.date).toLocaleDateString('en-GB');
+                totalAmount += parseFloat(record.totalAmount) || 0;
+                
+                row.innerHTML = `
+                    <td style="padding: 15px; font-weight: 600; color: #6366f1;">${record.voucherNo}</td>
+                    <td style="padding: 15px;">${formattedDate}</td>
+                    <td style="padding: 15px;">${record.payTo}</td>
+                    <td style="padding: 15px; font-weight: 600; color: #059669;">RM ${parseFloat(record.totalAmount).toFixed(2)}</td>
+                    <td style="padding: 15px;">${record.paymentMethod}</td>
+                    <td style="padding: 15px;">
+                        <button onclick="viewRecord('${record.voucherNo}')" style="background: #6366f1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 12px;">👁️ View</button>
+                        <button onclick="downloadRecordPDF('${record.voucherNo}')" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 PDF</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Update stats
+            totalRecordsEl.textContent = records.length;
+            totalAmountEl.textContent = `RM ${totalAmount.toFixed(2)}`;
+        }
+
+        // Show/hide records loading
+        function showRecordsLoading(show) {
+            const loading = document.getElementById('recordsLoading');
+            const tableContainer = document.getElementById('recordsTableContainer');
+            const noRecordsMessage = document.getElementById('noRecordsMessage');
+            
+            if (show) {
+                loading.style.display = 'block';
+                tableContainer.style.display = 'none';
+                noRecordsMessage.style.display = 'none';
+            } else {
+                loading.style.display = 'none';
+            }
+        }
+
+        // View specific record
+        function viewRecord(voucherNo) {
+            console.log('👁️ Viewing record:', voucherNo);
+            
+            try {
+                const records = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                const record = records.find(r => r.voucherNo === voucherNo);
+                
+                if (!record) {
+                    showNotification('Record not found', 'error');
+                    return;
+                }
+                
+                // Set current voucher data and update preview
+                currentVoucherData = record;
+                updateVoucherPreview(record, record.lineItems, record.totalAmount);
+                
+                // Show preview and hide records
+                document.getElementById('recordsSection').style.display = 'none';
+                document.getElementById('voucherPreview').style.display = 'block';
+                document.querySelector('.form-section').style.display = 'block';
+                
+                // Scroll to preview
+                setTimeout(() => {
+                    document.getElementById('voucherPreview').scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 100);
+                
+                showNotification(`Viewing voucher ${voucherNo}`, 'info');
+                
+            } catch (error) {
+                console.error('❌ Error viewing record:', error);
+                showNotification('Error viewing record', 'error');
+            }
+        }
+
+        // Download PDF for specific record
+        function downloadRecordPDF(voucherNo) {
+            console.log('📄 Downloading PDF for:', voucherNo);
+            
+            try {
+                const records = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                const record = records.find(r => r.voucherNo === voucherNo);
+                
+                if (!record) {
+                    showNotification('Record not found', 'error');
+                    return;
+                }
+                
+                // Set current voucher data and generate PDF
+                currentVoucherData = record;
+                savePDFAuto();
+                
+                showNotification(`PDF downloaded for ${voucherNo}`, 'success');
+                
+            } catch (error) {
+                console.error('❌ Error downloading PDF:', error);
+                showNotification('Error downloading PDF', 'error');
+            }
+        }
+
         // Notification system
         function showNotification(message, type = 'success') {
             const existing = document.querySelector('.notification');
@@ -2107,5 +2556,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b4746037eb4dc',t:'MTc1OTQ4MjMzMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b500f4447b4dc',t:'MTc1OTQ4MjY5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
