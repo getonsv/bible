@@ -744,6 +744,54 @@
             }
         }
 
+        .footer {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            padding: 15px 40px;
+            text-align: center;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            margin-top: 20px;
+        }
+
+        .footer-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .footer-text {
+            color: #cbd5e1;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .footer-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+            padding: 2px 6px;
+        }
+
+        .footer-link:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .footer-logo {
+            height: 16px;
+            width: auto;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+            transition: all 0.3s ease;
+        }
+
+        .footer-link:hover .footer-logo {
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+        }
+
         /* Mobile responsive */
         @media (max-width: 768px) {
             body {
@@ -832,6 +880,18 @@
             .voucher-signatures {
                 grid-template-columns: 1fr;
                 gap: 30px;
+            }
+            
+            .footer {
+                padding: 12px 15px;
+            }
+            
+            .footer-content {
+                gap: 6px;
+            }
+            
+            .footer-text {
+                font-size: 0.75em;
             }
         }
     </style>
@@ -1080,6 +1140,16 @@
                         <div style="margin-top: 8px;">Date: _______________</div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <span class="footer-text">System by</span>
+                <a href="https://geton.asia" target="_blank" rel="noopener noreferrer" class="footer-link">
+                    <img src="https://www.geton.asia/web/image/2798-ec46cf49/GetOn-LS.svg" alt="GetOn" class="footer-logo" onerror="this.style.display='none';">
+                </a>
             </div>
         </div>
 
@@ -2449,5 +2519,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ac3119177b4dc',t:'MTc1OTQ3NjkxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988aca82d516b4dc',t:'MTc1OTQ3NzIyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
