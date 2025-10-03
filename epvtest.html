@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -843,7 +844,7 @@
             <h1 class="login-title">Emmanuel Transport</h1>
             <p class="login-subtitle">Please sign in to access the Payment Voucher System</p>
             <div id="g_id_onload"
-                 data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                 data-client_id="1234567890-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com"
                  data-context="signin"
                  data-ux_mode="popup"
                  data-callback="handleCredentialResponse"
@@ -857,16 +858,6 @@
                  data-size="large"
                  data-logo_alignment="left">
             </div>
-            <!-- Fallback button for demo -->
-            <button class="google-signin-btn" onclick="demoLogin()" style="margin-top: 20px;">
-                <svg class="google-icon" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Sign in with Google (Demo)
-            </button>
         </div>
 
         <!-- User Banner -->
@@ -1097,11 +1088,55 @@
         // Global user data
         let currentUser = null;
 
+        // Google Sheets Configuration
+        const GOOGLE_SHEETS_CONFIG = {
+            apiKey: 'AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Replace with your API key
+            spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', // Replace with your spreadsheet ID
+            range: 'Sheet1!A:Z', // Adjust range as needed
+            discoveryDoc: 'https://sheets.googleapis.com/$discovery/rest?version=v4'
+        };
+
+        // Initialize Google APIs
+        let gapi;
+        let gapiInited = false;
+        let gisInited = false;
+
         // Initialize the app when page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 App loading...');
+            initializeGoogleAPIs();
             checkExistingLogin();
         });
+
+        // Initialize Google APIs
+        async function initializeGoogleAPIs() {
+            console.log('🔧 Initializing Google APIs...');
+            
+            try {
+                // Initialize Google API
+                if (typeof gapi !== 'undefined') {
+                    await new Promise((resolve) => {
+                        gapi.load('client', resolve);
+                    });
+                    
+                    await gapi.client.init({
+                        apiKey: GOOGLE_SHEETS_CONFIG.apiKey,
+                        discoveryDocs: [GOOGLE_SHEETS_CONFIG.discoveryDoc],
+                    });
+                    
+                    gapiInited = true;
+                    console.log('✅ Google Sheets API initialized');
+                } else {
+                    console.log('⚠️ Google API not available, using fallback');
+                }
+                
+                gisInited = true;
+                
+            } catch (error) {
+                console.error('❌ Error initializing Google APIs:', error);
+                showNotification('Google services initialization failed. Some features may not work.', 'error');
+            }
+        }
 
         // Check for existing login
         function checkExistingLogin() {
@@ -1114,22 +1149,33 @@
             }
         }
 
-        // Google Sign-In callback (for real implementation)
-        function handleCredentialResponse(response) {
+        // Google Sign-In callback (production implementation)
+        async function handleCredentialResponse(response) {
             console.log('🔐 Google Sign-In response received');
             
             try {
-                // Decode JWT token (in real implementation)
+                // Decode JWT token
                 const payload = JSON.parse(atob(response.credential.split('.')[1]));
                 
                 currentUser = {
                     name: payload.name,
                     email: payload.email,
                     picture: payload.picture,
-                    loginTime: new Date().toISOString()
+                    loginTime: new Date().toISOString(),
+                    googleId: payload.sub
                 };
                 
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                // Log login to Google Sheets
+                await logToGoogleSheets('LOGIN', {
+                    action: 'User Login',
+                    user: currentUser.name,
+                    email: currentUser.email,
+                    timestamp: new Date().toISOString(),
+                    details: 'User successfully logged in'
+                });
+                
                 showMainApp();
                 showNotification(`Welcome back, ${currentUser.name}!`, 'success');
                 
@@ -1139,22 +1185,7 @@
             }
         }
 
-        // Demo login function (for demonstration)
-        function demoLogin() {
-            console.log('🎭 Demo login initiated');
-            
-            // Simulate user data
-            currentUser = {
-                name: 'Shilles Steven Albert',
-                email: 'shilles.albert@example.com',
-                picture: 'https://ui-avatars.com/api/?name=Shilles+Steven+Albert&background=6366f1&color=fff&size=200',
-                loginTime: new Date().toISOString()
-            };
-            
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            showMainApp();
-            showNotification(`Welcome, ${currentUser.name}!`, 'success');
-        }
+
 
         // Show login screen
         function showLoginScreen() {
@@ -1206,9 +1237,62 @@
             document.getElementById('userAvatar').alt = currentUser.name;
         }
 
+        // Google Sheets logging function
+        async function logToGoogleSheets(type, data) {
+            if (!gapiInited || !gapi.client.sheets) {
+                console.log('⚠️ Google Sheets API not available, logging locally');
+                console.log(`📊 ${type} Log:`, data);
+                return;
+            }
+
+            try {
+                const timestamp = new Date().toISOString();
+                const values = [[
+                    timestamp,
+                    type,
+                    data.action || '',
+                    data.user || '',
+                    data.email || '',
+                    data.voucherNo || '',
+                    data.amount || '',
+                    data.payTo || '',
+                    data.details || '',
+                    JSON.stringify(data)
+                ]];
+
+                const request = {
+                    spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
+                    range: 'Logs!A:J',
+                    valueInputOption: 'USER_ENTERED',
+                    resource: {
+                        values: values
+                    }
+                };
+
+                await gapi.client.sheets.spreadsheets.values.append(request);
+                console.log('✅ Logged to Google Sheets:', type);
+                
+            } catch (error) {
+                console.error('❌ Error logging to Google Sheets:', error);
+                // Fallback to local logging
+                console.log(`📊 ${type} Log (Fallback):`, data);
+            }
+        }
+
         // Logout function
-        function logout() {
+        async function logout() {
             console.log('👋 Logging out');
+            
+            // Log logout to Google Sheets
+            if (currentUser) {
+                await logToGoogleSheets('LOGOUT', {
+                    action: 'User Logout',
+                    user: currentUser.name,
+                    email: currentUser.email,
+                    timestamp: new Date().toISOString(),
+                    details: 'User logged out'
+                });
+            }
             
             currentUser = null;
             localStorage.removeItem('currentUser');
@@ -1531,6 +1615,20 @@
                 // Update preview
                 updateVoucherPreview(formData, lineItems, totalAmount);
 
+                // Log voucher generation to Google Sheets
+                await logToGoogleSheets('VOUCHER_GENERATED', {
+                    action: 'Voucher Generated',
+                    user: currentUser ? currentUser.name : 'Unknown',
+                    email: currentUser ? currentUser.email : '',
+                    voucherNo: formData.voucherNo,
+                    amount: `RM ${totalAmount.toFixed(2)}`,
+                    payTo: formData.payTo,
+                    paymentMethod: formData.paymentMethod,
+                    timestamp: new Date().toISOString(),
+                    details: `Voucher created for ${formData.payTo} - ${formData.description}`,
+                    lineItemsCount: lineItems.length
+                });
+
                 // Show preview and PDF button
                 document.getElementById('voucherPreview').style.display = 'block';
                 document.getElementById('pdfBtn').style.display = 'inline-flex';
@@ -1739,6 +1837,18 @@
                 // Save PDF
                 doc.save(`Payment_Voucher_${voucherNo}.pdf`);
                 
+                // Log PDF download to Google Sheets
+                await logToGoogleSheets('PDF_DOWNLOADED', {
+                    action: 'PDF Downloaded',
+                    user: currentUser ? currentUser.name : 'Unknown',
+                    email: currentUser ? currentUser.email : '',
+                    voucherNo: voucherNo,
+                    amount: totalAmount,
+                    payTo: payTo,
+                    timestamp: new Date().toISOString(),
+                    details: `PDF downloaded for voucher ${voucherNo}`
+                });
+                
                 setButtonLoading(pdfBtn, false);
                 showNotification('PDF downloaded successfully!', 'success');
                 
@@ -1780,5 +1890,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988a6ebe045bb4dc',t:'MTc1OTQ3MzQ2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988a9878a611b4dc',t:'MTc1OTQ3NTE3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
