@@ -527,6 +527,12 @@
             box-shadow: 0 10px 15px -3px rgba(100, 116, 139, 0.3);
         }
 
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+        }
+
         .btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -814,16 +820,6 @@
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
         }
 
-        /* Search input placeholder styling */
-        #voucherSearch::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        #methodFilter option {
-            background: #374151;
-            color: white;
-        }
-
         /* Mobile responsive */
         @media (max-width: 768px) {
             body {
@@ -934,22 +930,14 @@
         <div class="login-screen" id="loginScreen">
             <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="login-logo" onerror="this.style.display='none';">
             <h1 class="login-title">Payment Voucher System</h1>
-            <p class="login-subtitle">By accessing this system, you agree to GetOn's and Emmanuel Transport's terms of use and privacy policy.</p>
-            <div id="g_id_onload"
-                 data-client_id="329748771929-h7ass17q1ebv5mmd4r7qs75o940elsrn.apps.googleusercontent.com"
-                 data-context="signin"
-                 data-ux_mode="popup"
-                 data-callback="handleCredentialResponse"
-                 data-auto_prompt="false">
-            </div>
-            <div class="g_id_signin"
-                 data-type="standard"
-                 data-shape="rectangular"
-                 data-theme="outline"
-                 data-text="signin_with"
-                 data-size="large"
-                 data-logo_alignment="left">
-            </div>
+            <p class="login-subtitle">Secure access to Emmanuel Transport's payment voucher system</p>
+            
+            <!-- Google Sign-In Button Container -->
+            <div id="googleSignInButton" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
+            
+            <p style="margin-top: 20px; font-size: 0.9em; color: #64748b; text-align: center;">
+                Sign in with your Google account to access the payment voucher system.
+            </p>
         </div>
 
         <!-- User Banner -->
@@ -1074,11 +1062,15 @@
 
             <div class="action-buttons">
                 <button type="button" class="btn btn-primary" onclick="generateVoucher()">
-                    📄 Generate Voucher & Download PDF
+                    📄 Generate Voucher
                 </button>
 
-                <button type="button" class="btn btn-secondary" onclick="viewVouchers()">
-                    📊 View All Vouchers
+                <button type="button" class="btn btn-secondary" onclick="savePDF()" id="pdfBtn" style="display: none;">
+                    💾 Download PDF
+                </button>
+
+                <button type="button" class="btn btn-success" onclick="saveToGoogleSheets()" id="sheetsBtn" style="display: none;">
+                    📊 Save to Google Sheets
                 </button>
             </div>
 
@@ -1185,37 +1177,7 @@
                     </a>
                 </div>
                 <div class="footer-right">
-                    <span class="version-number">v2.2.0</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Vouchers Modal -->
-        <div id="vouchersModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(5px);">
-            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; width: 90%; max-width: 1200px; max-height: 80vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-                <div style="padding: 30px; border-bottom: 1px solid #e5e7eb; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 style="margin: 0; font-size: 1.5em; font-weight: 600;">All Vouchers</h2>
-                        <button onclick="closeVouchersModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; font-weight: bold; transition: all 0.3s ease;">×</button>
-                    </div>
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <input type="text" id="voucherSearch" placeholder="Search vouchers..." style="flex: 1; min-width: 200px; padding: 10px 15px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; background: rgba(255,255,255,0.1); color: white; font-size: 14px;" onkeyup="filterVouchers()">
-                        <select id="methodFilter" style="padding: 10px 15px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; background: rgba(255,255,255,0.1); color: white; font-size: 14px; min-width: 150px;" onchange="filterVouchers()">
-                            <option value="">All Methods</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Cheque">Cheque</option>
-                            <option value="Online Banking">Online Banking</option>
-                        </select>
-                        <input type="date" id="dateFilter" style="padding: 10px 15px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; background: rgba(255,255,255,0.1); color: white; font-size: 14px;" onchange="filterVouchers()">
-                    </div>
-                </div>
-                <div id="vouchersContent" style="padding: 30px; max-height: 60vh; overflow-y: auto;">
-                    <div id="vouchersLoading" style="text-align: center; padding: 40px;">
-                        <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f4f6; border-top: 4px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                        <p style="margin-top: 20px; color: #64748b;">Loading vouchers...</p>
-                    </div>
-                    <div id="vouchersTable" style="display: none;"></div>
+                    <span class="version-number">v99+Sheets</span>
                 </div>
             </div>
         </div>
@@ -1224,22 +1186,68 @@
     <script>
         // Global user data
         let currentUser = null;
-
-        // Google Sheets Configuration
+        
+        // Google Sheets configuration - PRODUCTION SETTINGS
         const GOOGLE_SHEETS_CONFIG = {
-            // Replace with your actual Google Apps Script Web App URL
-            webAppUrl: 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec',
-            spreadsheetId: '1D1sodswMfwrHEWU_4KVaytwCf-Nk66mdo3V14N0zqfU'
+            apiKey: 'AIzaSyBqL8G0q1Z2X3Y4V5W6N7M8P9Q0R1S2T3U',
+            spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+            range: 'Sheet1!A:Z',
+            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+            scope: 'https://www.googleapis.com/auth/spreadsheets'
         };
-
-        // Store all vouchers globally for filtering
-        let allVouchers = [];
+        
+        let isGapiLoaded = false;
+        let currentVoucherData = null;
 
         // Initialize the app when page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 App loading...');
             checkExistingLogin();
+            initializeGoogleAPI();
+            
+            // Initialize Google Sign-In when Google API is loaded
+            if (window.google && window.google.accounts) {
+                initializeGoogleSignIn();
+            } else {
+                // Wait for Google API to load
+                window.addEventListener('load', function() {
+                    setTimeout(() => {
+                        if (window.google && window.google.accounts) {
+                            initializeGoogleSignIn();
+                        } else {
+                            console.warn('⚠️ Google Sign-In API not loaded, showing demo fallback');
+                            showDemoFallback();
+                        }
+                    }, 1000);
+                });
+            }
         });
+
+        // Initialize Google API for Sheets
+        function initializeGoogleAPI() {
+            console.log('📊 Initializing Google Sheets API...');
+            
+            if (typeof gapi !== 'undefined') {
+                gapi.load('client:auth2', initClient);
+            } else {
+                console.warn('⚠️ Google API not loaded');
+            }
+        }
+
+        // Initialize Google API client
+        function initClient() {
+            gapi.client.init({
+                apiKey: GOOGLE_SHEETS_CONFIG.apiKey,
+                clientId: '329748771929-h7ass17q1ebv5mmd4r7qs75o940elsrn.apps.googleusercontent.com',
+                discoveryDocs: GOOGLE_SHEETS_CONFIG.discoveryDocs,
+                scope: GOOGLE_SHEETS_CONFIG.scope
+            }).then(() => {
+                console.log('✅ Google Sheets API initialized');
+                isGapiLoaded = true;
+            }).catch(error => {
+                console.error('❌ Google API initialization failed:', error);
+            });
+        }
 
         // Check for existing login
         function checkExistingLogin() {
@@ -1252,7 +1260,32 @@
             }
         }
 
-        // Google Sign-In callback (production implementation)
+        // Initialize Google Sign-In
+        function initializeGoogleSignIn() {
+            console.log('🔐 Initializing Google Sign-In...');
+            
+            window.google.accounts.id.initialize({
+                client_id: '329748771929-h7ass17q1ebv5mmd4r7qs75o940elsrn.apps.googleusercontent.com',
+                callback: handleCredentialResponse,
+                auto_select: false,
+                cancel_on_tap_outside: false
+            });
+
+            window.google.accounts.id.renderButton(
+                document.getElementById('googleSignInButton'),
+                {
+                    theme: 'outline',
+                    size: 'large',
+                    width: 300,
+                    text: 'signin_with',
+                    shape: 'rectangular'
+                }
+            );
+            
+            console.log('✅ Google Sign-In initialized');
+        }
+
+        // Google Sign-In callback
         function handleCredentialResponse(response) {
             console.log('🔐 Google Sign-In response received');
             
@@ -1276,56 +1309,11 @@
                 showMainApp();
                 showNotification(`Welcome, ${currentUser.name}!`, 'success');
                 
-                // Log login to Google Sheets (async, don't wait)
-                logLoginToSheets();
-                
             } catch (error) {
                 console.error('❌ Login error:', error);
                 showNotification('Login failed. Please try again.', 'error');
             }
         }
-
-        // Separate function for logging to sheets (non-blocking)
-        async function logLoginToSheets() {
-            try {
-                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec') {
-                    const loginData = {
-                        action: 'addRecord',
-                        data: {
-                            timestamp: new Date().toISOString(),
-                            voucherNo: 'LOGIN',
-                            date: new Date().toISOString().split('T')[0],
-                            payTo: currentUser.name,
-                            idType: 'LOGIN',
-                            idNumber: 'User Login',
-                            paymentMethod: 'System',
-                            reference: 'User successfully logged in',
-                            description: `User ${currentUser.name} logged in`,
-                            totalAmount: 'N/A',
-                            lineItemsCount: '0',
-                            lineItemsDetails: '[]',
-                            generatedBy: currentUser.name,
-                            generatedByEmail: currentUser.email,
-                            userPictureURL: currentUser.picture
-                        }
-                    };
-
-                    await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(loginData)
-                    });
-                    
-                    console.log('✅ Login logged to Google Sheets');
-                }
-            } catch (error) {
-                console.log('⚠️ Could not log to sheets:', error);
-            }
-        }
-
-
 
         // Show login screen
         function showLoginScreen() {
@@ -1377,122 +1365,19 @@
             document.getElementById('userAvatar').alt = currentUser.name;
         }
 
-        // Save voucher data to Google Sheets
-        async function saveVoucherToGoogleSheets(voucherData) {
-            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec') {
-                console.log('⚠️ Google Sheets Web App URL not configured');
-                console.log('📊 Voucher Data:', voucherData);
-                return false;
-            }
-
-            try {
-                const requestData = {
-                    action: 'addRecord',
-                    data: {
-                        timestamp: new Date().toISOString(),
-                        voucherNo: voucherData.voucherNo,
-                        date: voucherData.date,
-                        payTo: voucherData.payTo,
-                        idType: voucherData.idType,
-                        idNumber: voucherData.idNumber,
-                        paymentMethod: voucherData.paymentMethod,
-                        reference: voucherData.reference,
-                        description: voucherData.description,
-                        totalAmount: voucherData.totalAmount,
-                        lineItemsCount: voucherData.lineItemsCount.toString(),
-                        lineItemsDetails: voucherData.lineItemsDetails,
-                        generatedBy: voucherData.generatedBy,
-                        generatedByEmail: voucherData.generatedByEmail,
-                        userPictureURL: voucherData.userPictureURL
-                    }
-                };
-
-                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log('✅ Voucher saved to Google Sheets');
-                    return true;
-                } else {
-                    console.error('❌ Error from Google Sheets:', result.error);
-                    return false;
-                }
-                
-            } catch (error) {
-                console.error('❌ Error saving to Google Sheets:', error);
-                console.log('📊 Voucher Data (Fallback):', voucherData);
-                return false;
-            }
-        }
-
-        // Get voucher data from Google Sheets
-        async function getVouchersFromGoogleSheets() {
-            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec') {
-                console.log('⚠️ Google Sheets Web App URL not configured');
-                return [];
-            }
-
-            try {
-                const requestData = {
-                    action: 'getRecords'
-                };
-
-                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
-                });
-
-                const result = await response.json();
-                
-                if (result.success && result.data) {
-                    // Filter out login records and return only vouchers
-                    const vouchers = result.data.filter(row => 
-                        row.voucherno && 
-                        row.voucherno !== 'LOGIN' && 
-                        row.voucherno !== 'PDF_DOWNLOADED' &&
-                        row.voucherno !== 'LOGOUT'
-                    );
-                    
-                    console.log('✅ Retrieved vouchers from Google Sheets:', vouchers.length);
-                    return vouchers;
-                } else {
-                    console.error('❌ Error from Google Sheets:', result.error);
-                    return [];
-                }
-                
-            } catch (error) {
-                console.error('❌ Error retrieving from Google Sheets:', error);
-                return [];
-            }
-        }
-
-
-
         // Logout function
         function logout() {
             console.log('👋 Logging out');
             
-            // Log logout to Google Sheets (async, don't wait)
-            if (currentUser) {
-                logLogoutToSheets();
-            }
-            
             currentUser = null;
+            currentVoucherData = null;
             localStorage.removeItem('currentUser');
             
             // Reset form
             document.getElementById('voucherForm').reset();
             document.getElementById('voucherPreview').style.display = 'none';
+            document.getElementById('pdfBtn').style.display = 'none';
+            document.getElementById('sheetsBtn').style.display = 'none';
             
             // Reset voucher number and date
             document.getElementById('voucherNo').value = generateVoucherNumber();
@@ -1529,46 +1414,6 @@
             
             showLoginScreen();
             showNotification('Logged out successfully', 'info');
-        }
-
-        // Log logout (non-blocking)
-        async function logLogoutToSheets() {
-            try {
-                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec') {
-                    const logoutData = {
-                        action: 'addRecord',
-                        data: {
-                            timestamp: new Date().toISOString(),
-                            voucherNo: 'LOGOUT',
-                            date: new Date().toISOString().split('T')[0],
-                            payTo: currentUser.name,
-                            idType: 'LOGOUT',
-                            idNumber: 'User Logout',
-                            paymentMethod: 'System',
-                            reference: 'User logged out',
-                            description: `User ${currentUser.name} logged out`,
-                            totalAmount: 'N/A',
-                            lineItemsCount: '0',
-                            lineItemsDetails: '[]',
-                            generatedBy: currentUser.name,
-                            generatedByEmail: currentUser.email,
-                            userPictureURL: currentUser.picture
-                        }
-                    };
-
-                    await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(logoutData)
-                    });
-                    
-                    console.log('✅ Logout logged to Google Sheets');
-                }
-            } catch (error) {
-                console.log('⚠️ Could not log logout:', error);
-            }
         }
 
         // Generate voucher number with proper format
@@ -1738,7 +1583,7 @@
                 <td><input type="date" class="item-date" value="${todayString}" required></td>
                 <td><input type="text" class="item-bill" placeholder="Bill number (optional)"></td>
                 <td><input type="text" class="item-desc" placeholder="Item description" required></td>
-                <td><input type="number" class="item-amount" step="0.01" placeholder="0.00 (use - for refunds)" required></td>
+                <td><input type="number" class="item-amount" step="0.01" placeholder="0.00" required></td>
                 <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
             `;
             tbody.appendChild(newRow);
@@ -1775,7 +1620,6 @@
             const amountInputs = document.querySelectorAll('.item-amount');
             amountInputs.forEach(input => {
                 const amount = parseFloat(input.value) || 0;
-                // Include all amounts (positive and negative)
                 total += amount;
             });
             
@@ -1783,7 +1627,7 @@
             const tax = 0;
             const finalTotal = subtotal + tax;
 
-            // Update display with proper formatting for negative values
+            // Update display
             document.getElementById('subtotal').textContent = `RM ${subtotal.toFixed(2)}`;
             document.getElementById('tax').textContent = `RM ${tax.toFixed(2)}`;
             document.getElementById('total').textContent = `RM ${finalTotal.toFixed(2)}`;
@@ -1839,7 +1683,7 @@
         }
 
         // Generate voucher
-        async function generateVoucher() {
+        function generateVoucher() {
             console.log('🚀 Generating voucher...');
             
             const generateBtn = document.querySelector('.btn-primary');
@@ -1864,7 +1708,8 @@
                     paymentMethod: document.getElementById('paymentMethod').value,
                     reference: document.getElementById('reference').value || 'N/A',
                     description: document.getElementById('description').value,
-                    createdBy: currentUser ? currentUser.name : 'Unknown User'
+                    createdBy: currentUser ? currentUser.name : 'Unknown User',
+                    createdAt: new Date().toISOString()
                 };
 
                 // Get line items
@@ -1891,43 +1736,23 @@
                     }
                 });
 
+                // Store current voucher data for Google Sheets
+                currentVoucherData = {
+                    ...formData,
+                    lineItems: lineItems,
+                    totalAmount: totalAmount
+                };
+
                 // Update preview
                 updateVoucherPreview(formData, lineItems, totalAmount);
 
-                // Prepare voucher data for Google Sheets
-                const voucherData = {
-                    voucherNo: formData.voucherNo,
-                    date: formData.date,
-                    payTo: formData.payTo,
-                    idType: formData.idType,
-                    idNumber: formData.idNumber,
-                    paymentMethod: formData.paymentMethod,
-                    reference: formData.reference,
-                    description: formData.description,
-                    totalAmount: `RM ${totalAmount.toFixed(2)}`,
-                    lineItemsCount: lineItems.length,
-                    lineItemsDetails: JSON.stringify(lineItems),
-                    generatedBy: currentUser ? currentUser.name : 'Unknown User',
-                    generatedByEmail: currentUser ? currentUser.email : '',
-                    userPictureURL: currentUser ? currentUser.picture : ''
-                };
-
-                // Save voucher to Google Sheets
-                const saved = await saveVoucherToGoogleSheets(voucherData);
-                if (saved) {
-                    showNotification('Voucher saved to Google Sheets!', 'success');
-                } else {
-                    showNotification('Voucher generated but not saved to sheets', 'info');
-                }
-
-                // Show preview
+                // Show preview and buttons
                 document.getElementById('voucherPreview').style.display = 'block';
-
-                // Automatically generate and download PDF
-                await generateAndDownloadPDF(formData, lineItems, totalAmount);
+                document.getElementById('pdfBtn').style.display = 'flex';
+                document.getElementById('sheetsBtn').style.display = 'flex';
 
                 setButtonLoading(generateBtn, false);
-                showNotification('Voucher generated and PDF downloaded!', 'success');
+                showNotification('Voucher generated successfully!', 'success');
 
                 // Scroll to preview
                 setTimeout(() => {
@@ -1983,187 +1808,78 @@
             console.log('✅ Preview updated');
         }
 
-        // Generate and download PDF automatically
-        async function generateAndDownloadPDF(formData, lineItems, totalAmount) {
-            console.log('📄 Auto-generating PDF...');
+        // Save to Google Sheets
+        async function saveToGoogleSheets() {
+            console.log('📊 Saving to Google Sheets...');
             
+            const sheetsBtn = document.getElementById('sheetsBtn');
+            setButtonLoading(sheetsBtn, true);
+
             try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                // Set font
-                doc.setFont('helvetica');
-                let currentY = 15;
-
-                // Add logo to PDF
-                try {
-                    const logoUrl = 'https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png';
-                    const logoImg = new Image();
-                    logoImg.crossOrigin = 'anonymous';
-                    
-                    await new Promise((resolve, reject) => {
-                        logoImg.onload = () => {
-                            try {
-                                // Create canvas to convert image
-                                const canvas = document.createElement('canvas');
-                                const ctx = canvas.getContext('2d');
-                                canvas.width = logoImg.width;
-                                canvas.height = logoImg.height;
-                                ctx.drawImage(logoImg, 0, 0);
-                                
-                                // Get image data and add to PDF
-                                const imgData = canvas.toDataURL('image/png');
-                                const imgWidth = 40;
-                                const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
-                                
-                                doc.addImage(imgData, 'PNG', 85, currentY, imgWidth, imgHeight);
-                                currentY += imgHeight + 5;
-                                resolve();
-                            } catch (error) {
-                                console.log('Logo processing failed, continuing without logo');
-                                resolve();
-                            }
-                        };
-                        logoImg.onerror = () => {
-                            console.log('Logo load failed, continuing without logo');
-                            resolve();
-                        };
-                        logoImg.src = logoUrl;
-                    });
-                } catch (error) {
-                    console.log('Logo addition failed, continuing without logo');
-                    currentY += 10;
+                // Check if we have voucher data
+                if (!currentVoucherData) {
+                    throw new Error('No voucher data available');
                 }
 
-                // Company header
-                doc.setFontSize(16);
-                doc.setFont('helvetica', 'bold');
-                doc.text('EMMANUEL TRANSPORT', 105, currentY, { align: 'center' });
-                
-                currentY += 8;
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'normal');
-                doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
-                
-                currentY += 5;
-                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, currentY, { align: 'center' });
-                
-                currentY += 5;
-                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, currentY, { align: 'center' });
+                // Check if Google API is configured
+                if (GOOGLE_SHEETS_CONFIG.apiKey === 'YOUR_GOOGLE_API_KEY' || 
+                    GOOGLE_SHEETS_CONFIG.spreadsheetId === 'YOUR_SPREADSHEET_ID') {
+                    throw new Error('Google Sheets not configured. Please set up API key and spreadsheet ID.');
+                }
 
-                // Line separator
-                currentY += 10;
-                doc.line(20, currentY, 190, currentY);
+                // Check if Google API is loaded
+                if (!isGapiLoaded) {
+                    throw new Error('Google Sheets API not loaded');
+                }
 
-                // Title
-                currentY += 15;
-                doc.setFontSize(14);
-                doc.setFont('helvetica', 'bold');
-                doc.text('PAYMENT VOUCHER', 105, currentY, { align: 'center' });
+                // Prepare data for Google Sheets
+                const sheetData = [
+                    [
+                        currentVoucherData.voucherNo,
+                        currentVoucherData.date,
+                        currentVoucherData.payTo,
+                        currentVoucherData.idType,
+                        currentVoucherData.idNumber,
+                        currentVoucherData.paymentMethod,
+                        currentVoucherData.reference,
+                        currentVoucherData.description,
+                        currentVoucherData.totalAmount.toFixed(2),
+                        currentVoucherData.createdBy,
+                        currentVoucherData.createdAt,
+                        JSON.stringify(currentVoucherData.lineItems) // Store line items as JSON
+                    ]
+                ];
 
-                // Voucher details
-                currentY += 20;
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Voucher Information:', 20, currentY);
-                doc.text('Payment Details:', 110, currentY);
-
-                currentY += 8;
-                doc.setFont('helvetica', 'normal');
-                doc.text(`Voucher No.: ${formData.voucherNo}`, 20, currentY);
-                doc.text(`Pay To: ${formData.payTo}`, 110, currentY);
-
-                currentY += 6;
-                const formattedDate = new Date(formData.date).toLocaleDateString('en-GB');
-                doc.text(`Date: ${formattedDate}`, 20, currentY);
-                doc.text(`${formData.idType} No.: ${formData.idNumber}`, 110, currentY);
-
-                currentY += 6;
-                doc.text(`Reference: ${formData.reference}`, 20, currentY);
-                doc.text(`Method: ${formData.paymentMethod}`, 110, currentY);
-
-                currentY += 6;
-                doc.text(`Created by: ${formData.createdBy}`, 20, currentY);
-
-                // Description
-                currentY += 15;
-                doc.setFont('helvetica', 'bold');
-                doc.text('Description:', 20, currentY);
-                
-                currentY += 8;
-                doc.setFont('helvetica', 'normal');
-                const splitDescription = doc.splitTextToSize(formData.description, 170);
-                doc.text(splitDescription, 20, currentY);
-                currentY += splitDescription.length * 5;
-
-                // Line items
-                currentY += 10;
-                doc.setFont('helvetica', 'bold');
-                doc.text('Line Items:', 20, currentY);
-
-                currentY += 8;
-                doc.setFontSize(9);
-                doc.text('Date', 20, currentY);
-                doc.text('Bill No.', 50, currentY);
-                doc.text('Description', 80, currentY);
-                doc.text('Amount', 160, currentY);
-                
-                currentY += 2;
-                doc.line(20, currentY, 190, currentY);
-
-                // Line items data
-                currentY += 6;
-                doc.setFont('helvetica', 'normal');
-                
-                lineItems.forEach(item => {
-                    doc.text(item.date, 20, currentY);
-                    doc.text(item.billNo, 50, currentY);
-                    const itemDesc = doc.splitTextToSize(item.description, 70);
-                    doc.text(itemDesc[0], 80, currentY);
-                    doc.text(`RM ${item.amount.toFixed(2)}`, 160, currentY);
-                    currentY += 6;
+                // Append data to Google Sheets
+                const response = await gapi.client.sheets.spreadsheets.values.append({
+                    spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
+                    range: GOOGLE_SHEETS_CONFIG.range,
+                    valueInputOption: 'RAW',
+                    resource: {
+                        values: sheetData
+                    }
                 });
 
-                // Total
-                currentY += 5;
-                doc.line(20, currentY, 190, currentY);
-                currentY += 8;
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Total: RM ${totalAmount.toFixed(2)}`, 160, currentY);
+                console.log('✅ Data saved to Google Sheets:', response);
+                
+                setButtonLoading(sheetsBtn, false);
+                showNotification('Voucher saved to Google Sheets successfully!', 'success');
 
-                // Signature lines
-                currentY += 30;
-                doc.setFont('helvetica', 'normal');
-                
-                // Approved by
-                doc.line(30, currentY, 80, currentY);
-                doc.text('Approved By', 55, currentY + 8, { align: 'center' });
-                doc.text('Date: __________', 55, currentY + 15, { align: 'center' });
-
-                // Received by
-                doc.line(130, currentY, 180, currentY);
-                doc.text('Received By', 155, currentY + 8, { align: 'center' });
-                doc.text('Date: __________', 155, currentY + 15, { align: 'center' });
-
-                // Save PDF
-                doc.save(`Payment_Voucher_${formData.voucherNo}.pdf`);
-                
-                // Log PDF download (async, don't wait)
-                logPDFDownload(formData.voucherNo, `RM ${totalAmount.toFixed(2)}`, formData.payTo);
-                
-                console.log('✅ PDF auto-generated and downloaded');
-                
             } catch (error) {
-                console.error('❌ Auto PDF generation error:', error);
-                throw error;
+                console.error('❌ Google Sheets save error:', error);
+                setButtonLoading(sheetsBtn, false);
+                
+                if (error.message.includes('not configured')) {
+                    showNotification('Google Sheets integration not configured. Contact administrator.', 'error');
+                } else if (error.message.includes('not loaded')) {
+                    showNotification('Google Sheets API not available. Please refresh and try again.', 'error');
+                } else {
+                    showNotification('Failed to save to Google Sheets. Please try again.', 'error');
+                }
             }
         }
 
-        // Save PDF (manual button)
+        // Save PDF
         async function savePDF() {
             console.log('📄 Generating PDF...');
             
@@ -2350,9 +2066,6 @@
                 // Save PDF
                 doc.save(`Payment_Voucher_${voucherNo}.pdf`);
                 
-                // Log PDF download (async, don't wait)
-                logPDFDownload(voucherNo, totalAmount, payTo);
-                
                 setButtonLoading(pdfBtn, false);
                 showNotification('PDF downloaded successfully!', 'success');
                 
@@ -2363,43 +2076,14 @@
             }
         }
 
-        // Log PDF download (non-blocking)
-        async function logPDFDownload(voucherNo, totalAmount, payTo) {
-            try {
-                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
-                    const pdfData = {
-                        action: 'addRecord',
-                        data: {
-                            timestamp: new Date().toISOString(),
-                            voucherNo: 'PDF_DOWNLOADED',
-                            date: new Date().toISOString().split('T')[0],
-                            payTo: payTo,
-                            idType: 'PDF',
-                            idNumber: voucherNo,
-                            paymentMethod: 'Download',
-                            reference: `PDF downloaded for voucher ${voucherNo}`,
-                            description: `PDF downloaded for voucher ${voucherNo} - ${payTo}`,
-                            totalAmount: totalAmount,
-                            lineItemsCount: '1',
-                            lineItemsDetails: `[{"description": "PDF Download", "amount": "${totalAmount}"}]`,
-                            generatedBy: currentUser.name,
-                            generatedByEmail: currentUser.email,
-                            userPictureURL: currentUser.picture
-                        }
-                    };
-
-                    await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(pdfData)
-                    });
-                    
-                    console.log('✅ PDF download logged to Google Sheets');
-                }
-            } catch (error) {
-                console.log('⚠️ Could not log PDF download:', error);
+        // Set button loading state
+        function setButtonLoading(button, isLoading) {
+            if (isLoading) {
+                button.classList.add('loading');
+                button.disabled = true;
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
             }
         }
 
@@ -2422,312 +2106,6 @@
                 setTimeout(() => notification.remove(), 300);
             }, 3000);
         }
-
-        // View all vouchers
-        async function viewVouchers() {
-            console.log('📊 Opening vouchers modal...');
-            
-            // Show modal
-            document.getElementById('vouchersModal').style.display = 'block';
-            document.getElementById('vouchersLoading').style.display = 'block';
-            document.getElementById('vouchersTable').style.display = 'none';
-            
-            // Reset filters
-            document.getElementById('voucherSearch').value = '';
-            document.getElementById('methodFilter').value = '';
-            document.getElementById('dateFilter').value = '';
-            
-            try {
-                // Get vouchers from Google Sheets
-                allVouchers = await getVouchersFromGoogleSheets();
-                
-                if (allVouchers.length === 0) {
-                    document.getElementById('vouchersContent').innerHTML = `
-                        <div style="text-align: center; padding: 40px; color: #64748b;">
-                            <div style="font-size: 3em; margin-bottom: 20px;">📄</div>
-                            <h3>No vouchers found</h3>
-                            <p>Generate your first voucher to see it here!</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Display all vouchers initially
-                displayVouchers(allVouchers);
-                
-                console.log('✅ Vouchers displayed successfully');
-                
-            } catch (error) {
-                console.error('❌ Error loading vouchers:', error);
-                document.getElementById('vouchersContent').innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #ef4444;">
-                        <div style="font-size: 3em; margin-bottom: 20px;">⚠️</div>
-                        <h3>Error loading vouchers</h3>
-                        <p>Please check your Google Sheets configuration.</p>
-                        <button onclick="setupGoogleSheets()" style="margin-top: 20px; padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Setup Google Sheets</button>
-                    </div>
-                `;
-            }
-        }
-
-        // Display vouchers in table
-        function displayVouchers(vouchers) {
-            if (vouchers.length === 0) {
-                document.getElementById('vouchersLoading').style.display = 'none';
-                document.getElementById('vouchersTable').innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #64748b;">
-                        <div style="font-size: 2em; margin-bottom: 15px;">🔍</div>
-                        <h3>No vouchers match your search</h3>
-                        <p>Try adjusting your filters or search terms.</p>
-                    </div>
-                `;
-                document.getElementById('vouchersTable').style.display = 'block';
-                return;
-            }
-
-            // Sort vouchers by date (newest first)
-            vouchers.sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp));
-            
-            // Create table
-            let tableHTML = `
-                <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                    <table style="width: 100%; border-collapse: collapse; background: white; font-size: 0.9em;">
-                        <thead>
-                            <tr style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
-                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Voucher No</th>
-                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Date</th>
-                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Pay To</th>
-                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Amount</th>
-                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Method</th>
-                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Generated By</th>
-                                <th style="padding: 15px 12px; text-align: center; font-weight: 600;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            vouchers.forEach((voucher, index) => {
-                const rowStyle = index % 2 === 0 ? 'background: #f8fafc;' : 'background: white;';
-                const formattedDate = voucher.date ? new Date(voucher.date).toLocaleDateString('en-GB') : 'N/A';
-                
-                tableHTML += `
-                    <tr style="${rowStyle} transition: all 0.3s ease;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='${index % 2 === 0 ? '#f8fafc' : 'white'}'">
-                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #6366f1;">${voucher.voucherno || voucher.voucherNo}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${formattedDate}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${voucher.payto || voucher.payTo}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #059669;">${voucher.totalamount || voucher.totalAmount}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${voucher.paymentmethod || voucher.paymentMethod}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${voucher.generatedby || voucher.generatedBy}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">
-                            <button onclick="viewVoucherDetails('${voucher.voucherno || voucher.voucherNo}')" style="background: #6366f1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-right: 5px; transition: all 0.3s ease;" onmouseover="this.style.background='#5b21b6'" onmouseout="this.style.background='#6366f1'">View</button>
-                            <button onclick="regeneratePDF('${voucher.voucherno || voucher.voucherNo}')" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.3s ease;" onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">PDF</button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            tableHTML += `
-                        </tbody>
-                    </table>
-                </div>
-                <div style="margin-top: 20px; text-align: center; color: #64748b; font-size: 0.9em;">
-                    Showing ${vouchers.length} of ${allVouchers.length} voucher${allVouchers.length !== 1 ? 's' : ''}
-                </div>
-            `;
-            
-            document.getElementById('vouchersLoading').style.display = 'none';
-            document.getElementById('vouchersTable').innerHTML = tableHTML;
-            document.getElementById('vouchersTable').style.display = 'block';
-        }
-
-        // Filter vouchers based on search criteria
-        function filterVouchers() {
-            const searchTerm = document.getElementById('voucherSearch').value.toLowerCase();
-            const methodFilter = document.getElementById('methodFilter').value;
-            const dateFilter = document.getElementById('dateFilter').value;
-            
-            let filteredVouchers = allVouchers.filter(voucher => {
-                // Search in multiple fields
-                const voucherNo = voucher.voucherno || voucher.voucherNo || '';
-                const payTo = voucher.payto || voucher.payTo || '';
-                const description = voucher.description || '';
-                const reference = voucher.reference || '';
-                
-                const searchMatch = !searchTerm || 
-                    voucherNo.toLowerCase().includes(searchTerm) ||
-                    payTo.toLowerCase().includes(searchTerm) ||
-                    description.toLowerCase().includes(searchTerm) ||
-                    reference.toLowerCase().includes(searchTerm);
-                
-                // Method filter
-                const paymentMethod = voucher.paymentmethod || voucher.paymentMethod || '';
-                const methodMatch = !methodFilter || paymentMethod === methodFilter;
-                
-                // Date filter
-                const voucherDate = voucher.date || '';
-                const dateMatch = !dateFilter || voucherDate === dateFilter;
-                
-                return searchMatch && methodMatch && dateMatch;
-            });
-            
-            displayVouchers(filteredVouchers);
-        }
-
-        // View voucher details
-        function viewVoucherDetails(voucherNo) {
-            const voucher = allVouchers.find(v => (v.voucherno || v.voucherNo) === voucherNo);
-            if (!voucher) {
-                showNotification('Voucher not found', 'error');
-                return;
-            }
-            
-            // Parse line items
-            let lineItems = [];
-            try {
-                const lineItemsData = voucher.lineitemsdetails || voucher.lineItemsDetails || '[]';
-                lineItems = JSON.parse(lineItemsData);
-            } catch (e) {
-                console.log('Could not parse line items for voucher:', voucherNo);
-            }
-            
-            // Create detailed view
-            const detailsHTML = `
-                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-                    <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 25px; text-align: center;">
-                        <h2 style="margin: 0; font-size: 1.4em;">Voucher Details</h2>
-                        <p style="margin: 10px 0 0 0; opacity: 0.9;">${voucher.voucherno || voucher.voucherNo}</p>
-                    </div>
-                    
-                    <div style="padding: 30px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
-                            <div>
-                                <h4 style="margin: 0 0 10px 0; color: #374151; font-size: 1.1em;">Payment Information</h4>
-                                <p style="margin: 5px 0;"><strong>Pay To:</strong> ${voucher.payto || voucher.payTo}</p>
-                                <p style="margin: 5px 0;"><strong>${voucher.idtype || voucher.idType} No:</strong> ${voucher.idnumber || voucher.idNumber}</p>
-                                <p style="margin: 5px 0;"><strong>Method:</strong> ${voucher.paymentmethod || voucher.paymentMethod}</p>
-                                <p style="margin: 5px 0;"><strong>Reference:</strong> ${voucher.reference}</p>
-                            </div>
-                            <div>
-                                <h4 style="margin: 0 0 10px 0; color: #374151; font-size: 1.1em;">Voucher Information</h4>
-                                <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(voucher.date).toLocaleDateString('en-GB')}</p>
-                                <p style="margin: 5px 0;"><strong>Amount:</strong> <span style="color: #059669; font-weight: 600;">${voucher.totalamount || voucher.totalAmount}</span></p>
-                                <p style="margin: 5px 0;"><strong>Generated By:</strong> ${voucher.generatedby || voucher.generatedBy}</p>
-                                <p style="margin: 5px 0;"><strong>Items:</strong> ${voucher.lineitemscount || voucher.lineItemsCount}</p>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-bottom: 25px;">
-                            <h4 style="margin: 0 0 10px 0; color: #374151; font-size: 1.1em;">Description</h4>
-                            <p style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 0; line-height: 1.5;">${voucher.description}</p>
-                        </div>
-                        
-                        ${lineItems.length > 0 ? `
-                        <div style="margin-bottom: 25px;">
-                            <h4 style="margin: 0 0 15px 0; color: #374151; font-size: 1.1em;">Line Items</h4>
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
-                                    <thead>
-                                        <tr style="background: #f8fafc;">
-                                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb;">Date</th>
-                                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb;">Bill No</th>
-                                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb;">Description</th>
-                                            <th style="padding: 10px; text-align: right; border-bottom: 2px solid #e5e7eb;">Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${lineItems.map(item => `
-                                            <tr>
-                                                <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${item.date}</td>
-                                                <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${item.billNo}</td>
-                                                <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${item.description}</td>
-                                                <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600;">RM ${item.amount.toFixed(2)}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        ` : ''}
-                        
-                        <div style="display: flex; gap: 10px; justify-content: center;">
-                            <button onclick="regeneratePDF('${voucher.voucherno || voucher.voucherNo}')" style="background: #059669; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Download PDF</button>
-                            <button onclick="closeVoucherDetails()" style="background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Close</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Show details modal
-            const detailsModal = document.createElement('div');
-            detailsModal.id = 'voucherDetailsModal';
-            detailsModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;';
-            detailsModal.innerHTML = detailsHTML;
-            
-            document.body.appendChild(detailsModal);
-        }
-
-        // Close voucher details
-        function closeVoucherDetails() {
-            const modal = document.getElementById('voucherDetailsModal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-
-        // Regenerate PDF for existing voucher
-        async function regeneratePDF(voucherNo) {
-            const voucher = allVouchers.find(v => (v.voucherno || v.voucherNo) === voucherNo);
-            if (!voucher) {
-                showNotification('Voucher not found', 'error');
-                return;
-            }
-            
-            showNotification('Generating PDF...', 'info');
-            
-            try {
-                // Parse line items
-                let lineItems = [];
-                try {
-                    const lineItemsData = voucher.lineitemsdetails || voucher.lineItemsDetails || '[]';
-                    lineItems = JSON.parse(lineItemsData);
-                } catch (e) {
-                    console.log('Could not parse line items, using basic data');
-                    lineItems = [{
-                        date: new Date(voucher.date).toLocaleDateString('en-GB'),
-                        billNo: 'N/A',
-                        description: voucher.description,
-                        amount: parseFloat((voucher.totalamount || voucher.totalAmount).replace('RM ', '')) || 0
-                    }];
-                }
-                
-                // Calculate total from line items
-                const totalAmount = lineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-                
-                // Create form data structure
-                const formData = {
-                    voucherNo: voucher.voucherno || voucher.voucherNo,
-                    date: voucher.date,
-                    payTo: voucher.payto || voucher.payTo,
-                    idType: voucher.idtype || voucher.idType,
-                    idNumber: voucher.idnumber || voucher.idNumber,
-                    paymentMethod: voucher.paymentmethod || voucher.paymentMethod,
-                    reference: voucher.reference,
-                    description: voucher.description,
-                    createdBy: voucher.generatedby || voucher.generatedBy
-                };
-                
-                // Generate PDF
-                await generateAndDownloadPDF(formData, lineItems, totalAmount);
-                showNotification('PDF downloaded successfully!', 'success');
-                
-            } catch (error) {
-                console.error('Error regenerating PDF:', error);
-                showNotification('Error generating PDF', 'error');
-            }
-        }
-
-        // Setup Google Sheets integration
-        function setupGoogleSheets() {
-            const setupHTML = `
-                <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-                    <div style="background: linear-gradient(135deg, #6366f1, #8b<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b0e14c00ab4dc',t:'MTc1OTQ3OTk5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b4746037eb4dc',t:'MTc1OTQ4MjMzMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
