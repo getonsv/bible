@@ -2463,140 +2463,191 @@
             showRecordsLoading(true);
             
             try {
-                // Try to load from Google Sheets first
+                // Try multiple methods to load from Google Sheets
                 console.log('📤 Requesting records from Google Sheets...');
                 
-                // Use POST method with action parameter in body for better compatibility
-                const requestData = {
-                    action: 'getVouchers'
-                };
+                let records = [];
+                let sheetsSuccess = false;
                 
-                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'text/plain',
-                    },
-                    body: JSON.stringify(requestData)
-                });
-                
-                console.log('📥 Response status:', response.status);
-                console.log('📥 Response headers:', [...response.headers.entries()]);
-                
-                if (response.ok) {
-                    const responseText = await response.text();
-                    console.log('📥 Raw response text:', responseText);
+                // Method 1: POST with getVouchers action
+                try {
+                    console.log('📤 Method 1: POST with getVouchers action');
+                    const requestData = { action: 'getVouchers' };
                     
-                    let result;
-                    try {
-                        result = JSON.parse(responseText);
-                        console.log('📥 Parsed result:', result);
-                    } catch (parseError) {
-                        console.log('📥 Response is not JSON, trying to parse as CSV or raw data');
+                    const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                        method: 'POST',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'text/plain',
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    
+                    console.log('📥 Method 1 Response status:', response.status);
+                    
+                    if (response.ok) {
+                        const responseText = await response.text();
+                        console.log('📥 Method 1 Raw response:', responseText.substring(0, 500) + '...');
                         
-                        // Try to parse as CSV-like data if it's not JSON
-                        if (responseText.includes('\n') && responseText.includes(',')) {
-                            const lines = responseText.trim().split('\n');
-                            const records = [];
+                        try {
+                            const result = JSON.parse(responseText);
+                            console.log('📥 Method 1 Parsed result:', result);
                             
-                            // Skip header row if it exists
-                            const dataLines = lines.slice(1);
+                            if (result.success && result.data && Array.isArray(result.data)) {
+                                records = result.data.filter(row => row && (Array.isArray(row) ? row[0] : row.voucherNo));
+                                sheetsSuccess = true;
+                                console.log('✅ Method 1 Success:', records.length, 'records');
+                            }
+                        } catch (parseError) {
+                            console.log('📥 Method 1 JSON parse failed, trying CSV parsing');
                             
-                            dataLines.forEach(line => {
-                                const values = line.split(',');
-                                if (values.length >= 9 && values[0] && values[0] !== '') {
-                                    records.push({
-                                        voucherNo: values[0],
-                                        date: values[1],
-                                        payTo: values[2],
-                                        idType: values[3],
-                                        idNumber: values[4],
-                                        paymentMethod: values[5],
-                                        reference: values[6],
-                                        description: values[7],
-                                        totalAmount: parseFloat(values[8]) || 0,
-                                        createdBy: values[9] || 'Unknown',
-                                        createdAt: values[10] || '',
-                                        lineItems: values[11] || ''
-                                    });
+                            // Try CSV parsing
+                            if (responseText.includes('\n')) {
+                                const lines = responseText.trim().split('\n');
+                                console.log('📥 Found', lines.length, 'lines in response');
+                                
+                                // Skip header if it looks like headers
+                                let startIndex = 0;
+                                if (lines[0] && (lines[0].includes('Voucher') || lines[0].includes('Date'))) {
+                                    startIndex = 1;
+                                    console.log('📥 Skipping header row');
                                 }
-                            });
-                            
-                            if (records.length > 0) {
-                                console.log('✅ Parsed CSV data:', records.length, 'records');
-                                displayRecords(records);
-                                showRecordsLoading(false);
-                                showNotification(`✅ Loaded ${records.length} records from Google Sheets`, 'success');
-                                return;
+                                
+                                const dataLines = lines.slice(startIndex);
+                                console.log('📥 Processing', dataLines.length, 'data lines');
+                                
+                                dataLines.forEach((line, index) => {
+                                    if (line.trim()) {
+                                        // Handle both comma and tab separated values
+                                        const values = line.includes('\t') ? line.split('\t') : line.split(',');
+                                        console.log(`📥 Line ${index + 1}:`, values);
+                                        
+                                        if (values.length >= 3 && values[0] && values[0].trim() !== '') {
+                                            records.push({
+                                                voucherNo: values[0]?.trim() || '',
+                                                date: values[1]?.trim() || '',
+                                                payTo: values[2]?.trim() || '',
+                                                idType: values[3]?.trim() || '',
+                                                idNumber: values[4]?.trim() || '',
+                                                paymentMethod: values[5]?.trim() || '',
+                                                reference: values[6]?.trim() || '',
+                                                description: values[7]?.trim() || '',
+                                                totalAmount: parseFloat(values[8]) || 0,
+                                                createdBy: values[9]?.trim() || 'Unknown',
+                                                createdAt: values[10]?.trim() || '',
+                                                lineItems: values[11]?.trim() || ''
+                                            });
+                                        }
+                                    }
+                                });
+                                
+                                if (records.length > 0) {
+                                    sheetsSuccess = true;
+                                    console.log('✅ CSV parsing success:', records.length, 'records');
+                                }
                             }
                         }
-                        
-                        throw new Error('Invalid response format');
                     }
-                    
-                    if (result.success && result.data && Array.isArray(result.data)) {
-                        console.log('✅ Records loaded from Google Sheets:', result.data.length, 'records');
-                        
-                        // Convert array format to object format for consistency
-                        const formattedRecords = result.data.map(row => {
-                            if (Array.isArray(row) && row.length >= 9) {
-                                return {
-                                    voucherNo: row[0],
-                                    date: row[1],
-                                    payTo: row[2],
-                                    idType: row[3],
-                                    idNumber: row[4],
-                                    paymentMethod: row[5],
-                                    reference: row[6],
-                                    description: row[7],
-                                    totalAmount: parseFloat(row[8]) || 0,
-                                    createdBy: row[9] || 'Unknown',
-                                    createdAt: row[10] || '',
-                                    lineItems: row[11] || ''
-                                };
-                            }
-                            return row;
+                } catch (method1Error) {
+                    console.log('📥 Method 1 failed:', method1Error.message);
+                }
+                
+                // Method 2: GET request if POST failed
+                if (!sheetsSuccess) {
+                    try {
+                        console.log('📤 Method 2: GET request');
+                        const getResponse = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl + '?action=getVouchers', {
+                            method: 'GET',
+                            mode: 'cors'
                         });
                         
-                        // Also sync to localStorage
-                        localStorage.setItem('voucherRecords', JSON.stringify(formattedRecords));
+                        console.log('📥 Method 2 Response status:', getResponse.status);
                         
-                        displayRecords(formattedRecords);
-                        showRecordsLoading(false);
-                        showNotification(`✅ Loaded ${formattedRecords.length} records from Google Sheets`, 'success');
-                        return;
-                    } else if (result.data && Array.isArray(result.data)) {
-                        // Handle case where success flag might be missing but data exists
-                        console.log('✅ Records found (no success flag):', result.data.length, 'records');
-                        displayRecords(result.data);
-                        showRecordsLoading(false);
-                        showNotification(`✅ Loaded ${result.data.length} records from Google Sheets`, 'success');
-                        return;
+                        if (getResponse.ok) {
+                            const getResponseText = await getResponse.text();
+                            console.log('📥 Method 2 Raw response:', getResponseText.substring(0, 500) + '...');
+                            
+                            try {
+                                const getResult = JSON.parse(getResponseText);
+                                console.log('📥 Method 2 Parsed result:', getResult);
+                                
+                                if (getResult.success && getResult.data && Array.isArray(getResult.data)) {
+                                    records = getResult.data.filter(row => row && (Array.isArray(row) ? row[0] : row.voucherNo));
+                                    sheetsSuccess = true;
+                                    console.log('✅ Method 2 Success:', records.length, 'records');
+                                }
+                            } catch (getParseError) {
+                                console.log('📥 Method 2 JSON parse failed');
+                            }
+                        }
+                    } catch (method2Error) {
+                        console.log('📥 Method 2 failed:', method2Error.message);
                     }
                 }
                 
-                // If we get here, Google Sheets didn't work, try localStorage
+                // Process and display records if we got them from Google Sheets
+                if (sheetsSuccess && records.length > 0) {
+                    console.log('✅ Google Sheets data loaded successfully:', records.length, 'records');
+                    
+                    // Convert array format to object format for consistency
+                    const formattedRecords = records.map(row => {
+                        if (Array.isArray(row)) {
+                            return {
+                                voucherNo: row[0] || '',
+                                date: row[1] || '',
+                                payTo: row[2] || '',
+                                idType: row[3] || '',
+                                idNumber: row[4] || '',
+                                paymentMethod: row[5] || '',
+                                reference: row[6] || '',
+                                description: row[7] || '',
+                                totalAmount: parseFloat(row[8]) || 0,
+                                createdBy: row[9] || 'Unknown',
+                                createdAt: row[10] || '',
+                                lineItems: row[11] || ''
+                            };
+                        }
+                        return row; // Already in object format
+                    });
+                    
+                    // Filter out empty records
+                    const validRecords = formattedRecords.filter(record => 
+                        record.voucherNo && record.voucherNo.trim() !== ''
+                    );
+                    
+                    console.log('✅ Valid records after filtering:', validRecords.length);
+                    
+                    // Sync to localStorage
+                    localStorage.setItem('voucherRecords', JSON.stringify(validRecords));
+                    
+                    displayRecords(validRecords);
+                    showRecordsLoading(false);
+                    showNotification(`✅ Loaded ${validRecords.length} records from Google Sheets`, 'success');
+                    return;
+                }
+                
+                // Fallback to localStorage if Google Sheets failed
                 console.log('📋 Google Sheets failed, loading from local storage');
-                const records = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
-                displayRecords(records);
+                const localRecords = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                displayRecords(localRecords);
                 showRecordsLoading(false);
                 
-                if (records.length === 0) {
+                if (localRecords.length === 0) {
                     showNotification('No records found. Create your first voucher to see it here!', 'info');
                 } else {
-                    showNotification(`⚠️ Loaded ${records.length} local records - Google Sheets connection issue`, 'info');
+                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Google Sheets connection issue`, 'info');
                 }
                 
             } catch (error) {
                 console.error('❌ Error loading records:', error);
                 
-                // Fallback to localStorage
-                const records = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
-                displayRecords(records);
+                // Final fallback to localStorage
+                const localRecords = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                displayRecords(localRecords);
                 showRecordsLoading(false);
                 
-                if (records.length > 0) {
-                    showNotification(`⚠️ Loaded ${records.length} local records - Google Sheets connection issue`, 'info');
+                if (localRecords.length > 0) {
+                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Google Sheets connection issue`, 'info');
                 } else {
                     showNotification('No records found. Google Sheets connection failed.', 'error');
                 }
@@ -2950,5 +3001,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b9bec1313b4dc',t:'MTc1OTQ4NTgwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b9ebfe443b4dc',t:'MTc1OTQ4NTkxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
