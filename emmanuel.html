@@ -1587,20 +1587,37 @@
             const idType = document.getElementById('idType').value;
             const idInput = document.getElementById('idNumber');
             
+            console.log('ID Type selected:', idType); // Debug log
+            
             if (idType === 'NRIC') {
                 idInput.placeholder = 'e.g. 123456-78-9012';
                 idInput.disabled = false;
+                idInput.removeAttribute('disabled');
                 idInput.maxLength = 14;
+                idInput.value = ''; // Clear any existing value
                 idInput.addEventListener('input', formatNRIC);
+                console.log('NRIC field enabled'); // Debug log
             } else if (idType === 'Passport') {
                 idInput.placeholder = 'e.g. A12345678';
                 idInput.disabled = false;
+                idInput.removeAttribute('disabled');
                 idInput.maxLength = 20;
+                idInput.value = ''; // Clear any existing value
                 idInput.removeEventListener('input', formatNRIC);
+                console.log('Passport field enabled'); // Debug log
             } else {
                 idInput.placeholder = 'Select ID type first';
                 idInput.disabled = true;
                 idInput.value = '';
+                console.log('ID field disabled'); // Debug log
+            }
+            
+            // Force focus to ensure the field is interactive
+            if (!idInput.disabled) {
+                setTimeout(() => {
+                    idInput.focus();
+                    idInput.blur();
+                }, 100);
             }
         }
 
@@ -2376,5 +2393,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889215386d6b4dc',t:'MTc1OTQ1OTgwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889248971c2b4dc',t:'MTc1OTQ1OTkzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
