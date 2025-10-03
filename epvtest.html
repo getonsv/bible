@@ -1228,8 +1228,8 @@
         // Google Sheets Configuration
         const GOOGLE_SHEETS_CONFIG = {
             // Replace with your actual Google Apps Script Web App URL
-            webAppUrl: 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec',
-            spreadsheetId: 'YOUR_SPREADSHEET_ID'
+            webAppUrl: 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec',
+            spreadsheetId: '1D1sodswMfwrHEWU_4KVaytwCf-Nk66mdo3V14N0zqfU'
         };
 
         // Store all vouchers globally for filtering
@@ -1288,7 +1288,7 @@
         // Separate function for logging to sheets (non-blocking)
         async function logLoginToSheets() {
             try {
-                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
+                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec') {
                     const loginData = {
                         action: 'addRecord',
                         data: {
@@ -1379,7 +1379,7 @@
 
         // Save voucher data to Google Sheets
         async function saveVoucherToGoogleSheets(voucherData) {
-            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
+            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec') {
                 console.log('⚠️ Google Sheets Web App URL not configured');
                 console.log('📊 Voucher Data:', voucherData);
                 return false;
@@ -1434,7 +1434,7 @@
 
         // Get voucher data from Google Sheets
         async function getVouchersFromGoogleSheets() {
-            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
+            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec') {
                 console.log('⚠️ Google Sheets Web App URL not configured');
                 return [];
             }
@@ -1534,7 +1534,7 @@
         // Log logout (non-blocking)
         async function logLogoutToSheets() {
             try {
-                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') {
+                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec') {
                     const logoutData = {
                         action: 'addRecord',
                         data: {
