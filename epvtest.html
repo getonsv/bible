@@ -841,7 +841,7 @@
         <!-- Login Screen -->
         <div class="login-screen" id="loginScreen">
             <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="login-logo" onerror="this.style.display='none';">
-            <h3 class="login-title">Payment Voucher System</h3>
+            <h1 class="login-title">Payment Voucher System</h1>
             <p class="login-subtitle">By accessing this system, you agree to GetOn's and Emmanuel Transport's terms of use and privacy policy.</p>
             <div id="g_id_onload"
                  data-client_id="329748771929-h7ass17q1ebv5mmd4r7qs75o940elsrn.apps.googleusercontent.com"
@@ -1171,7 +1171,7 @@
         }
 
         // Google Sign-In callback (production implementation)
-        async function handleCredentialResponse(response) {
+        function handleCredentialResponse(response) {
             console.log('🔐 Google Sign-In response received');
             
             try {
@@ -1188,21 +1188,55 @@
                 
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 
-                // Log login to Google Sheets
-                await logToGoogleSheets('LOGIN', {
-                    action: 'User Login',
-                    user: currentUser.name,
-                    email: currentUser.email,
-                    timestamp: new Date().toISOString(),
-                    details: 'User successfully logged in'
-                });
+                console.log('✅ User data saved:', currentUser);
                 
+                // Show main app immediately
                 showMainApp();
-                showNotification(`Welcome back, ${currentUser.name}!`, 'success');
+                showNotification(`Welcome, ${currentUser.name}!`, 'success');
+                
+                // Log login to Google Sheets (async, don't wait)
+                logLoginToSheets();
                 
             } catch (error) {
                 console.error('❌ Login error:', error);
                 showNotification('Login failed. Please try again.', 'error');
+            }
+        }
+
+        // Separate function for logging to sheets (non-blocking)
+        async function logLoginToSheets() {
+            try {
+                if (gapiInited && gapi.client.sheets && currentUser) {
+                    const timestamp = new Date().toISOString();
+                    const values = [[
+                        timestamp,
+                        'LOGIN',
+                        currentUser.name,
+                        currentUser.email,
+                        'User Login',
+                        'User successfully logged in',
+                        '',
+                        '',
+                        '',
+                        '',
+                        '',
+                        '',
+                        currentUser.name,
+                        currentUser.email,
+                        currentUser.picture
+                    ]];
+
+                    await gapi.client.sheets.spreadsheets.values.append({
+                        spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
+                        range: 'Sheet1!A:O',
+                        valueInputOption: 'USER_ENTERED',
+                        resource: { values: values }
+                    });
+                    
+                    console.log('✅ Login logged to Google Sheets');
+                }
+            } catch (error) {
+                console.log('⚠️ Could not log to sheets:', error);
             }
         }
 
@@ -1410,18 +1444,12 @@
         }
 
         // Logout function
-        async function logout() {
+        function logout() {
             console.log('👋 Logging out');
             
-            // Log logout to Google Sheets
+            // Log logout to Google Sheets (async, don't wait)
             if (currentUser) {
-                await logToGoogleSheets('LOGOUT', {
-                    action: 'User Logout',
-                    user: currentUser.name,
-                    email: currentUser.email,
-                    timestamp: new Date().toISOString(),
-                    details: 'User logged out'
-                });
+                logLogoutToSheets();
             }
             
             currentUser = null;
@@ -1434,6 +1462,43 @@
             
             showLoginScreen();
             showNotification('Logged out successfully', 'info');
+        }
+
+        // Log logout (non-blocking)
+        async function logLogoutToSheets() {
+            try {
+                if (gapiInited && gapi.client.sheets && currentUser) {
+                    const timestamp = new Date().toISOString();
+                    const values = [[
+                        timestamp,
+                        'LOGOUT',
+                        currentUser.name,
+                        currentUser.email,
+                        'User Logout',
+                        'User logged out',
+                        '',
+                        '',
+                        '',
+                        '',
+                        '',
+                        '',
+                        currentUser.name,
+                        currentUser.email,
+                        currentUser.picture
+                    ]];
+
+                    await gapi.client.sheets.spreadsheets.values.append({
+                        spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
+                        range: 'Sheet1!A:O',
+                        valueInputOption: 'USER_ENTERED',
+                        resource: { values: values }
+                    });
+                    
+                    console.log('✅ Logout logged to Google Sheets');
+                }
+            } catch (error) {
+                console.log('⚠️ Could not log logout:', error);
+            }
         }
 
         // Generate voucher number with proper format
@@ -1692,7 +1757,7 @@
         }
 
         // Generate voucher
-        function generateVoucher() {
+        async function generateVoucher() {
             console.log('🚀 Generating voucher...');
             
             const generateBtn = document.querySelector('.btn-primary');
@@ -1833,7 +1898,7 @@
         }
 
         // Save PDF
-        function savePDF() {
+        async function savePDF() {
             console.log('📄 Generating PDF...');
             
             const pdfBtn = document.getElementById('pdfBtn');
@@ -1979,17 +2044,8 @@
                 // Save PDF
                 doc.save(`Payment_Voucher_${voucherNo}.pdf`);
                 
-                // Log PDF download to Google Sheets
-                await logToGoogleSheets('PDF_DOWNLOADED', {
-                    action: 'PDF Downloaded',
-                    user: currentUser ? currentUser.name : 'Unknown',
-                    email: currentUser ? currentUser.email : '',
-                    voucherNo: voucherNo,
-                    amount: totalAmount,
-                    payTo: payTo,
-                    timestamp: new Date().toISOString(),
-                    details: `PDF downloaded for voucher ${voucherNo}`
-                });
+                // Log PDF download (async, don't wait)
+                logPDFDownload(voucherNo, totalAmount, payTo);
                 
                 setButtonLoading(pdfBtn, false);
                 showNotification('PDF downloaded successfully!', 'success');
@@ -1998,6 +2054,44 @@
                 console.error('❌ PDF generation error:', error);
                 setButtonLoading(pdfBtn, false);
                 showNotification('Error generating PDF. Please try again.', 'error');
+            }
+        }
+
+        // Log PDF download (non-blocking)
+        async function logPDFDownload(voucherNo, totalAmount, payTo) {
+            try {
+                if (gapiInited && gapi.client.sheets && currentUser) {
+                    const timestamp = new Date().toISOString();
+                    const values = [[
+                        timestamp,
+                        'PDF_DOWNLOADED',
+                        currentUser.name,
+                        currentUser.email,
+                        'PDF Downloaded',
+                        `PDF downloaded for voucher ${voucherNo}`,
+                        voucherNo,
+                        '',
+                        payTo,
+                        '',
+                        '',
+                        totalAmount,
+                        '',
+                        currentUser.name,
+                        currentUser.email,
+                        currentUser.picture
+                    ]];
+
+                    await gapi.client.sheets.spreadsheets.values.append({
+                        spreadsheetId: GOOGLE_SHEETS_CONFIG.spreadsheetId,
+                        range: 'Sheet1!A:O',
+                        valueInputOption: 'USER_ENTERED',
+                        resource: { values: values }
+                    });
+                    
+                    console.log('✅ PDF download logged to Google Sheets');
+                }
+            } catch (error) {
+                console.log('⚠️ Could not log PDF download:', error);
             }
         }
 
@@ -2129,5 +2223,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ab0f50433b4dc',t:'MTc1OTQ3NjE3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ab965b6deb4dc',t:'MTc1OTQ3NjUyMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
