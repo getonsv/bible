@@ -1175,7 +1175,7 @@
                     </a>
                 </div>
                 <div class="footer-right">
-                    <span class="version-number">v2.1.1</span>
+                    <span class="version-number">v2.1.0</span>
                 </div>
             </div>
         </div>
@@ -1739,14 +1739,24 @@
             // Add event listeners to new inputs for real-time calculation
             const newInputs = newRow.querySelectorAll('input');
             newInputs.forEach(input => {
-                input.addEventListener('input', calculateTotal);
-                input.addEventListener('change', calculateTotal);
+                input.addEventListener('input', function() {
+                    console.log('Input changed:', input.className, input.value);
+                    calculateTotal();
+                });
+                input.addEventListener('change', function() {
+                    console.log('Input changed (change event):', input.className, input.value);
+                    calculateTotal();
+                });
                 input.addEventListener('keyup', calculateTotal);
                 input.addEventListener('blur', calculateTotal);
             });
             
+            // Focus on the description field of the new row
+            const descInput = newRow.querySelector('.item-desc');
+            setTimeout(() => descInput.focus(), 100);
+            
             calculateTotal();
-            console.log('✅ New line item added');
+            console.log('✅ New line item added with event listeners');
         }
 
         // Remove line item
@@ -1765,14 +1775,24 @@
             
             // Get all line item rows and calculate total
             const lineItemRows = document.querySelectorAll('.line-item-row');
+            console.log(`🔢 Found ${lineItemRows.length} line item rows`);
+            
             lineItemRows.forEach((row, index) => {
                 const amountInput = row.querySelector('.item-amount');
-                if (amountInput && amountInput.value) {
+                const descInput = row.querySelector('.item-desc');
+                const dateInput = row.querySelector('.item-date');
+                
+                if (amountInput && amountInput.value && descInput && descInput.value.trim() && dateInput && dateInput.value) {
                     const amount = parseFloat(amountInput.value) || 0;
+                    console.log(`Row ${index + 1}: Amount = ${amount}, Desc = "${descInput.value.trim()}", Date = "${dateInput.value}"`);
+                    
                     if (amount > 0) {
                         total += amount;
                         itemCount++;
+                        console.log(`✅ Row ${index + 1} included: RM ${amount.toFixed(2)}`);
                     }
+                } else {
+                    console.log(`❌ Row ${index + 1} skipped: Missing required fields`);
                 }
             });
             
@@ -1785,7 +1805,7 @@
             document.getElementById('tax').textContent = `RM ${tax.toFixed(2)}`;
             document.getElementById('total').textContent = `RM ${finalTotal.toFixed(2)}`;
             
-            console.log(`💰 Total calculated: RM ${finalTotal.toFixed(2)} from ${itemCount} items`);
+            console.log(`💰 Total calculated: RM ${finalTotal.toFixed(2)} from ${itemCount} valid items out of ${lineItemRows.length} rows`);
         }
 
         // Validate form
@@ -2530,5 +2550,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ae52ad47eb4dc',t:'MTc1OTQ3ODMxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988aef05d6c2b4dc',t:'MTc1OTQ3ODcxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
