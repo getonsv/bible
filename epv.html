@@ -1,1 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emmanuel Transport - Payment Voucher System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
+        body {
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            line-height: 1.6;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            padding: 40px;
+            text-align: center;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #d946ef);
+        }
+
+        .company-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .main-logo {
+            max-width: 220px;
+            max-height: 110px;
+            width: auto;
+            height: auto;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+        }
+
+        .header h1 {
+            margin: 0 0 12px 0;
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            margin: 8px 0;
+            opacity: 0.8;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+
+        .form-section {
+            padding: 50px;
+            background: #ffffff;
+        }
+
+        .form-section h2 {
+            color: #1e293b;
+            margin-bottom: 40px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .form-section h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            border-radius: 2px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #374151;
+            font-size: 0.95em;
+            letter-spacing: 0.025em;
+        }
+
+        .required-field {
+            color: #ef4444 !important;
+            font-weight: 700 !important;
+        }
+
+        input, textarea, select {
+            padding: 16px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            width: 100%;
+            background: #ffffff;
+            font-weight: 400;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
+        }
+
+        input:hover, textarea:hover, select:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        input:disabled {
+            background-color: #f9fafb !important;
+            color: #6b7280 !important;
+            cursor: not-allowed !important;
+            border-color: #e5e7eb !important;
+            opacity: 0.6 !important;
+        }
+
+        input.field-required {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .amount-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 30px;
+            border-radius: 16px;
+            margin: 40px 0;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .amount-section h3 {
+            color: #1e293b;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 1.3em;
+        }
+
+        .amount-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding: 12px 0;
+            font-size: 1.05em;
+        }
+
+        .amount-row:last-child {
+            border-top: 2px solid #e2e8f0;
+            padding-top: 20px;
+            font-weight: 700;
+            font-size: 1.2em;
+            color: #1e293b;
+        }
+
+        .line-items-section {
+            margin: 40px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .line-items-section h3 {
+            color: #1e293b;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 1.3em;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .line-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .line-items-table th {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95em;
+            letter-spacing: 0.025em;
+        }
+
+        .line-items-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .line-items-table tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .line-items-table input {
+            width: 100%;
+            border: 2px solid #e5e7eb;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .line-items-table input:focus {
+            border-color: #6366f1;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-remove {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-remove:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: scale(1.1);
+        }
+
+        .btn-add-item {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-add-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            position: relative;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: inherit;
+            letter-spacing: 0.025em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #64748b, #475569);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(100, 116, 139, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 24px;
+            height: 24px;
+            margin: -12px 0 0 -12px;
+            border: 3px solid transparent;
+            border-top: 3px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            color: white;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            padding: 20px 25px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .voucher-preview {
+            display: none;
+            background: white;
+            padding: 50px;
+            margin: 30px;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .voucher-header {
+            text-align: center;
+            border-bottom: 3px solid #6366f1;
+            padding-bottom: 25px;
+            margin-bottom: 40px;
+        }
+
+        .voucher-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #1e293b;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            letter-spacing: 0.05em;
+        }
+
+        .company-info {
+            font-size: 0.95em;
+            line-height: 1.6;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .voucher-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .detail-group h4 {
+            color: #1e293b;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .detail-item {
+            margin-bottom: 12px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .voucher-amount {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .voucher-line-items {
+            margin: 25px 0;
+        }
+
+        .voucher-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .voucher-table th,
+        .voucher-table td {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .voucher-table th {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .voucher-table .amount-cell {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .voucher-total-row {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            font-weight: 700;
+        }
+
+        .voucher-signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            margin-top: 50px;
+        }
+
+        .signature-column {
+            display: none;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                font-size: 12px;
+            }
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: none;
+            }
+            .header, .form-section, .action-buttons {
+                display: none !important;
+            }
+            .voucher-preview {
+                display: block !important;
+                margin: 0;
+                padding: 15px;
+                max-width: none;
+            }
+            .signature-column {
+                display: block !important;
+            }
+            .voucher-signatures {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 40px !important;
+                margin-top: 25px !important;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            .container {
+                border-radius: 16px;
+                margin: 0;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .form-section {
+                padding: 30px 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .line-items-section {
+                padding: 20px;
+                margin: 30px 0;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .line-items-table {
+                min-width: 600px;
+                font-size: 0.85em;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                padding: 30px 20px;
+                gap: 15px;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+                padding: 18px 24px;
+                font-size: 16px;
+            }
+            
+            .voucher-preview {
+                margin: 15px;
+                padding: 20px;
+            }
+            
+            .voucher-details {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .voucher-signatures {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="company-logo">
+                <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
+            </div>
+            <h1>Emmanuel Transport</h1>
+            <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
+            <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
+            <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
+        </div>
+
+        <div class="form-section">
+            <h2>Payment Voucher Generator</h2>
+            
+            <form id="voucherForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="voucherNo">Voucher No.</label>
+                        <input type="text" id="voucherNo" required readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="paymentMethod">Payment Method</label>
+                        <select id="paymentMethod" required>
+                            <option value="">Select Method</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Online Banking">Online Banking</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reference" id="referenceLabel">Reference No. (Optional)</label>
+                        <input type="text" id="reference">
+                    </div>
+                    <div class="form-group">
+                        <label for="payTo">Pay To</label>
+                        <input type="text" id="payTo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="idType">ID Type</label>
+                        <select id="idType" required>
+                            <option value="">Select ID Type</option>
+                            <option value="NRIC">NRIC</option>
+                            <option value="Passport">Passport</option>
+                        </select>
+                        <input type="text" id="idNumber" placeholder="Select ID type first" required style="margin-top: 10px;" disabled>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="description">General Description / Purpose</label>
+                        <textarea id="description" placeholder="Enter general payment description or purpose" required></textarea>
+                    </div>
+                </div>
+
+                <div class="line-items-section">
+                    <h3>Line Items</h3>
+                    <div class="table-container">
+                        <table id="lineItemsTable" class="line-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Bill No.</th>
+                                    <th>Description</th>
+                                    <th>Amount (RM)</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lineItemsBody">
+                                <tr class="line-item-row">
+                                    <td><input type="date" class="item-date" required></td>
+                                    <td><input type="text" class="item-bill" placeholder="Bill number (optional)"></td>
+                                    <td><input type="text" class="item-desc" placeholder="Item description" required></td>
+                                    <td><input type="number" class="item-amount" step="0.01" placeholder="0.00" required></td>
+                                    <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-add-item" onclick="addLineItem()">+ Add Line Item</button>
+                </div>
+
+                <div class="amount-section">
+                    <h3>Amount Summary</h3>
+                    <div class="amount-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">RM 0.00</span>
+                    </div>
+                    <div class="amount-row">
+                        <span>Tax (if applicable):</span>
+                        <span id="tax">RM 0.00</span>
+                    </div>
+                    <div class="amount-row">
+                        <span><strong>Total Amount:</strong></span>
+                        <span id="total"><strong>RM 0.00</strong></span>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="action-buttons">
+            <button type="button" class="btn btn-primary" onclick="generateVoucher()">
+                📄 Generate Voucher
+            </button>
+
+            <button type="button" class="btn btn-primary" onclick="savePDF()" id="pdfBtn" style="display: none;">
+                📥 Save as PDF
+            </button>
+        </div>
+
+        <div class="voucher-preview" id="voucherPreview">
+            <div class="voucher-header">
+                <div class="company-info">
+                    <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
+                    BRN: 202503112296 (003723051-P)<br>
+                    LOWRENCE 0182202582 | PREMA 01126360442<br>
+                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
+                </div>
+                <div class="voucher-title">PAYMENT VOUCHER</div>
+            </div>
+
+            <div class="voucher-details">
+                <div class="detail-group">
+                    <h4>Voucher Information</h4>
+                    <div class="detail-item">
+                        <span>Voucher No.: <span id="previewVoucherNo">-</span></span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Date: <span id="previewDate">-</span></span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Reference: <span id="previewReference">-</span></span>
+                    </div>
+                </div>
+                <div class="detail-group">
+                    <h4>Payment Details</h4>
+                    <div class="detail-item">
+                        <span>Pay To: <span id="previewPayTo">-</span></span>
+                    </div>
+                    <div class="detail-item">
+                        <span><span id="previewIdLabel">ID No.</span> <span id="previewIdNumber">-</span></span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Method: <span id="previewMethod">-</span></span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Amount: <span id="previewAmount">-</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h4 style="color: #2c3e50;">Description:</h4>
+                <p id="previewDescription" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">-</p>
+            </div>
+
+            <div class="voucher-line-items">
+                <h4 style="color: #2c3e50;">Line Items:</h4>
+                <table class="voucher-table" id="previewLineItems">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Bill No.</th>
+                            <th>Description</th>
+                            <th class="amount-cell">Amount (RM)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewLineItemsBody">
+                    </tbody>
+                    <tfoot>
+                        <tr class="voucher-total-row">
+                            <td colspan="3" style="text-align: right; font-weight: bold;">Total:</td>
+                            <td class="amount-cell" id="previewLineItemsTotal">RM 0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="voucher-amount">
+                <div style="display: flex; justify-content: space-between; font-size: 1.2em; font-weight: bold;">
+                    <span>Total Amount:</span>
+                    <span id="previewTotal">RM 0.00</span>
+                </div>
+            </div>
+
+            <div class="voucher-signatures">
+                <div style="text-align: center;" class="signature-column">
+                    <div style="border-bottom: 2px dotted #000; height: 40px; margin-bottom: 8px;"></div>
+                    <div style="font-weight: bold;">Approved By</div>
+                    <div style="margin-top: 8px;">Date: _______________</div>
+                </div>
+                <div style="text-align: center;" class="signature-column">
+                    <div style="border-bottom: 2px dotted #000; height: 40px; margin-bottom: 8px;"></div>
+                    <div style="font-weight: bold;">Received By</div>
+                    <div style="margin-top: 8px;">Date: _______________</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize the form when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Page loaded, initializing form...');
+            initializeForm();
+        });
+
+        // Generate voucher number with proper format
+        function generateVoucherNumber() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            const voucherNo = `ET${year}${month}${day}${random}`;
+            console.log('✅ Generated voucher number:', voucherNo);
+            return voucherNo;
+        }
+
+        // Set today's date in proper format
+        function getTodayDate() {
+            const today = new Date();
+            const todayString = today.getFullYear() + '-' + 
+                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(today.getDate()).padStart(2, '0');
+            console.log('✅ Today date:', todayString);
+            return todayString;
+        }
+
+        // Initialize form with default values
+        function initializeForm() {
+            console.log('🔧 Initializing form...');
+            
+            // Set voucher number
+            const voucherNoInput = document.getElementById('voucherNo');
+            voucherNoInput.value = generateVoucherNumber();
+            
+            // Set main date field
+            const mainDateInput = document.getElementById('date');
+            mainDateInput.value = getTodayDate();
+            
+            // Set initial line item date
+            const initialDateInput = document.querySelector('.item-date');
+            initialDateInput.value = getTodayDate();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Initial calculation
+            calculateTotal();
+            
+            console.log('✅ Form initialized successfully');
+        }
+
+        // Setup all event listeners
+        function setupEventListeners() {
+            console.log('🔗 Setting up event listeners...');
+            
+            // Payment method change
+            document.getElementById('paymentMethod').addEventListener('change', updateReferenceRequirement);
+            
+            // ID type change
+            document.getElementById('idType').addEventListener('change', updateIdField);
+            
+            // Amount input listeners
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('item-amount')) {
+                    calculateTotal();
+                }
+            });
+            
+            console.log('✅ Event listeners set up');
+        }
+
+        // Update reference field requirement
+        function updateReferenceRequirement() {
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const referenceInput = document.getElementById('reference');
+            const referenceLabel = document.getElementById('referenceLabel');
+            
+            console.log('💳 Payment method changed to:', paymentMethod);
+            
+            if (paymentMethod === 'Cash') {
+                referenceInput.required = false;
+                referenceInput.classList.remove('field-required');
+                referenceLabel.innerHTML = 'Reference No. (Optional)';
+                referenceLabel.classList.remove('required-field');
+            } else if (paymentMethod && paymentMethod !== 'Cash') {
+                referenceInput.required = true;
+                referenceInput.classList.add('field-required');
+                referenceLabel.innerHTML = 'Reference No. <span style="color: #ef4444; font-weight: 700;">(Required)</span>';
+                referenceLabel.classList.add('required-field');
+            } else {
+                referenceInput.required = false;
+                referenceInput.classList.remove('field-required');
+                referenceLabel.innerHTML = 'Reference No. (Optional)';
+                referenceLabel.classList.remove('required-field');
+            }
+        }
+
+        // Update ID field based on selection
+        function updateIdField() {
+            const idType = document.getElementById('idType').value;
+            const idInput = document.getElementById('idNumber');
+            
+            console.log('🆔 ID Type selected:', idType);
+            
+            idInput.value = '';
+            
+            if (idType === 'NRIC' || idType === 'Passport') {
+                // Enable the field
+                idInput.disabled = false;
+                idInput.readOnly = false;
+                idInput.required = true;
+                idInput.removeAttribute('disabled');
+                
+                // Set placeholder and formatting
+                if (idType === 'NRIC') {
+                    idInput.placeholder = 'e.g. 123456-78-9012';
+                    idInput.maxLength = 14;
+                    idInput.addEventListener('input', formatNRIC);
+                } else {
+                    idInput.placeholder = 'e.g. A12345678';
+                    idInput.maxLength = 20;
+                    idInput.addEventListener('input', formatPassport);
+                }
+                
+                // Focus the field
+                setTimeout(() => idInput.focus(), 100);
+                console.log('✅ ID field enabled for:', idType);
+                
+            } else {
+                idInput.placeholder = 'Select ID type first';
+                idInput.required = false;
+                idInput.disabled = true;
+                console.log('🔒 ID field disabled');
+            }
+        }
+
+        // Format NRIC
+        function formatNRIC(event) {
+            let value = event.target.value.replace(/\D/g, '');
+            
+            if (value.length >= 6) {
+                value = value.substring(0, 6) + '-' + value.substring(6);
+            }
+            if (value.length >= 9) {
+                value = value.substring(0, 9) + '-' + value.substring(9, 13);
+            }
+            
+            event.target.value = value;
+        }
+
+        // Format Passport
+        function formatPassport(event) {
+            let value = event.target.value.replace(/[^A-Za-z0-9]/g, '');
+            event.target.value = value.toUpperCase();
+        }
+
+        // Add line item
+        function addLineItem() {
+            console.log('➕ Adding new line item...');
+            const tbody = document.getElementById('lineItemsBody');
+            const newRow = document.createElement('tr');
+            newRow.className = 'line-item-row';
+            
+            const todayString = getTodayDate();
+            
+            newRow.innerHTML = `
+                <td><input type="date" class="item-date" value="${todayString}" required></td>
+                <td><input type="text" class="item-bill" placeholder="Bill number (optional)"></td>
+                <td><input type="text" class="item-desc" placeholder="Item description" required></td>
+                <td><input type="number" class="item-amount" step="0.01" placeholder="0.00" required></td>
+                <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
+            `;
+            tbody.appendChild(newRow);
+            
+            calculateTotal();
+            console.log('✅ New line item added');
+        }
+
+        // Remove line item
+        function removeLineItem(button) {
+            console.log('➖ Removing line item...');
+            const row = button.closest('tr');
+            row.remove();
+            calculateTotal();
+            console.log('✅ Line item removed');
+        }
+
+        // Calculate total
+        function calculateTotal() {
+            const amountInputs = document.querySelectorAll('.item-amount');
+            let total = 0;
+            
+            amountInputs.forEach(input => {
+                const value = parseFloat(input.value) || 0;
+                total += value;
+            });
+            
+            const subtotal = total;
+            const tax = 0;
+            const finalTotal = subtotal + tax;
+
+            document.getElementById('subtotal').textContent = `RM ${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `RM ${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `RM ${finalTotal.toFixed(2)}`;
+            
+            console.log('💰 Total calculated:', finalTotal.toFixed(2));
+        }
+
+        // Validate form
+        function validateForm() {
+            console.log('🔍 Validating form...');
+            const form = document.getElementById('voucherForm');
+            let isValid = true;
+            const errors = [];
+
+            // Check required fields
+            const requiredFields = form.querySelectorAll('[required]');
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    const fieldName = field.id || field.className;
+                    errors.push(`${fieldName} is required`);
+                }
+            });
+
+            // Check payment method and reference
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const reference = document.getElementById('reference').value;
+            
+            if (paymentMethod && paymentMethod !== 'Cash' && !reference.trim()) {
+                isValid = false;
+                errors.push('Reference number is required for ' + paymentMethod + ' payments');
+            }
+
+            // Check line items
+            const lineItemRows = document.querySelectorAll('.line-item-row');
+            let validLineItems = 0;
+            
+            lineItemRows.forEach(row => {
+                const itemDate = row.querySelector('.item-date').value;
+                const itemDesc = row.querySelector('.item-desc').value;
+                const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
+                
+                if (itemDate && itemDesc.trim() && amount > 0) {
+                    validLineItems++;
+                }
+            });
+
+            if (validLineItems === 0) {
+                isValid = false;
+                errors.push('At least one valid line item is required');
+            }
+
+            console.log('🔍 Validation result:', isValid ? 'VALID' : 'INVALID');
+            return { isValid, errors };
+        }
+
+        // Generate voucher
+        function generateVoucher() {
+            console.log('🚀 Generating voucher...');
+            
+            const generateBtn = document.querySelector('.btn-primary');
+            setButtonLoading(generateBtn, true);
+
+            try {
+                // Validate form
+                const validation = validateForm();
+                if (!validation.isValid) {
+                    setButtonLoading(generateBtn, false);
+                    showNotification(validation.errors[0], 'error');
+                    return;
+                }
+
+                // Get form data
+                const formData = {
+                    voucherNo: document.getElementById('voucherNo').value,
+                    date: document.getElementById('date').value,
+                    payTo: document.getElementById('payTo').value,
+                    idType: document.getElementById('idType').value,
+                    idNumber: document.getElementById('idNumber').value,
+                    paymentMethod: document.getElementById('paymentMethod').value,
+                    reference: document.getElementById('reference').value || 'N/A',
+                    description: document.getElementById('description').value
+                };
+
+                // Get line items
+                const lineItemRows = document.querySelectorAll('.line-item-row');
+                const lineItems = [];
+                let totalAmount = 0;
+
+                lineItemRows.forEach(row => {
+                    const itemDate = row.querySelector('.item-date').value;
+                    const billNo = row.querySelector('.item-bill').value;
+                    const itemDesc = row.querySelector('.item-desc').value;
+                    const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
+
+                    if (itemDate && itemDesc.trim() && amount > 0) {
+                        lineItems.push({
+                            date: new Date(itemDate).toLocaleDateString('en-GB'),
+                            billNo: billNo || 'N/A',
+                            description: itemDesc,
+                            amount: amount
+                        });
+                        totalAmount += amount;
+                    }
+                });
+
+                // Update preview
+                updateVoucherPreview(formData, lineItems, totalAmount);
+
+                // Show preview and PDF button
+                document.getElementById('voucherPreview').style.display = 'block';
+                document.getElementById('pdfBtn').style.display = 'inline-flex';
+
+                setButtonLoading(generateBtn, false);
+                showNotification('Voucher generated successfully!', 'success');
+
+                // Scroll to preview
+                setTimeout(() => {
+                    document.getElementById('voucherPreview').scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 500);
+
+            } catch (error) {
+                console.error('❌ Error generating voucher:', error);
+                setButtonLoading(generateBtn, false);
+                showNotification('Error generating voucher. Please try again.', 'error');
+            }
+        }
+
+        // Update voucher preview
+        function updateVoucherPreview(formData, lineItems, totalAmount) {
+            console.log('🖼️ Updating preview...');
+            
+            const formattedDate = new Date(formData.date).toLocaleDateString('en-GB');
+            
+            // Update preview fields
+            document.getElementById('previewVoucherNo').textContent = formData.voucherNo;
+            document.getElementById('previewDate').textContent = formattedDate;
+            document.getElementById('previewPayTo').textContent = formData.payTo;
+            document.getElementById('previewIdLabel').textContent = `${formData.idType} No.:`;
+            document.getElementById('previewIdNumber').textContent = formData.idNumber;
+            document.getElementById('previewMethod').textContent = formData.paymentMethod;
+            document.getElementById('previewAmount').textContent = `RM ${totalAmount.toFixed(2)}`;
+            document.getElementById('previewReference').textContent = formData.reference;
+            document.getElementById('previewDescription').textContent = formData.description;
+            document.getElementById('previewTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
+
+            // Update line items table
+            const previewBody = document.getElementById('previewLineItemsBody');
+            previewBody.innerHTML = '';
+            
+            lineItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.billNo}</td>
+                    <td>${item.description}</td>
+                    <td class="amount-cell">RM ${item.amount.toFixed(2)}</td>
+                `;
+                previewBody.appendChild(row);
+            });
+
+            document.getElementById('previewLineItemsTotal').textContent = `RM ${totalAmount.toFixed(2)}`;
+            
+            console.log('✅ Preview updated');
+        }
+
+        // Save PDF
+        function savePDF() {
+            console.log('📄 Generating PDF...');
+            
+            const pdfBtn = document.getElementById('pdfBtn');
+            setButtonLoading(pdfBtn, true);
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Get data from preview
+                const voucherNo = document.getElementById('previewVoucherNo').textContent;
+                const date = document.getElementById('previewDate').textContent;
+                const payTo = document.getElementById('previewPayTo').textContent;
+                const idType = document.getElementById('previewIdLabel').textContent.replace(' No.:', '');
+                const idNumber = document.getElementById('previewIdNumber').textContent;
+                const method = document.getElementById('previewMethod').textContent;
+                const reference = document.getElementById('previewReference').textContent;
+                const description = document.getElementById('previewDescription').textContent;
+                const totalAmount = document.getElementById('previewTotal').textContent;
+
+                // Set font
+                doc.setFont('helvetica');
+                let currentY = 20;
+
+                // Company header
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('EMMANUEL TRANSPORT', 105, currentY, { align: 'center' });
+                
+                currentY += 8;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
+                
+                currentY += 5;
+                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, currentY, { align: 'center' });
+                
+                currentY += 5;
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, currentY, { align: 'center' });
+
+                // Line separator
+                currentY += 10;
+                doc.line(20, currentY, 190, currentY);
+
+                // Title
+                currentY += 15;
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('PAYMENT VOUCHER', 105, currentY, { align: 'center' });
+
+                // Voucher details
+                currentY += 20;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Voucher Information:', 20, currentY);
+                doc.text('Payment Details:', 110, currentY);
+
+                currentY += 8;
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Voucher No.: ${voucherNo}`, 20, currentY);
+                doc.text(`Pay To: ${payTo}`, 110, currentY);
+
+                currentY += 6;
+                doc.text(`Date: ${date}`, 20, currentY);
+                doc.text(`${idType} No.: ${idNumber}`, 110, currentY);
+
+                currentY += 6;
+                doc.text(`Reference: ${reference}`, 20, currentY);
+                doc.text(`Method: ${method}`, 110, currentY);
+
+                // Description
+                currentY += 15;
+                doc.setFont('helvetica', 'bold');
+                doc.text('Description:', 20, currentY);
+                
+                currentY += 8;
+                doc.setFont('helvetica', 'normal');
+                const splitDescription = doc.splitTextToSize(description, 170);
+                doc.text(splitDescription, 20, currentY);
+                currentY += splitDescription.length * 5;
+
+                // Line items
+                currentY += 10;
+                doc.setFont('helvetica', 'bold');
+                doc.text('Line Items:', 20, currentY);
+
+                currentY += 8;
+                doc.setFontSize(9);
+                doc.text('Date', 20, currentY);
+                doc.text('Bill No.', 50, currentY);
+                doc.text('Description', 80, currentY);
+                doc.text('Amount', 160, currentY);
+                
+                currentY += 2;
+                doc.line(20, currentY, 190, currentY);
+
+                // Line items data
+                const lineItemRows = document.querySelectorAll('#previewLineItemsBody tr');
+                currentY += 6;
+                doc.setFont('helvetica', 'normal');
+                
+                lineItemRows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 4) {
+                        doc.text(cells[0].textContent, 20, currentY);
+                        doc.text(cells[1].textContent, 50, currentY);
+                        const itemDesc = doc.splitTextToSize(cells[2].textContent, 70);
+                        doc.text(itemDesc[0], 80, currentY);
+                        doc.text(cells[3].textContent, 160, currentY);
+                        currentY += 6;
+                    }
+                });
+
+                // Total
+                currentY += 5;
+                doc.line(20, currentY, 190, currentY);
+                currentY += 8;
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total: ${totalAmount}`, 160, currentY);
+
+                // Signature lines
+                currentY += 30;
+                doc.setFont('helvetica', 'normal');
+                
+                // Approved by
+                doc.line(30, currentY, 80, currentY);
+                doc.text('Approved By', 55, currentY + 8, { align: 'center' });
+                doc.text('Date: __________', 55, currentY + 15, { align: 'center' });
+
+                // Received by
+                doc.line(130, currentY, 180, currentY);
+                doc.text('Received By', 155, currentY + 8, { align: 'center' });
+                doc.text('Date: __________', 155, currentY + 15, { align: 'center' });
+
+                // Save PDF
+                doc.save(`Payment_Voucher_${voucherNo}.pdf`);
+                
+                setButtonLoading(pdfBtn, false);
+                showNotification('PDF downloaded successfully!', 'success');
+                
+            } catch (error) {
+                console.error('❌ PDF generation error:', error);
+                setButtonLoading(pdfBtn, false);
+                showNotification('Error generating PDF. Please try again.', 'error');
+            }
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const existing = document.querySelector('.notification');
+            if (existing) {
+                existing.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => notification.classList.add('show'), 100);
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Loading state management
+        function setButtonLoading(button, loading) {
+            if (loading) {
+                button.classList.add('loading');
+                button.disabled = true;
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988a5f555364b4dc',t:'MTc1OTQ3MjgzMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
