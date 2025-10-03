@@ -1111,6 +1111,98 @@
             display: block;
         }
 
+        /* User Welcome Section */
+        .user-welcome {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .welcome-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .welcome-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 3px solid #6366f1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .welcome-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .welcome-greeting {
+            font-size: 0.9em;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .welcome-name {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #1e293b;
+            margin-top: 2px;
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+        }
+
+        .logout-btn:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+        }
+
+        .logout-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 480px) {
+            .user-welcome {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+                padding: 20px;
+            }
+            
+            .welcome-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .logout-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 15px 20px;
+            }
+        }
+
         @media (max-width: 480px) {
             .auth-container {
                 padding: 40px 25px;
@@ -1134,7 +1226,7 @@
     <div class="auth-overlay" id="authOverlay">
         <div class="auth-container">
             <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="auth-logo" onerror="this.style.display='none';">
-            <h1 class="auth-title">Emmanuel Transport</h1>
+
             <p class="auth-subtitle">Please sign in with any Google account to access the Payment Voucher System. Your information will be recorded with each voucher for tracking purposes.</p>
             
             <div class="google-signin-btn" id="googleSignInBtn">
@@ -1165,6 +1257,21 @@
     <div class="main-app" id="mainApp">
     <div class="container">
         <div class="header">
+            <div class="user-welcome" id="userWelcome">
+                <div class="welcome-content">
+                    <img id="headerUserAvatar" class="welcome-avatar" src="" alt="User Avatar">
+                    <div class="welcome-text">
+                        <span class="welcome-greeting">Welcome back,</span>
+                        <span class="welcome-name" id="headerUserName">User</span>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="signOut()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 012 2v2h-2V4H4v16h10v-2h2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2h10z"/>
+                    </svg>
+                    Logout
+                </button>
+            </div>
             <div class="company-logo">
                 <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
             </div>
@@ -1441,7 +1548,7 @@
                     width: 300
                 });
 
-                showAuthStatus('Ready! Click the Google sign-in button below.', 'success');
+                document.getElementById('authStatus').style.display = 'none';
             } catch (error) {
                 console.error('Google Auth initialization error:', error);
                 showAuthStatus('Failed to initialize Google Sign-in. Please refresh and try again.', 'error');
@@ -1529,6 +1636,12 @@
         function showMainApp() {
             document.getElementById('authOverlay').style.display = 'none';
             document.getElementById('mainApp').classList.add('authenticated');
+            
+            // Update header welcome section
+            if (currentUser) {
+                document.getElementById('headerUserAvatar').src = currentUser.picture;
+                document.getElementById('headerUserName').textContent = currentUser.name;
+            }
         }
 
         // Sign out function
@@ -2393,5 +2506,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889248971c2b4dc',t:'MTc1OTQ1OTkzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988928bbe3e2b4dc',t:'MTc1OTQ2MDExMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
