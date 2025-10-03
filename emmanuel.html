@@ -1234,7 +1234,7 @@
         <div class="auth-container">
             <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="auth-logo" onerror="this.style.display='none';">
 
-            <p class="auth-subtitle">Payment Voucher System.</p>
+            <p class="auth-subtitle">Payment Voucher System</p>
             <p style="font-size: 0.85em; color: #94a3b8; margin-top: -15px; margin-bottom: 30px;">Your information will be recorded with each voucher for tracking purposes.</p>
             
             <div class="google-signin-btn" id="googleSignInBtn">
@@ -1686,9 +1686,6 @@
         }
     </script>
     <script>
-        // Set today's date as default
-        document.getElementById('date').valueAsDate = new Date();
-
         // Auto-generate voucher number
         function generateVoucherNumber() {
             const today = new Date();
@@ -1698,9 +1695,6 @@
             const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
             return `ET${year}${month}${day}${random}`;
         }
-
-        // Set auto-generated voucher number
-        document.getElementById('voucherNo').value = generateVoucherNumber();
 
         // Update reference field requirement based on payment method
         function updateReferenceRequirement() {
@@ -1728,37 +1722,43 @@
             const idType = document.getElementById('idType').value;
             const idInput = document.getElementById('idNumber');
             
-            console.log('ID Type selected:', idType); // Debug log
+            console.log('ID Type selected:', idType);
             
-            // Clear the field and reset all properties
+            // Completely reset the field
             idInput.value = '';
-            idInput.removeAttribute('disabled');
-            idInput.removeAttribute('readonly');
             idInput.disabled = false;
             idInput.readOnly = false;
+            idInput.removeAttribute('disabled');
+            idInput.removeAttribute('readonly');
+            
+            // Remove all existing event listeners by cloning the element
+            const newIdInput = idInput.cloneNode(true);
+            idInput.parentNode.replaceChild(newIdInput, idInput);
+            
+            // Get reference to the new element
+            const freshIdInput = document.getElementById('idNumber');
             
             if (idType === 'NRIC') {
                 // Configure for NRIC
-                idInput.placeholder = 'e.g. 123456-78-9012';
-                idInput.maxLength = 14;
-                idInput.required = true;
+                freshIdInput.placeholder = 'e.g. 123456-78-9012';
+                freshIdInput.maxLength = 14;
+                freshIdInput.required = true;
+                freshIdInput.disabled = false;
+                freshIdInput.readOnly = false;
                 
-                // Reset all styles to ensure editability
-                idInput.style.cssText = `
-                    background-color: #ffffff !important;
-                    cursor: text !important;
-                    opacity: 1 !important;
-                    pointer-events: auto !important;
-                    color: #1e293b !important;
-                    border: 2px solid #e5e7eb !important;
-                `;
+                // Force enable the field with inline styles
+                freshIdInput.style.backgroundColor = '#ffffff';
+                freshIdInput.style.cursor = 'text';
+                freshIdInput.style.opacity = '1';
+                freshIdInput.style.pointerEvents = 'auto';
+                freshIdInput.style.color = '#1e293b';
+                freshIdInput.style.border = '2px solid #e5e7eb';
                 
-                // Clear existing event listeners and add new ones
-                idInput.oninput = formatNRIC;
-                idInput.onkeydown = function(e) {
+                // Add NRIC formatting
+                freshIdInput.addEventListener('input', formatNRIC);
+                freshIdInput.addEventListener('keydown', function(e) {
                     // Allow navigation and editing keys
                     if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
-                        // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+Z
                         (e.ctrlKey && [65, 67, 86, 88, 90].indexOf(e.keyCode) !== -1)) {
                         return true;
                     }
@@ -1767,58 +1767,53 @@
                         e.preventDefault();
                         return false;
                     }
-                };
+                });
                 
                 // Focus the field
                 setTimeout(() => {
-                    idInput.focus();
-                }, 50);
+                    freshIdInput.focus();
+                    freshIdInput.click();
+                }, 100);
                 
                 console.log('NRIC field configured and focused');
                 
             } else if (idType === 'Passport') {
                 // Configure for Passport
-                idInput.placeholder = 'e.g. A12345678';
-                idInput.maxLength = 20;
-                idInput.required = true;
+                freshIdInput.placeholder = 'e.g. A12345678';
+                freshIdInput.maxLength = 20;
+                freshIdInput.required = true;
+                freshIdInput.disabled = false;
+                freshIdInput.readOnly = false;
                 
-                // Reset all styles to ensure editability
-                idInput.style.cssText = `
-                    background-color: #ffffff !important;
-                    cursor: text !important;
-                    opacity: 1 !important;
-                    pointer-events: auto !important;
-                    color: #1e293b !important;
-                    border: 2px solid #e5e7eb !important;
-                `;
+                // Force enable the field with inline styles
+                freshIdInput.style.backgroundColor = '#ffffff';
+                freshIdInput.style.cursor = 'text';
+                freshIdInput.style.opacity = '1';
+                freshIdInput.style.pointerEvents = 'auto';
+                freshIdInput.style.color = '#1e293b';
+                freshIdInput.style.border = '2px solid #e5e7eb';
                 
-                // Clear existing event listeners and add new ones
-                idInput.oninput = formatPassport;
-                idInput.onkeydown = null; // No restrictions for passport
+                // Add passport formatting
+                freshIdInput.addEventListener('input', formatPassport);
                 
                 // Focus the field
                 setTimeout(() => {
-                    idInput.focus();
-                }, 50);
+                    freshIdInput.focus();
+                    freshIdInput.click();
+                }, 100);
                 
                 console.log('Passport field configured and focused');
                 
             } else {
                 // Disable the field when no type is selected
-                idInput.placeholder = 'Select ID type first';
-                idInput.required = false;
-                idInput.disabled = true;
-                idInput.style.cssText = `
-                    background-color: #f9fafb !important;
-                    cursor: not-allowed !important;
-                    opacity: 0.6 !important;
-                    color: #6b7280 !important;
-                    border: 2px solid #e5e7eb !important;
-                `;
-                
-                // Clear event listeners
-                idInput.oninput = null;
-                idInput.onkeydown = null;
+                freshIdInput.placeholder = 'Select ID type first';
+                freshIdInput.required = false;
+                freshIdInput.disabled = true;
+                freshIdInput.style.backgroundColor = '#f9fafb';
+                freshIdInput.style.cursor = 'not-allowed';
+                freshIdInput.style.opacity = '0.6';
+                freshIdInput.style.color = '#6b7280';
+                freshIdInput.style.border = '2px solid #e5e7eb';
                 
                 console.log('ID field disabled');
             }
@@ -1903,22 +1898,27 @@
                 input.addEventListener('input', calculateTotal);
             });
             
-            // Set today's date for main date field and initial line item
+            // Set today's date properly with string format
             const today = new Date();
+            const todayString = today.getFullYear() + '-' + 
+                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(today.getDate()).padStart(2, '0');
+            
+            // Set main date field
             const mainDateInput = document.getElementById('date');
-            const initialDateInput = document.querySelector('.item-date');
-            
             if (mainDateInput) {
-                mainDateInput.valueAsDate = today;
+                mainDateInput.value = todayString;
             }
             
+            // Set initial line item date
+            const initialDateInput = document.querySelector('.item-date');
             if (initialDateInput) {
-                initialDateInput.valueAsDate = today;
+                initialDateInput.value = todayString;
             }
             
-            // Also ensure voucher number is generated
+            // Generate voucher number
             const voucherNoInput = document.getElementById('voucherNo');
-            if (voucherNoInput && !voucherNoInput.value) {
+            if (voucherNoInput) {
                 voucherNoInput.value = generateVoucherNumber();
             }
         });
@@ -2620,5 +2620,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889512f8511b4dc',t:'MTc1OTQ2MTc2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889568a55b5b4dc',t:'MTc1OTQ2MTk4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
