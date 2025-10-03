@@ -1237,7 +1237,7 @@
                     </a>
                 </div>
                 <div class="footer-right">
-                    <span class="version-number">v100+NEw</span>
+                    <span class="version-number">v100+AutoHeaders</span>
                 </div>
             </div>
         </div>
@@ -2063,12 +2063,7 @@
                 doc.setFont('helvetica');
                 let currentY = 25;
 
-                // Company header
-                doc.setFontSize(16);
-                doc.setFont('helvetica', 'bold');
-                doc.text('EMMANUEL TRANSPORT', 105, currentY, { align: 'center' });
-                
-                currentY += 8;
+                // Company header (without company name, just contact details)
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
                 doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
@@ -2232,34 +2227,31 @@
                                 
                                 // Get image data and add to PDF
                                 const imgData = canvas.toDataURL('image/png');
-                                const imgWidth = 40;
+                                const imgWidth = 50;
                                 const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
                                 
-                                doc.addImage(imgData, 'PNG', 85, currentY, imgWidth, imgHeight);
-                                currentY += imgHeight + 5;
+                                doc.addImage(imgData, 'PNG', 80, currentY, imgWidth, imgHeight);
+                                currentY += imgHeight + 8;
                                 resolve();
                             } catch (error) {
                                 console.log('Logo processing failed, continuing without logo');
+                                currentY += 15;
                                 resolve();
                             }
                         };
                         logoImg.onerror = () => {
                             console.log('Logo load failed, continuing without logo');
+                            currentY += 15;
                             resolve();
                         };
                         logoImg.src = logoUrl;
                     });
                 } catch (error) {
                     console.log('Logo addition failed, continuing without logo');
-                    currentY += 10;
+                    currentY += 15;
                 }
 
-                // Company header
-                doc.setFontSize(16);
-                doc.setFont('helvetica', 'bold');
-                doc.text('EMMANUEL TRANSPORT', 105, currentY, { align: 'center' });
-                
-                currentY += 8;
+                // Company header (without company name, just contact details)
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
                 doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
@@ -2577,6 +2569,8 @@
             const totalRecordsEl = document.getElementById('totalRecords');
             const totalAmountEl = document.getElementById('totalAmount');
             
+            console.log('📋 Displaying records:', records);
+            
             if (records.length === 0) {
                 tableContainer.style.display = 'none';
                 noRecordsMessage.style.display = 'block';
@@ -2593,22 +2587,60 @@
             let totalAmount = 0;
             
             // Add rows
-            records.forEach(record => {
+            records.forEach((record, index) => {
+                console.log(`📋 Processing record ${index}:`, record);
+                
                 const row = document.createElement('tr');
                 row.style.borderBottom = '1px solid #f1f5f9';
                 
-                const formattedDate = new Date(record.date).toLocaleDateString('en-GB');
-                totalAmount += parseFloat(record.totalAmount) || 0;
+                // Handle different data formats from Google Sheets vs localStorage
+                let voucherNo, date, payTo, amount, paymentMethod;
+                
+                if (Array.isArray(record)) {
+                    // Google Sheets returns array format
+                    voucherNo = record[0] || 'N/A';
+                    date = record[1] || '';
+                    payTo = record[2] || 'N/A';
+                    paymentMethod = record[5] || 'N/A';
+                    amount = parseFloat(record[8]) || 0;
+                } else {
+                    // localStorage returns object format
+                    voucherNo = record.voucherNo || record['Voucher No'] || 'N/A';
+                    date = record.date || record['Date'] || '';
+                    payTo = record.payTo || record['Pay To'] || 'N/A';
+                    paymentMethod = record.paymentMethod || record['Payment Method'] || 'N/A';
+                    amount = parseFloat(record.totalAmount || record['Total Amount'] || record.amount || 0);
+                }
+                
+                // Format date properly
+                let formattedDate = 'N/A';
+                if (date) {
+                    try {
+                        if (date.includes('/')) {
+                            // Already formatted as DD/MM/YYYY
+                            formattedDate = date;
+                        } else {
+                            // Convert from YYYY-MM-DD format
+                            formattedDate = new Date(date).toLocaleDateString('en-GB');
+                        }
+                    } catch (e) {
+                        formattedDate = date;
+                    }
+                }
+                
+                totalAmount += amount;
+                
+                console.log(`📋 Row data: ${voucherNo}, ${formattedDate}, ${payTo}, ${amount}, ${paymentMethod}`);
                 
                 row.innerHTML = `
-                    <td style="padding: 15px; font-weight: 600; color: #6366f1;">${record.voucherNo}</td>
+                    <td style="padding: 15px; font-weight: 600; color: #6366f1;">${voucherNo}</td>
                     <td style="padding: 15px;">${formattedDate}</td>
-                    <td style="padding: 15px;">${record.payTo}</td>
-                    <td style="padding: 15px; font-weight: 600; color: #059669;">RM ${parseFloat(record.totalAmount).toFixed(2)}</td>
-                    <td style="padding: 15px;">${record.paymentMethod}</td>
+                    <td style="padding: 15px;">${payTo}</td>
+                    <td style="padding: 15px; font-weight: 600; color: #059669;">RM ${amount.toFixed(2)}</td>
+                    <td style="padding: 15px;">${paymentMethod}</td>
                     <td style="padding: 15px;">
-                        <button onclick="viewRecord('${record.voucherNo}')" style="background: #6366f1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 12px;">👁️ View</button>
-                        <button onclick="downloadRecordPDF('${record.voucherNo}')" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 PDF</button>
+                        <button onclick="viewRecord('${voucherNo}')" style="background: #6366f1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 12px;">👁️ View</button>
+                        <button onclick="downloadRecordPDF('${voucherNo}')" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 PDF</button>
                     </td>
                 `;
                 
@@ -2618,6 +2650,8 @@
             // Update stats
             totalRecordsEl.textContent = records.length;
             totalAmountEl.textContent = `RM ${totalAmount.toFixed(2)}`;
+            
+            console.log('✅ Records displayed successfully');
         }
 
         // Show/hide records loading
@@ -2841,5 +2875,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b8b9d0541b4dc',t:'MTc1OTQ4NTEzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b94c1e6a5b4dc',t:'MTc1OTQ4NTUwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
