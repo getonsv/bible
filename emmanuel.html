@@ -1737,6 +1737,12 @@
                 idInput.value = ''; // Clear any existing value
                 idInput.style.backgroundColor = '#ffffff';
                 idInput.style.cursor = 'text';
+                idInput.style.opacity = '1';
+                
+                // Remove existing event listeners first
+                idInput.removeEventListener('input', formatNRIC);
+                idInput.removeEventListener('input', formatPassport);
+                // Add NRIC formatting
                 idInput.addEventListener('input', formatNRIC);
                 console.log('NRIC field enabled'); // Debug log
             } else if (idType === 'Passport') {
@@ -1747,7 +1753,13 @@
                 idInput.value = ''; // Clear any existing value
                 idInput.style.backgroundColor = '#ffffff';
                 idInput.style.cursor = 'text';
+                idInput.style.opacity = '1';
+                
+                // Remove existing event listeners first
                 idInput.removeEventListener('input', formatNRIC);
+                idInput.removeEventListener('input', formatPassport);
+                // Add passport formatting
+                idInput.addEventListener('input', formatPassport);
                 console.log('Passport field enabled'); // Debug log
             } else {
                 idInput.placeholder = 'Select ID type first';
@@ -1756,16 +1768,20 @@
                 idInput.value = '';
                 idInput.style.backgroundColor = '#f9fafb';
                 idInput.style.cursor = 'not-allowed';
+                idInput.style.opacity = '0.6';
                 console.log('ID field disabled'); // Debug log
             }
             
-            // Force the field to be interactive by triggering a reflow
+            // Ensure the field is properly enabled
             if (!idInput.disabled) {
+                // Force enable the field
+                idInput.readOnly = false;
+                idInput.removeAttribute('readonly');
+                
                 setTimeout(() => {
                     idInput.focus();
-                    idInput.click();
                     idInput.blur();
-                }, 50);
+                }, 100);
             }
         }
 
@@ -1781,6 +1797,12 @@
             }
             
             event.target.value = value;
+        }
+
+        // Format Passport (allow letters and numbers)
+        function formatPassport(event) {
+            let value = event.target.value.replace(/[^A-Za-z0-9]/g, ''); // Remove special characters
+            event.target.value = value.toUpperCase(); // Convert to uppercase
         }
 
         // Add line item functionality
@@ -2541,5 +2563,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889319a1563b4dc',t:'MTc1OTQ2MDQ3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988934651013b4dc',t:'MTc1OTQ2MDU4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
