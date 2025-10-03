@@ -963,7 +963,6 @@
                 <div class="company-logo">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
                 </div>
-                <h1>Emmanuel Transport</h1>
                 <p>202503112296 (003723051-P)</p>
                 <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
                 <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
@@ -1287,7 +1286,7 @@
 
         // Initialize Google API for Sheets
         function initializeGoogleAPI() {
-            console.log('📊 Google Sheets integration ready via Web App');
+            console.log('📊 Data source integration ready via Web App');
             isGapiLoaded = true;
         }
 
@@ -1911,7 +1910,7 @@
                 document.getElementById('voucherPreview').style.display = 'block';
 
                 // Auto-save to Google Sheets
-                showNotification('Saving to Google Sheets...', 'info');
+                showNotification('Saving...', 'info');
                 await saveToGoogleSheetsAuto();
 
                 // Auto-generate PDF
@@ -1919,7 +1918,7 @@
                 await savePDFAuto();
 
                 setButtonLoading(generateBtn, false);
-                showNotification('✅ Voucher created! PDF downloaded and data saved to Google Sheets.', 'success');
+                showNotification('✅ Voucher created! PDF downloaded and data saved.', 'success');
 
                 // Scroll to preview
                 setTimeout(() => {
@@ -1982,7 +1981,7 @@
 
         // Auto-save to Google Sheets
         async function saveToGoogleSheetsAuto() {
-            console.log('📊 Auto-saving to Google Sheets...');
+            console.log('📊 Auto-saving data...');
             
             try {
                 if (!currentVoucherData) {
@@ -2020,7 +2019,7 @@
                     lineItems: lineItemsText
                 };
 
-                console.log('📤 Sending data to Google Sheets:', sheetData);
+                console.log('📤 Sending data to datasource:', sheetData);
 
                 // Send to Google Sheets via Web App with proper headers
                 const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
@@ -2046,8 +2045,8 @@
                 }
                 
                 if (result.success || response.ok) {
-                    console.log('✅ Data saved to Google Sheets successfully');
-                    showNotification('✅ Data saved to Google Sheets!', 'success');
+                    console.log('✅ Data saved successfully');
+                    showNotification('✅ Data saved!', 'success');
                     
                     // Also store in localStorage as backup
                     const existingData = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
@@ -2059,11 +2058,11 @@
                     localStorage.setItem('voucherRecords', JSON.stringify(existingData));
                     
                 } else {
-                    throw new Error(result.error || 'Failed to save to Google Sheets');
+                    throw new Error(result.error || 'Failed to save data');
                 }
 
             } catch (error) {
-                console.error('❌ Google Sheets save error:', error);
+                console.error('❌ Data save error:', error);
                 
                 // Fallback to localStorage only
                 const existingData = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
@@ -2075,7 +2074,7 @@
                 localStorage.setItem('voucherRecords', JSON.stringify(existingData));
                 
                 console.log('✅ Data saved locally as fallback');
-                showNotification('⚠️ Saved locally - Google Sheets connection issue', 'info');
+                showNotification('⚠️ Saved locally - Data source connection issue', 'info');
             }
         }
 
@@ -2559,7 +2558,7 @@
             
             try {
                 // Try multiple methods to load from Google Sheets
-                console.log('📤 Requesting records from Google Sheets...');
+                console.log('📤 Requesting records from data source...');
                 
                 let records = [];
                 let sheetsSuccess = false;
@@ -2682,7 +2681,7 @@
                 
                 // Process and display records if we got them from Google Sheets
                 if (sheetsSuccess && records.length > 0) {
-                    console.log('✅ Google Sheets data loaded successfully:', records.length, 'records');
+                    console.log('✅ Data loaded successfully:', records.length, 'records');
                     
                     // Convert array format to object format for consistency
                     const formattedRecords = records.map(row => {
@@ -2717,12 +2716,12 @@
                     
                     displayRecords(validRecords);
                     showRecordsLoading(false);
-                    showNotification(`✅ Loaded ${validRecords.length} records from Google Sheets`, 'success');
+                    showNotification(`✅ Loaded ${validRecords.length} records from data source`, 'success');
                     return;
                 }
                 
                 // Fallback to localStorage if Google Sheets failed
-                console.log('📋 Google Sheets failed, loading from local storage');
+                console.log('📋 Data source failed, loading from local storage');
                 const localRecords = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
                 displayRecords(localRecords);
                 showRecordsLoading(false);
@@ -2730,7 +2729,7 @@
                 if (localRecords.length === 0) {
                     showNotification('No records found. Create your first voucher to see it here!', 'info');
                 } else {
-                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Google Sheets connection issue`, 'info');
+                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Data source connection issue`, 'info');
                 }
                 
             } catch (error) {
@@ -2742,9 +2741,9 @@
                 showRecordsLoading(false);
                 
                 if (localRecords.length > 0) {
-                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Google Sheets connection issue`, 'info');
+                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Data source connection issue`, 'info');
                 } else {
-                    showNotification('No records found. Google Sheets connection failed.', 'error');
+                    showNotification('No records found. Data source connection failed.', 'error');
                 }
             }
         }
@@ -3019,13 +3018,13 @@
 
         // Test Google Sheets Integration
         async function testGoogleSheetsIntegration() {
-            console.log('🧪 Testing Google Sheets integration...');
+            console.log('🧪 Testing data source integration...');
             
             const testBtn = document.querySelector('.btn-success');
             setButtonLoading(testBtn, true);
             
             try {
-                showNotification('🧪 Testing Google Sheets connection...', 'info');
+                showNotification('🧪 Testing data source connection...', 'info');
                 
                 // First, ensure headers exist
                 showNotification('📋 Setting up sheet headers...', 'info');
@@ -3083,8 +3082,8 @@
                 }
                 
                 if (result.success || response.ok) {
-                    console.log('✅ Google Sheets test successful!');
-                    showNotification('✅ Google Sheets integration working! Test data saved with headers.', 'success');
+                    console.log('✅ Data source test successful!');
+                    showNotification('✅ Data source integration working! Test data saved with headers.', 'success');
                     
                     // Now test reading data
                     setTimeout(async () => {
@@ -3128,8 +3127,8 @@
                 }
 
             } catch (error) {
-                console.error('❌ Google Sheets test failed:', error);
-                showNotification('❌ Google Sheets test failed: ' + error.message, 'error');
+                console.error('❌ Data source test failed:', error);
+                showNotification('❌ Data source test failed: ' + error.message, 'error');
                 
                 // Show detailed error info
                 setTimeout(() => {
