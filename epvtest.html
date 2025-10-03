@@ -1045,7 +1045,7 @@
                                         <td><input type="date" class="item-date" required></td>
                                         <td><input type="text" class="item-bill" placeholder="Bill number (optional)"></td>
                                         <td><input type="text" class="item-desc" placeholder="Item description" required></td>
-                                        <td><input type="number" class="item-amount" step="0.01" placeholder="0.00" required></td>
+                                        <td><input type="number" class="item-amount" step="0.01" placeholder="0.00 (use - for refunds)" required></td>
                                         <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
                                     </tr>
                                 </tbody>
@@ -1722,7 +1722,7 @@
                 <td><input type="date" class="item-date" value="${todayString}" required></td>
                 <td><input type="text" class="item-bill" placeholder="Bill number (optional)"></td>
                 <td><input type="text" class="item-desc" placeholder="Item description" required></td>
-                <td><input type="number" class="item-amount" step="0.01" placeholder="0.00" required></td>
+                <td><input type="number" class="item-amount" step="0.01" placeholder="0.00 (use - for refunds)" required></td>
                 <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
             `;
             tbody.appendChild(newRow);
@@ -1759,16 +1759,15 @@
             const amountInputs = document.querySelectorAll('.item-amount');
             amountInputs.forEach(input => {
                 const amount = parseFloat(input.value) || 0;
-                if (amount > 0) {
-                    total += amount;
-                }
+                // Include all amounts (positive and negative)
+                total += amount;
             });
             
             const subtotal = total;
             const tax = 0;
             const finalTotal = subtotal + tax;
 
-            // Update display
+            // Update display with proper formatting for negative values
             document.getElementById('subtotal').textContent = `RM ${subtotal.toFixed(2)}`;
             document.getElementById('tax').textContent = `RM ${tax.toFixed(2)}`;
             document.getElementById('total').textContent = `RM ${finalTotal.toFixed(2)}`;
@@ -1809,7 +1808,7 @@
                 const itemDesc = row.querySelector('.item-desc').value;
                 const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
                 
-                if (itemDate && itemDesc.trim() && amount > 0) {
+                if (itemDate && itemDesc.trim() && amount !== 0) {
                     validLineItems++;
                 }
             });
@@ -1865,7 +1864,7 @@
 
                     console.log(`Line item ${index + 1}:`, { itemDate, itemDesc, amount });
 
-                    if (itemDate && itemDesc.trim() && amount > 0) {
+                    if (itemDate && itemDesc.trim() && amount !== 0) {
                         lineItems.push({
                             date: new Date(itemDate).toLocaleDateString('en-GB'),
                             billNo: billNo || 'N/A',
@@ -2516,5 +2515,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988af596b0e9b4dc',t:'MTc1OTQ3ODk4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988afdb1c7f0b4dc',t:'MTc1OTQ3OTMyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
