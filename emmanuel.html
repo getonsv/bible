@@ -1728,80 +1728,20 @@
             const idType = document.getElementById('idType').value;
             const idInput = document.getElementById('idNumber');
             
-            console.log('ID Type selected:', idType); // Debug log
-            
             if (idType === 'NRIC') {
-                // Clear all restrictions first
-                idInput.disabled = false;
-                idInput.readOnly = false;
-                idInput.removeAttribute('disabled');
-                idInput.removeAttribute('readonly');
-                
-                // Set properties
                 idInput.placeholder = 'e.g. 123456-78-9012';
-                idInput.setAttribute('maxlength', '14');
-                idInput.value = ''; // Clear any existing value
-                
-                // Reset styles to ensure it's editable
-                idInput.style.backgroundColor = '#ffffff';
-                idInput.style.cursor = 'text';
-                idInput.style.opacity = '1';
-                idInput.style.pointerEvents = 'auto';
-                
-                // Remove existing event listeners first
-                const newInput = idInput.cloneNode(true);
-                idInput.parentNode.replaceChild(newInput, idInput);
-                
-                // Add NRIC formatting to the new element
-                document.getElementById('idNumber').addEventListener('input', formatNRIC);
-                
-                // Force focus to ensure it's working
-                setTimeout(() => {
-                    document.getElementById('idNumber').focus();
-                }, 50);
-                
-                console.log('NRIC field enabled'); // Debug log
-            } else if (idType === 'Passport') {
-                // Clear all restrictions first
                 idInput.disabled = false;
-                idInput.readOnly = false;
-                idInput.removeAttribute('disabled');
-                idInput.removeAttribute('readonly');
-                
-                // Set properties
+                idInput.maxLength = 14;
+                idInput.addEventListener('input', formatNRIC);
+            } else if (idType === 'Passport') {
                 idInput.placeholder = 'e.g. A12345678';
-                idInput.setAttribute('maxlength', '20');
-                idInput.value = ''; // Clear any existing value
-                
-                // Reset styles to ensure it's editable
-                idInput.style.backgroundColor = '#ffffff';
-                idInput.style.cursor = 'text';
-                idInput.style.opacity = '1';
-                idInput.style.pointerEvents = 'auto';
-                
-                // Remove existing event listeners first
-                const newInput = idInput.cloneNode(true);
-                idInput.parentNode.replaceChild(newInput, idInput);
-                
-                // Add passport formatting to the new element
-                document.getElementById('idNumber').addEventListener('input', formatPassport);
-                
-                // Force focus to ensure it's working
-                setTimeout(() => {
-                    document.getElementById('idNumber').focus();
-                }, 50);
-                
-                console.log('Passport field enabled'); // Debug log
+                idInput.disabled = false;
+                idInput.maxLength = 20;
+                idInput.removeEventListener('input', formatNRIC);
             } else {
                 idInput.placeholder = 'Select ID type first';
                 idInput.disabled = true;
-                idInput.setAttribute('disabled', 'disabled');
                 idInput.value = '';
-                idInput.style.backgroundColor = '#f9fafb';
-                idInput.style.cursor = 'not-allowed';
-                idInput.style.opacity = '0.6';
-                idInput.style.pointerEvents = 'none';
-                console.log('ID field disabled'); // Debug log
             }
         }
 
