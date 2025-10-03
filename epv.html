@@ -1215,7 +1215,7 @@
         // Google Sheets Configuration
         const GOOGLE_SHEETS_CONFIG = {
             // Your actual Web App URL from Google Apps Script
-            webAppUrl: 'https://script.google.com/macros/s/AKfycbwRgvVfYW2qUdbZ31d3A2ZllHr0r_fPryest543_gkEky2sQyarddFRJ68nljBGFVyF/exec',
+            webAppUrl: 'https://script.google.com/macros/s/AKfycbyL9420J41CJnVpBV76c0fWX4hRiNQdoDYrJYxD7sdvj6tlC1XzliPrkZ-WfEC4HpXYKQ/exec',
             spreadsheetId: '1D1sodswMfwrHEWU_4KVaytwCf-Nk66mdo3V14N0zqfU'
         };
 
@@ -1272,7 +1272,7 @@
         // Separate function for logging to sheets (non-blocking)
         async function logLoginToSheets() {
             try {
-                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbwRgvVfYW2qUdbZ31d3A2ZllHr0r_fPryest543_gkEky2sQyarddFRJ68nljBGFVyF/exec') {
+                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbyL9420J41CJnVpBV76c0fWX4hRiNQdoDYrJYxD7sdvj6tlC1XzliPrkZ-WfEC4HpXYKQ/exec') {
                     const loginData = {
                         action: 'addRecord',
                         data: {
@@ -1363,7 +1363,7 @@
 
         // Save voucher data to Google Sheets
         async function saveVoucherToGoogleSheets(voucherData) {
-            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/AKfycbwRgvVfYW2qUdbZ31d3A2ZllHr0r_fPryest543_gkEky2sQyarddFRJ68nljBGFVyF/exec') {
+            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/AKfycbyL9420J41CJnVpBV76c0fWX4hRiNQdoDYrJYxD7sdvj6tlC1XzliPrkZ-WfEC4HpXYKQ/exec') {
                 console.log('⚠️ Google Sheets Web App URL not configured');
                 console.log('📊 Voucher Data:', voucherData);
                 return false;
@@ -1418,7 +1418,7 @@
 
         // Get voucher data from Google Sheets
         async function getVouchersFromGoogleSheets() {
-            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/AKfycbwRgvVfYW2qUdbZ31d3A2ZllHr0r_fPryest543_gkEky2sQyarddFRJ68nljBGFVyF/exec') {
+            if (GOOGLE_SHEETS_CONFIG.webAppUrl === 'https://script.google.com/macros/s/AKfycbyL9420J41CJnVpBV76c0fWX4hRiNQdoDYrJYxD7sdvj6tlC1XzliPrkZ-WfEC4HpXYKQ/exec') {
                 console.log('⚠️ Google Sheets Web App URL not configured');
                 return [];
             }
@@ -1518,7 +1518,7 @@
         // Log logout (non-blocking)
         async function logLogoutToSheets() {
             try {
-                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbwRgvVfYW2qUdbZ31d3A2ZllHr0r_fPryest543_gkEky2sQyarddFRJ68nljBGFVyF/exec') {
+                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbyL9420J41CJnVpBV76c0fWX4hRiNQdoDYrJYxD7sdvj6tlC1XzliPrkZ-WfEC4HpXYKQ/exec') {
                     const logoutData = {
                         action: 'addRecord',
                         data: {
@@ -2350,7 +2350,7 @@
         // Log PDF download (non-blocking)
         async function logPDFDownload(voucherNo, totalAmount, payTo) {
             try {
-                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbwRgvVfYW2qUdbZ31d3A2ZllHr0r_fPryest543_gkEky2sQyarddFRJ68nljBGFVyF/exec') {
+                if (currentUser && GOOGLE_SHEETS_CONFIG.webAppUrl !== 'https://script.google.com/macros/s/AKfycbyL9420J41CJnVpBV76c0fWX4hRiNQdoDYrJYxD7sdvj6tlC1XzliPrkZ-WfEC4HpXYKQ/exec') {
                     const pdfData = {
                         action: 'addRecord',
                         data: {
