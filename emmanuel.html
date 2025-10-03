@@ -1731,36 +1731,66 @@
             console.log('ID Type selected:', idType); // Debug log
             
             if (idType === 'NRIC') {
-                idInput.placeholder = 'e.g. 123456-78-9012';
+                // Clear all restrictions first
                 idInput.disabled = false;
+                idInput.readOnly = false;
                 idInput.removeAttribute('disabled');
+                idInput.removeAttribute('readonly');
+                
+                // Set properties
+                idInput.placeholder = 'e.g. 123456-78-9012';
                 idInput.setAttribute('maxlength', '14');
                 idInput.value = ''; // Clear any existing value
+                
+                // Reset styles to ensure it's editable
                 idInput.style.backgroundColor = '#ffffff';
                 idInput.style.cursor = 'text';
                 idInput.style.opacity = '1';
+                idInput.style.pointerEvents = 'auto';
                 
                 // Remove existing event listeners first
-                idInput.removeEventListener('input', formatNRIC);
-                idInput.removeEventListener('input', formatPassport);
-                // Add NRIC formatting
-                idInput.addEventListener('input', formatNRIC);
+                const newInput = idInput.cloneNode(true);
+                idInput.parentNode.replaceChild(newInput, idInput);
+                
+                // Add NRIC formatting to the new element
+                document.getElementById('idNumber').addEventListener('input', formatNRIC);
+                
+                // Force focus to ensure it's working
+                setTimeout(() => {
+                    document.getElementById('idNumber').focus();
+                }, 50);
+                
                 console.log('NRIC field enabled'); // Debug log
             } else if (idType === 'Passport') {
-                idInput.placeholder = 'e.g. A12345678';
+                // Clear all restrictions first
                 idInput.disabled = false;
+                idInput.readOnly = false;
                 idInput.removeAttribute('disabled');
+                idInput.removeAttribute('readonly');
+                
+                // Set properties
+                idInput.placeholder = 'e.g. A12345678';
                 idInput.setAttribute('maxlength', '20');
                 idInput.value = ''; // Clear any existing value
+                
+                // Reset styles to ensure it's editable
                 idInput.style.backgroundColor = '#ffffff';
                 idInput.style.cursor = 'text';
                 idInput.style.opacity = '1';
+                idInput.style.pointerEvents = 'auto';
                 
                 // Remove existing event listeners first
-                idInput.removeEventListener('input', formatNRIC);
-                idInput.removeEventListener('input', formatPassport);
-                // Add passport formatting
-                idInput.addEventListener('input', formatPassport);
+                const newInput = idInput.cloneNode(true);
+                idInput.parentNode.replaceChild(newInput, idInput);
+                
+                // Add passport formatting to the new element
+                document.getElementById('idNumber').addEventListener('input', formatPassport);
+                
+                // Force focus to ensure it's working
+                setTimeout(() => {
+                    document.getElementById('idNumber').focus();
+                }, 50);
+                
                 console.log('Passport field enabled'); // Debug log
             } else {
                 idInput.placeholder = 'Select ID type first';
@@ -1770,19 +1800,8 @@
                 idInput.style.backgroundColor = '#f9fafb';
                 idInput.style.cursor = 'not-allowed';
                 idInput.style.opacity = '0.6';
+                idInput.style.pointerEvents = 'none';
                 console.log('ID field disabled'); // Debug log
-            }
-            
-            // Ensure the field is properly enabled
-            if (!idInput.disabled) {
-                // Force enable the field
-                idInput.readOnly = false;
-                idInput.removeAttribute('readonly');
-                
-                setTimeout(() => {
-                    idInput.focus();
-                    idInput.blur();
-                }, 100);
             }
         }
 
@@ -2564,5 +2583,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889378da607b4dc',t:'MTc1OTQ2MDcxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98893f081034b4dc',t:'MTc1OTQ2MTAyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
