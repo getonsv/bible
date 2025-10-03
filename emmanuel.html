@@ -963,10 +963,9 @@
                 <div class="company-logo">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
                 </div>
-                <h1>Emmanuel Transport</h1>
-                <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
-                <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
+                <p>202503112296 (003723051-P)</p>
                 <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
+                <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
             </div>
 
             <div class="form-section">
@@ -1068,10 +1067,6 @@
                 <button type="button" class="btn btn-secondary" onclick="toggleRecordsView()">
                     🔍 View Records
                 </button>
-                
-                <button type="button" class="btn btn-success" onclick="testGoogleSheetsIntegration()">
-                    🧪 Test Integration
-                </button>
             </div>
 
             <!-- Records View Section -->
@@ -1080,12 +1075,18 @@
                     <h2 style="text-align: center; margin-bottom: 30px; color: #1e293b;">Voucher Records</h2>
                     
                     <!-- Search Controls -->
-                    <div style="display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;">
-                        <input type="text" id="searchVoucher" placeholder="Search by voucher number..." style="flex: 1; min-width: 200px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                        <input type="text" id="searchPayTo" placeholder="Search by pay to..." style="flex: 1; min-width: 200px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                        <input type="date" id="searchDate" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                        <button type="button" class="btn btn-primary" onclick="searchRecords()" style="padding: 12px 24px;">🔍 Search</button>
-                        <button type="button" class="btn btn-secondary" onclick="loadAllRecords()" style="padding: 12px 24px;">📋 Load All</button>
+                    <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="globalSearch" placeholder="Search by any field (voucher, name, ID, method, reference, creator...)" style="flex: 2; min-width: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                        <input type="date" id="searchDate" placeholder="Filter by date" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <button type="button" class="btn btn-primary" onclick="searchRecords()" style="padding: 12px 20px; font-size: 14px;">🔍 Search</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearSearch()" style="padding: 12px 20px; font-size: 14px;">🗑️ Clear</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadAllRecords()" style="padding: 12px 20px; font-size: 14px;">📋 Load All</button>
+                    </div>
+                    
+                    <!-- Search Results Info -->
+                    <div id="searchInfo" style="display: none; margin-bottom: 20px; padding: 12px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                        <span id="searchResultText" style="color: #0c4a6e; font-weight: 500;"></span>
+                        <button onclick="clearSearch()" style="background: none; border: none; color: #0ea5e9; cursor: pointer; margin-left: 10px; font-weight: 600;">✕ Clear</button>
                     </div>
                     
                     <!-- Loading indicator -->
@@ -1139,8 +1140,8 @@
                     <div class="company-info">
                         <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
                         BRN: 202503112296 (003723051-P)<br>
-                        LOWRENCE 0182202582 | PREMA 01126360442<br>
-                        NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
+                        NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR<br>
+                        LOWRENCE 0182202582 | PREMA 01126360442
                     </div>
                     <div class="voucher-title">PAYMENT VOUCHER</div>
                 </div>
@@ -1237,7 +1238,7 @@
                     </a>
                 </div>
                 <div class="footer-right">
-                    <span class="version-number">v99</span>
+                    <span class="version-number">vP2510.100</span>
                 </div>
             </div>
         </div>
@@ -1247,11 +1248,11 @@
         // Global user data
         let currentUser = null;
         
-        // Google Sheets configuration
+        // Google Sheets configuration - CONNECTED TO YOUR SHEET
         const GOOGLE_SHEETS_CONFIG = {
-            spreadsheetId: '1D1sodswMfwrHEWU_4KVaytwCf-Nk66mdo3V14N0zqfU',
+            spreadsheetId: '152Kv9kPyCPHGqc2-u_TzQ4fRkXi2toJ7LkYTiEAYjG8',
             range: 'Sheet1!A:Z',
-            webAppUrl: 'https://script.google.com/macros/s/AKfycbwRgvVfYW2qUdbZ31d3A2ZllHr0r_fPryest543_gkEky2sQyarddFRJ68nljBGFVyF/exec',
+            webAppUrl: 'https://script.google.com/macros/s/AKfycbxfPbOXfb6qbdauz6VRKRKEG3Co0UW1gvStoxIdL6Vd71DdLAFn2IAM8decnj9s0OL7/exec',
             clientId: '329748771929-h7ass17q1ebv5mmd4r7qs75o940elsrn.apps.googleusercontent.com',
             apiKey: 'AIzaSyDacR84APJV1dnuq7a_gtI4O4RtHlVuKIQ'
         };
@@ -1285,7 +1286,7 @@
 
         // Initialize Google API for Sheets
         function initializeGoogleAPI() {
-            console.log('📊 Google Sheets integration ready via Web App');
+            console.log('📊 Data source integration ready via Web App');
             isGapiLoaded = true;
         }
 
@@ -1537,6 +1538,9 @@
             // Setup event listeners
             setupEventListeners();
             
+            // Setup search event listeners
+            setupSearchListeners();
+            
             // Initial calculation
             calculateTotal();
             
@@ -1561,6 +1565,45 @@
             });
             
             console.log('✅ Event listeners set up');
+        }
+        
+        // Setup search event listeners for real-time search
+        function setupSearchListeners() {
+            console.log('🔗 Setting up search listeners...');
+            
+            // Real-time search as user types (with debounce)
+            let searchTimeout;
+            const globalSearchInput = document.getElementById('globalSearch');
+            const dateSearchInput = document.getElementById('searchDate');
+            
+            if (globalSearchInput) {
+                globalSearchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        if (document.getElementById('recordsSection').style.display !== 'none') {
+                            searchRecords();
+                        }
+                    }, 300); // 300ms debounce
+                });
+                
+                // Search on Enter key
+                globalSearchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        clearTimeout(searchTimeout);
+                        searchRecords();
+                    }
+                });
+            }
+            
+            if (dateSearchInput) {
+                dateSearchInput.addEventListener('change', function() {
+                    if (document.getElementById('recordsSection').style.display !== 'none') {
+                        searchRecords();
+                    }
+                });
+            }
+            
+            console.log('✅ Search listeners set up');
         }
 
         // Update reference field requirement
@@ -1760,6 +1803,49 @@
             return { isValid, errors };
         }
 
+        // Ensure sheet has proper headers
+        async function ensureSheetHeaders() {
+            console.log('📋 Ensuring sheet headers exist...');
+            
+            try {
+                const headerData = {
+                    action: 'ensureHeaders'
+                };
+
+                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(headerData)
+                });
+
+                console.log('📥 Header response status:', response.status);
+                
+                const responseText = await response.text();
+                console.log('📥 Header response:', responseText);
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.log('📥 Header response is not JSON, treating as success');
+                    result = { success: true };
+                }
+                
+                if (result.success || response.ok) {
+                    console.log('✅ Headers ensured successfully');
+                } else {
+                    console.log('⚠️ Header creation may have failed, continuing anyway');
+                }
+
+            } catch (error) {
+                console.error('❌ Error ensuring headers:', error);
+                console.log('⚠️ Continuing without header verification');
+            }
+        }
+
         // Generate voucher with automatic PDF and Sheets saving
         async function generateVoucher() {
             console.log('🚀 Generating voucher...');
@@ -1824,7 +1910,7 @@
                 document.getElementById('voucherPreview').style.display = 'block';
 
                 // Auto-save to Google Sheets
-                showNotification('Saving to Google Sheets...', 'info');
+                showNotification('Saving...', 'info');
                 await saveToGoogleSheetsAuto();
 
                 // Auto-generate PDF
@@ -1832,7 +1918,7 @@
                 await savePDFAuto();
 
                 setButtonLoading(generateBtn, false);
-                showNotification('✅ Voucher created! PDF downloaded and data saved to Google Sheets.', 'success');
+                showNotification('✅ Voucher created! PDF downloaded and data saved.', 'success');
 
                 // Scroll to preview
                 setTimeout(() => {
@@ -1895,12 +1981,15 @@
 
         // Auto-save to Google Sheets
         async function saveToGoogleSheetsAuto() {
-            console.log('📊 Auto-saving to Google Sheets...');
+            console.log('📊 Auto-saving data...');
             
             try {
                 if (!currentVoucherData) {
                     throw new Error('No voucher data available');
                 }
+
+                // First, ensure headers exist
+                await ensureSheetHeaders();
 
                 // Prepare data for Google Sheets - flatten line items into separate columns
                 const lineItemsText = currentVoucherData.lineItems.map(item => 
@@ -1930,7 +2019,7 @@
                     lineItems: lineItemsText
                 };
 
-                console.log('📤 Sending data to Google Sheets:', sheetData);
+                console.log('📤 Sending data to datasource:', sheetData);
 
                 // Send to Google Sheets via Web App with proper headers
                 const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
@@ -1956,8 +2045,8 @@
                 }
                 
                 if (result.success || response.ok) {
-                    console.log('✅ Data saved to Google Sheets successfully');
-                    showNotification('✅ Data saved to Google Sheets!', 'success');
+                    console.log('✅ Data saved successfully');
+                    showNotification('✅ Data saved!', 'success');
                     
                     // Also store in localStorage as backup
                     const existingData = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
@@ -1969,11 +2058,11 @@
                     localStorage.setItem('voucherRecords', JSON.stringify(existingData));
                     
                 } else {
-                    throw new Error(result.error || 'Failed to save to Google Sheets');
+                    throw new Error(result.error || 'Failed to save data');
                 }
 
             } catch (error) {
-                console.error('❌ Google Sheets save error:', error);
+                console.error('❌ Data save error:', error);
                 
                 // Fallback to localStorage only
                 const existingData = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
@@ -1985,7 +2074,7 @@
                 localStorage.setItem('voucherRecords', JSON.stringify(existingData));
                 
                 console.log('✅ Data saved locally as fallback');
-                showNotification('⚠️ Saved locally - Google Sheets connection issue', 'info');
+                showNotification('⚠️ Saved locally - Data source connection issue', 'info');
             }
         }
 
@@ -2015,24 +2104,64 @@
 
                 // Set font
                 doc.setFont('helvetica');
-                let currentY = 25;
+                let currentY = 20;
 
-                // Company header
-                doc.setFontSize(16);
-                doc.setFont('helvetica', 'bold');
-                doc.text('EMMANUEL TRANSPORT', 105, currentY, { align: 'center' });
-                
-                currentY += 8;
+                // Add logo to PDF
+                try {
+                    const logoUrl = 'https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png';
+                    const logoImg = new Image();
+                    logoImg.crossOrigin = 'anonymous';
+                    
+                    await new Promise((resolve, reject) => {
+                        logoImg.onload = () => {
+                            try {
+                                // Create canvas to convert image
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                canvas.width = logoImg.width;
+                                canvas.height = logoImg.height;
+                                ctx.drawImage(logoImg, 0, 0);
+                                
+                                // Get image data and add to PDF
+                                const imgData = canvas.toDataURL('image/png');
+                                const imgWidth = 40;
+                                const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
+                                
+                                // Center the logo
+                                const logoX = (210 - imgWidth) / 2; // A4 width is 210mm
+                                doc.addImage(imgData, 'PNG', logoX, currentY, imgWidth, imgHeight);
+                                currentY += imgHeight + 8;
+                                resolve();
+                            } catch (error) {
+                                console.log('Logo processing failed, continuing without logo');
+                                currentY += 5;
+                                resolve();
+                            }
+                        };
+                        logoImg.onerror = () => {
+                            console.log('Logo load failed, continuing without logo');
+                            currentY += 5;
+                            resolve();
+                        };
+                        logoImg.src = logoUrl;
+                    });
+                } catch (error) {
+                    console.log('Logo addition failed, continuing without logo');
+                    currentY += 5;
+                }
+
+                // Company header details
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
                 doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
                 
                 currentY += 5;
-                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, currentY, { align: 'center' });
-                
-                currentY += 5;
                 doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, currentY, { align: 'center' });
 
+
+                currentY += 5;
+                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, currentY, { align: 'center' });
+                
                 // Line separator
                 currentY += 10;
                 doc.line(20, currentY, 190, currentY);
@@ -2186,34 +2315,33 @@
                                 
                                 // Get image data and add to PDF
                                 const imgData = canvas.toDataURL('image/png');
-                                const imgWidth = 40;
+                                const imgWidth = 35;
                                 const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
                                 
-                                doc.addImage(imgData, 'PNG', 85, currentY, imgWidth, imgHeight);
-                                currentY += imgHeight + 5;
+                                // Center the logo
+                                const logoX = (210 - imgWidth) / 2; // A4 width is 210mm
+                                doc.addImage(imgData, 'PNG', logoX, currentY, imgWidth, imgHeight);
+                                currentY += imgHeight + 8;
                                 resolve();
                             } catch (error) {
                                 console.log('Logo processing failed, continuing without logo');
+                                currentY += 15;
                                 resolve();
                             }
                         };
                         logoImg.onerror = () => {
                             console.log('Logo load failed, continuing without logo');
+                            currentY += 15;
                             resolve();
                         };
                         logoImg.src = logoUrl;
                     });
                 } catch (error) {
                     console.log('Logo addition failed, continuing without logo');
-                    currentY += 10;
+                    currentY += 15;
                 }
 
-                // Company header
-                doc.setFontSize(16);
-                doc.setFont('helvetica', 'bold');
-                doc.text('EMMANUEL TRANSPORT', 105, currentY, { align: 'center' });
-                
-                currentY += 8;
+                // Company header (without company name, just contact details)
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
                 doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
@@ -2429,73 +2557,202 @@
             showRecordsLoading(true);
             
             try {
-                // Try to load from Google Sheets first
-                console.log('📤 Requesting records from Google Sheets...');
-                const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl + '?action=getVouchers', {
-                    method: 'GET',
-                    mode: 'cors'
-                });
+                // Try multiple methods to load from Google Sheets
+                console.log('📤 Requesting records from data source...');
                 
-                console.log('📥 Response status:', response.status);
+                let records = [];
+                let sheetsSuccess = false;
                 
-                if (response.ok) {
-                    const responseText = await response.text();
-                    console.log('📥 Response text:', responseText);
+                // Method 1: POST with getVouchers action
+                try {
+                    console.log('📤 Method 1: POST with getVouchers action');
+                    const requestData = { action: 'getVouchers' };
                     
-                    let result;
-                    try {
-                        result = JSON.parse(responseText);
-                    } catch (parseError) {
-                        console.log('📥 Response is not JSON, using fallback');
-                        throw new Error('Invalid JSON response');
+                    const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
+                        method: 'POST',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'text/plain',
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    
+                    console.log('📥 Method 1 Response status:', response.status);
+                    
+                    if (response.ok) {
+                        const responseText = await response.text();
+                        console.log('📥 Method 1 Raw response:', responseText.substring(0, 500) + '...');
+                        
+                        try {
+                            const result = JSON.parse(responseText);
+                            console.log('📥 Method 1 Parsed result:', result);
+                            
+                            if (result.success && result.data && Array.isArray(result.data)) {
+                                records = result.data.filter(row => row && (Array.isArray(row) ? row[0] : row.voucherNo));
+                                sheetsSuccess = true;
+                                console.log('✅ Method 1 Success:', records.length, 'records');
+                            }
+                        } catch (parseError) {
+                            console.log('📥 Method 1 JSON parse failed, trying CSV parsing');
+                            
+                            // Try CSV parsing
+                            if (responseText.includes('\n')) {
+                                const lines = responseText.trim().split('\n');
+                                console.log('📥 Found', lines.length, 'lines in response');
+                                
+                                // Skip header if it looks like headers
+                                let startIndex = 0;
+                                if (lines[0] && (lines[0].includes('Voucher') || lines[0].includes('Date'))) {
+                                    startIndex = 1;
+                                    console.log('📥 Skipping header row');
+                                }
+                                
+                                const dataLines = lines.slice(startIndex);
+                                console.log('📥 Processing', dataLines.length, 'data lines');
+                                
+                                dataLines.forEach((line, index) => {
+                                    if (line.trim()) {
+                                        // Handle both comma and tab separated values
+                                        const values = line.includes('\t') ? line.split('\t') : line.split(',');
+                                        console.log(`📥 Line ${index + 1}:`, values);
+                                        
+                                        if (values.length >= 3 && values[0] && values[0].trim() !== '') {
+                                            records.push({
+                                                voucherNo: values[0]?.trim() || '',
+                                                date: values[1]?.trim() || '',
+                                                payTo: values[2]?.trim() || '',
+                                                idType: values[3]?.trim() || '',
+                                                idNumber: values[4]?.trim() || '',
+                                                paymentMethod: values[5]?.trim() || '',
+                                                reference: values[6]?.trim() || '',
+                                                description: values[7]?.trim() || '',
+                                                totalAmount: parseFloat(values[8]) || 0,
+                                                createdBy: values[9]?.trim() || 'Unknown',
+                                                createdAt: values[10]?.trim() || '',
+                                                lineItems: values[11]?.trim() || ''
+                                            });
+                                        }
+                                    }
+                                });
+                                
+                                if (records.length > 0) {
+                                    sheetsSuccess = true;
+                                    console.log('✅ CSV parsing success:', records.length, 'records');
+                                }
+                            }
+                        }
                     }
-                    
-                    if (result.success && result.data && Array.isArray(result.data)) {
-                        console.log('✅ Records loaded from Google Sheets:', result.data.length, 'records');
+                } catch (method1Error) {
+                    console.log('📥 Method 1 failed:', method1Error.message);
+                }
+                
+                // Method 2: GET request if POST failed
+                if (!sheetsSuccess) {
+                    try {
+                        console.log('📤 Method 2: GET request');
+                        const getResponse = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl + '?action=getVouchers', {
+                            method: 'GET',
+                            mode: 'cors'
+                        });
                         
-                        // Also sync to localStorage
-                        localStorage.setItem('voucherRecords', JSON.stringify(result.data));
+                        console.log('📥 Method 2 Response status:', getResponse.status);
                         
-                        displayRecords(result.data);
-                        showRecordsLoading(false);
-                        return;
+                        if (getResponse.ok) {
+                            const getResponseText = await getResponse.text();
+                            console.log('📥 Method 2 Raw response:', getResponseText.substring(0, 500) + '...');
+                            
+                            try {
+                                const getResult = JSON.parse(getResponseText);
+                                console.log('📥 Method 2 Parsed result:', getResult);
+                                
+                                if (getResult.success && getResult.data && Array.isArray(getResult.data)) {
+                                    records = getResult.data.filter(row => row && (Array.isArray(row) ? row[0] : row.voucherNo));
+                                    sheetsSuccess = true;
+                                    console.log('✅ Method 2 Success:', records.length, 'records');
+                                }
+                            } catch (getParseError) {
+                                console.log('📥 Method 2 JSON parse failed');
+                            }
+                        }
+                    } catch (method2Error) {
+                        console.log('📥 Method 2 failed:', method2Error.message);
                     }
                 }
                 
-                // Fallback to localStorage
-                console.log('📋 Loading from local storage as fallback');
-                const records = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
-                displayRecords(records);
+                // Process and display records if we got them from Google Sheets
+                if (sheetsSuccess && records.length > 0) {
+                    console.log('✅ Data loaded successfully:', records.length, 'records');
+                    
+                    // Convert array format to object format for consistency
+                    const formattedRecords = records.map(row => {
+                        if (Array.isArray(row)) {
+                            return {
+                                voucherNo: row[0] || '',
+                                date: row[1] || '',
+                                payTo: row[2] || '',
+                                idType: row[3] || '',
+                                idNumber: row[4] || '',
+                                paymentMethod: row[5] || '',
+                                reference: row[6] || '',
+                                description: row[7] || '',
+                                totalAmount: parseFloat(row[8]) || 0,
+                                createdBy: row[9] || 'Unknown',
+                                createdAt: row[10] || '',
+                                lineItems: row[11] || ''
+                            };
+                        }
+                        return row; // Already in object format
+                    });
+                    
+                    // Filter out empty records
+                    const validRecords = formattedRecords.filter(record => 
+                        record.voucherNo && record.voucherNo.trim() !== ''
+                    );
+                    
+                    console.log('✅ Valid records after filtering:', validRecords.length);
+                    
+                    // Sync to localStorage
+                    localStorage.setItem('voucherRecords', JSON.stringify(validRecords));
+                    
+                    displayRecords(validRecords);
+                    showRecordsLoading(false);
+                    showNotification(`✅ Loaded ${validRecords.length} records from data source`, 'success');
+                    return;
+                }
+                
+                // Fallback to localStorage if Google Sheets failed
+                console.log('📋 Data source failed, loading from local storage');
+                const localRecords = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                displayRecords(localRecords);
                 showRecordsLoading(false);
                 
-                if (records.length === 0) {
-                    showNotification('No records found. Create your first voucher!', 'info');
+                if (localRecords.length === 0) {
+                    showNotification('No records found. Create your first voucher to see it here!', 'info');
                 } else {
-                    showNotification('⚠️ Loaded local records - Google Sheets connection issue', 'info');
+                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Data source connection issue`, 'info');
                 }
                 
             } catch (error) {
                 console.error('❌ Error loading records:', error);
                 
-                // Fallback to localStorage
-                const records = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
-                displayRecords(records);
+                // Final fallback to localStorage
+                const localRecords = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                displayRecords(localRecords);
                 showRecordsLoading(false);
                 
-                if (records.length > 0) {
-                    showNotification('⚠️ Loaded local records - Google Sheets connection issue', 'info');
+                if (localRecords.length > 0) {
+                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Data source connection issue`, 'info');
                 } else {
-                    showNotification('No records found. Create your first voucher!', 'info');
+                    showNotification('No records found. Data source connection failed.', 'error');
                 }
             }
         }
 
-        // Search records
+        // Search records with dynamic global search
         function searchRecords() {
             console.log('🔍 Searching records...');
             
-            const voucherSearch = document.getElementById('searchVoucher').value.toLowerCase();
-            const payToSearch = document.getElementById('searchPayTo').value.toLowerCase();
+            const globalSearch = document.getElementById('globalSearch').value.toLowerCase().trim();
             const dateSearch = document.getElementById('searchDate').value;
             
             showRecordsLoading(true);
@@ -2503,15 +2760,46 @@
             try {
                 // Get all records
                 const allRecords = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
+                console.log('🔍 Total records to search:', allRecords.length);
                 
-                // Filter records
+                // Filter records with global search
                 const filteredRecords = allRecords.filter(record => {
-                    const matchesVoucher = !voucherSearch || record.voucherNo.toLowerCase().includes(voucherSearch);
-                    const matchesPayTo = !payToSearch || record.payTo.toLowerCase().includes(payToSearch);
-                    const matchesDate = !dateSearch || record.date === dateSearch;
+                    // Date filter
+                    if (dateSearch && record.date !== dateSearch) {
+                        return false;
+                    }
                     
-                    return matchesVoucher && matchesPayTo && matchesDate;
+                    // If no global search term, return true (only date filter applied)
+                    if (!globalSearch) {
+                        return true;
+                    }
+                    
+                    // Global search - check all searchable fields
+                    const searchableFields = [
+                        record.voucherNo || '',
+                        record.payTo || '',
+                        record.idType || '',
+                        record.idNumber || '',
+                        record.paymentMethod || '',
+                        record.reference || '',
+                        record.description || '',
+                        record.createdBy || '',
+                        record.lineItems || '',
+                        record.totalAmount ? record.totalAmount.toString() : ''
+                    ];
+                    
+                    // Check if any field contains the search term
+                    const matchesGlobal = searchableFields.some(field => 
+                        field.toLowerCase().includes(globalSearch)
+                    );
+                    
+                    return matchesGlobal;
                 });
+                
+                console.log('🔍 Filtered records:', filteredRecords.length);
+                
+                // Show search info
+                showSearchInfo(globalSearch, dateSearch, filteredRecords.length, allRecords.length);
                 
                 displayRecords(filteredRecords);
                 showRecordsLoading(false);
@@ -2522,6 +2810,40 @@
                 showNotification('Error searching records', 'error');
             }
         }
+        
+        // Clear search and show all records
+        function clearSearch() {
+            console.log('🗑️ Clearing search...');
+            
+            document.getElementById('globalSearch').value = '';
+            document.getElementById('searchDate').value = '';
+            document.getElementById('searchInfo').style.display = 'none';
+            
+            loadAllRecords();
+        }
+        
+        // Show search information
+        function showSearchInfo(searchTerm, dateFilter, resultCount, totalCount) {
+            const searchInfo = document.getElementById('searchInfo');
+            const searchResultText = document.getElementById('searchResultText');
+            
+            if (searchTerm || dateFilter) {
+                let infoText = `Found ${resultCount} of ${totalCount} records`;
+                
+                if (searchTerm && dateFilter) {
+                    infoText += ` matching "${searchTerm}" on ${new Date(dateFilter).toLocaleDateString('en-GB')}`;
+                } else if (searchTerm) {
+                    infoText += ` matching "${searchTerm}"`;
+                } else if (dateFilter) {
+                    infoText += ` from ${new Date(dateFilter).toLocaleDateString('en-GB')}`;
+                }
+                
+                searchResultText.textContent = infoText;
+                searchInfo.style.display = 'block';
+            } else {
+                searchInfo.style.display = 'none';
+            }
+        }
 
         // Display records in table
         function displayRecords(records) {
@@ -2530,6 +2852,8 @@
             const noRecordsMessage = document.getElementById('noRecordsMessage');
             const totalRecordsEl = document.getElementById('totalRecords');
             const totalAmountEl = document.getElementById('totalAmount');
+            
+            console.log('📋 Displaying records:', records);
             
             if (records.length === 0) {
                 tableContainer.style.display = 'none';
@@ -2547,22 +2871,60 @@
             let totalAmount = 0;
             
             // Add rows
-            records.forEach(record => {
+            records.forEach((record, index) => {
+                console.log(`📋 Processing record ${index}:`, record);
+                
                 const row = document.createElement('tr');
                 row.style.borderBottom = '1px solid #f1f5f9';
                 
-                const formattedDate = new Date(record.date).toLocaleDateString('en-GB');
-                totalAmount += parseFloat(record.totalAmount) || 0;
+                // Handle different data formats from Google Sheets vs localStorage
+                let voucherNo, date, payTo, amount, paymentMethod;
+                
+                if (Array.isArray(record)) {
+                    // Google Sheets returns array format
+                    voucherNo = record[0] || 'N/A';
+                    date = record[1] || '';
+                    payTo = record[2] || 'N/A';
+                    paymentMethod = record[5] || 'N/A';
+                    amount = parseFloat(record[8]) || 0;
+                } else {
+                    // localStorage returns object format
+                    voucherNo = record.voucherNo || record['Voucher No'] || 'N/A';
+                    date = record.date || record['Date'] || '';
+                    payTo = record.payTo || record['Pay To'] || 'N/A';
+                    paymentMethod = record.paymentMethod || record['Payment Method'] || 'N/A';
+                    amount = parseFloat(record.totalAmount || record['Total Amount'] || record.amount || 0);
+                }
+                
+                // Format date properly
+                let formattedDate = 'N/A';
+                if (date) {
+                    try {
+                        if (date.includes('/')) {
+                            // Already formatted as DD/MM/YYYY
+                            formattedDate = date;
+                        } else {
+                            // Convert from YYYY-MM-DD format
+                            formattedDate = new Date(date).toLocaleDateString('en-GB');
+                        }
+                    } catch (e) {
+                        formattedDate = date;
+                    }
+                }
+                
+                totalAmount += amount;
+                
+                console.log(`📋 Row data: ${voucherNo}, ${formattedDate}, ${payTo}, ${amount}, ${paymentMethod}`);
                 
                 row.innerHTML = `
-                    <td style="padding: 15px; font-weight: 600; color: #6366f1;">${record.voucherNo}</td>
+                    <td style="padding: 15px; font-weight: 600; color: #6366f1;">${voucherNo}</td>
                     <td style="padding: 15px;">${formattedDate}</td>
-                    <td style="padding: 15px;">${record.payTo}</td>
-                    <td style="padding: 15px; font-weight: 600; color: #059669;">RM ${parseFloat(record.totalAmount).toFixed(2)}</td>
-                    <td style="padding: 15px;">${record.paymentMethod}</td>
+                    <td style="padding: 15px;">${payTo}</td>
+                    <td style="padding: 15px; font-weight: 600; color: #059669;">RM ${amount.toFixed(2)}</td>
+                    <td style="padding: 15px;">${paymentMethod}</td>
                     <td style="padding: 15px;">
-                        <button onclick="viewRecord('${record.voucherNo}')" style="background: #6366f1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 12px;">👁️ View</button>
-                        <button onclick="downloadRecordPDF('${record.voucherNo}')" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 PDF</button>
+                        <button onclick="viewRecord('${voucherNo}')" style="background: #6366f1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 12px;">👁️ View</button>
+                        <button onclick="downloadRecordPDF('${voucherNo}')" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 PDF</button>
                     </td>
                 `;
                 
@@ -2572,6 +2934,8 @@
             // Update stats
             totalRecordsEl.textContent = records.length;
             totalAmountEl.textContent = `RM ${totalAmount.toFixed(2)}`;
+            
+            console.log('✅ Records displayed successfully');
         }
 
         // Show/hide records loading
@@ -2654,13 +3018,17 @@
 
         // Test Google Sheets Integration
         async function testGoogleSheetsIntegration() {
-            console.log('🧪 Testing Google Sheets integration...');
+            console.log('🧪 Testing data source integration...');
             
             const testBtn = document.querySelector('.btn-success');
             setButtonLoading(testBtn, true);
             
             try {
-                showNotification('🧪 Testing Google Sheets connection...', 'info');
+                showNotification('🧪 Testing data source connection...', 'info');
+                
+                // First, ensure headers exist
+                showNotification('📋 Setting up sheet headers...', 'info');
+                await ensureSheetHeaders();
                 
                 // Test data
                 const testData = {
@@ -2714,8 +3082,8 @@
                 }
                 
                 if (result.success || response.ok) {
-                    console.log('✅ Google Sheets test successful!');
-                    showNotification('✅ Google Sheets integration working! Test data saved.', 'success');
+                    console.log('✅ Data source test successful!');
+                    showNotification('✅ Data source integration working! Test data saved with headers.', 'success');
                     
                     // Now test reading data
                     setTimeout(async () => {
@@ -2738,7 +3106,7 @@
                                     readResult = JSON.parse(readResponseText);
                                     if (readResult.success && readResult.data) {
                                         console.log('✅ Data retrieval test successful!', readResult.data.length, 'records found');
-                                        showNotification(`✅ Full integration test passed! Found ${readResult.data.length} records.`, 'success');
+                                        showNotification(`✅ Full integration test passed! Found ${readResult.data.length} records with proper headers.`, 'success');
                                     } else {
                                         showNotification('⚠️ Write successful, but read test failed', 'info');
                                     }
@@ -2759,8 +3127,8 @@
                 }
 
             } catch (error) {
-                console.error('❌ Google Sheets test failed:', error);
-                showNotification('❌ Google Sheets test failed: ' + error.message, 'error');
+                console.error('❌ Data source test failed:', error);
+                showNotification('❌ Data source test failed: ' + error.message, 'error');
                 
                 // Show detailed error info
                 setTimeout(() => {
@@ -2791,5 +3159,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b6e439280b4dc',t:'MTc1OTQ4MzkzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bb75a2404b4dc',t:'MTc1OTQ4NjkyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
