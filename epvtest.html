@@ -1185,17 +1185,30 @@
                     </a>
                 </div>
                 <div class="footer-right">
-                    <span class="version-number">v2.1.0</span>
+                    <span class="version-number">v2.2.0</span>
                 </div>
             </div>
         </div>
 
         <!-- Vouchers Modal -->
         <div id="vouchersModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(5px);">
-            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; width: 90%; max-width: 1000px; max-height: 80vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-                <div style="padding: 30px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
-                    <h2 style="margin: 0; font-size: 1.5em; font-weight: 600;">All Vouchers</h2>
-                    <button onclick="closeVouchersModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; font-weight: bold; transition: all 0.3s ease;">×</button>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; width: 90%; max-width: 1200px; max-height: 80vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                <div style="padding: 30px; border-bottom: 1px solid #e5e7eb; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; font-size: 1.5em; font-weight: 600;">All Vouchers</h2>
+                        <button onclick="closeVouchersModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; font-weight: bold; transition: all 0.3s ease;">×</button>
+                    </div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <input type="text" id="voucherSearch" placeholder="Search vouchers..." style="flex: 1; min-width: 200px; padding: 10px 15px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; background: rgba(255,255,255,0.1); color: white; font-size: 14px;" onkeyup="filterVouchers()">
+                        <select id="methodFilter" style="padding: 10px 15px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; background: rgba(255,255,255,0.1); color: white; font-size: 14px; min-width: 150px;" onchange="filterVouchers()">
+                            <option value="">All Methods</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Online Banking">Online Banking</option>
+                        </select>
+                        <input type="date" id="dateFilter" style="padding: 10px 15px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; background: rgba(255,255,255,0.1); color: white; font-size: 14px;" onchange="filterVouchers()">
+                    </div>
                 </div>
                 <div id="vouchersContent" style="padding: 30px; max-height: 60vh; overflow-y: auto;">
                     <div id="vouchersLoading" style="text-align: center; padding: 40px;">
@@ -1214,10 +1227,13 @@
 
         // Google Sheets Configuration
         const GOOGLE_SHEETS_CONFIG = {
-            // Your actual Web App URL from Google Apps Script
-            webAppUrl: 'https://script.google.com/macros/s/AKfycbwjg1ZgXEKmq-bev9HkH9j37tpV7_uXa8ptWznblItUcGdKN5DCwbhCJs63ilBcVLUu/exec',
-            spreadsheetId: '1O-4lyQ9Xs5tzo-sBbXFvywKYB8NHrMvemhDywdCvPoU'
+            // Replace with your actual Google Apps Script Web App URL
+            webAppUrl: 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec',
+            spreadsheetId: 'YOUR_SPREADSHEET_ID'
         };
+
+        // Store all vouchers globally for filtering
+        let allVouchers = [];
 
         // Initialize the app when page loads
         document.addEventListener('DOMContentLoaded', function() {
@@ -1441,10 +1457,10 @@
                 if (result.success && result.data) {
                     // Filter out login records and return only vouchers
                     const vouchers = result.data.filter(row => 
-                        row.voucherNo && 
-                        row.voucherNo !== 'LOGIN' && 
-                        row.voucherNo !== 'PDF_DOWNLOADED' &&
-                        row.voucherNo !== 'LOGOUT'
+                        row.voucherno && 
+                        row.voucherno !== 'LOGIN' && 
+                        row.voucherno !== 'PDF_DOWNLOADED' &&
+                        row.voucherno !== 'LOGOUT'
                     );
                     
                     console.log('✅ Retrieved vouchers from Google Sheets:', vouchers.length);
@@ -2416,11 +2432,16 @@
             document.getElementById('vouchersLoading').style.display = 'block';
             document.getElementById('vouchersTable').style.display = 'none';
             
+            // Reset filters
+            document.getElementById('voucherSearch').value = '';
+            document.getElementById('methodFilter').value = '';
+            document.getElementById('dateFilter').value = '';
+            
             try {
                 // Get vouchers from Google Sheets
-                const vouchers = await getVouchersFromGoogleSheets();
+                allVouchers = await getVouchersFromGoogleSheets();
                 
-                if (vouchers.length === 0) {
+                if (allVouchers.length === 0) {
                     document.getElementById('vouchersContent').innerHTML = `
                         <div style="text-align: center; padding: 40px; color: #64748b;">
                             <div style="font-size: 3em; margin-bottom: 20px;">📄</div>
@@ -2431,51 +2452,8 @@
                     return;
                 }
                 
-                // Create table
-                let tableHTML = `
-                    <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                        <table style="width: 100%; border-collapse: collapse; background: white; font-size: 0.9em;">
-                            <thead>
-                                <tr style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
-                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Voucher No</th>
-                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Date</th>
-                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Pay To</th>
-                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Amount</th>
-                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Method</th>
-                                    <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Generated By</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-                
-                vouchers.forEach((voucher, index) => {
-                    const rowStyle = index % 2 === 0 ? 'background: #f8fafc;' : 'background: white;';
-                    const formattedDate = voucher.date ? new Date(voucher.date).toLocaleDateString('en-GB') : 'N/A';
-                    
-                    tableHTML += `
-                        <tr style="${rowStyle} transition: all 0.3s ease;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='${index % 2 === 0 ? '#f8fafc' : 'white'}'">
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #6366f1;">${voucher.voucherNo}</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${formattedDate}</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${voucher.payTo}</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #059669;">${voucher.totalAmount}</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${voucher.paymentMethod}</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${voucher.generatedBy}</td>
-                        </tr>
-                    `;
-                });
-                
-                tableHTML += `
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="margin-top: 20px; text-align: center; color: #64748b; font-size: 0.9em;">
-                        Total: ${vouchers.length} voucher${vouchers.length !== 1 ? 's' : ''}
-                    </div>
-                `;
-                
-                document.getElementById('vouchersLoading').style.display = 'none';
-                document.getElementById('vouchersTable').innerHTML = tableHTML;
-                document.getElementById('vouchersTable').style.display = 'block';
+                // Display all vouchers initially
+                displayVouchers(allVouchers);
                 
                 console.log('✅ Vouchers displayed successfully');
                 
@@ -2485,35 +2463,271 @@
                     <div style="text-align: center; padding: 40px; color: #ef4444;">
                         <div style="font-size: 3em; margin-bottom: 20px;">⚠️</div>
                         <h3>Error loading vouchers</h3>
-                        <p>Please check your Google Sheets API configuration.</p>
+                        <p>Please check your Google Sheets configuration.</p>
+                        <button onclick="setupGoogleSheets()" style="margin-top: 20px; padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Setup Google Sheets</button>
                     </div>
                 `;
             }
         }
-        
-        // Close vouchers modal
-        function closeVouchersModal() {
-            document.getElementById('vouchersModal').style.display = 'none';
-        }
-        
-        // Close modal when clicking outside
-        document.addEventListener('click', function(event) {
-            const modal = document.getElementById('vouchersModal');
-            if (event.target === modal) {
-                closeVouchersModal();
-            }
-        });
 
-        // Loading state management
-        function setButtonLoading(button, loading) {
-            if (loading) {
-                button.classList.add('loading');
-                button.disabled = true;
-            } else {
-                button.classList.remove('loading');
-                button.disabled = false;
+        // Display vouchers in table
+        function displayVouchers(vouchers) {
+            if (vouchers.length === 0) {
+                document.getElementById('vouchersLoading').style.display = 'none';
+                document.getElementById('vouchersTable').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #64748b;">
+                        <div style="font-size: 2em; margin-bottom: 15px;">🔍</div>
+                        <h3>No vouchers match your search</h3>
+                        <p>Try adjusting your filters or search terms.</p>
+                    </div>
+                `;
+                document.getElementById('vouchersTable').style.display = 'block';
+                return;
+            }
+
+            // Sort vouchers by date (newest first)
+            vouchers.sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp));
+            
+            // Create table
+            let tableHTML = `
+                <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <table style="width: 100%; border-collapse: collapse; background: white; font-size: 0.9em;">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
+                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Voucher No</th>
+                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Date</th>
+                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Pay To</th>
+                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Amount</th>
+                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Method</th>
+                                <th style="padding: 15px 12px; text-align: left; font-weight: 600;">Generated By</th>
+                                <th style="padding: 15px 12px; text-align: center; font-weight: 600;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            vouchers.forEach((voucher, index) => {
+                const rowStyle = index % 2 === 0 ? 'background: #f8fafc;' : 'background: white;';
+                const formattedDate = voucher.date ? new Date(voucher.date).toLocaleDateString('en-GB') : 'N/A';
+                
+                tableHTML += `
+                    <tr style="${rowStyle} transition: all 0.3s ease;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='${index % 2 === 0 ? '#f8fafc' : 'white'}'">
+                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #6366f1;">${voucher.voucherno || voucher.voucherNo}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${formattedDate}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${voucher.payto || voucher.payTo}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #059669;">${voucher.totalamount || voucher.totalAmount}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${voucher.paymentmethod || voucher.paymentMethod}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${voucher.generatedby || voucher.generatedBy}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">
+                            <button onclick="viewVoucherDetails('${voucher.voucherno || voucher.voucherNo}')" style="background: #6366f1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-right: 5px; transition: all 0.3s ease;" onmouseover="this.style.background='#5b21b6'" onmouseout="this.style.background='#6366f1'">View</button>
+                            <button onclick="regeneratePDF('${voucher.voucherno || voucher.voucherNo}')" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.3s ease;" onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">PDF</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 20px; text-align: center; color: #64748b; font-size: 0.9em;">
+                    Showing ${vouchers.length} of ${allVouchers.length} voucher${allVouchers.length !== 1 ? 's' : ''}
+                </div>
+            `;
+            
+            document.getElementById('vouchersLoading').style.display = 'none';
+            document.getElementById('vouchersTable').innerHTML = tableHTML;
+            document.getElementById('vouchersTable').style.display = 'block';
+        }
+
+        // Filter vouchers based on search criteria
+        function filterVouchers() {
+            const searchTerm = document.getElementById('voucherSearch').value.toLowerCase();
+            const methodFilter = document.getElementById('methodFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            
+            let filteredVouchers = allVouchers.filter(voucher => {
+                // Search in multiple fields
+                const voucherNo = voucher.voucherno || voucher.voucherNo || '';
+                const payTo = voucher.payto || voucher.payTo || '';
+                const description = voucher.description || '';
+                const reference = voucher.reference || '';
+                
+                const searchMatch = !searchTerm || 
+                    voucherNo.toLowerCase().includes(searchTerm) ||
+                    payTo.toLowerCase().includes(searchTerm) ||
+                    description.toLowerCase().includes(searchTerm) ||
+                    reference.toLowerCase().includes(searchTerm);
+                
+                // Method filter
+                const paymentMethod = voucher.paymentmethod || voucher.paymentMethod || '';
+                const methodMatch = !methodFilter || paymentMethod === methodFilter;
+                
+                // Date filter
+                const voucherDate = voucher.date || '';
+                const dateMatch = !dateFilter || voucherDate === dateFilter;
+                
+                return searchMatch && methodMatch && dateMatch;
+            });
+            
+            displayVouchers(filteredVouchers);
+        }
+
+        // View voucher details
+        function viewVoucherDetails(voucherNo) {
+            const voucher = allVouchers.find(v => (v.voucherno || v.voucherNo) === voucherNo);
+            if (!voucher) {
+                showNotification('Voucher not found', 'error');
+                return;
+            }
+            
+            // Parse line items
+            let lineItems = [];
+            try {
+                const lineItemsData = voucher.lineitemsdetails || voucher.lineItemsDetails || '[]';
+                lineItems = JSON.parse(lineItemsData);
+            } catch (e) {
+                console.log('Could not parse line items for voucher:', voucherNo);
+            }
+            
+            // Create detailed view
+            const detailsHTML = `
+                <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                    <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 25px; text-align: center;">
+                        <h2 style="margin: 0; font-size: 1.4em;">Voucher Details</h2>
+                        <p style="margin: 10px 0 0 0; opacity: 0.9;">${voucher.voucherno || voucher.voucherNo}</p>
+                    </div>
+                    
+                    <div style="padding: 30px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                            <div>
+                                <h4 style="margin: 0 0 10px 0; color: #374151; font-size: 1.1em;">Payment Information</h4>
+                                <p style="margin: 5px 0;"><strong>Pay To:</strong> ${voucher.payto || voucher.payTo}</p>
+                                <p style="margin: 5px 0;"><strong>${voucher.idtype || voucher.idType} No:</strong> ${voucher.idnumber || voucher.idNumber}</p>
+                                <p style="margin: 5px 0;"><strong>Method:</strong> ${voucher.paymentmethod || voucher.paymentMethod}</p>
+                                <p style="margin: 5px 0;"><strong>Reference:</strong> ${voucher.reference}</p>
+                            </div>
+                            <div>
+                                <h4 style="margin: 0 0 10px 0; color: #374151; font-size: 1.1em;">Voucher Information</h4>
+                                <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(voucher.date).toLocaleDateString('en-GB')}</p>
+                                <p style="margin: 5px 0;"><strong>Amount:</strong> <span style="color: #059669; font-weight: 600;">${voucher.totalamount || voucher.totalAmount}</span></p>
+                                <p style="margin: 5px 0;"><strong>Generated By:</strong> ${voucher.generatedby || voucher.generatedBy}</p>
+                                <p style="margin: 5px 0;"><strong>Items:</strong> ${voucher.lineitemscount || voucher.lineItemsCount}</p>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="margin: 0 0 10px 0; color: #374151; font-size: 1.1em;">Description</h4>
+                            <p style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 0; line-height: 1.5;">${voucher.description}</p>
+                        </div>
+                        
+                        ${lineItems.length > 0 ? `
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="margin: 0 0 15px 0; color: #374151; font-size: 1.1em;">Line Items</h4>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                                    <thead>
+                                        <tr style="background: #f8fafc;">
+                                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb;">Date</th>
+                                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb;">Bill No</th>
+                                            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb;">Description</th>
+                                            <th style="padding: 10px; text-align: right; border-bottom: 2px solid #e5e7eb;">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${lineItems.map(item => `
+                                            <tr>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${item.date}</td>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${item.billNo}</td>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${item.description}</td>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600;">RM ${item.amount.toFixed(2)}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button onclick="regeneratePDF('${voucher.voucherno || voucher.voucherNo}')" style="background: #059669; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Download PDF</button>
+                            <button onclick="closeVoucherDetails()" style="background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Show details modal
+            const detailsModal = document.createElement('div');
+            detailsModal.id = 'voucherDetailsModal';
+            detailsModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;';
+            detailsModal.innerHTML = detailsHTML;
+            
+            document.body.appendChild(detailsModal);
+        }
+
+        // Close voucher details
+        function closeVoucherDetails() {
+            const modal = document.getElementById('voucherDetailsModal');
+            if (modal) {
+                modal.remove();
             }
         }
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988afdb1c7f0b4dc',t:'MTc1OTQ3OTMyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
+
+        // Regenerate PDF for existing voucher
+        async function regeneratePDF(voucherNo) {
+            const voucher = allVouchers.find(v => (v.voucherno || v.voucherNo) === voucherNo);
+            if (!voucher) {
+                showNotification('Voucher not found', 'error');
+                return;
+            }
+            
+            showNotification('Generating PDF...', 'info');
+            
+            try {
+                // Parse line items
+                let lineItems = [];
+                try {
+                    const lineItemsData = voucher.lineitemsdetails || voucher.lineItemsDetails || '[]';
+                    lineItems = JSON.parse(lineItemsData);
+                } catch (e) {
+                    console.log('Could not parse line items, using basic data');
+                    lineItems = [{
+                        date: new Date(voucher.date).toLocaleDateString('en-GB'),
+                        billNo: 'N/A',
+                        description: voucher.description,
+                        amount: parseFloat((voucher.totalamount || voucher.totalAmount).replace('RM ', '')) || 0
+                    }];
+                }
+                
+                // Calculate total from line items
+                const totalAmount = lineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+                
+                // Create form data structure
+                const formData = {
+                    voucherNo: voucher.voucherno || voucher.voucherNo,
+                    date: voucher.date,
+                    payTo: voucher.payto || voucher.payTo,
+                    idType: voucher.idtype || voucher.idType,
+                    idNumber: voucher.idnumber || voucher.idNumber,
+                    paymentMethod: voucher.paymentmethod || voucher.paymentMethod,
+                    reference: voucher.reference,
+                    description: voucher.description,
+                    createdBy: voucher.generatedby || voucher.generatedBy
+                };
+                
+                // Generate PDF
+                await generateAndDownloadPDF(formData, lineItems, totalAmount);
+                showNotification('PDF downloaded successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error regenerating PDF:', error);
+                showNotification('Error generating PDF', 'error');
+            }
+        }
+
+        // Setup Google Sheets integration
+        function setupGoogleSheets() {
+            const setupHTML = `
+                <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                    <div style="background: linear-gradient(135deg, #6366f1, #8b<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b0e14c00ab4dc',t:'MTc1OTQ3OTk5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
