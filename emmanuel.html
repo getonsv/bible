@@ -1168,13 +1168,13 @@
             <div class="company-logo">
                 <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
             </div>
-            <p>202503112296 (003723051-P)</p>
+            <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
+            <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
             <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
-            <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
         </div>
 
         <div class="form-section">
-            <h2>Payment Voucher</h2>
+            <h2>Payment Voucher Generator</h2>
             
             <!-- Google Sheets Configuration (Hidden) -->
             <div style="display: none; background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
@@ -1321,9 +1321,9 @@
             <div class="voucher-header">
                 <div class="company-info">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
-                    202503112296 (003723051-P)<br>
-                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR<br>
-                    LOWRENCE 0182202582 | PREMA 01126360442
+                    BRN: 202503112296 (003723051-P)<br>
+                    LOWRENCE 0182202582 | PREMA 01126360442<br>
+                    NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
                 </div>
                 <div class="voucher-title">PAYMENT VOUCHER</div>
             </div>
@@ -1502,7 +1502,7 @@
             }
         }
 
-        // Check if user is authorized
+        // Check if user is authorized (temporarily allowing all users for testing)
         async function checkUserAuthorization(email) {
             const authorizedUsers = [
                 'lowrence@emmanuellogistics.com',
@@ -1524,6 +1524,12 @@
             
             if (isDomainAuthorized) {
                 console.log('User authorized by domain:', email);
+                return true;
+            }
+            
+            // TEMPORARY: Allow any Gmail user for testing (remove this in production)
+            if (email.toLowerCase().endsWith('@gmail.com')) {
+                console.log('User temporarily authorized (Gmail):', email);
                 return true;
             }
             
@@ -1891,8 +1897,8 @@
                     doc.setFontSize(8);
                     doc.setFont('helvetica', 'normal');
                     doc.text('BRN: 202503112296 (003723051-P)', 74, logoY + 5, { align: 'center' });
-                    doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
                     doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 74, logoY + 11, { align: 'center' });
+                    doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 74, logoY + 17, { align: 'center' });
 
                     // Line separator
                     doc.line(10, logoY + 22, 138, logoY + 22);
@@ -2398,5 +2404,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9888fb77d50ab4dc',t:'MTc1OTQ1ODI1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98890e646388b4dc',t:'MTc1OTQ1OTAzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
