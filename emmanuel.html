@@ -1135,7 +1135,7 @@
         <div class="auth-container">
             <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="auth-logo" onerror="this.style.display='none';">
             <h1 class="auth-title">Emmanuel Transport</h1>
-            <p class="auth-subtitle">Please sign in with your Google account to access the Payment Voucher System</p>
+            <p class="auth-subtitle">Please sign in with any Google account to access the Payment Voucher System. Your information will be recorded with each voucher for tracking purposes.</p>
             
             <div class="google-signin-btn" id="googleSignInBtn">
                 <div class="google-icon">
@@ -1491,9 +1491,9 @@
                     
                     showUserInfo(currentUser);
                     showMainApp();
-                    showAuthStatus(`Welcome ${userName}! Access granted.`, 'success');
+                    showAuthStatus(`Welcome ${userName}! You can now generate vouchers.`, 'success');
                 } else {
-                    showAuthStatus('Access denied. You are not authorized to use this system.', 'error');
+                    showAuthStatus('Authentication failed. Please try again.', 'error');
                 }
                 
             } catch (error) {
@@ -1502,39 +1502,11 @@
             }
         }
 
-        // Check if user is authorized (temporarily allowing all users for testing)
+        // Allow any Google account user to access the system
         async function checkUserAuthorization(email) {
-            const authorizedUsers = [
-                'lowrence@emmanuellogistics.com',
-                'prema@emmanuellogistics.com',
-                'admin@emmanuellogistics.com',
-                'accounts@emmanuellogistics.com'
-            ];
-            
-            // Check if email is in authorized list
-            const isDirectlyAuthorized = authorizedUsers.includes(email.toLowerCase());
-            
-            if (isDirectlyAuthorized) {
-                console.log('User directly authorized:', email);
-                return true;
-            }
-            
-            // Check if email belongs to emmanuellogistics.com domain
-            const isDomainAuthorized = email.toLowerCase().endsWith('@emmanuellogistics.com');
-            
-            if (isDomainAuthorized) {
-                console.log('User authorized by domain:', email);
-                return true;
-            }
-            
-            // TEMPORARY: Allow any Gmail user for testing (remove this in production)
-            if (email.toLowerCase().endsWith('@gmail.com')) {
-                console.log('User temporarily authorized (Gmail):', email);
-                return true;
-            }
-            
-            console.log('User not authorized:', email);
-            return false;
+            // Allow all Google account users
+            console.log('User signed in:', email);
+            return true;
         }
 
         // Show authentication status
@@ -2404,5 +2376,5 @@ Need help? The connection test will show you if everything is working correctly!
             alert(instructions);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98890e646388b4dc',t:'MTc1OTQ1OTAzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9889215386d6b4dc',t:'MTc1OTQ1OTgwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
