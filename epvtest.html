@@ -963,9 +963,10 @@
                 <div class="company-logo">
                     <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" class="main-logo" onerror="this.style.display='none';">
                 </div>
-                <p>202503112296 (003723051-P)</p>
+                <h1>Emmanuel Transport</h1>
+                <p><strong>BRN:</strong> 202503112296 (003723051-P)</p>
+                <p><strong>Contact:</strong> LOWRENCE 0182202582 | PREMA 01126360442</p>
                 <p>NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR</p>
-                <p>LOWRENCE 0182202582 | PREMA 01126360442</p>
             </div>
 
             <div class="form-section">
@@ -1076,7 +1077,7 @@
                     
                     <!-- Search Controls -->
                     <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="globalSearch" placeholder="Search by any field (voucher, name, ID, method, reference, creator...)" style="flex: 2; min-width: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                        <input type="text" id="globalSearch" placeholder="Search by any field (voucher, name, ID, method, reference, creator, email, location, IP...)" style="flex: 2; min-width: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
                         <input type="date" id="searchDate" placeholder="Filter by date" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
                         <button type="button" class="btn btn-primary" onclick="searchRecords()" style="padding: 12px 20px; font-size: 14px;">🔍 Search</button>
                         <button type="button" class="btn btn-secondary" onclick="clearSearch()" style="padding: 12px 20px; font-size: 14px;">🗑️ Clear</button>
@@ -1106,6 +1107,8 @@
                                         <th style="padding: 15px; text-align: left; font-weight: 600;">Pay To</th>
                                         <th style="padding: 15px; text-align: left; font-weight: 600;">Amount</th>
                                         <th style="padding: 15px; text-align: left; font-weight: 600;">Method</th>
+                                        <th style="padding: 15px; text-align: left; font-weight: 600;">Creator</th>
+                                        <th style="padding: 15px; text-align: left; font-weight: 600;">Location</th>
                                         <th style="padding: 15px; text-align: left; font-weight: 600;">Actions</th>
                                     </tr>
                                 </thead>
@@ -1140,8 +1143,8 @@
                     <div class="company-info">
                         <img src="https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png" alt="Emmanuel Transport Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;" onerror="this.style.display='none';" id="previewLogo"><br>
                         BRN: 202503112296 (003723051-P)<br>
-                        NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR<br>
-                        LOWRENCE 0182202582 | PREMA 01126360442
+                        LOWRENCE 0182202582 | PREMA 01126360442<br>
+                        NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR
                     </div>
                     <div class="voucher-title">PAYMENT VOUCHER</div>
                 </div>
@@ -1286,7 +1289,7 @@
 
         // Initialize Google API for Sheets
         function initializeGoogleAPI() {
-            console.log('📊 Data source integration ready via Web App');
+            console.log('📊 Google Sheets integration ready via Web App');
             isGapiLoaded = true;
         }
 
@@ -1910,7 +1913,7 @@
                 document.getElementById('voucherPreview').style.display = 'block';
 
                 // Auto-save to Google Sheets
-                showNotification('Saving...', 'info');
+                showNotification('Saving to Google Sheets...', 'info');
                 await saveToGoogleSheetsAuto();
 
                 // Auto-generate PDF
@@ -1918,7 +1921,7 @@
                 await savePDFAuto();
 
                 setButtonLoading(generateBtn, false);
-                showNotification('✅ Voucher created! PDF downloaded and data saved.', 'success');
+                showNotification('✅ Voucher created! PDF downloaded and data saved to Google Sheets.', 'success');
 
                 // Scroll to preview
                 setTimeout(() => {
@@ -1981,7 +1984,7 @@
 
         // Auto-save to Google Sheets
         async function saveToGoogleSheetsAuto() {
-            console.log('📊 Auto-saving data...');
+            console.log('📊 Auto-saving to Google Sheets...');
             
             try {
                 if (!currentVoucherData) {
@@ -2019,7 +2022,7 @@
                     lineItems: lineItemsText
                 };
 
-                console.log('📤 Sending data to datasource:', sheetData);
+                console.log('📤 Sending data to Google Sheets:', sheetData);
 
                 // Send to Google Sheets via Web App with proper headers
                 const response = await fetch(GOOGLE_SHEETS_CONFIG.webAppUrl, {
@@ -2045,8 +2048,8 @@
                 }
                 
                 if (result.success || response.ok) {
-                    console.log('✅ Data saved successfully');
-                    showNotification('✅ Data saved!', 'success');
+                    console.log('✅ Data saved to Google Sheets successfully');
+                    showNotification('✅ Data saved to Google Sheets!', 'success');
                     
                     // Also store in localStorage as backup
                     const existingData = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
@@ -2058,11 +2061,11 @@
                     localStorage.setItem('voucherRecords', JSON.stringify(existingData));
                     
                 } else {
-                    throw new Error(result.error || 'Failed to save data');
+                    throw new Error(result.error || 'Failed to save to Google Sheets');
                 }
 
             } catch (error) {
-                console.error('❌ Data save error:', error);
+                console.error('❌ Google Sheets save error:', error);
                 
                 // Fallback to localStorage only
                 const existingData = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
@@ -2074,7 +2077,7 @@
                 localStorage.setItem('voucherRecords', JSON.stringify(existingData));
                 
                 console.log('✅ Data saved locally as fallback');
-                showNotification('⚠️ Saved locally - Data source connection issue', 'info');
+                showNotification('⚠️ Saved locally - Google Sheets connection issue', 'info');
             }
         }
 
@@ -2156,12 +2159,11 @@
                 doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
                 
                 currentY += 5;
-                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, currentY, { align: 'center' });
-
-
-                currentY += 5;
                 doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, currentY, { align: 'center' });
                 
+                currentY += 5;
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, currentY, { align: 'center' });
+
                 // Line separator
                 currentY += 10;
                 doc.line(20, currentY, 190, currentY);
@@ -2558,7 +2560,7 @@
             
             try {
                 // Try multiple methods to load from Google Sheets
-                console.log('📤 Requesting records from data source...');
+                console.log('📤 Requesting records from Google Sheets...');
                 
                 let records = [];
                 let sheetsSuccess = false;
@@ -2681,7 +2683,7 @@
                 
                 // Process and display records if we got them from Google Sheets
                 if (sheetsSuccess && records.length > 0) {
-                    console.log('✅ Data loaded successfully:', records.length, 'records');
+                    console.log('✅ Google Sheets data loaded successfully:', records.length, 'records');
                     
                     // Convert array format to object format for consistency
                     const formattedRecords = records.map(row => {
@@ -2697,8 +2699,16 @@
                                 description: row[7] || '',
                                 totalAmount: parseFloat(row[8]) || 0,
                                 createdBy: row[9] || 'Unknown',
-                                createdAt: row[10] || '',
-                                lineItems: row[11] || ''
+                                createdByEmail: row[10] || 'Unknown',
+                                createdAt: row[11] || '',
+                                lineItems: row[12] || '',
+                                ipAddress: row[13] || 'Unknown',
+                                latitude: row[14] ? parseFloat(row[14]) : null,
+                                longitude: row[15] ? parseFloat(row[15]) : null,
+                                city: row[16] || 'Unknown',
+                                country: row[17] || 'Unknown',
+                                region: row[18] || 'Unknown',
+                                timezone: row[19] || 'Unknown'
                             };
                         }
                         return row; // Already in object format
@@ -2716,12 +2726,12 @@
                     
                     displayRecords(validRecords);
                     showRecordsLoading(false);
-                    showNotification(`✅ Loaded ${validRecords.length} records from data source`, 'success');
+                    showNotification(`✅ Loaded ${validRecords.length} records from Google Sheets`, 'success');
                     return;
                 }
                 
                 // Fallback to localStorage if Google Sheets failed
-                console.log('📋 Data source failed, loading from local storage');
+                console.log('📋 Google Sheets failed, loading from local storage');
                 const localRecords = JSON.parse(localStorage.getItem('voucherRecords') || '[]');
                 displayRecords(localRecords);
                 showRecordsLoading(false);
@@ -2729,7 +2739,7 @@
                 if (localRecords.length === 0) {
                     showNotification('No records found. Create your first voucher to see it here!', 'info');
                 } else {
-                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Data source connection issue`, 'info');
+                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Google Sheets connection issue`, 'info');
                 }
                 
             } catch (error) {
@@ -2741,9 +2751,9 @@
                 showRecordsLoading(false);
                 
                 if (localRecords.length > 0) {
-                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Data source connection issue`, 'info');
+                    showNotification(`⚠️ Loaded ${localRecords.length} local records - Google Sheets connection issue`, 'info');
                 } else {
-                    showNotification('No records found. Data source connection failed.', 'error');
+                    showNotification('No records found. Google Sheets connection failed.', 'error');
                 }
             }
         }
@@ -2784,8 +2794,13 @@
                         record.reference || '',
                         record.description || '',
                         record.createdBy || '',
+                        record.createdByEmail || '',
                         record.lineItems || '',
-                        record.totalAmount ? record.totalAmount.toString() : ''
+                        record.totalAmount ? record.totalAmount.toString() : '',
+                        record.ipAddress || '',
+                        record.city || '',
+                        record.country || '',
+                        record.region || ''
                     ];
                     
                     // Check if any field contains the search term
@@ -2878,7 +2893,7 @@
                 row.style.borderBottom = '1px solid #f1f5f9';
                 
                 // Handle different data formats from Google Sheets vs localStorage
-                let voucherNo, date, payTo, amount, paymentMethod;
+                let voucherNo, date, payTo, amount, paymentMethod, createdBy, createdByEmail, city, country, ipAddress;
                 
                 if (Array.isArray(record)) {
                     // Google Sheets returns array format
@@ -2887,6 +2902,11 @@
                     payTo = record[2] || 'N/A';
                     paymentMethod = record[5] || 'N/A';
                     amount = parseFloat(record[8]) || 0;
+                    createdBy = record[9] || 'Unknown';
+                    createdByEmail = record[10] || 'Unknown';
+                    city = record[16] || 'Unknown';
+                    country = record[17] || 'Unknown';
+                    ipAddress = record[13] || 'Unknown';
                 } else {
                     // localStorage returns object format
                     voucherNo = record.voucherNo || record['Voucher No'] || 'N/A';
@@ -2894,6 +2914,11 @@
                     payTo = record.payTo || record['Pay To'] || 'N/A';
                     paymentMethod = record.paymentMethod || record['Payment Method'] || 'N/A';
                     amount = parseFloat(record.totalAmount || record['Total Amount'] || record.amount || 0);
+                    createdBy = record.createdBy || 'Unknown';
+                    createdByEmail = record.createdByEmail || 'Unknown';
+                    city = record.city || 'Unknown';
+                    country = record.country || 'Unknown';
+                    ipAddress = record.ipAddress || 'Unknown';
                 }
                 
                 // Format date properly
@@ -2914,7 +2939,16 @@
                 
                 totalAmount += amount;
                 
-                console.log(`📋 Row data: ${voucherNo}, ${formattedDate}, ${payTo}, ${amount}, ${paymentMethod}`);
+                console.log(`📋 Row data: ${voucherNo}, ${formattedDate}, ${payTo}, ${amount}, ${paymentMethod}, ${createdBy}, ${city}, ${country}`);
+                
+                // Create location display with tooltip
+                const locationDisplay = city !== 'Unknown' && country !== 'Unknown' 
+                    ? `${city}, ${country}` 
+                    : (ipAddress !== 'Unknown' ? `IP: ${ipAddress}` : 'Unknown');
+                
+                const creatorDisplay = createdBy !== 'Unknown' 
+                    ? `${createdBy}${createdByEmail !== 'Unknown' && createdByEmail !== createdBy ? `<br><small style="color: #64748b;">${createdByEmail}</small>` : ''}`
+                    : 'Unknown';
                 
                 row.innerHTML = `
                     <td style="padding: 15px; font-weight: 600; color: #6366f1;">${voucherNo}</td>
@@ -2922,6 +2956,8 @@
                     <td style="padding: 15px;">${payTo}</td>
                     <td style="padding: 15px; font-weight: 600; color: #059669;">RM ${amount.toFixed(2)}</td>
                     <td style="padding: 15px;">${paymentMethod}</td>
+                    <td style="padding: 15px; font-size: 13px;">${creatorDisplay}</td>
+                    <td style="padding: 15px; font-size: 13px;" title="IP: ${ipAddress}">${locationDisplay}</td>
                     <td style="padding: 15px;">
                         <button onclick="viewRecord('${voucherNo}')" style="background: #6366f1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 12px;">👁️ View</button>
                         <button onclick="downloadRecordPDF('${voucherNo}')" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">📄 PDF</button>
@@ -3018,13 +3054,13 @@
 
         // Test Google Sheets Integration
         async function testGoogleSheetsIntegration() {
-            console.log('🧪 Testing data source integration...');
+            console.log('🧪 Testing Google Sheets integration...');
             
             const testBtn = document.querySelector('.btn-success');
             setButtonLoading(testBtn, true);
             
             try {
-                showNotification('🧪 Testing data source connection...', 'info');
+                showNotification('🧪 Testing Google Sheets connection...', 'info');
                 
                 // First, ensure headers exist
                 showNotification('📋 Setting up sheet headers...', 'info');
@@ -3082,8 +3118,8 @@
                 }
                 
                 if (result.success || response.ok) {
-                    console.log('✅ Data source test successful!');
-                    showNotification('✅ Data source integration working! Test data saved with headers.', 'success');
+                    console.log('✅ Google Sheets test successful!');
+                    showNotification('✅ Google Sheets integration working! Test data saved with headers.', 'success');
                     
                     // Now test reading data
                     setTimeout(async () => {
@@ -3127,8 +3163,8 @@
                 }
 
             } catch (error) {
-                console.error('❌ Data source test failed:', error);
-                showNotification('❌ Data source test failed: ' + error.message, 'error');
+                console.error('❌ Google Sheets test failed:', error);
+                showNotification('❌ Google Sheets test failed: ' + error.message, 'error');
                 
                 // Show detailed error info
                 setTimeout(() => {
@@ -3159,5 +3195,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bb75a2404b4dc',t:'MTc1OTQ4NjkyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bdce3475cb4dc',t:'MTc1OTQ4ODQ2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
