@@ -1658,19 +1658,21 @@
             // ID type change
             document.getElementById('idType').addEventListener('change', updateIdField);
             
-            // Amount input listeners for existing and new items
+            // Amount input listeners for all line item inputs
             document.addEventListener('input', function(e) {
-                if (e.target.classList.contains('item-amount') || 
-                    e.target.classList.contains('item-desc') || 
-                    e.target.classList.contains('item-date')) {
+                if (e.target.classList.contains('item-amount')) {
                     calculateTotal();
                 }
             });
             
             document.addEventListener('change', function(e) {
-                if (e.target.classList.contains('item-amount') || 
-                    e.target.classList.contains('item-desc') || 
-                    e.target.classList.contains('item-date')) {
+                if (e.target.classList.contains('item-amount')) {
+                    calculateTotal();
+                }
+            });
+            
+            document.addEventListener('keyup', function(e) {
+                if (e.target.classList.contains('item-amount')) {
                     calculateTotal();
                 }
             });
@@ -1810,19 +1812,17 @@
 
         // Calculate total
         function calculateTotal() {
-            const amountInputs = document.querySelectorAll('.item-amount');
             let total = 0;
             
-            // Only count filled line items with valid amounts
+            // Get all line item rows and calculate total
             const lineItemRows = document.querySelectorAll('.line-item-row');
             lineItemRows.forEach(row => {
-                const itemDate = row.querySelector('.item-date').value;
-                const itemDesc = row.querySelector('.item-desc').value;
-                const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
-                
-                // Only include if all required fields are filled
-                if (itemDate && itemDesc.trim() && amount > 0) {
-                    total += amount;
+                const amountInput = row.querySelector('.item-amount');
+                if (amountInput && amountInput.value) {
+                    const amount = parseFloat(amountInput.value) || 0;
+                    if (amount > 0) {
+                        total += amount;
+                    }
                 }
             });
             
@@ -1830,6 +1830,7 @@
             const tax = 0;
             const finalTotal = subtotal + tax;
 
+            // Update display
             document.getElementById('subtotal').textContent = `RM ${subtotal.toFixed(2)}`;
             document.getElementById('tax').textContent = `RM ${tax.toFixed(2)}`;
             document.getElementById('total').textContent = `RM ${finalTotal.toFixed(2)}`;
@@ -2575,5 +2576,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988acffda716b4dc',t:'MTc1OTQ3NzQ0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ad3f78014b4dc',t:'MTc1OTQ3NzYxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
