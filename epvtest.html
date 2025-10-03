@@ -982,15 +982,11 @@
 
             <div class="action-buttons">
                 <button type="button" class="btn btn-primary" onclick="generateVoucher()">
-                    📄 Generate Voucher
+                    📄 Generate Voucher & Download PDF
                 </button>
 
                 <button type="button" class="btn btn-secondary" onclick="viewVouchers()">
                     📊 View All Vouchers
-                </button>
-
-                <button type="button" class="btn btn-primary" onclick="savePDF()" id="pdfBtn" style="display: none;">
-                    📥 Save as PDF
                 </button>
             </div>
 
@@ -1691,9 +1687,17 @@
             const amountInputs = document.querySelectorAll('.item-amount');
             let total = 0;
             
-            amountInputs.forEach(input => {
-                const value = parseFloat(input.value) || 0;
-                total += value;
+            // Only count filled line items with valid amounts
+            const lineItemRows = document.querySelectorAll('.line-item-row');
+            lineItemRows.forEach(row => {
+                const itemDate = row.querySelector('.item-date').value;
+                const itemDesc = row.querySelector('.item-desc').value;
+                const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
+                
+                // Only include if all required fields are filled
+                if (itemDate && itemDesc.trim() && amount > 0) {
+                    total += amount;
+                }
             });
             
             const subtotal = total;
@@ -1836,12 +1840,14 @@
                     showNotification('Voucher generated but not saved to sheets', 'info');
                 }
 
-                // Show preview and PDF button
+                // Show preview
                 document.getElementById('voucherPreview').style.display = 'block';
-                document.getElementById('pdfBtn').style.display = 'inline-flex';
+
+                // Automatically generate and download PDF
+                await generateAndDownloadPDF(formData, lineItems, totalAmount);
 
                 setButtonLoading(generateBtn, false);
-                showNotification('Voucher generated successfully!', 'success');
+                showNotification('Voucher generated and PDF downloaded!', 'success');
 
                 // Scroll to preview
                 setTimeout(() => {
@@ -1897,7 +1903,187 @@
             console.log('✅ Preview updated');
         }
 
-        // Save PDF
+        // Generate and download PDF automatically
+        async function generateAndDownloadPDF(formData, lineItems, totalAmount) {
+            console.log('📄 Auto-generating PDF...');
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Set font
+                doc.setFont('helvetica');
+                let currentY = 15;
+
+                // Add logo to PDF
+                try {
+                    const logoUrl = 'https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png';
+                    const logoImg = new Image();
+                    logoImg.crossOrigin = 'anonymous';
+                    
+                    await new Promise((resolve, reject) => {
+                        logoImg.onload = () => {
+                            try {
+                                // Create canvas to convert image
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                canvas.width = logoImg.width;
+                                canvas.height = logoImg.height;
+                                ctx.drawImage(logoImg, 0, 0);
+                                
+                                // Get image data and add to PDF
+                                const imgData = canvas.toDataURL('image/png');
+                                const imgWidth = 40;
+                                const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
+                                
+                                doc.addImage(imgData, 'PNG', 85, currentY, imgWidth, imgHeight);
+                                currentY += imgHeight + 5;
+                                resolve();
+                            } catch (error) {
+                                console.log('Logo processing failed, continuing without logo');
+                                resolve();
+                            }
+                        };
+                        logoImg.onerror = () => {
+                            console.log('Logo load failed, continuing without logo');
+                            resolve();
+                        };
+                        logoImg.src = logoUrl;
+                    });
+                } catch (error) {
+                    console.log('Logo addition failed, continuing without logo');
+                    currentY += 10;
+                }
+
+                // Company header
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('EMMANUEL TRANSPORT', 105, currentY, { align: 'center' });
+                
+                currentY += 8;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
+                
+                currentY += 5;
+                doc.text('LOWRENCE 0182202582 | PREMA 01126360442', 105, currentY, { align: 'center' });
+                
+                currentY += 5;
+                doc.text('NO. 29, JLN PERMAS 13/10, BANDAR BARU PERMAS JAYA, 81750 MASAI, JOHOR', 105, currentY, { align: 'center' });
+
+                // Line separator
+                currentY += 10;
+                doc.line(20, currentY, 190, currentY);
+
+                // Title
+                currentY += 15;
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('PAYMENT VOUCHER', 105, currentY, { align: 'center' });
+
+                // Voucher details
+                currentY += 20;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Voucher Information:', 20, currentY);
+                doc.text('Payment Details:', 110, currentY);
+
+                currentY += 8;
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Voucher No.: ${formData.voucherNo}`, 20, currentY);
+                doc.text(`Pay To: ${formData.payTo}`, 110, currentY);
+
+                currentY += 6;
+                const formattedDate = new Date(formData.date).toLocaleDateString('en-GB');
+                doc.text(`Date: ${formattedDate}`, 20, currentY);
+                doc.text(`${formData.idType} No.: ${formData.idNumber}`, 110, currentY);
+
+                currentY += 6;
+                doc.text(`Reference: ${formData.reference}`, 20, currentY);
+                doc.text(`Method: ${formData.paymentMethod}`, 110, currentY);
+
+                currentY += 6;
+                doc.text(`Created by: ${formData.createdBy}`, 20, currentY);
+
+                // Description
+                currentY += 15;
+                doc.setFont('helvetica', 'bold');
+                doc.text('Description:', 20, currentY);
+                
+                currentY += 8;
+                doc.setFont('helvetica', 'normal');
+                const splitDescription = doc.splitTextToSize(formData.description, 170);
+                doc.text(splitDescription, 20, currentY);
+                currentY += splitDescription.length * 5;
+
+                // Line items
+                currentY += 10;
+                doc.setFont('helvetica', 'bold');
+                doc.text('Line Items:', 20, currentY);
+
+                currentY += 8;
+                doc.setFontSize(9);
+                doc.text('Date', 20, currentY);
+                doc.text('Bill No.', 50, currentY);
+                doc.text('Description', 80, currentY);
+                doc.text('Amount', 160, currentY);
+                
+                currentY += 2;
+                doc.line(20, currentY, 190, currentY);
+
+                // Line items data
+                currentY += 6;
+                doc.setFont('helvetica', 'normal');
+                
+                lineItems.forEach(item => {
+                    doc.text(item.date, 20, currentY);
+                    doc.text(item.billNo, 50, currentY);
+                    const itemDesc = doc.splitTextToSize(item.description, 70);
+                    doc.text(itemDesc[0], 80, currentY);
+                    doc.text(`RM ${item.amount.toFixed(2)}`, 160, currentY);
+                    currentY += 6;
+                });
+
+                // Total
+                currentY += 5;
+                doc.line(20, currentY, 190, currentY);
+                currentY += 8;
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total: RM ${totalAmount.toFixed(2)}`, 160, currentY);
+
+                // Signature lines
+                currentY += 30;
+                doc.setFont('helvetica', 'normal');
+                
+                // Approved by
+                doc.line(30, currentY, 80, currentY);
+                doc.text('Approved By', 55, currentY + 8, { align: 'center' });
+                doc.text('Date: __________', 55, currentY + 15, { align: 'center' });
+
+                // Received by
+                doc.line(130, currentY, 180, currentY);
+                doc.text('Received By', 155, currentY + 8, { align: 'center' });
+                doc.text('Date: __________', 155, currentY + 15, { align: 'center' });
+
+                // Save PDF
+                doc.save(`Payment_Voucher_${formData.voucherNo}.pdf`);
+                
+                // Log PDF download (async, don't wait)
+                logPDFDownload(formData.voucherNo, `RM ${totalAmount.toFixed(2)}`, formData.payTo);
+                
+                console.log('✅ PDF auto-generated and downloaded');
+                
+            } catch (error) {
+                console.error('❌ Auto PDF generation error:', error);
+                throw error;
+            }
+        }
+
+        // Save PDF (manual button)
         async function savePDF() {
             console.log('📄 Generating PDF...');
             
@@ -1926,7 +2112,47 @@
 
                 // Set font
                 doc.setFont('helvetica');
-                let currentY = 20;
+                let currentY = 15;
+
+                // Add logo to PDF
+                try {
+                    const logoUrl = 'https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png';
+                    const logoImg = new Image();
+                    logoImg.crossOrigin = 'anonymous';
+                    
+                    await new Promise((resolve, reject) => {
+                        logoImg.onload = () => {
+                            try {
+                                // Create canvas to convert image
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                canvas.width = logoImg.width;
+                                canvas.height = logoImg.height;
+                                ctx.drawImage(logoImg, 0, 0);
+                                
+                                // Get image data and add to PDF
+                                const imgData = canvas.toDataURL('image/png');
+                                const imgWidth = 40;
+                                const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
+                                
+                                doc.addImage(imgData, 'PNG', 85, currentY, imgWidth, imgHeight);
+                                currentY += imgHeight + 5;
+                                resolve();
+                            } catch (error) {
+                                console.log('Logo processing failed, continuing without logo');
+                                resolve();
+                            }
+                        };
+                        logoImg.onerror = () => {
+                            console.log('Logo load failed, continuing without logo');
+                            resolve();
+                        };
+                        logoImg.src = logoUrl;
+                    });
+                } catch (error) {
+                    console.log('Logo addition failed, continuing without logo');
+                    currentY += 10;
+                }
 
                 // Company header
                 doc.setFontSize(16);
@@ -2223,5 +2449,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ab965b6deb4dc',t:'MTc1OTQ3NjUyMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ac3119177b4dc',t:'MTc1OTQ3NjkxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
