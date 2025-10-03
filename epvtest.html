@@ -2057,9 +2057,59 @@
 
                 // Set font
                 doc.setFont('helvetica');
-                let currentY = 25;
+                let currentY = 20;
 
-                // Company header (without company name, just contact details)
+                // Add logo to PDF
+                try {
+                    const logoUrl = 'https://raw.githubusercontent.com/getonsv/bible/main/Emmanuel-Logo.png';
+                    const logoImg = new Image();
+                    logoImg.crossOrigin = 'anonymous';
+                    
+                    await new Promise((resolve, reject) => {
+                        logoImg.onload = () => {
+                            try {
+                                // Create canvas to convert image
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                canvas.width = logoImg.width;
+                                canvas.height = logoImg.height;
+                                ctx.drawImage(logoImg, 0, 0);
+                                
+                                // Get image data and add to PDF
+                                const imgData = canvas.toDataURL('image/png');
+                                const imgWidth = 60;
+                                const imgHeight = (logoImg.height / logoImg.width) * imgWidth;
+                                
+                                // Center the logo
+                                const logoX = (210 - imgWidth) / 2; // A4 width is 210mm
+                                doc.addImage(imgData, 'PNG', logoX, currentY, imgWidth, imgHeight);
+                                currentY += imgHeight + 10;
+                                resolve();
+                            } catch (error) {
+                                console.log('Logo processing failed, continuing without logo');
+                                currentY += 5;
+                                resolve();
+                            }
+                        };
+                        logoImg.onerror = () => {
+                            console.log('Logo load failed, continuing without logo');
+                            currentY += 5;
+                            resolve();
+                        };
+                        logoImg.src = logoUrl;
+                    });
+                } catch (error) {
+                    console.log('Logo addition failed, continuing without logo');
+                    currentY += 5;
+                }
+
+                // Company name
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('EMMANUEL TRANSPORT', 105, currentY, { align: 'center' });
+                currentY += 8;
+
+                // Company header details
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
                 doc.text('BRN: 202503112296 (003723051-P)', 105, currentY, { align: 'center' });
@@ -3001,5 +3051,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b9ebfe443b4dc',t:'MTc1OTQ4NTkxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988baab3e681b4dc',t:'MTc1OTQ4NjQwNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
