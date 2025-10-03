@@ -1626,11 +1626,28 @@
             // ID type change
             document.getElementById('idType').addEventListener('change', updateIdField);
             
-            // Amount input listeners
+            // Amount input listeners for existing and new items
             document.addEventListener('input', function(e) {
-                if (e.target.classList.contains('item-amount')) {
+                if (e.target.classList.contains('item-amount') || 
+                    e.target.classList.contains('item-desc') || 
+                    e.target.classList.contains('item-date')) {
                     calculateTotal();
                 }
+            });
+            
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('item-amount') || 
+                    e.target.classList.contains('item-desc') || 
+                    e.target.classList.contains('item-date')) {
+                    calculateTotal();
+                }
+            });
+            
+            // Add listeners to initial line item
+            const initialInputs = document.querySelectorAll('.line-item-row input');
+            initialInputs.forEach(input => {
+                input.addEventListener('input', calculateTotal);
+                input.addEventListener('change', calculateTotal);
             });
             
             console.log('✅ Event listeners set up');
@@ -1738,6 +1755,13 @@
                 <td><button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button></td>
             `;
             tbody.appendChild(newRow);
+            
+            // Add event listeners to new inputs for real-time calculation
+            const newInputs = newRow.querySelectorAll('input');
+            newInputs.forEach(input => {
+                input.addEventListener('input', calculateTotal);
+                input.addEventListener('change', calculateTotal);
+            });
             
             calculateTotal();
             console.log('✅ New line item added');
@@ -2519,5 +2543,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988aca82d516b4dc',t:'MTc1OTQ3NzIyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988ace4c776cb4dc',t:'MTc1OTQ3NzM3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
