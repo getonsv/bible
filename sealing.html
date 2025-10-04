@@ -345,6 +345,8 @@
             padding-top: clamp(4.5rem, 12vw, 6rem);
             padding-bottom: clamp(4rem, 10vw, 5rem);
             overflow-y: auto;
+            height: 100%;
+            box-sizing: border-box;
         }
         
         .question-number {
@@ -394,6 +396,8 @@
             overflow-y: auto;
             margin-top: var(--spacing-md);
             min-height: 100px;
+            max-height: calc(100% - 120px);
+            padding-right: var(--spacing-sm);
         }
         
         .flip-indicator {
@@ -649,15 +653,13 @@
             }
 
             .large-card-container {
-                height: clamp(250px, 45vh, 320px);
+                height: clamp(350px, 60vh, 450px);
             }
 
-            .card-face {
-                padding: clamp(0.75rem, 3vw, 1.25rem);
-            }
-
-            .card-back {
-                padding-top: clamp(2rem, 6vw, 2.5rem);
+            .card-content {
+                padding: clamp(1rem, 4vw, 1.5rem);
+                padding-top: clamp(3.5rem, 8vw, 4.5rem);
+                padding-bottom: clamp(3.5rem, 8vw, 4.5rem);
             }
 
             .password-form {
@@ -680,6 +682,11 @@
                 width: clamp(35px, 6vw, 40px);
                 height: clamp(35px, 6vw, 40px);
                 font-size: clamp(0.875rem, 2.5vw, 1rem);
+            }
+
+            .answer {
+                max-height: calc(100% - 80px);
+                font-size: clamp(0.8rem, 2.5vw, 0.9rem);
             }
         }
 
@@ -777,7 +784,7 @@
                     <div class="card-content">
                         <div class="question" id="front-question"></div>
                     </div>
-                    <div class="flip-indicator">Reveal answer</div>
+                    <div class="flip-indicator">Tap to reveal answer</div>
                 </div>
                 <div class="card-face card-back">
                     <div class="question-number" id="back-number">1</div>
@@ -785,7 +792,7 @@
                         <div class="question" id="back-question"></div>
                         <div class="answer" id="answer"></div>
                     </div>
-                    <div class="flip-indicator">See question</div>
+                    <div class="flip-indicator">Tap to see question</div>
                 </div>
             </div>
         </div>
@@ -793,7 +800,7 @@
         <div class="controls no-print">
             <button onclick="previousCard()" title="Previous Card">⬅️</button>
             <button onclick="nextCard()" title="Next Card">➡️</button>
-            <button onclick="window.open('/grad25', '_blank')" title="Print Cards">🖨️</button>
+            <button onclick="window.open('https://app.shill.es/grad25', '_blank')" title="Print Cards">🖨️</button>
         </div>
         
         <footer class="no-print">
@@ -1102,5 +1109,5 @@
             largeCard.addEventListener('click', flipCard);
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98960ad29684b4dc',t:'MTc1OTU5NTIwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'989612d0e1a0b4dc',t:'MTc1OTU5NTUyOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
