@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCJ Year 42 - 2025 Graduation Exam - Study Cards</title>
+    <style>
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #d64d4d, #e87c7c);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #b33b3b, #d67272);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            color: #ffe6e6;
+        }
+        
+        /* Large Card Styles */
+        .large-card-container {
+            width: 100%;
+            max-width: 700px;
+            height: 400px;
+            perspective: 1500px;
+            margin: 20px 0;
+        }
+        
+        .large-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .large-card.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 30px;
+            overflow: auto;
+        }
+        
+        .card-front {
+            background: linear-gradient(135deg, #e87c7c, #d64d4d);
+            color: white;
+            text-align: center;
+        }
+        
+        .card-back {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            color: #333;
+            transform: rotateY(180deg);
+            text-align: left;
+        }
+        
+        .question-number {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: #b33b3b;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .question {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #b33b3b;
+            font-size: 1.4rem;
+            line-height: 1.4;
+        }
+        
+        .answer {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        .flip-indicator {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .card-back .flip-indicator {
+            background: rgba(179, 59, 59, 0.2);
+            color: #b33b3b;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        
+        button {
+            padding: 12px 20px;
+            background-color: #b33b3b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px;
+        }
+        
+        button:hover {
+            background-color: #8f2f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            color: #666;
+            font-size: 0.8rem;
+            width: 100%;
+        }
+        
+        .progress {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            gap: 10px;
+            width: 100%;
+        }
+        
+        .progress-bar {
+            flex-grow: 1;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #d64d4d, #e87c7c);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-weight: bold;
+            color: #b33b3b;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        /* Info Button */
+        .info-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: #b33b3b;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        
+        .info-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal h2 {
+            color: #b33b3b;
+            margin-bottom: 15px;
+        }
+        
+        .modal ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .modal li {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .close-btn {
+            background: #b33b3b;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        /* Password Protection */
+        #password-protection {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #d64d4d, #e87c7c);
+            z-index: 2000;
+        }
+        
+        .password-form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .password-form h2 {
+            color: #b33b3b;
+            margin-bottom: 20px;
+        }
+        
+        .password-form input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .password-form button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+        }
+        
+        .error-message {
+            color: #b33b3b;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .container {
+                max-width: 100%;
+                box-shadow: none;
+                background: white;
+                padding: 0;
+            }
+            
+            header, .instructions, .no-print, .controls, footer, .info-btn, .progress {
+                display: none;
+            }
+            
+            .large-card-container {
+                height: auto;
+                page-break-after: always;
+                margin: 0;
+                max-width: 100%;
+            }
+            
+            .large-card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+            
+            .card-face {
+                position: static;
+                transform: none;
+                height: auto;
+                min-height: 400px;
+            }
+            
+            .card-back {
+                transform: none;
+            }
+            
+            .flip-indicator {
+                display: none;
+            }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .large-card-container {
+                height: 450px;
+            }
+            
+            .card-face {
+                padding: 20px;
+            }
+            
+            .question {
+                font-size: 1.2rem;
+            }
+            
+            .answer {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .large-card-container {
+                height: 500px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Password Protection -->
+    <div id="password-protection">
+        <div class="password-form">
+            <h2>Enter Password to Access</h2>
+            <input type="password" id="password-input" placeholder="Enter password">
+            <button onclick="checkPassword()">Submit</button>
+            <div class="error-message" id="error-message">Incorrect password. Please try again.</div>
+        </div>
+    </div>
+
+    <div class="container" id="main-content" style="display:none;">
+        <header>
+            <h1>SCJ Year 42 - 2025 Graduation Exam</h1>
+            <div class="subtitle">Study Cards - One Question Per Page</div>
+        </header>
+        
+        <div class="progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text" id="progress-text">1/40</div>
+        </div>
+        
+        <div class="large-card-container">
+            <div class="large-card" id="large-card">
+                <div class="card-face card-front">
+                    <div class="question-number" id="front-number">1</div>
+                    <div class="question" id="front-question"></div>
+                    <div class="flip-indicator">Reveal answer</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="question-number" id="back-number">1</div>
+                    <div class="question" id="back-question"></div>
+                    <div class="answer" id="answer"></div>
+                    <div class="flip-indicator">See question</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls no-print">
+            <button onclick="previousCard()" title="Previous Card">⬅️</button>
+            <button onclick="nextCard()" title="Next Card">➡️</button>
+            <button onclick="window.open('/grad25', '_blank')" title="Print Cards">🖨️</button>
+        </div>
+        
+        <footer class="no-print">
+            <p>SCJ Year 42 - 2025 Graduation Exam</p>
+            <p>Use these cards for effective study and memorization</p>
+        </footer>
+        
+        <div class="info-btn no-print" onclick="showInstructions()">ℹ️</div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal" class="modal">
+        <div class="modal-content">
+            <h2>How to Use These Study Cards</h2>
+            <ul>
+                <li>Click on the card or press Enter/Space to reveal the answer</li>
+                <li>Use the Previous (⬅️) and Next (➡️) buttons to navigate between questions</li>
+                <li>Use keyboard arrows (← →) for navigation</li>
+                <li>The progress bar shows your current position in the study set</li>
+                <li>Use the Print button (🖨️) to open the printable version</li>
+                <li>For best printing results, use heavy cardstock paper</li>
+                <li>Study regularly for effective memorization</li>
+            </ul>
+            <button class="close-btn" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Password protection
+        function checkPassword() {
+            const password = document.getElementById('password-input').value;
+            if (password === 'pink25') {
+                document.getElementById('password-protection').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                initCardSystem();
+            } else {
+                document.getElementById('error-message').style.display = 'block';
+            }
+        }
+        
+        // Modal functions
+        function showInstructions() {
+            document.getElementById('instructions-modal').style.display = 'flex';
+        }
+        
+        function closeModal() {
+            document.getElementById('instructions-modal').style.display = 'none';
+        }
+        
+        // Card data - all 40 questions and answers
+        const cardData = [
+            {
+                question: "Who am I according to the Bible? Write the answer along with a Bible chapter reference.",
+                answer: "I am the actual entity of the firstfruits of Rv.14 born of God's seed harvested sealed and belong to the 12 tribes of Rv.7 at the time of the fulfillment of Revelation."
+            },
+            {
+                question: "What is the proof that I have been truly created according to the Bible?",
+                answer: "Harvested sealed and belong to the 12 tribes of Rv.7."
+            },
+            {
+                question: "In the Bible, there is the tree of life and the tree of the knowledge of good and evil. ① Write what the fruit of the tree of life is, ② and what the fruit of the tree of good and evil is today, respectively.",
+                answer: "① Word of the fulfilled reality of Revelation.<br>② False doctrines (commentaries) of false pastors."
+            },
+            {
+                question: "① What are the two kinds of revelation God gives, and between the two, ② which one is the one that God's servants must receive at the time of the fulfillment of Revelation? ③ Write the process of the delivery of this revelation.",
+                answer: "① Prophetic Vision Revelation, Fulfilled Reality Revelation.<br>② Fulfilled Reality Revelation.<br>③ God → Jesus → Angel → New John → Servants."
+            },
+            {
+                question: "In Rv 1:3, who is ① 'the one who reads,' ② 'those who hear,' and ③ 'those who keep'? Write the answer along with the applicable chapter (reference verse) of Revelation, respectively.",
+                answer: "① New John who received and ate the opened book. Rv 10.<br>② Peoples, Nations, Languages, and Kings who learn from New John. Rv 10:11.<br>③ Including New John, the 12 tribes, the 144,000 and the multitude in white. Rv 7."
+            },
+            {
+                question: "① Through whose appearance does the fulfillment of Revelation begin? Include a reference. Regarding this work of Revelation beginning to be fulfilled, write ② when and ③ where it was fulfilled as the fulfilled reality.",
+                answer: "① Jesus of the second coming. Rv 1, 2, 3.<br>② 1966.<br>③ Tabernacle Temple in Gwacheon at the base of Mt. Cheonggye."
+            },
+            {
+                question: "① How many kinds of content and what are the contents of the letters sent in Rv 2~3? ② Write the three entities who appear in Rv 2~3 in order, and write ③ what each did, respectively.",
+                answer: "① Three kinds: What you have seen, What is now, and What will take place later.<br>② Seven Messengers, Nicolaitans, John.<br>③ Seven Messengers: the work of the lamp that prepares the way.<br>Nicolaitans: food sacrificed to idols and teachings, adultery.<br>John: letters of repentance and the word of promise."
+            },
+            {
+                question: "Write what the 3 mysteries of Revelation are. Include references.",
+                answer: "① Mystery of the seven stars and the seven golden lampstands. Rv 1:20.<br>② Mystery of the prostitute, Babylon, and the beast with seven heads and ten horns. Rv 17:5~7.<br>③ Mystery of the last, seventh trumpet. Rv 10:7."
+            },
+            {
+                question: "① Write the blessings promised in Rv 2~3 given to the one who overcomes. ② Besides this, write 1 more blessing the one who overcomes will receive along with the reference.",
+                answer: "① Fruit of the tree of life, Crown of life, Not be hurt at all by the second death, Hidden manna, White stone, Iron scepter, Morning star, Dressed in white clothes, Name written in the book of life, Pillar in God's temple, Write on him God's name, the name of the Holy City, new Jerusalem, and Jesus' new name, Right to sit on Jesus' throne.<br>② Becomes the son who receives the inheritance. Rv 21:7."
+            },
+            {
+                question: "① What does it mean to 'write on him who overcomes God's name, the name of the Holy City, new Jerusalem, and Jesus' new name'? ② Who receives the blessings Jesus promised in Rv 2~3?",
+                answer: "① God, heaven, and Jesus come to the one who overcomes.<br>② the one who fights and overcomes Satan's Nicolaitans."
+            },
+            {
+                question: "Rv 4:8 says that God's throne will come down to this earth. ① In which chapter of Revelation and to where does God's throne come down, and ② where is the reality of that place?",
+                answer: "① Mt. Zion, where the 12 Tribes, the sealed 144,000 of Rv 14 are.<br>② Shincheonji Church of Jesus, the Temple of the Tabernacle of the Testimony."
+            },
+            {
+                question: "The 'book sealed with 7 seals' in God's right hand in Rv 5 is the book of Revelation. ① What is the reason no one in heaven or on earth knew the contents of the sealed book all this time, and ② what is content of the sealed book?",
+                answer: "① Because the fulfilled reality had not appeared yet.<br>② God's mystery that must be fulfilled."
+            },
+            {
+                question: "Regarding 'the blood and flesh of Jesus' promised as the new covenant in Lk 22:14~20, write ① when, ② where, and ③ who is able to eat it along with 3 references.",
+                answer: "① At the time of the fulfillment of Revelation.<br>② God's kingdom, the 12 tribes of Shincheonji of Rv 7.<br>③ The 144,000 and the multitude in white, Rv 1:5~6, Rv 5:9~10, Rv 7:9~14."
+            },
+            {
+                question: "In Rv 6, ① who and through whom judges ② who? ③ In which 2 chapters were those who were driven out in Rv 6 killed?",
+                answer: "① Jesus, 4 living creatures.<br>② The chosen people who betrayed (the 7 messengers and the saints of the tabernacle).<br>③ Rv 8, Rv 9."
+            },
+            {
+                question: "From Mt 8, write who ① 'the subjects of the kingdom' who were thrown outside into the darkness and ② 'those who come from the east and the west and sit in the kingdom of heaven' are along with a related Bible chapter for each.",
+                answer: "① The traditional churches that became corrupt (Spiritual Israel), Rv 6 (Rv 13).<br>② The harvested and sealed 12 tribes of Shincheonji (New Spiritual Israel), Rv 7 (Rv 14)."
+            },
+            {
+                question: "① After what event do those who are sealed of Rv 7 [appear] and ② where do they come from and how do they appear, and ③ who are the fulfilled realities of these people?",
+                answer: "① After the judgment of the sun, moon, and stars of the former heaven who betrayed of Rv 6.<br>② Harvested from the harvest field.<br>③ 144,000 of the 12 tribes of Shincheonji."
+            },
+            {
+                question: "① Why do the trumpets sound in Rv 8? ② Who gets killed in Rv 8~9? ③ What is the difference between the first to the sixth trumpet sounds and the seventh trumpet sound?",
+                answer: "① Because all the seals are opened, and the book is opened and read.<br>② Those who were thrown out in Rv 6.<br>③ First-sixth trumpet: Death of the Betrayers <br>Seventh trumpet: Trumpet of Salvation."
+            },
+            {
+                question: "In Revelation, ① what are the 3 chapters in which the gentile beast (destroyer) judges the tabernacle of the chosen people? ② What are the actual entities of the seven trumpets received by the seven angels? Write along with the Bible chapter.",
+                answer: "① Rv 8, Rv 9, Rv 13.<br>② Saints brought out through the seed of faith during judgment, Rv 6."
+            },
+            {
+                question: "① What kind of entities are the 'rider and the horse' in Rv 9 and Rv 19, and who do they belong to, respectively? What are the ② 'head' and ③ 'tail' of the horses that appear in Rv 9 and the ④'fire, smoke, and sulfur' that come out of its mouth?",
+                answer: "① Rv 9: spirits and flesh that belong to the devil<br>Rv 19: spirits and flesh that belong to God.<br>② Seven pastors of the dragon.<br>③ False prophets.<br>④ False doctrines and ecclesiastical laws."
+            },
+            {
+                question: "As seen in Rv 9:15, ① who are 'the people that get killed' by the four angels that sinned during the plague of the sixth trumpet, and ② when and what event is the reality of 'this very hour and day and month and year' when they get killed?",
+                answer: "① People of the Tabernacle Temple that betrayed.<br>② September 20, 1981, 2 pm, Pastor ordination ceremony."
+            },
+            {
+                question: "What does it mean that John 'ate the opened scroll' in Rv 10?",
+                answer: "To completely understand and master the true meaning and fulfilled realities of Revelation and seal it in the heart."
+            },
+            {
+                question: "At the first coming, ① who ate 'the revelation of the Old Testament fulfillment' and where did he testify it? Write along with the reference verses. At the second coming, ② who ate 'the revelation of the New Testament fulfillment' and where does he testify it? Write along with the reference verses. Also, as seen in Rv 1:2, it says one person who received the command delivered God's word. Write ③ in which chapter of Revelation he received this word that he delivered.",
+                answer: "① Jesus, rebellious Israel, Ez 3, Mt. 15:24.<br>② New John, Churches in the midst of sin, Rv 10, Rv 22:8,16.<br>③ Rv 10."
+            },
+            {
+                question: "① Who is the actual entity of the seventh trumpet? ② What is the seventh trumpet sound? Furthermore, ③ what are the 4 verses of the Old and New Testament where the 'seventh trumpet' appears?",
+                answer: "① Promised pastor, New John.<br>② Revealed testimony of New John.<br>③ Jos.6:15~16, 1 Cor.15:51~54, Rv.10:7, Rv.11:15."
+            },
+            {
+                question: "① What happens 'when the seventh trumpet sounds'? ② What is the 'mystery of the last trumpet'? Write along with 2 related verses.",
+                answer: "① The kingdom of the world becomes the kingdom of God.<br>② Resurrection and eternal life, that is, changing into a new creation, Rv 10:7, 1 Cor.15:51~54."
+            },
+            {
+                question: "What is ① 'the blood of the Lamb' and ② 'the word of testimony,' which are the weapons that the male child and his brothers use to fight and overcome the dragon's group in Rv 12:9~11? ③ After what event does the kingdom of God and salvation come? Also, ④in which chapter are the promises of Rv 2~3 fulfilled?",
+                answer: "① Jesus' word of life.<br>② The word of testimony of the fulfilled realities of Revelation.<br>③ After fighting and overcoming the dragon's group.<br>④ Rv 12."
+            },
+            {
+                question: "Where is ① 'heaven,' the location of the event of Rv 13, and ② who from which chapter of Revelation are the 'seven heads and ten horns' in Rv 13?",
+                answer: "① Tabernacle Temple, the same location as Rv.2~3.<br>② Seven pastors and ten authority figures of Babylon in Rv.17."
+            },
+            {
+                question: "① What is 'the new song' in Rv 14:3, and only ② who in the whole world can sing it? ③ What is the reality of the place where the new song is learned?",
+                answer: "① Word of the fulfilled realities of Revelation.<br>② Sealed 144,000 of the 12 tribes.<br>③ Zion Christian Mission Center before the throne."
+            },
+            {
+                question: "According to Mt 13, ① with what can we distinguish 'those born of God's seed' and 'those born of the devil's seed'? Also, ② what is the reality and result of each group?",
+                answer: "① Those who are harvested and those who are not harvested.<br>② Those born of God's seed: those who are harvested, sealed and registered into the 12 tribes, heaven and eternal life. Those born of the devil's seed: those who are not harvested, sealed or registered into the 12 tribes, hell and eternal punishment."
+            },
+            {
+                question: "① Who are 'those who had been victorious' in Rv 15:2 and what is the related Bible chapter? Write the ② weapons they used to overcome along with 1 reference verse.",
+                answer: "① Those who fought and overcame the dragon's group, Rv 12.<br>② Blood of the Lamb and the word of testimony, Rv 12:11."
+            },
+            {
+                question: "In the Temple of the Tabernacle of the Testimony in Rv 15:5, ① who testify ② what? ③ What are the two reasons that only they can testify?",
+                answer: "① Those who overcame.<br>② Actual entities of all the chapters of Revelation.<br>③ Because they saw the actual entities at the site of the events, and they fought and overcame the destroyers."
+            },
+            {
+                question: "Write ① how many kinds of 'plagues' are in Revelation and what they are in order. Also, write ② who are judged in 'Rv 6' and 'Rv 16,' respectively.",
+                answer: "① Three kinds, Seven Seals, Seven Trumpets, Seven Bowls.<br>② Rv 6: Betrayers. Rv 16: Betrayers and Destroyers."
+            },
+            {
+                question: "Write ① 2 chapters that show where the seven golden bowls in Rv 16 came from, ② what is poured out from the bowls, and ③ where in which chapter the bowls are poured out.",
+                answer: "① Rv 12, Rv 15.<br>② God's wrath.<br>③ The tabernacle of Rv 13 and Babylon of Rv 18."
+            },
+            {
+                question: "In the book of Revelation, what is ① the food given by the pastor chosen by Jesus and ② the food given by the pastor chosen by the devil? Write along with related verses.",
+                answer: "① Rv 2:17 Hidden Manna, Rv 10 Revealed Word, Rv 22 Fruit of the Tree of Life.<br>② Rv 17:2, Rv 18:3 Wine of Adulteries."
+            },
+            {
+                question: "What is ① the wine of adulteries, ② whom did all nations that have fallen and those who drank the wine of adulteries marry, and ③ who are the bridegroom and the bride who are married?",
+                answer: "① False doctrines (fruit of good and evil).<br>② Spirit of the dragon, Satan.<br>③ Satan and churchgoers who belong to him."
+            },
+            {
+                question: "① What is the reason God has not judged Babylon yet? Write the answer along with 1 reference verse. Regarding this judgment, ② who and ③ through what is judgment given?",
+                answer: "① Rv.18:4, because not all of God's people have come out.<br>② God.<br>③ Fire."
+            },
+            {
+                question: "① After what event does Rv 19 take place, and ② what are the two things that happen in Rv 19?",
+                answer: "① After the judgment of Babylon in Rv.18.<br>② Marriage of spirit and flesh, God comes and reigns."
+            },
+            {
+                question: "In Rv 20, ① who are seated on thrones with the authority to judge after the dragon is seized? ② Who are those that will participate in the first resurrection and reign with Christ? ③ What kind of people are those who receive judgment after the thousand years?",
+                answer: "① Jesus' spiritual and physical 12 disciples.<br>② The spirits of the martyrs and those who survived and did not receive the mark of the beast but received God's seal.<br>③ Gog and Magog, the spirits whose flesh have died."
+            },
+            {
+                question: "① What event in which chapter is 'the beginning of the fulfillment of Revelation'? ② What event in which chapter is 'the completion of Revelation'?",
+                answer: "① The appearance of Jesus of the second coming in Rv.1.<br>② God and heaven coming to Shincheonji in Rv.21."
+            },
+            {
+                question: "① Among the 66 books of the Bible, what is the most important prophecy? Among them, ② the content of which chapter is the most important, and ③ what is the reason?",
+                answer: "① Book of Revelation.<br>② Rv.21.<br>③ Because it is the promise of creating a new heaven and a new earth, which is God's objective."
+            },
+            {
+                question: "At the time of the Lord's second coming, write ① the reason why Revelation is the most important along with a reference verse, ② what 'the highest truth' is, and ③ where it is.",
+                answer: "① Because one cannot enter heaven if one adds to or subtracts from it, Rv.22:18~19.<br>② Rv.1 to Rv.22.<br>③ The City of Truth, Shincheonji."
+            }
+        ];
+
+        let currentCardIndex = 0;
+        const largeCard = document.getElementById('large-card');
+
+        // Initialize the card system
+        function initCardSystem() {
+            // Check if URL has a question parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const questionParam = urlParams.get('q') || urlParams.get('') || window.location.hash.substring(1);
+            
+            if (questionParam) {
+                // Extract number from parameter (handles ?40, ?q40, ?q=40, #40, etc.)
+                const questionNumber = parseInt(questionParam.replace(/\D/g, ''));
+                if (!isNaN(questionNumber) && questionNumber >= 1 && questionNumber <= cardData.length) {
+                    currentCardIndex = questionNumber - 1;
+                }
+            }
+            
+            updateCard();
+        }
+
+        function updateCard() {
+            const card = cardData[currentCardIndex];
+            
+            // Update front of card
+            document.getElementById('front-number').textContent = currentCardIndex + 1;
+            document.getElementById('front-question').innerHTML = card.question;
+            
+            // Update back of card
+            document.getElementById('back-number').textContent = currentCardIndex + 1;
+            document.getElementById('back-question').innerHTML = card.question;
+            document.getElementById('answer').innerHTML = card.answer;
+            
+            // Update progress
+            updateProgress();
+            
+            // Reset card to front view
+            largeCard.classList.remove('flipped');
+        }
+
+        function updateProgress() {
+            const progressPercent = ((currentCardIndex + 1) / cardData.length) * 100;
+            document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+            document.getElementById('progress-text').textContent = `${currentCardIndex + 1}/${cardData.length}`;
+        }
+
+        function flipCard() {
+            largeCard.classList.toggle('flipped');
+        }
+
+        function nextCard() {
+            if (currentCardIndex < cardData.length - 1) {
+                currentCardIndex++;
+                updateCard();
+            }
+        }
+
+        function previousCard() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                updateCard();
+            }
+        }
+
+        // Add click event to card for flipping
+        largeCard.addEventListener('click', flipCard);
+        
+        // Enhanced keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextCard();
+            } else if (e.key === 'ArrowLeft') {
+                previousCard();
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                flipCard();
+            }
+        });
+    </script>
+</body>
+</html>
