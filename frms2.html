@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM</title>
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -78,6 +78,9 @@
                             <div id="connectionStatus" class="flex items-center space-x-1">
                                 <div class="w-2 h-2 bg-gray-400 rounded-full" id="statusIndicator"></div>
                                 <span class="text-xs text-gray-500" id="statusText">Offline</span>
+                            </div>
+                            <div id="lastSyncTime" class="text-xs text-gray-400 hidden">
+                                Last sync: <span id="syncTimeText">Never</span>
                             </div>
                         </div>
                     </div>
@@ -1543,6 +1546,9 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         function logout() {
+            // Stop real-time sync
+            stopRealTimeSync();
+            
             currentUser = null;
             accessToken = null;
             isOnlineMode = false;
@@ -1654,6 +1660,10 @@ function validateSpreadsheetAccess(spreadsheetId) {
         let syncRetryCount = 0;
         const MAX_SYNC_RETRIES = 3;
         const SYNC_BATCH_SIZE = 5;
+        let autoSyncInterval = null;
+        let lastSyncTime = null;
+        const REAL_TIME_SYNC_INTERVAL = 30000; // 30 seconds
+        const BACKGROUND_SYNC_INTERVAL = 120000; // 2 minutes
 
         async function autoSyncToSheets(action, data, priority = 'normal') {
             try {
@@ -2002,10 +2012,19 @@ function validateSpreadsheetAccess(spreadsheetId) {
         function updateSyncIndicator(status) {
             const statusIndicator = document.getElementById('statusIndicator');
             const statusText = document.getElementById('statusText');
+            const lastSyncTime = document.getElementById('lastSyncTime');
+            const syncTimeText = document.getElementById('syncTimeText');
             
             if (status === 'success') {
                 statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
-                statusText.textContent = 'Synced';
+                statusText.textContent = 'Real-Time Sync';
+                
+                // Update last sync time
+                if (lastSyncTime && syncTimeText) {
+                    const now = new Date();
+                    syncTimeText.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    lastSyncTime.classList.remove('hidden');
+                }
             } else if (status === 'warning') {
                 statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
                 statusText.textContent = 'Sync Warning';
@@ -3204,8 +3223,16 @@ function validateSpreadsheetAccess(spreadsheetId) {
             event.target.reset();
             showNotification(`${newFruit.name} added successfully!`);
             
-            // Enhanced auto-sync with patch operation
-            await syncFruitPatch(newFruit, 'add');
+            // Immediate sync for real-time updates
+            await immediateSync('patch_fruit', {
+                operation: 'add',
+                dataType: 'fruit',
+                id: newFruit.id,
+                data: newFruit,
+                sheetName: 'Fruits',
+                timestamp: new Date().toISOString(),
+                user: currentUser.email
+            });
         }
 
         // Enhanced edit fruit function with auto-sync
@@ -3286,8 +3313,16 @@ function validateSpreadsheetAccess(spreadsheetId) {
             event.target.reset();
             showNotification('Activity logged successfully!');
             
-            // Enhanced auto-sync with patch operation
-            await syncActivityPatch(newActivity, 'add');
+            // Immediate sync for real-time updates
+            await immediateSync('patch_activity', {
+                operation: 'add',
+                dataType: 'activity',
+                id: newActivity.id,
+                data: newActivity,
+                sheetName: 'Activities',
+                timestamp: new Date().toISOString(),
+                user: currentUser.email
+            });
         }
 
         // Enhanced delete activity function
@@ -3857,6 +3892,256 @@ function validateSpreadsheetAccess(spreadsheetId) {
             showNotification('User list refreshed!');
         }
 
+        // Real-time sync management
+        function startRealTimeSync() {
+            if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+            }
+            
+            console.log('🔄 Starting real-time sync every', REAL_TIME_SYNC_INTERVAL / 1000, 'seconds');
+            
+            autoSyncInterval = setInterval(async () => {
+                if (isOnlineMode && accessToken) {
+                    try {
+                        await performBackgroundSync();
+                    } catch (error) {
+                        console.warn('⚠️ Background sync failed:', error);
+                    }
+                }
+            }, REAL_TIME_SYNC_INTERVAL);
+            
+            // Also sync immediately
+            if (isOnlineMode && accessToken) {
+                setTimeout(performBackgroundSync, 2000);
+            }
+        }
+
+        function stopRealTimeSync() {
+            if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+                autoSyncInterval = null;
+                console.log('⏹️ Real-time sync stopped');
+            }
+        }
+
+        async function performBackgroundSync() {
+            try {
+                console.log('🔄 Performing background sync...');
+                
+                // Check if there are pending changes in the sync queue
+                if (syncQueue.length > 0) {
+                    console.log('📤 Syncing', syncQueue.length, 'pending changes to Google Sheets');
+                    await processSyncQueueWithSheetsAPI();
+                }
+                
+                // Pull fresh data from Google Sheets to detect external changes
+                await pullFreshDataFromSheets();
+                
+                lastSyncTime = new Date().toISOString();
+                updateSyncIndicator('success');
+                
+            } catch (error) {
+                console.error('❌ Background sync failed:', error);
+                updateSyncIndicator('error');
+            }
+        }
+
+        async function pullFreshDataFromSheets() {
+            try {
+                console.log('📥 Pulling fresh data from Google Sheets...');
+                
+                // Get current data from sheets
+                const freshFruits = await loadFruitsDataFromSheets();
+                const freshActivities = await loadActivitiesDataFromSheets();
+                
+                // Compare and merge changes
+                const fruitsChanged = mergeFreshData(fruits, freshFruits, 'fruits');
+                const activitiesChanged = mergeFreshData(activities, freshActivities, 'activities');
+                
+                if (fruitsChanged || activitiesChanged) {
+                    console.log('🔄 External changes detected, updating UI...');
+                    
+                    // Update UI with fresh data
+                    updateFruitsGrid();
+                    updateStats();
+                    updateRecentActivities();
+                    
+                    // Save merged data locally
+                    saveLocalData();
+                    
+                    // Show subtle notification about external changes
+                    if (fruitsChanged && activitiesChanged) {
+                        showNotification('📥 Updated with external changes to fruits and activities', 'info');
+                    } else if (fruitsChanged) {
+                        showNotification('📥 Updated with external changes to fruits', 'info');
+                    } else if (activitiesChanged) {
+                        showNotification('📥 Updated with external changes to activities', 'info');
+                    }
+                }
+                
+            } catch (error) {
+                console.warn('⚠️ Failed to pull fresh data:', error);
+                // Don't throw error - this is background operation
+            }
+        }
+
+        async function loadFruitsDataFromSheets() {
+            const sheetRange = 'Fruits!A:M';
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetRange)}?key=${GOOGLE_CONFIG.API_KEY}`;
+            
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load fruits: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const rows = data.values || [];
+            
+            if (rows.length === 0) return [];
+            
+            const parsedFruits = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0 || !row[1]) continue; // Skip empty rows or rows without name
+                
+                const fruit = {
+                    id: row[0] || `fruit_${Date.now()}_${i}`,
+                    name: row[1] || '',
+                    assignedTo: row[2] || '',
+                    phone: row[3] || '',
+                    instagram: row[4] || '',
+                    facebook: row[5] || '',
+                    twitter: row[6] || '',
+                    leadSource: row[7] || '',
+                    campaign: row[8] || '',
+                    status: row[9] || 'Initial Contact',
+                    notes: row[10] || '',
+                    createdDate: row[11] || new Date().toISOString(),
+                    createdBy: row[12] || 'Unknown'
+                };
+                
+                if (fruit.name.trim()) {
+                    parsedFruits.push(fruit);
+                }
+            }
+            
+            return parsedFruits;
+        }
+
+        async function loadActivitiesDataFromSheets() {
+            const sheetRange = 'Activities!A:H';
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetRange)}?key=${GOOGLE_CONFIG.API_KEY}`;
+            
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load activities: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const rows = data.values || [];
+            
+            if (rows.length === 0) return [];
+            
+            const parsedActivities = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0 || !row[1]) continue; // Skip empty rows or rows without fruit name
+                
+                const activity = {
+                    id: row[0] || `activity_${Date.now()}_${i}`,
+                    fruitName: row[1] || '',
+                    type: row[2] || '',
+                    duration: row[3] || '0',
+                    notes: row[4] || '',
+                    outcome: row[5] || '',
+                    user: row[6] || 'Unknown',
+                    createdDate: row[7] || new Date().toISOString()
+                };
+                
+                if (activity.fruitName.trim()) {
+                    parsedActivities.push(activity);
+                }
+            }
+            
+            return parsedActivities;
+        }
+
+        function mergeFreshData(localData, freshData, dataType) {
+            let hasChanges = false;
+            
+            // Create maps for efficient lookup
+            const localMap = new Map(localData.map(item => [item.id, item]));
+            const freshMap = new Map(freshData.map(item => [item.id, item]));
+            
+            // Check for new or updated items from sheets
+            freshData.forEach(freshItem => {
+                const localItem = localMap.get(freshItem.id);
+                
+                if (!localItem) {
+                    // New item from external source
+                    console.log('📥 New', dataType, 'from external source:', freshItem.name || freshItem.fruitName);
+                    localData.push(freshItem);
+                    hasChanges = true;
+                } else {
+                    // Check if item was updated externally
+                    const isUpdated = JSON.stringify(localItem) !== JSON.stringify(freshItem);
+                    if (isUpdated) {
+                        console.log('📥 Updated', dataType, 'from external source:', freshItem.name || freshItem.fruitName);
+                        Object.assign(localItem, freshItem);
+                        hasChanges = true;
+                    }
+                }
+            });
+            
+            // Check for deleted items (present locally but not in fresh data)
+            const itemsToRemove = [];
+            localData.forEach((localItem, index) => {
+                if (!freshMap.has(localItem.id)) {
+                    console.log('📥 Deleted', dataType, 'from external source:', localItem.name || localItem.fruitName);
+                    itemsToRemove.push(index);
+                    hasChanges = true;
+                }
+            });
+            
+            // Remove deleted items (in reverse order to maintain indices)
+            itemsToRemove.reverse().forEach(index => {
+                localData.splice(index, 1);
+            });
+            
+            return hasChanges;
+        }
+
+        // Enhanced immediate sync for user actions
+        async function immediateSync(action, data) {
+            try {
+                console.log('⚡ Immediate sync:', action);
+                
+                // Add to queue with high priority
+                await autoSyncToSheets(action, data, 'high');
+                
+                // Process immediately if online
+                if (isOnlineMode && accessToken && !isSyncing) {
+                    await processSyncQueueWithSheetsAPI();
+                }
+                
+            } catch (error) {
+                console.error('❌ Immediate sync failed:', error);
+                // Don't throw - let the background sync handle it
+            }
+        }
+
         // Enable online mode with OAuth
         async function enableOnlineMode() {
             try {
@@ -3869,13 +4154,16 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 if (enableBtn) {
                     enableBtn.innerHTML = `
                         <i class="fas fa-check-circle text-green-600"></i>
-                        <span>Online Mode Active</span>
+                        <span>Real-Time Sync Active</span>
                     `;
                     enableBtn.disabled = true;
                     enableBtn.classList.add('bg-green-50');
                 }
                 
-                showNotification('Online mode enabled! You can now sync with Google Sheets.');
+                showNotification('✅ Real-time sync enabled! Changes will sync automatically every 30 seconds.');
+                
+                // Start real-time sync
+                startRealTimeSync();
                 
                 // Automatically try to load fresh data
                 setTimeout(() => {
@@ -3888,5 +4176,5 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a41e8c049ab4dc',t:'MTc1OTc0MjgwOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a427757378b4dc',t:'MTc1OTc0MzE3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
