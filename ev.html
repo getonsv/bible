@@ -928,15 +928,12 @@
                     // Clean up URL
                     window.history.replaceState({}, document.title, window.location.pathname);
                 } else {
-                    // Start OAuth flow
+                    // Use current page URL as redirect URI
                     const currentUrl = window.location.origin + window.location.pathname;
-                    const redirectUri = GOOGLE_CONFIG.REDIRECT_URIS.find(uri => 
-                        currentUrl.startsWith(uri.replace('/auth/callback', ''))
-                    ) || 'https://app.shill.es/auth/callback';
                     
                     const authUrl = `${GOOGLE_CONFIG.AUTH_URI}?` +
                         `client_id=${GOOGLE_CONFIG.CLIENT_ID}&` +
-                        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+                        `redirect_uri=${encodeURIComponent(currentUrl)}&` +
                         `scope=${encodeURIComponent(GOOGLE_CONFIG.SCOPES)}&` +
                         `response_type=code&` +
                         `access_type=offline&` +
@@ -1176,9 +1173,6 @@
                 console.log('🔄 Exchanging Google auth code for token...');
                 
                 const currentUrl = window.location.origin + window.location.pathname;
-                const redirectUri = GOOGLE_CONFIG.REDIRECT_URIS.find(uri => 
-                    currentUrl.startsWith(uri.replace('/auth/callback', ''))
-                ) || 'https://app.shill.es/auth/callback';
                 
                 const response = await fetch(GOOGLE_CONFIG.TOKEN_URI, {
                     method: 'POST',
@@ -1190,7 +1184,7 @@
                         client_secret: GOOGLE_CONFIG.CLIENT_SECRET,
                         code: authCode,
                         grant_type: 'authorization_code',
-                        redirect_uri: redirectUri
+                        redirect_uri: currentUrl
                     })
                 });
                 
@@ -1959,5 +1953,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5d388e7c2b4dc',t:'MTc1OTc2MDcwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5d6b535b5b4dc',t:'MTc1OTc2MDgzOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
