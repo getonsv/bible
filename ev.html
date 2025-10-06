@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism FRM</title>
+    <title>Evangelism CRM - SharePoint Integration</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -88,33 +88,14 @@
                     
                     <div class="flex items-center space-x-4">
                         <div class="relative">
-                            <button onclick="refreshData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors" id="syncButton">
-                                <i class="fas fa-refresh" id="syncIcon"></i>
-                                <span class="hidden sm:inline">Sync</span>
-                            </button>
-                            <button onclick="showDataOptions()" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded-lg ml-1 transition-colors">
-                                <i class="fas fa-chevron-down text-xs"></i>
+                            <button onclick="showDataOptions()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                                <i class="fas fa-cog"></i>
+                                <span class="hidden sm:inline">Options</span>
                             </button>
                             <div id="syncOptions" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border z-10">
-                                <button onclick="enableSharePointMode()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2" id="enableSharePointBtn">
-                                    <i class="fas fa-cloud text-blue-600"></i>
-                                    <span>Enable SharePoint Sync</span>
-                                </button>
-                                <button onclick="testSharePointConnection()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                <button onclick="testSharePointConnection()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2">
                                     <i class="fas fa-stethoscope text-purple-600"></i>
                                     <span>Test SharePoint Connection</span>
-                                </button>
-                                <button onclick="syncToSharePoint()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
-                                    <i class="fas fa-cloud-upload-alt text-blue-600"></i>
-                                    <span>Sync to SharePoint</span>
-                                </button>
-                                <button onclick="loadFromSharePoint()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
-                                    <i class="fas fa-cloud-download-alt text-green-600"></i>
-                                    <span>Load from SharePoint</span>
-                                </button>
-                                <button onclick="migrateFromGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
-                                    <i class="fas fa-exchange-alt text-orange-600"></i>
-                                    <span>Migrate from Google Sheets</span>
                                 </button>
                                 <button onclick="exportData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
                                     <i class="fas fa-download text-blue-600"></i>
@@ -703,6 +684,9 @@
         let isSharePointMode = false;
         let sharePointAccessToken = null;
         let authorizedUsers = [];
+        let realTimeSync = null;
+        let lastSyncTime = null;
+        let syncInProgress = false;
 
         // Constants
         const STATUS_PROGRESSION = [
@@ -752,6 +736,104 @@
             // Check for existing session
             checkExistingSession();
         });
+
+        // Real-time sync functions
+        function startRealTimeSync() {
+            if (realTimeSync) {
+                clearInterval(realTimeSync);
+            }
+            
+            if (isSharePointMode && sharePointAccessToken) {
+                console.log('🔄 Starting real-time sync (every 10 seconds)...');
+                
+                // Initial sync
+                syncDataFromSharePoint();
+                
+                // Set up interval for every 10 seconds
+                realTimeSync = setInterval(() => {
+                    if (!syncInProgress && isSharePointMode && sharePointAccessToken) {
+                        syncDataFromSharePoint();
+                    }
+                }, 10000); // 10 seconds
+                
+                updateLastSyncTime();
+            }
+        }
+
+        function stopRealTimeSync() {
+            if (realTimeSync) {
+                console.log('⏹️ Stopping real-time sync...');
+                clearInterval(realTimeSync);
+                realTimeSync = null;
+            }
+        }
+
+        async function syncDataFromSharePoint() {
+            if (syncInProgress) return;
+            
+            try {
+                syncInProgress = true;
+                console.log('🔄 Real-time sync: Checking for updates...');
+                
+                // Load fresh data from SharePoint
+                const previousFruitsCount = fruits.length;
+                const previousActivitiesCount = activities.length;
+                
+                await loadFruitsFromSharePoint();
+                await loadActivitiesFromSharePoint();
+                
+                // Check if data changed
+                const fruitsChanged = fruits.length !== previousFruitsCount;
+                const activitiesChanged = activities.length !== previousActivitiesCount;
+                
+                if (fruitsChanged || activitiesChanged) {
+                    console.log('📊 Data updated:', {
+                        fruits: fruits.length,
+                        activities: activities.length,
+                        fruitsChanged,
+                        activitiesChanged
+                    });
+                    
+                    // Update UI
+                    updateFruitsGrid();
+                    updateStats();
+                    updateRecentActivities();
+                    populateFruitDropdowns();
+                    updateAdminStats();
+                    
+                    // Save locally as backup
+                    saveLocalData();
+                    
+                    // Show subtle notification for significant changes
+                    if (fruitsChanged && fruits.length > previousFruitsCount) {
+                        showNotification(`${fruits.length - previousFruitsCount} new fruit(s) added`, 'info');
+                    }
+                    if (activitiesChanged && activities.length > previousActivitiesCount) {
+                        showNotification(`${activities.length - previousActivitiesCount} new activity(ies) logged`, 'info');
+                    }
+                }
+                
+                updateLastSyncTime();
+                
+            } catch (error) {
+                console.error('❌ Real-time sync failed:', error);
+                // Don't show error notifications for background sync failures
+                // Just log them for debugging
+            } finally {
+                syncInProgress = false;
+            }
+        }
+
+        function updateLastSyncTime() {
+            lastSyncTime = new Date();
+            const syncTimeElement = document.getElementById('syncTimeText');
+            const lastSyncElement = document.getElementById('lastSyncTime');
+            
+            if (syncTimeElement && lastSyncElement) {
+                syncTimeElement.textContent = lastSyncTime.toLocaleTimeString();
+                lastSyncElement.classList.remove('hidden');
+            }
+        }
 
         function initializeMicrosoftAuth() {
             console.log('🔧 Initializing PKCE Microsoft Authentication...');
@@ -818,7 +900,11 @@
                     await loadDataFromSharePoint();
                     
                     showDashboard();
-                    showNotification('Welcome! Connected to SharePoint Lists successfully.');
+                    
+                    // Start real-time sync
+                    startRealTimeSync();
+                    
+                    showNotification('Welcome! Connected to SharePoint Lists with real-time sync.');
                     
                 } catch (error) {
                     console.error('❌ OAuth callback processing failed:', error);
@@ -851,7 +937,11 @@
                 
                 loadDataFromSharePoint().then(() => {
                     showDashboard();
-                    showNotification('Session restored successfully!');
+                    
+                    // Start real-time sync for restored session
+                    startRealTimeSync();
+                    
+                    showNotification('Session restored with real-time sync!');
                 });
             } else {
                 console.log('🔐 No valid session found');
@@ -1074,7 +1164,20 @@
         }
 
         function buildPKCEAuthUrl(codeChallenge, state) {
-            const redirectUri = 'https://app.shill.es/ev';
+            // Try multiple redirect URIs that might be configured
+            const possibleRedirectUris = [
+                'https://app.shill.es/ev',
+                'https://app.shill.es/ev/',
+                'https://app.shill.es',
+                'https://app.shill.es/',
+                window.location.origin + window.location.pathname,
+                window.location.origin + '/',
+                window.location.origin
+            ];
+            
+            // Use the current page URL as redirect URI (most likely to work)
+            const redirectUri = window.location.origin + window.location.pathname;
+            console.log('🔗 Using redirect URI:', redirectUri);
             
             const params = new URLSearchParams({
                 client_id: SHAREPOINT_CONFIG.CLIENT_ID,
@@ -1288,11 +1391,13 @@
                 
                 const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
                 
+                const redirectUri = window.location.origin + window.location.pathname;
+                
                 const body = new URLSearchParams({
                     client_id: SHAREPOINT_CONFIG.CLIENT_ID,
                     scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
                     code: authCode,
-                    redirect_uri: 'https://app.shill.es/ev',
+                    redirect_uri: redirectUri,
                     grant_type: 'authorization_code',
                     code_verifier: codeVerifier // PKCE proof
                 });
@@ -1602,8 +1707,13 @@
             const statusText = document.getElementById('statusText');
             
             if (isSharePointMode && sharePointAccessToken) {
-                statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
-                statusText.textContent = 'SharePoint Connected';
+                if (realTimeSync) {
+                    statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
+                    statusText.textContent = 'Live Sync Active';
+                } else {
+                    statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
+                    statusText.textContent = 'SharePoint Connected';
+                }
             } else if (currentUser) {
                 statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
                 statusText.textContent = 'Local Only';
@@ -1838,7 +1948,7 @@
             // Close dropdowns when clicking outside
             document.addEventListener('click', function(event) {
                 const syncOptions = document.getElementById('syncOptions');
-                if (!event.target.closest('#syncButton') && !event.target.closest('#syncOptions')) {
+                if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
                     syncOptions.classList.add('hidden');
                 }
             });
@@ -2112,19 +2222,6 @@
         }
 
         // SharePoint-specific functions
-        async function enableSharePointMode() {
-            try {
-                if (!sharePointAccessToken) {
-                    await authenticateWithMicrosoft();
-                } else {
-                    isSharePointMode = true;
-                    updateConnectionStatus();
-                    showNotification('SharePoint mode enabled!');
-                }
-            } catch (error) {
-                showNotification('Failed to enable SharePoint mode: ' + error.message, 'error');
-            }
-        }
 
         async function testSharePointConnection() {
             try {
@@ -2163,70 +2260,7 @@
             return testSharePointConnection(); // Same test
         }
 
-        async function syncToSharePoint() {
-            try {
-                showNotification('Syncing data to SharePoint...', 'info');
-                
-                if (!sharePointAccessToken) {
-                    throw new Error('Not authenticated with SharePoint');
-                }
-                
-                // Sync fruits that don't have SharePoint IDs
-                for (const fruit of fruits) {
-                    if (!fruit.id || fruit.id.startsWith('fruit_')) {
-                        try {
-                            const result = await addFruitToSharePoint(fruit);
-                            fruit.id = result.id.toString();
-                            console.log('✅ Synced fruit to SharePoint:', fruit.name);
-                        } catch (error) {
-                            console.error('❌ Failed to sync fruit:', fruit.name, error);
-                        }
-                    }
-                }
-                
-                // Sync activities that don't have SharePoint IDs
-                for (const activity of activities) {
-                    if (!activity.id || activity.id.startsWith('activity_')) {
-                        try {
-                            const result = await addActivityToSharePoint(activity);
-                            activity.id = result.id.toString();
-                            console.log('✅ Synced activity to SharePoint:', activity.type);
-                        } catch (error) {
-                            console.error('❌ Failed to sync activity:', activity.type, error);
-                        }
-                    }
-                }
-                
-                saveLocalData();
-                showNotification('✅ Data synced to SharePoint successfully!');
-                
-            } catch (error) {
-                console.error('❌ Sync to SharePoint failed:', error);
-                showNotification('❌ Sync failed: ' + error.message, 'error');
-            }
-        }
 
-        async function loadFromSharePoint() {
-            try {
-                await loadDataFromSharePoint();
-                updateFruitsGrid();
-                updateStats();
-                updateRecentActivities();
-                populateFruitDropdowns();
-                showNotification('✅ Data loaded from SharePoint successfully!');
-            } catch (error) {
-                showNotification('❌ Failed to load from SharePoint: ' + error.message, 'error');
-            }
-        }
-
-        async function refreshData() {
-            if (isSharePointMode && sharePointAccessToken) {
-                await loadFromSharePoint();
-            } else {
-                loadLocalData();
-                showNotification('Data refreshed from local storage');
-            }
-        }
 
         function showDataOptions() {
             const syncOptions = document.getElementById('syncOptions');
@@ -2309,6 +2343,9 @@
         }
 
         function logout() {
+            // Stop real-time sync
+            stopRealTimeSync();
+            
             currentUser = null;
             sharePointAccessToken = null;
             isSharePointMode = false;
@@ -2328,5 +2365,5 @@
             showNotification('Logged out successfully');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a52692a6aab4dc',t:'MTc1OTc1MzYyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a53349b45ab4dc',t:'MTc1OTc1NDE0NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
