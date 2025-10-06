@@ -1366,11 +1366,14 @@
                 // Get basic user info from Microsoft
                 const basicUserInfo = await getUserInfo(tokenData.access_token);
                 
+                console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
+                
                 // Check if user exists in SharePoint Users list and get their role
                 const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
                 
                 if (!userInfo) {
-                    showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
+                    // Error message already shown in checkUserInSharePointList
+                    logout();
                     return;
                 }
                 
@@ -1393,7 +1396,7 @@
                 // Start real-time sync
                 startRealTimeSync();
                 
-                showNotification('Welcome! Connected to SharePoint Lists with real-time sync.');
+                showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
                 
             } catch (error) {
                 console.error('❌ OAuth callback processing failed:', error);
@@ -1409,8 +1412,7 @@
                 // Show login screen again
                 initializeMicrosoftAuth();
             }
-        }
-
+        }  
         function checkExistingSession() {
             // Check for Microsoft session
             const msToken = sessionStorage.getItem('access_token');
@@ -2131,7 +2133,7 @@
                     const userInfo = await response.json();
                     const user = {
                         name: userInfo.displayName || 'Ministry User',
-                        email: userInfo.mail || userInfo.userPrincipalName || 'user@getonasia.onmicrosoft.com',
+                        email: userInfo.mail || userInfo.userPrincipalName || '',
                         id: userInfo.id,
                         role: 'User', // Will be determined by SharePoint permissions
                         permissions: 'Limited',
@@ -2139,284 +2141,280 @@
                         source: 'microsoft_365'
                     };
                     
-                    // Check SharePoint permissions after getting user info
-                    await checkUserPermissions(token, user);
+                    if (!user.email) {
+                        throw new Error('Could not retrieve user email from Microsoft');
+                    }
                     
                     return user;
                 } else {
-                    // Fallback user info with limited permissions
-                    return {
-                        name: 'Ministry User',
-                        email: 'user@getonasia.onmicrosoft.com',
-                        role: 'User',
-                        permissions: 'Limited',
-                        status: 'Active',
-                        source: 'microsoft_365'
-                    };
+                    throw new Error('Failed to get user info from Microsoft');
                 }
             } catch (error) {
                 console.error('Failed to get user info:', error);
-                // Return fallback user with limited permissions
-                return {
-                    name: 'Ministry User',
-                    email: 'user@getonasia.onmicrosoft.com',
-                    role: 'User',
-                    permissions: 'Limited',
-                    status: 'Active',
-                    source: 'microsoft_365'
-                };
+                throw error;
             }
         }
-
-     async function checkUserInSharePointList(email, name, authProvider) {
+        async function checkUserInSharePointList(email, name, authProvider) {
             try {
                 console.log('🔐 Checking user authorization in SharePoint Users list:', email);
                 
-                // If we have SharePoint access token, check the Users list
-                if (sharePointAccessToken) {
-                    const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Email eq '${email}'`;
-                    
-                    console.log('🔐 Querying SharePoint Users list:', url);
-                    
-                    const response = await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${sharePointAccessToken}`,
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        const userItems = data.value || [];
-                        
-                        console.log('🔐 SharePoint Users list response:', {
-                            totalItems: userItems.length,
-                            items: userItems
-                        });
-                        
-                        if (userItems.length > 0) {
-                            const userRecord = userItems[0].fields;
-                            
-                            // Check if user is active
-                            if (userRecord.Status !== 'Active') {
-                                console.log('❌ User found but not active:', userRecord.Status);
-                                return null;
-                            }
-                            
-                            // Map SharePoint role to permissions
-                            const role = userRecord.Role || 'User';
-                            const permissions = mapRoleToPermissions(role);
-                            
-                            console.log('✅ User authorized with role:', role);
-                            
-                            return {
-                                name: userRecord.DisplayName || name,
-                                email: email,
-                                id: userRecord.UserID || email,
-                                role: role,
-                                permissions: role,
-                                status: userRecord.Status,
-                                source: authProvider,
-                                department: userRecord.Department || '',
-                                lastLogin: new Date().toISOString()
-                            };
-                        } else {
-                            console.log('❌ User not found in SharePoint Users list');
-                            return null;
-                        }
-                    } else {
-                        console.error('❌ Failed to access SharePoint Users list:', response.status, response.statusText);
-                        throw new Error(`Cannot access Users list: ${response.status} ${response.statusText}`);
-                    }
-                } else {
+                if (!sharePointAccessToken) {
                     console.log('⚠️ No SharePoint access token available');
                     throw new Error('SharePoint connection not available');
                 }
+
+                // Properly encode the email for the filter
+                const encodedEmail = encodeURIComponent(`'${email}'`);
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Email eq ${encodedEmail}`;
+                
+                console.log('🔐 Querying SharePoint Users list:', url);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Failed to access SharePoint Users list:', response.status, response.statusText, errorText);
+                    throw new Error(`Cannot access Users list: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const userItems = data.value || [];
+                
+                console.log('🔐 SharePoint Users list response:', {
+                    totalItems: userItems.length,
+                    items: userItems
+                });
+                
+                if (userItems.length === 0) {
+                    console.log('❌ User not found in SharePoint Users list:', email);
+                    showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
+                    return null;
+                }
+                
+                const userRecord = userItems[0].fields;
+                console.log('🔐 User record found:', userRecord);
+                
+                // Check if user is active
+                if (userRecord.Status !== 'Active') {
+                    console.log('❌ User found but not active:', userRecord.Status);
+                    showNotification(`Access denied: Your account status is "${userRecord.Status}". Please contact your administrator.`, 'error');
+                    return null;
+                }
+                
+                // Validate required fields
+                if (!userRecord.Role) {
+                    console.log('❌ User record missing Role field');
+                    showNotification('Access denied: User role not defined. Please contact your administrator.', 'error');
+                    return null;
+                }
+                
+                // Map SharePoint role to permissions
+                const role = userRecord.Role;
+                const permissions = mapRoleToPermissions(role);
+                
+                console.log('✅ User authorized with role:', role);
+                
+                return {
+                    name: userRecord.DisplayName || name,
+                    email: email,
+                    id: userRecord.id || email,
+                    role: role,
+                    permissions: role,
+                    status: userRecord.Status,
+                    source: authProvider,
+                    department: userRecord.Department || '',
+                    lastLogin: new Date().toISOString()
+                };
                 
             } catch (error) {
                 console.error('❌ Error checking user authorization:', error);
-                
-                // Don't fall back to hardcoded admin list in production
-                console.log('🚫 Production mode: No fallback to hardcoded admin list');
+                showNotification('Authentication failed: ' + error.message, 'error');
                 return null;
             }
         }
-        function mapRoleToPermissions(role) {
-            const rolePermissions = {
-                'Admin': {
-                    canAdd: true,
-                    canEdit: true,
-                    canDelete: true,
-                    canViewAll: true,
-                    isAdmin: true
-                },
-                'Manager': {
-                    canAdd: true,
-                    canEdit: true,
-                    canDelete: true,
-                    canViewAll: true,
-                    isAdmin: false
-                },
-                'Contributor': {
-                    canAdd: true,
-                    canEdit: true,
-                    canDelete: false,
-                    canViewAll: true,
-                    isAdmin: false
-                },
-                'User': {
-                    canAdd: true,
-                    canEdit: false,
-                    canDelete: false,
-                    canViewAll: false,
-                    isAdmin: false
-                },
-                'Viewer': {
-                    canAdd: false,
-                    canEdit: false,
-                    canDelete: false,
-                    canViewAll: true,
-                    isAdmin: false
+
+
+                function mapRoleToPermissions(role) {
+                    const rolePermissions = {
+                        'Admin': {
+                            canAdd: true,
+                            canEdit: true,
+                            canDelete: true,
+                            canViewAll: true,
+                            isAdmin: true
+                        },
+                        'Manager': {
+                            canAdd: true,
+                            canEdit: true,
+                            canDelete: true,
+                            canViewAll: true,
+                            isAdmin: false
+                        },
+                        'Contributor': {
+                            canAdd: true,
+                            canEdit: true,
+                            canDelete: false,
+                            canViewAll: true,
+                            isAdmin: false
+                        },
+                        'User': {
+                            canAdd: true,
+                            canEdit: false,
+                            canDelete: false,
+                            canViewAll: false,
+                            isAdmin: false
+                        },
+                        'Viewer': {
+                            canAdd: false,
+                            canEdit: false,
+                            canDelete: false,
+                            canViewAll: true,
+                            isAdmin: false
+                        }
+                    };
+                    
+                    const permissions = rolePermissions[role] || rolePermissions['User'];
+                    
+                    // Set global permissions
+                    userPermissions = permissions;
+                    
+                    console.log('🔐 Permissions set for role', role, ':', permissions);
+                    
+                    return permissions;
                 }
-            };
-            
-            const permissions = rolePermissions[role] || rolePermissions['User'];
-            
-            // Set global permissions
-            userPermissions = permissions;
-            
-            console.log('🔐 Permissions set for role', role, ':', permissions);
-            
-            return permissions;
-        }
 
-        async function checkUserPermissions(token, user) {
-            // This function is now replaced by checkUserInSharePointList
-            // Keep for backward compatibility but redirect to new system
-            console.log('🔄 Redirecting to new user management system...');
-            
-            if (user && user.role) {
-                mapRoleToPermissions(user.role);
-            } else {
-                // Default to basic user permissions
-                userPermissions = {
-                    canAdd: true,
-                    canEdit: false,
-                    canDelete: false,
-                    canViewAll: false,
-                    isAdmin: false
-                };
-            }
-        }
-
-        async function loadDataFromSharePoint() {
-            try {
-                console.log('📊 Loading data from SharePoint Lists...');
-                showNotification('Loading data from SharePoint...', 'info');
-                
-                // Load fruits from SharePoint
-                await loadFruitsFromSharePoint();
-                
-                // Load activities from SharePoint
-                await loadActivitiesFromSharePoint();
-                
-                console.log('✅ Data loaded from SharePoint successfully');
-                console.log('📊 Loaded', fruits.length, 'fruits and', activities.length, 'activities');
-                
-                // Save locally as backup
-                saveLocalData();
-                
-            } catch (error) {
-                console.error('❌ Failed to load data from SharePoint:', error);
-                showNotification('Failed to load from SharePoint, using local data', 'warning');
-                
-                // Fallback to local data
-                loadLocalData();
-            }
-        }
-
-        async function loadFruitsFromSharePoint() {
-            try {
-                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items?expand=fields`;
-                
-                console.log('📊 Loading fruits from:', url);
-                
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${sharePointAccessToken}`,
-                        'Accept': 'application/json'
+                async function checkUserPermissions(token, user) {
+                    // This function is now replaced by checkUserInSharePointList
+                    // Keep for backward compatibility but redirect to new system
+                    console.log('🔄 Redirecting to new user management system...');
+                    
+                    if (user && user.role) {
+                        mapRoleToPermissions(user.role);
+                    } else {
+                        // Default to basic user permissions
+                        userPermissions = {
+                            canAdd: true,
+                            canEdit: false,
+                            canDelete: false,
+                            canViewAll: false,
+                            isAdmin: false
+                        };
                     }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
-                const data = await response.json();
-                const items = data.value || [];
-                
-                fruits = items.map(item => ({
-                    id: item.id.toString(),
-                    name: item.fields.Title || '',
-                    assignedTo: item.fields.AssignedTo || '',
-                    phone: item.fields.Phone || '',
-                    instagram: item.fields.Instagram || '',
-                    facebook: item.fields.Facebook || '',
-                    twitter: item.fields.Twitter || '',
-                    leadSource: item.fields.LeadSource || '',
-                    campaign: item.fields.Campaign || '',
-                    status: item.fields.Status || 'Initial Contact',
-                    notes: item.fields.Notes || '',
-                    createdDate: item.fields.Created || item.createdDateTime,
-                    createdBy: item.fields.CreatedByUser || 'Unknown'
-                }));
-                
-                console.log('📊 Loaded', fruits.length, 'fruits from SharePoint');
-                
-            } catch (error) {
-                console.error('❌ Error loading fruits from SharePoint:', error);
-                fruits = []; // Start with empty array if loading fails
-            }
-        }
 
-        async function loadActivitiesFromSharePoint() {
-            try {
-                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields`;
-                
-                console.log('📊 Loading activities from:', url);
-                
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${sharePointAccessToken}`,
-                        'Accept': 'application/json'
+                async function loadDataFromSharePoint() {
+                    try {
+                        console.log('📊 Loading data from SharePoint Lists...');
+                        showNotification('Loading data from SharePoint...', 'info');
+                        
+                        // Load fruits from SharePoint
+                        await loadFruitsFromSharePoint();
+                        
+                        // Load activities from SharePoint
+                        await loadActivitiesFromSharePoint();
+                        
+                        console.log('✅ Data loaded from SharePoint successfully');
+                        console.log('📊 Loaded', fruits.length, 'fruits and', activities.length, 'activities');
+                        
+                        // Save locally as backup
+                        saveLocalData();
+                        
+                    } catch (error) {
+                        console.error('❌ Failed to load data from SharePoint:', error);
+                        showNotification('Failed to load from SharePoint, using local data', 'warning');
+                        
+                        // Fallback to local data
+                        loadLocalData();
                     }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
-                const data = await response.json();
-                const items = data.value || [];
-                
-                activities = items.map(item => ({
-                    id: item.id.toString(),
-                    fruitName: item.fields.FruitNameLookupValue || item.fields.Title || '',
-                    type: item.fields.ActivityType || '',
-                    duration: item.fields.Duration || '0',
-                    notes: item.fields.Notes || '',
-                    outcome: item.fields.Outcome || '',
-                    user: item.fields.User || 'Unknown',
-                    createdDate: item.fields.Created || item.createdDateTime
-                }));
-                
-                console.log('📊 Loaded', activities.length, 'activities from SharePoint');
-                
-            } catch (error) {
-                console.error('❌ Error loading activities from SharePoint:', error);
-                activities = []; // Start with empty array if loading fails
-            }
-        }
+
+                async function loadFruitsFromSharePoint() {
+                    try {
+                        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items?expand=fields`;
+                        
+                        console.log('📊 Loading fruits from:', url);
+                        
+                        const response = await fetch(url, {
+                            headers: {
+                                'Authorization': `Bearer ${sharePointAccessToken}`,
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        const items = data.value || [];
+                        
+                        fruits = items.map(item => ({
+                            id: item.id.toString(),
+                            name: item.fields.Title || '',
+                            assignedTo: item.fields.AssignedTo || '',
+                            phone: item.fields.Phone || '',
+                            instagram: item.fields.Instagram || '',
+                            facebook: item.fields.Facebook || '',
+                            twitter: item.fields.Twitter || '',
+                            leadSource: item.fields.LeadSource || '',
+                            campaign: item.fields.Campaign || '',
+                            status: item.fields.Status || 'Initial Contact',
+                            notes: item.fields.Notes || '',
+                            createdDate: item.fields.Created || item.createdDateTime,
+                            createdBy: item.fields.CreatedByUser || 'Unknown'
+                        }));
+                        
+                        console.log('📊 Loaded', fruits.length, 'fruits from SharePoint');
+                        
+                    } catch (error) {
+                        console.error('❌ Error loading fruits from SharePoint:', error);
+                        fruits = []; // Start with empty array if loading fails
+                    }
+                }
+
+                async function loadActivitiesFromSharePoint() {
+                    try {
+                        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields`;
+                        
+                        console.log('📊 Loading activities from:', url);
+                        
+                        const response = await fetch(url, {
+                            headers: {
+                                'Authorization': `Bearer ${sharePointAccessToken}`,
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        const items = data.value || [];
+                        
+                        activities = items.map(item => ({
+                            id: item.id.toString(),
+                            fruitName: item.fields.FruitNameLookupValue || item.fields.Title || '',
+                            type: item.fields.ActivityType || '',
+                            duration: item.fields.Duration || '0',
+                            notes: item.fields.Notes || '',
+                            outcome: item.fields.Outcome || '',
+                            user: item.fields.User || 'Unknown',
+                            createdDate: item.fields.Created || item.createdDateTime
+                        }));
+                        
+                        console.log('📊 Loaded', activities.length, 'activities from SharePoint');
+                        
+                    } catch (error) {
+                        console.error('❌ Error loading activities from SharePoint:', error);
+                        activities = []; // Start with empty array if loading fails
+                    }
+                }
 
         async function addFruitToSharePoint(fruitData) {
             try {
@@ -2809,26 +2807,25 @@
             `).join('');
         }
 
-        function updateFruitsGrid() {
-            const container = document.getElementById('fruitsGrid');
-            if (!container) return;
-            
-            if (fruits.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-12 col-span-full">
-                        <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-users text-gray-400 text-3xl"></i>
+            function updateFruitsGrid() {
+                const container = document.getElementById('fruitsGrid');
+                if (!container) return;
+                
+                if (fruits.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-12 col-span-full">
+                            <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-users text-gray-400 text-3xl"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No contacts found</h3>
+                            <p class="text-gray-500 mb-4">Start building your ministry database by adding your first contact.</p>
+                            <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Add Your First Contact
+                            </button>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No contacts found</h3>
-                        <p class="text-gray-500 mb-4">Start building your ministry database by adding your first contact.</p>
-                        <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                            <i class="fas fa-plus mr-2"></i>Add Your First Contact
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-            
+                    `;
+                    return;
+                }
             container.innerHTML = fruits.map(fruit => {
                 const progressData = getProgressData(fruit.status);
                 return `
