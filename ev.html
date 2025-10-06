@@ -838,24 +838,68 @@
         // Authentication tokens
         let accessToken = null;
 
+        // PKCE state
+        let codeVerifier = null;
+        let codeChallenge = null;
+
+        // PKCE Helper Functions
+        function generateRandomString(length) {
+            const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return result;
+        }
+
+        async function generateCodeChallenge(codeVerifier) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(codeVerifier);
+            const digest = await crypto.subtle.digest('SHA-256', data);
+            return btoa(String.fromCharCode(...new Uint8Array(digest)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        async function initializePKCE() {
+            codeVerifier = generateRandomString(128);
+            codeChallenge = await generateCodeChallenge(codeVerifier);
+            
+            // Store code verifier securely
+            sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+            
+            console.log('🔐 PKCE initialized with code challenge');
+        }
+
         // Login Functions
         async function loginWithMicrosoft() {
             try {
                 showLoginLoading(true);
-                console.log('🔐 Starting Microsoft 365 authentication...');
+                console.log('🔐 Starting Microsoft 365 authentication with PKCE...');
                 
-                // Microsoft OAuth URL with proper redirect
+                // Initialize PKCE
+                await initializePKCE();
+                
+                // Generate state parameter for additional security
+                const state = generateRandomString(32);
+                sessionStorage.setItem('oauth_state', state);
+                
+                // Microsoft OAuth URL with PKCE parameters
                 const authUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.tenantId}/oauth2/v2.0/authorize?` +
                     `client_id=${SHAREPOINT_CONFIG.clientId}&` +
                     `response_type=code&` +
                     `redirect_uri=${encodeURIComponent(SHAREPOINT_CONFIG.redirectUri)}&` +
                     `scope=${encodeURIComponent(SHAREPOINT_CONFIG.scope)}&` +
                     `response_mode=query&` +
-                    `state=microsoft_login&` +
+                    `state=${state}&` +
+                    `code_challenge=${codeChallenge}&` +
+                    `code_challenge_method=S256&` +
                     `prompt=select_account`;
                 
-                console.log('🔗 Microsoft Auth URL:', authUrl);
+                console.log('🔗 Microsoft Auth URL with PKCE:', authUrl);
                 console.log('🔗 Redirect URI:', SHAREPOINT_CONFIG.redirectUri);
+                console.log('🔐 Using PKCE code challenge method: S256');
                 
                 // Start OAuth flow
                 window.location.href = authUrl;
@@ -1013,10 +1057,14 @@
             isAuthenticated = false;
             accessToken = null;
             isSharePointConnected = false;
+            codeVerifier = null;
+            codeChallenge = null;
             
-            // Clear stored tokens
+            // Clear stored tokens and PKCE data
             localStorage.removeItem('sharepoint_access_token');
             localStorage.removeItem('sharepoint_token_expiry');
+            sessionStorage.removeItem('pkce_code_verifier');
+            sessionStorage.removeItem('oauth_state');
             
             // Show login screen
             document.getElementById('dashboard').classList.add('hidden');
@@ -1029,7 +1077,14 @@
         
         async function exchangeCodeForToken(authCode) {
             try {
-                console.log('🔄 Exchanging Microsoft auth code for token...');
+                console.log('🔄 Exchanging Microsoft auth code for token with PKCE...');
+                
+                // Retrieve the code verifier from session storage
+                const storedCodeVerifier = sessionStorage.getItem('pkce_code_verifier');
+                if (!storedCodeVerifier) {
+                    throw new Error('PKCE code verifier not found in session storage');
+                }
+                
                 const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.tenantId}/oauth2/v2.0/token`;
                 
                 const response = await fetch(tokenUrl, {
@@ -1042,7 +1097,8 @@
                         scope: SHAREPOINT_CONFIG.scope,
                         code: authCode,
                         redirect_uri: SHAREPOINT_CONFIG.redirectUri,
-                        grant_type: 'authorization_code'
+                        grant_type: 'authorization_code',
+                        code_verifier: storedCodeVerifier
                     })
                 });
                 
@@ -1060,10 +1116,17 @@
                 localStorage.setItem('sharepoint_access_token', accessToken);
                 localStorage.setItem('sharepoint_token_expiry', expiryTime.toString());
                 
-                console.log('✅ Microsoft access token obtained successfully');
+                // Clean up PKCE session data
+                sessionStorage.removeItem('pkce_code_verifier');
+                sessionStorage.removeItem('oauth_state');
+                
+                console.log('✅ Microsoft access token obtained successfully with PKCE');
                 
             } catch (error) {
-                console.error('Microsoft token exchange failed:', error);
+                console.error('Microsoft token exchange with PKCE failed:', error);
+                // Clean up session storage on error
+                sessionStorage.removeItem('pkce_code_verifier');
+                sessionStorage.removeItem('oauth_state');
                 throw error;
             }
         }
@@ -1411,11 +1474,20 @@
                 return;
             }
             
-            if (authCode && state === 'microsoft_login') {
-                // Handle Microsoft OAuth return
+            if (authCode && state) {
+                // Handle Microsoft OAuth return with PKCE
                 try {
                     showLoginLoading(true);
-                    console.log('🔄 Processing Microsoft OAuth callback...');
+                    console.log('🔄 Processing Microsoft OAuth callback with PKCE...');
+                    
+                    // Validate state parameter to prevent CSRF attacks
+                    const storedState = sessionStorage.getItem('oauth_state');
+                    if (!storedState || storedState !== state) {
+                        throw new Error('Invalid state parameter - possible CSRF attack');
+                    }
+                    
+                    console.log('✅ State parameter validated successfully');
+                    
                     await exchangeCodeForToken(authCode);
                     await authenticateUser();
                     window.history.replaceState({}, document.title, window.location.pathname);
@@ -1423,6 +1495,11 @@
                     console.error('Microsoft OAuth callback failed:', error);
                     showLoginLoading(false);
                     showNotification('Microsoft authentication failed. Please try again.', 'error');
+                    
+                    // Clean up session storage on error
+                    sessionStorage.removeItem('pkce_code_verifier');
+                    sessionStorage.removeItem('oauth_state');
+                    
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
             } else {
@@ -1790,5 +1867,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a60c3c9214e708',t:'MTc1OTc2MzAzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a6179a16e1e708',t:'MTc1OTc2MzQ5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
