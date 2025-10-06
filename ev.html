@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2.0 Evangelism FRM</title>
+    <title>Evangelism FRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1054,31 +1054,27 @@
         };
         
         // Google OAuth configuration
+        
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
             CLIENT_SECRET: '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',
             PROJECT_ID: 'hmbcfrm',
             AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
             TOKEN_URI: 'https://oauth2.googleapis.com/token',
-            SCOPES: 'openid profile email https://www.googleapis.com/auth/spreadsheets',
+            SCOPES: 'openid email profile', // Remove spreadsheets scope if not needed
             REDIRECT_URIS: [
-                'http://localhost:3000/auth/callback',
-                'https://shill.es/auth/callback',
                 'https://app.shill.es/auth/callback',
                 'https://app.geton.asia/auth/callback',
-                'https://geton.asia/auth/callback'
+                'https://geton.asia/auth/callback',
+                'https://shill.es/auth/callback'
             ],
             JAVASCRIPT_ORIGINS: [
-                'http://localhost:3000',
-                'https://shill.es',
                 'https://app.shill.es',
                 'https://app.geton.asia',
-                'https://geton.asia'
-            ],
-            SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
-            SHEET_NAME: 'User Access & Admin Config'
+                'https://geton.asia',
+                'https://shill.es'
+            ]
         };
-
         // Global state
         let currentUser = null;
         let currentTab = 'overview';
@@ -1486,15 +1482,10 @@
                 const state = 'google_auth_' + Date.now();
                 sessionStorage.setItem('google_auth_state', state);
                 
-                // Determine the correct redirect URI based on current domain
-                const currentOrigin = window.location.origin;
-                let redirectUri = currentOrigin + '/auth/callback';
+                // Use a fixed redirect URI that matches your Google Cloud Console
+                const redirectUri = 'https://app.shill.es/auth/callback';
                 
-                // Check if current origin is in allowed list
-                if (!GOOGLE_CONFIG.JAVASCRIPT_ORIGINS.includes(currentOrigin)) {
-                    console.warn('Current origin not in allowed list, using fallback');
-                    redirectUri = 'https://app.shill.es/auth/callback';
-                }
+                console.log('🔐 Using fixed redirect URI:', redirectUri);
                 
                 // Build OAuth URL
                 const authUrl = new URL(GOOGLE_CONFIG.AUTH_URI);
@@ -1516,7 +1507,7 @@
                 showNotification('Google authentication failed: ' + error.message, 'error');
             }
         }
-
+        
         function showGoogleSignInPopup() {
             // Create a manual Google Sign-In popup
             const popup = window.open(
@@ -1610,13 +1601,12 @@
             try {
                 console.log('🔄 Google token exchange starting...');
                 
-                // Determine the correct redirect URI
+                // Use the same redirect URI that was used in the auth request
                 const currentOrigin = window.location.origin;
-                let redirectUri = currentOrigin + '/auth/callback';
+                const currentPath = window.location.pathname;
+                const redirectUri = currentOrigin + currentPath;
                 
-                if (!GOOGLE_CONFIG.JAVASCRIPT_ORIGINS.includes(currentOrigin)) {
-                    redirectUri = 'https://app.shill.es/auth/callback';
-                }
+                console.log('🔄 Using redirect URI for token exchange:', redirectUri);
                 
                 const response = await fetch(GOOGLE_CONFIG.TOKEN_URI, {
                     method: 'POST',
@@ -1634,6 +1624,7 @@
                 
                 if (!response.ok) {
                     const errorData = await response.json();
+                    console.error('❌ Google token exchange failed:', errorData);
                     throw new Error(errorData.error_description || 'Google token exchange failed');
                 }
                 
