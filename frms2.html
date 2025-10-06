@@ -943,7 +943,7 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const creds = require('./service-account-key.json');
 
-const doc = new GoogleSpreadsheet('YOUR_SPREADSHEET_ID');
+const doc = new GoogleSpreadsheet('1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U');
 await doc.useServiceAccountAuth(creds);
 await doc.loadInfo();</code></pre>
                             </div>
@@ -1024,7 +1024,7 @@ await doc.loadInfo();</code></pre>
                             <div class="bg-white p-4 rounded border">
                                 <h5 class="font-medium mb-2">Implementation</h5>
                                 <pre class="bg-gray-100 p-3 rounded text-xs overflow-x-auto"><code>// Restrict to specific spreadsheet only
-const ALLOWED_SPREADSHEET_ID = 'your-spreadsheet-id';
+const ALLOWED_SPREADSHEET_ID = '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U';
 
 function validateSpreadsheetAccess(spreadsheetId) {
   return spreadsheetId === ALLOWED_SPREADSHEET_ID;
