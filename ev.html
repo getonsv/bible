@@ -51,36 +51,14 @@
             </div>
             
             <div id="googleSignInButton" class="w-full mb-4">
-                <div class="space-y-3">
-                    <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                        <i class="fab fa-microsoft text-xl"></i>
-                        <span>Sign in with Microsoft 365</span>
-                    </button>
-                    
-                    <div class="relative">
-                        <div class="absolute inset-0 flex items-center">
-                            <div class="w-full border-t border-gray-300"></div>
-                        </div>
-                        <div class="relative flex justify-center text-sm">
-                            <span class="px-2 bg-white text-gray-500">or</span>
-                        </div>
-                    </div>
-                    
-                    <button onclick="authenticateWithGoogle()" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                        <i class="fab fa-google text-xl"></i>
-                        <span>Sign in with Google</span>
-                    </button>
-                    
-                    <div class="mt-4 text-center">
-                        <p class="text-xs text-gray-500">
-                            <i class="fas fa-shield-alt text-green-500 mr-1"></i>
-                            This site is secured and every activity is being monitored
-                        </p>
-                    </div>
+                <div class="w-full bg-gray-100 text-gray-600 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span>Loading Microsoft Authentication...</span>
                 </div>
             </div>
             
             <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Secure PKCE authentication with Microsoft 365</p>
                 <p class="text-xs text-gray-400 mt-2">Copyright 2024 • System by GetOn</p>
             </div>
         </div>
@@ -846,150 +824,6 @@
         </div>
     </div>
 
-    <!-- Fruit Details Modal -->
-    <div id="fruitDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-2xl font-bold text-gray-800" id="fruitDetailsTitle">Fruit Details</h3>
-                    <button onclick="closeModal('fruitDetailsModal')" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Fruit Information -->
-                    <div class="lg:col-span-1">
-                        <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6">
-                            <div class="text-center mb-6">
-                                <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span class="text-white text-2xl font-bold" id="fruitInitial">?</span>
-                                </div>
-                                <h4 class="text-xl font-bold text-gray-800" id="fruitName">Loading...</h4>
-                                <p class="text-gray-600" id="fruitAssignee">Assigned to: Loading...</p>
-                            </div>
-                            
-                            <!-- Status and Progress -->
-                            <div class="mb-6">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-700">Status</span>
-                                    <span class="px-3 py-1 rounded-full text-xs font-medium" id="fruitStatusBadge">Loading...</span>
-                                </div>
-                                <div class="mb-4">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-sm font-medium text-gray-700">Progress</span>
-                                        <span class="text-sm text-gray-600" id="fruitProgress">0%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-3">
-                                        <div class="h-3 rounded-full transition-all duration-500" id="fruitProgressBar" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Contact Information -->
-                            <div class="space-y-3">
-                                <h5 class="font-semibold text-gray-800 mb-3">Contact Information</h5>
-                                <div class="flex items-center text-sm text-gray-600" id="fruitPhone">
-                                    <i class="fas fa-phone w-5 mr-3 text-blue-600"></i>
-                                    <span>Loading...</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-600" id="fruitInstagram">
-                                    <i class="fab fa-instagram w-5 mr-3 text-pink-600"></i>
-                                    <span>Loading...</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-600" id="fruitFacebook">
-                                    <i class="fab fa-facebook w-5 mr-3 text-blue-600"></i>
-                                    <span>Loading...</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-600" id="fruitTwitter">
-                                    <i class="fab fa-twitter w-5 mr-3 text-blue-400"></i>
-                                    <span>Loading...</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Lead Information -->
-                            <div class="mt-6 pt-6 border-t border-gray-200">
-                                <h5 class="font-semibold text-gray-800 mb-3">Lead Information</h5>
-                                <div class="space-y-2">
-                                    <div class="flex items-center text-sm text-gray-600">
-                                        <i class="fas fa-bullhorn w-5 mr-3 text-orange-600"></i>
-                                        <span id="fruitLeadSource">Loading...</span>
-                                    </div>
-                                    <div class="flex items-center text-sm text-gray-600" id="fruitCampaignDiv">
-                                        <i class="fas fa-tag w-5 mr-3 text-green-600"></i>
-                                        <span id="fruitCampaign">Loading...</span>
-                                    </div>
-                                    <div class="flex items-center text-sm text-gray-600">
-                                        <i class="fas fa-calendar w-5 mr-3 text-purple-600"></i>
-                                        <span id="fruitCreatedDate">Loading...</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Notes -->
-                            <div class="mt-6 pt-6 border-t border-gray-200" id="fruitNotesSection">
-                                <h5 class="font-semibold text-gray-800 mb-3">Notes</h5>
-                                <p class="text-sm text-gray-600 bg-white p-3 rounded-lg" id="fruitNotes">Loading...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Activities Timeline -->
-                    <div class="lg:col-span-2">
-                        <div class="bg-white border border-gray-200 rounded-xl p-6">
-                            <div class="flex items-center justify-between mb-6">
-                                <h4 class="text-lg font-semibold text-gray-800">Activity Timeline</h4>
-                                <div class="flex items-center space-x-4">
-                                    <span class="text-sm text-gray-500" id="activityCount">0 activities</span>
-                                    <button onclick="logActivityForCurrentFruit()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                                        <i class="fas fa-plus mr-2"></i>Log Activity
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Activity Stats -->
-                            <div class="grid grid-cols-3 gap-4 mb-6">
-                                <div class="text-center p-3 bg-blue-50 rounded-lg">
-                                    <div class="text-2xl font-bold text-blue-600" id="totalActivities">0</div>
-                                    <div class="text-xs text-blue-700">Total Activities</div>
-                                </div>
-                                <div class="text-center p-3 bg-green-50 rounded-lg">
-                                    <div class="text-2xl font-bold text-green-600" id="totalMinutes">0</div>
-                                    <div class="text-xs text-green-700">Total Minutes</div>
-                                </div>
-                                <div class="text-center p-3 bg-purple-50 rounded-lg">
-                                    <div class="text-2xl font-bold text-purple-600" id="lastActivity">Never</div>
-                                    <div class="text-xs text-purple-700">Last Contact</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Activities List -->
-                            <div class="space-y-4 max-h-96 overflow-y-auto" id="fruitActivitiesList">
-                                <div class="text-center py-8 text-gray-500">
-                                    <i class="fas fa-clipboard-list text-4xl mb-4"></i>
-                                    <p>Loading activities...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Action Buttons -->
-                <div class="flex justify-end space-x-4 mt-6 pt-6 border-t border-gray-200">
-                    <button onclick="editCurrentFruit()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-edit mr-2"></i>Edit Fruit
-                    </button>
-                    <button onclick="scheduleSessionForCurrentFruit()" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-calendar-plus mr-2"></i>Schedule Session
-                    </button>
-                    <button onclick="closeModal('fruitDetailsModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg transition-colors">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Import Modal -->
     <div id="importModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -1076,15 +910,12 @@
             GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
         };
         
-        // Google OAuth configuration - Fixed for production environment
+        // Google configuration for legacy features
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
-            PROJECT_ID: 'hmbcfrm',
-            AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
-            TOKEN_URI: 'https://oauth2.googleapis.com/token',
+            CLIENT_SECRET: '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',
+            API_KEY: 'AIzaSyBqvopK2QrsiUSLO4M7McX4EZI0cbTF0uY',
             SCOPES: 'openid profile email https://www.googleapis.com/auth/spreadsheets',
-            // Production redirect URI - must match Google Cloud Console exactly
-            REDIRECT_URI: 'https://app.shill.es/auth/callback',
             SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
             SHEET_NAME: 'User Access & Admin Config'
         };
@@ -1100,7 +931,6 @@
         let realTimeSync = null;
         let lastSyncTime = null;
         let syncInProgress = false;
-        let currentViewingFruit = null;
         let userPermissions = {
             canAdd: false,
             canEdit: false,
@@ -1141,7 +971,7 @@
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 Initializing Evangelism CRM with enhanced authentication...');
+            console.log('🔧 Initializing Evangelism CRM with PKCE authentication...');
             console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
             console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
             
@@ -1264,8 +1094,79 @@
         function initializeMicrosoftAuth() {
             console.log('🔧 Initializing authentication options...');
             
-            // The HTML already contains the updated login UI with demo mode
-            console.log('✅ Multi-provider authentication initialized with demo mode');
+            // Provide both Microsoft 365 and Google authentication
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fab fa-microsoft text-xl"></i>
+                            <span>Sign in with Microsoft 365</span>
+                        </button>
+                        
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">or</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="authenticateWithGoogle()" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fab fa-google text-xl text-red-500"></i>
+                            <span>Sign in with Google</span>
+                        </button>
+                        
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">or</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="demoLogin()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fas fa-play text-xl"></i>
+                            <span>Demo Login (Admin Access)</span>
+                        </button>
+                        
+                        <div class="mt-4 text-center">
+                            <p class="text-xs text-gray-500">
+                                <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                                Secure authentication with role-based access control
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Initialize Google Sign-In after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                initializeGoogleAuth();
+            }, 500);
+            
+            console.log('✅ Multi-provider authentication initialized');
+        }
+
+        function initializeGoogleAuth() {
+            // Load Google Identity Services
+            if (typeof google !== 'undefined' && google.accounts) {
+                console.log('🔧 Initializing Google Sign-In...');
+                
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                    callback: handleGoogleSignIn,
+                    auto_select: false,
+                    cancel_on_tap_outside: true
+                });
+                
+                console.log('✅ Google Sign-In initialized');
+            } else {
+                console.log('⏳ Waiting for Google Identity Services to load...');
+                setTimeout(initializeGoogleAuth, 500);
+            }
         }
 
         function checkForOAuthCallback() {
@@ -1286,12 +1187,8 @@
                 console.log('🔐 OAuth callback detected, processing...');
                 showNotification('Processing authentication...', 'info');
                 
-                // Determine if this is Google or Microsoft OAuth based on state
-                if (returnedState && returnedState.startsWith('google_auth_')) {
-                    processGoogleOAuthCallback(authCode, returnedState);
-                } else {
-                    processOAuthCallback(authCode, returnedState);
-                }
+                // Process callback asynchronously
+                processOAuthCallback(authCode, returnedState);
                 return true; // Return true to indicate callback is being processed
             }
             
@@ -1319,55 +1216,11 @@
                 // Get basic user info from Microsoft
                 const basicUserInfo = await getUserInfo(tokenData.access_token);
                 
-                console.log('👤 Microsoft user info retrieved:', {
-                    email: basicUserInfo.email,
-                    name: basicUserInfo.name
-                });
-                
-                // Try to check user in SharePoint Users list, but allow fallback
-                let userInfo;
-                try {
-                    userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
-                } catch (error) {
-                    console.log('⚠️ SharePoint user validation failed, using fallback authentication:', error.message);
-                    
-                    // Fallback: Create user with basic permissions
-                    userInfo = {
-                        name: basicUserInfo.name,
-                        email: basicUserInfo.email,
-                        id: basicUserInfo.id,
-                        role: 'User',
-                        permissions: 'Contribute',
-                        status: 'Active',
-                        source: 'microsoft',
-                        department: 'Ministry',
-                        notes: 'Auto-created from Microsoft authentication',
-                        lastLogin: new Date().toISOString()
-                    };
-                    
-                    // Set basic permissions
-                    userPermissions = {
-                        canAdd: true,
-                        canEdit: true,
-                        canDelete: false,
-                        canViewAll: true,
-                        isAdmin: false
-                    };
-                    
-                    showNotification('Authenticated with Microsoft 365 (using fallback permissions)', 'info');
-                }
+                // Check if user exists in SharePoint Users list and get their role
+                const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
                 
                 if (!userInfo) {
-                    // Clear tokens on failed authorization
-                    sessionStorage.removeItem('access_token');
-                    sessionStorage.removeItem('token_expiry');
-                    sharePointAccessToken = null;
-                    isSharePointMode = false;
-                    
-                    showNotification('Access denied: Your email is not found in the authorized users list or your account is inactive. Please contact your administrator.', 'error');
-                    
-                    // Clean URL and return to login
-                    window.history.replaceState({}, document.title, window.location.pathname);
+                    showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
                     return;
                 }
                 
@@ -1402,59 +1255,43 @@
                 
                 // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Show login screen again
+                initializeMicrosoftAuth();
             }
         }
 
-        async function checkExistingSession() {
-            // Check for Microsoft session
-            const msToken = sessionStorage.getItem('access_token');
-            const msExpiry = sessionStorage.getItem('token_expiry');
+        function checkExistingSession() {
+            const token = sessionStorage.getItem('access_token');
+            const expiry = sessionStorage.getItem('token_expiry');
             
-            // Check for saved user
-            const savedUser = sessionStorage.getItem('current_user');
-            
-            if (msToken && msExpiry && Date.now() < parseInt(msExpiry)) {
-                console.log('🔐 Valid Microsoft session found, validating user...');
-                sharePointAccessToken = msToken;
+            if (token && expiry && Date.now() < parseInt(expiry)) {
+                console.log('🔐 Valid session found, restoring...');
+                sharePointAccessToken = token;
                 isSharePointMode = true;
                 
                 // Restore user info
+                const savedUser = sessionStorage.getItem('current_user');
                 if (savedUser) {
-                    const user = JSON.parse(savedUser);
-                    currentUser = user;
-                    
-                    // Set permissions based on role
-                    if (user.role) {
-                        mapRoleToPermissions(user.role);
-                    }
-                    
-                    loadDataFromSharePoint().then(() => {
-                        showDashboard();
-                        startRealTimeSync();
-                        showNotification('Microsoft session restored with real-time sync!');
-                    });
-                } else {
-                    clearSessionAndShowLogin();
+                    currentUser = JSON.parse(savedUser);
                 }
+                
+                loadDataFromSharePoint().then(() => {
+                    showDashboard();
+                    
+                    // Start real-time sync for restored session
+                    startRealTimeSync();
+                    
+                    showNotification('Session restored with real-time sync!');
+                });
             } else {
                 console.log('🔐 No valid session found');
-                clearSessionAndShowLogin();
-            }
-        }
-
-        function clearSessionAndShowLogin(message = null) {
-            // Clean up all session data
-            sessionStorage.removeItem('access_token');
-            sessionStorage.removeItem('token_expiry');
-            sessionStorage.removeItem('current_user');
-            
-            // Reset global state
-            currentUser = null;
-            sharePointAccessToken = null;
-            isSharePointMode = false;
-            
-            if (message) {
-                showNotification(message, 'warning');
+                if (token) {
+                    // Clean up expired session
+                    sessionStorage.removeItem('access_token');
+                    sessionStorage.removeItem('token_expiry');
+                    sessionStorage.removeItem('current_user');
+                }
             }
         }
 
@@ -1481,19 +1318,17 @@
 
         async function authenticateWithGoogle() {
             try {
-                console.log('🔐 Starting Google OAuth authentication...');
+                console.log('🔐 Starting Google authentication...');
                 showNotification('Redirecting to Google...', 'info');
                 
-                // Generate state parameter for security
-                const state = 'google_auth_' + Date.now() + '_' + Math.random().toString(36).substring(2);
-                sessionStorage.setItem('google_oauth_state', state);
-                
-                // Build Google OAuth URL
-                const authUrl = buildGoogleAuthUrl(state);
-                console.log('🔐 Google auth URL built for production environment');
-                
-                // Redirect to Google authentication
-                window.location.href = authUrl;
+                // Trigger Google Sign-In popup
+                google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        console.log('Google Sign-In prompt not displayed, showing manual sign-in');
+                        // Fallback to manual sign-in
+                        showGoogleSignInPopup();
+                    }
+                });
                 
             } catch (error) {
                 console.error('❌ Google authentication failed:', error);
@@ -1501,218 +1336,261 @@
             }
         }
 
-        function buildGoogleAuthUrl(state) {
-            const params = new URLSearchParams({
-                client_id: GOOGLE_CONFIG.CLIENT_ID,
-                redirect_uri: GOOGLE_CONFIG.REDIRECT_URI,
-                response_type: 'code',
-                scope: GOOGLE_CONFIG.SCOPES,
-                state: state,
-                access_type: 'offline',
-                prompt: 'select_account'
-            });
-            
-            return `${GOOGLE_CONFIG.AUTH_URI}?${params.toString()}`;
+        function showGoogleSignInPopup() {
+            // Create a manual Google Sign-In popup
+            const popup = window.open(
+                `https://accounts.google.com/oauth/authorize?` +
+                `client_id=${GOOGLE_CONFIG.CLIENT_ID}&` +
+                `redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}&` +
+                `response_type=token&` +
+                `scope=${encodeURIComponent('openid profile email')}&` +
+                `state=google_auth`,
+                'googleSignIn',
+                'width=500,height=600,scrollbars=yes,resizable=yes'
+            );
+
+            // Monitor popup for completion
+            const checkClosed = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkClosed);
+                    console.log('Google Sign-In popup closed');
+                }
+            }, 1000);
         }
 
-        async function processGoogleOAuthCallback(authCode, returnedState) {
+        async function handleGoogleSignIn(response) {
             try {
-                console.log('🔐 Processing Google OAuth callback...');
+                console.log('🔐 Processing Google Sign-In response...');
                 
-                // Validate state parameter
-                const storedState = sessionStorage.getItem('google_oauth_state');
-                if (returnedState && storedState && returnedState !== storedState) {
-                    throw new Error('Invalid state parameter - possible security issue');
-                }
+                // Decode the JWT token
+                const token = response.credential;
+                const payload = JSON.parse(atob(token.split('.')[1]));
                 
-                // Exchange code for token
-                const tokenData = await exchangeGoogleCodeForToken(authCode);
-                
-                // Get user info from Google
-                const googleUserInfo = await getGoogleUserInfo(tokenData.access_token);
-                
-                console.log('👤 Google user info retrieved:', {
-                    email: googleUserInfo.email,
-                    name: googleUserInfo.name
+                console.log('👤 Google user info:', {
+                    email: payload.email,
+                    name: payload.name,
+                    picture: payload.picture
                 });
                 
-                // Check user in Google Sheets
-                const userInfo = await checkUserInGoogleSheets(googleUserInfo.email, googleUserInfo.name, tokenData.access_token);
+                // Check if user exists in SharePoint Users list
+                const userInfo = await checkUserInSharePointList(payload.email, payload.name, 'google');
                 
                 if (!userInfo) {
-                    showNotification('Access denied: Your email is not found in the authorized users list. Please contact your administrator.', 'error');
-                    window.history.replaceState({}, document.title, window.location.pathname);
+                    showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
                     return;
                 }
                 
-                // Set current user
+                // Set current user with SharePoint permissions
                 currentUser = userInfo;
-                sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-                sessionStorage.setItem('google_access_token', tokenData.access_token);
                 
-                // Clean up OAuth parameters
-                sessionStorage.removeItem('google_oauth_state');
-                
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // Load data from Google Sheets
-                await loadDataFromGoogleSheets(tokenData.access_token);
+                // Load data from SharePoint (using service account or public access)
+                await loadDataFromSharePoint();
                 
                 showDashboard();
-                showNotification('Welcome! Connected to Google Sheets successfully.');
+                
+                // Start real-time sync if we have SharePoint access
+                if (sharePointAccessToken) {
+                    startRealTimeSync();
+                }
+                
+                showNotification(`Welcome ${userInfo.name}! Signed in with Google.`);
                 
             } catch (error) {
-                console.error('❌ Google OAuth callback processing failed:', error);
-                showNotification('Google authentication failed: ' + error.message, 'error');
-                
-                // Clean up on failure
-                sessionStorage.removeItem('google_oauth_state');
-                
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
+                console.error('❌ Google Sign-In processing failed:', error);
+                showNotification('Google Sign-In failed: ' + error.message, 'error');
             }
         }
 
-        async function exchangeGoogleCodeForToken(authCode) {
-            try {
-                console.log('🔄 Exchanging Google auth code for token...');
-                
-                const response = await fetch(GOOGLE_CONFIG.TOKEN_URI, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: new URLSearchParams({
-                        client_id: GOOGLE_CONFIG.CLIENT_ID,
-                        redirect_uri: GOOGLE_CONFIG.REDIRECT_URI,
-                        code: authCode,
-                        grant_type: 'authorization_code'
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error_description || 'Token exchange failed');
-                }
-                
-                const tokenData = await response.json();
-                console.log('✅ Google token exchange successful');
-                
-                return tokenData;
-                
-            } catch (error) {
-                console.error('❌ Google token exchange failed:', error);
-                throw error;
-            }
+        function demoLogin() {
+            console.log('🎭 Starting demo login...');
+            showNotification('Logging in with demo account...', 'info');
+            
+            // Create demo user with admin permissions
+            currentUser = {
+                name: 'Demo Administrator',
+                email: 'demo@evangelismcrm.com',
+                id: 'demo_admin',
+                role: 'Admin',
+                permissions: 'Full Control',
+                status: 'Active',
+                source: 'demo',
+                department: 'Demo',
+                lastLogin: new Date().toISOString()
+            };
+            
+            // Set admin permissions
+            userPermissions = {
+                canAdd: true,
+                canEdit: true,
+                canDelete: true,
+                canViewAll: true,
+                isAdmin: true
+            };
+            
+            // Load sample data for demo
+            loadDemoData();
+            
+            // Show dashboard
+            showDashboard();
+            
+            showNotification('Welcome to the demo! You have full admin access to explore all features.');
         }
 
-        async function getGoogleUserInfo(accessToken) {
-            try {
-                const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to get Google user info');
+        function loadDemoData() {
+            // Sample fruits data
+            fruits = [
+                {
+                    id: 'demo_1',
+                    name: 'John Smith',
+                    assignedTo: 'Demo Administrator',
+                    phone: '+1 (555) 123-4567',
+                    instagram: 'johnsmith_official',
+                    facebook: 'john.smith.profile',
+                    twitter: '@johnsmith',
+                    leadSource: 'Facebook Ads',
+                    campaign: 'Christmas Outreach 2024',
+                    status: 'BB Session Scheduled',
+                    notes: 'Very interested in learning more about faith. Has questions about baptism.',
+                    createdDate: new Date(Date.now() - 86400000 * 3).toISOString(), // 3 days ago
+                    createdBy: 'demo@evangelismcrm.com'
+                },
+                {
+                    id: 'demo_2',
+                    name: 'Sarah Johnson',
+                    assignedTo: 'Demo Administrator',
+                    phone: '+1 (555) 987-6543',
+                    instagram: 'sarah_j_life',
+                    facebook: '',
+                    twitter: '',
+                    leadSource: 'Instagram Ads',
+                    campaign: 'Youth Campaign 2024',
+                    status: 'Attending Class',
+                    notes: 'Regular attendee, very engaged in discussions. Considering baptism.',
+                    createdDate: new Date(Date.now() - 86400000 * 7).toISOString(), // 1 week ago
+                    createdBy: 'demo@evangelismcrm.com'
+                },
+                {
+                    id: 'demo_3',
+                    name: 'Michael Chen',
+                    assignedTo: 'Demo Administrator',
+                    phone: '+1 (555) 456-7890',
+                    instagram: '',
+                    facebook: 'michael.chen.vancouver',
+                    twitter: '',
+                    leadSource: 'Referral',
+                    campaign: '',
+                    status: 'Initial Contact',
+                    notes: 'Friend referred him. Interested but cautious. Needs gentle approach.',
+                    createdDate: new Date(Date.now() - 86400000 * 1).toISOString(), // 1 day ago
+                    createdBy: 'demo@evangelismcrm.com'
+                },
+                {
+                    id: 'demo_4',
+                    name: 'Emily Rodriguez',
+                    assignedTo: 'Demo Administrator',
+                    phone: '+1 (555) 321-0987',
+                    instagram: 'emily_r_fitness',
+                    facebook: 'emily.rodriguez.fitness',
+                    twitter: '@emilyfit',
+                    leadSource: 'Event/Outreach',
+                    campaign: 'Community Health Fair',
+                    status: 'Baptized',
+                    notes: 'Completed baptism last month! Now helping with outreach events.',
+                    createdDate: new Date(Date.now() - 86400000 * 45).toISOString(), // 45 days ago
+                    createdBy: 'demo@evangelismcrm.com'
                 }
-                
-                return await response.json();
-                
-            } catch (error) {
-                console.error('❌ Failed to get Google user info:', error);
-                throw error;
-            }
-        }
-
-        async function checkUserInGoogleSheets(email, name, accessToken) {
-            try {
-                console.log('🔐 Checking user authorization in Google Sheets:', email);
-                
-                // Query Google Sheets for user authorization
-                const sheetsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${GOOGLE_CONFIG.SHEET_NAME}`;
-                
-                const response = await fetch(sheetsUrl, {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to access Google Sheets');
+            ];
+            
+            // Sample activities data
+            activities = [
+                {
+                    id: 'demo_act_1',
+                    fruitName: 'John Smith',
+                    type: 'WhatsApp Call',
+                    duration: '25',
+                    notes: 'Discussed his questions about baptism. Scheduled BB session for this weekend.',
+                    outcome: 'Scheduled Next Step',
+                    user: 'Demo Administrator',
+                    createdDate: new Date(Date.now() - 86400000 * 1).toISOString()
+                },
+                {
+                    id: 'demo_act_2',
+                    fruitName: 'Sarah Johnson',
+                    type: 'In-Person Meeting',
+                    duration: '45',
+                    notes: 'Met at coffee shop. She shared her testimony and expressed interest in baptism.',
+                    outcome: 'Positive Response',
+                    user: 'Demo Administrator',
+                    createdDate: new Date(Date.now() - 86400000 * 2).toISOString()
+                },
+                {
+                    id: 'demo_act_3',
+                    fruitName: 'Michael Chen',
+                    type: 'Phone Call',
+                    duration: '15',
+                    notes: 'Initial contact call. He was polite but seemed hesitant. Will follow up next week.',
+                    outcome: 'Need Follow-up',
+                    user: 'Demo Administrator',
+                    createdDate: new Date(Date.now() - 86400000 * 1).toISOString()
+                },
+                {
+                    id: 'demo_act_4',
+                    fruitName: 'Emily Rodriguez',
+                    type: 'BB Session',
+                    duration: '60',
+                    notes: 'Completed baptism ceremony! Beautiful moment. She wants to help with future outreach.',
+                    outcome: 'Positive Response',
+                    user: 'Demo Administrator',
+                    createdDate: new Date(Date.now() - 86400000 * 30).toISOString()
                 }
-                
-                const data = await response.json();
-                const rows = data.values || [];
-                
-                // Find user in the sheet (assuming first row is headers)
-                const headers = rows[0] || [];
-                const emailIndex = headers.findIndex(h => h.toLowerCase().includes('email'));
-                const statusIndex = headers.findIndex(h => h.toLowerCase().includes('status'));
-                const roleIndex = headers.findIndex(h => h.toLowerCase().includes('role'));
-                
-                if (emailIndex === -1) {
-                    throw new Error('Email column not found in Google Sheets');
-                }
-                
-                // Find user row
-                const userRow = rows.slice(1).find(row => row[emailIndex] === email);
-                
-                if (!userRow) {
-                    console.log('❌ User email not found in Google Sheets');
-                    return null;
-                }
-                
-                // Check status
-                const status = statusIndex !== -1 ? userRow[statusIndex] : 'Active';
-                if (status !== 'Active') {
-                    console.log('❌ User found but status is not Active:', status);
-                    return null;
-                }
-                
-                // Get role
-                const role = roleIndex !== -1 ? userRow[roleIndex] : 'User';
-                
-                // Map role to permissions
-                mapRoleToPermissions(role);
-                
-                console.log('✅ User authorized successfully from Google Sheets');
-                
-                return {
-                    name: name,
-                    email: email,
-                    role: role,
-                    status: status,
-                    source: 'google',
+            ];
+            
+            // Sample authorized users for admin demo
+            authorizedUsers = [
+                {
+                    id: 'demo_user_1',
+                    email: 'demo@evangelismcrm.com',
+                    displayName: 'Demo Administrator',
+                    role: 'Admin',
+                    status: 'Active',
+                    department: 'Demo',
+                    notes: 'Demo account with full access',
+                    createdDate: new Date().toISOString(),
                     lastLogin: new Date().toISOString()
-                };
-                
-            } catch (error) {
-                console.error('❌ Error checking user in Google Sheets:', error);
-                throw error;
-            }
+                },
+                {
+                    id: 'demo_user_2',
+                    email: 'manager@evangelismcrm.com',
+                    displayName: 'Demo Manager',
+                    role: 'Manager',
+                    status: 'Active',
+                    department: 'Ministry',
+                    notes: 'Sample manager account',
+                    createdDate: new Date(Date.now() - 86400000 * 30).toISOString(),
+                    lastLogin: new Date(Date.now() - 86400000 * 2).toISOString()
+                },
+                {
+                    id: 'demo_user_3',
+                    email: 'volunteer@evangelismcrm.com',
+                    displayName: 'Demo Volunteer',
+                    role: 'User',
+                    status: 'Active',
+                    department: 'Outreach',
+                    notes: 'Sample volunteer account',
+                    createdDate: new Date(Date.now() - 86400000 * 15).toISOString(),
+                    lastLogin: new Date(Date.now() - 86400000 * 1).toISOString()
+                }
+            ];
+            
+            // Save demo data locally
+            saveLocalData();
+            
+            console.log('🎭 Demo data loaded:', {
+                fruits: fruits.length,
+                activities: activities.length,
+                users: authorizedUsers.length
+            });
         }
-
-        async function loadDataFromGoogleSheets(accessToken) {
-            try {
-                console.log('📊 Loading data from Google Sheets...');
-                showNotification('Loading data from Google Sheets...', 'info');
-                
-                // Load fruits and activities from Google Sheets
-                // This would need to be implemented based on your sheet structure
-                
-                console.log('✅ Data loaded from Google Sheets successfully');
-                
-            } catch (error) {
-                console.error('❌ Failed to load data from Google Sheets:', error);
-                showNotification('Failed to load from Google Sheets, using local data', 'warning');
-                loadLocalData();
-            }
-        }
-
-
 
         async function authenticateWithMicrosoft() {
             try {
@@ -1751,10 +1629,172 @@
             }
         }
 
+        function showManualCodeExtractionHelper(popup) {
+            const helper = document.createElement('div');
+            helper.id = 'authHelper';
+            helper.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+            helper.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                    <div class="text-center mb-6">
+                        <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-key text-blue-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Authentication Helper</h3>
+                        <p class="text-gray-600">If the popup is stuck, you can manually complete the authentication:</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
+                                <p class="text-sm font-medium text-yellow-800">Try This First!</p>
+                            </div>
+                            <p class="text-sm text-yellow-700 mb-2">
+                                <strong>Quick Fix:</strong> Simply close the popup window if it's stuck on a blank page. The system will automatically detect the authentication code!
+                            </p>
+                        </div>
+                        
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="text-sm text-blue-800 mb-2">
+                                <strong>Manual Option:</strong> If closing doesn't work
+                            </p>
+                            <p class="text-sm text-blue-700">
+                                Copy the entire URL from the popup window (it should start with "login.microsoftonline.com/common/oauth2/nativeclient?code=")
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <strong>Step 2:</strong> Paste the URL here:
+                            </label>
+                            <textarea id="manualAuthUrl" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Paste the full URL from the popup window here..."></textarea>
+                        </div>
+                        
+                        <div class="flex space-x-2">
+                            <button onclick="tryClosePopupAuth()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-times-circle mr-1"></i>
+                                Close Popup & Auto-Detect
+                            </button>
+                            <button onclick="processManualAuth()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-paste mr-1"></i>
+                                Manual URL
+                            </button>
+                            <button onclick="closeAuthHelper()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(helper);
+        }
+
+        async function processManualAuth() {
+            try {
+                const url = document.getElementById('manualAuthUrl').value.trim();
+                
+                if (!url) {
+                    showNotification('Please paste the URL from the popup window', 'error');
+                    return;
+                }
+                
+                console.log('🔐 Processing manual auth URL:', url.substring(0, 100) + '...');
+                
+                // Extract parameters from URL
+                const urlParts = url.split('?');
+                if (urlParts.length < 2) {
+                    throw new Error('Invalid URL format - no parameters found');
+                }
+                
+                const urlParams = new URLSearchParams(urlParts[1].split('#')[0]);
+                const authCode = urlParams.get('code');
+                const returnedState = urlParams.get('state');
+                const error = urlParams.get('error');
+                
+                if (error) {
+                    throw new Error(urlParams.get('error_description') || error);
+                }
+                
+                if (!authCode) {
+                    throw new Error('No authorization code found in URL');
+                }
+                
+                console.log('🔐 Extracted auth code, length:', authCode.length);
+                
+                // Validate state parameter
+                const storedState = sessionStorage.getItem('pkce_state');
+                if (returnedState && storedState && returnedState !== storedState) {
+                    throw new Error('Invalid state parameter - possible security issue');
+                }
+                
+                closeAuthHelper();
+                showNotification('Processing authentication...', 'info');
+                
+                // Exchange code for token
+                const tokenData = await exchangeCodeForTokenPKCE(authCode);
+                
+                sharePointAccessToken = tokenData.access_token;
+                isSharePointMode = true;
+                
+                // Store token with expiration
+                sessionStorage.setItem('access_token', tokenData.access_token);
+                sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
+                
+                // Get user info
+                currentUser = await getUserInfo(tokenData.access_token);
+                sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+                
+                // Clean up PKCE parameters
+                sessionStorage.removeItem('pkce_code_verifier');
+                sessionStorage.removeItem('pkce_state');
+                
+                // Load data from SharePoint
+                await loadDataFromSharePoint();
+                
+                showDashboard();
+                showNotification('Welcome! Connected to SharePoint Lists successfully.');
+                
+            } catch (error) {
+                console.error('❌ Manual authentication failed:', error);
+                showNotification('Manual authentication failed: ' + error.message, 'error');
+            }
+        }
+
+        function closeAuthHelper() {
+            const helper = document.getElementById('authHelper');
+            if (helper) {
+                helper.remove();
+            }
+        }
+
+        function tryClosePopupAuth() {
+            // Find the popup window reference (we need to store it globally)
+            if (window.currentAuthPopup && !window.currentAuthPopup.closed) {
+                console.log('🔐 Manually closing popup to trigger auto-detection...');
+                showNotification('Closing popup to auto-detect authentication...', 'info');
+                window.currentAuthPopup.close();
+                closeAuthHelper();
+            } else {
+                showNotification('No popup window found to close', 'warning');
+            }
+        }
+
         function buildPKCEAuthUrl(codeChallenge, state) {
-            // Use production redirect URI that matches Azure AD app registration
-            const redirectUri = 'https://app.shill.es/';
-            console.log('🔗 Using production redirect URI:', redirectUri);
+            // Try multiple redirect URIs that might be configured
+            const possibleRedirectUris = [
+                'https://app.shill.es/ev',
+                'https://app.shill.es/ev/',
+                'https://app.shill.es',
+                'https://app.shill.es/',
+                window.location.origin + window.location.pathname,
+                window.location.origin + '/',
+                window.location.origin
+            ];
+            
+            // Use the current page URL as redirect URI (most likely to work)
+            const redirectUri = window.location.origin + window.location.pathname;
+            console.log('🔗 Using redirect URI:', redirectUri);
             
             const params = new URLSearchParams({
                 client_id: SHAREPOINT_CONFIG.CLIENT_ID,
@@ -1771,6 +1811,192 @@
             return `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/authorize?${params.toString()}`;
         }
 
+        async function waitForAuthResult(popup) {
+            return new Promise((resolve) => {
+                let hasResolved = false;
+                let lastKnownUrl = '';
+                
+                const cleanup = () => {
+                    if (checkClosed) clearInterval(checkClosed);
+                    if (urlCheckInterval) clearInterval(urlCheckInterval);
+                    if (titleCheckInterval) clearInterval(titleCheckInterval);
+                    if (timeoutId) clearTimeout(timeoutId);
+                    window.removeEventListener('message', messageHandler);
+                };
+                
+                const resolveOnce = (result) => {
+                    if (!hasResolved) {
+                        hasResolved = true;
+                        cleanup();
+                        resolve(result);
+                    }
+                };
+                
+                // Listen for messages from the popup
+                const messageHandler = (event) => {
+                    if (event.origin !== 'https://login.microsoftonline.com') return;
+                    
+                    console.log('📨 Received message from popup:', event.data);
+                    
+                    if (event.data && event.data.type === 'OAUTH_RESULT') {
+                        if (event.data.success) {
+                            resolveOnce({
+                                success: true,
+                                code: event.data.code,
+                                state: event.data.state
+                            });
+                        } else {
+                            resolveOnce({
+                                success: false,
+                                error: event.data.error
+                            });
+                        }
+                    }
+                };
+                
+                window.addEventListener('message', messageHandler);
+                
+                // Enhanced URL detection with multiple methods
+                const urlCheckInterval = setInterval(() => {
+                    try {
+                        const url = popup.location.href;
+                        
+                        // Store the last known URL for fallback
+                        if (url && url !== lastKnownUrl) {
+                            lastKnownUrl = url;
+                            console.log('🔍 Popup URL changed to:', url.substring(0, 100) + '...');
+                        }
+                        
+                        // Check if we're on the redirect URI with parameters
+                        if (url.includes('login.microsoftonline.com/common/oauth2/nativeclient')) {
+                            console.log('🔍 Found redirect URI, parsing parameters...');
+                            
+                            const urlParts = url.split('?');
+                            if (urlParts.length > 1) {
+                                const params = urlParts[1];
+                                const urlParams = new URLSearchParams(params.split('#')[0]);
+                                const authCode = urlParams.get('code');
+                                const returnedState = urlParams.get('state');
+                                const error = urlParams.get('error');
+                                
+                                if (authCode) {
+                                    console.log('🔐 PKCE authorization code received automatically');
+                                    
+                                    // Validate state parameter
+                                    const storedState = sessionStorage.getItem('pkce_state');
+                                    if (returnedState && storedState && returnedState !== storedState) {
+                                        popup.close();
+                                        resolveOnce({ success: false, error: 'Invalid state parameter' });
+                                        return;
+                                    }
+                                    
+                                    popup.close();
+                                    
+                                    // Exchange code for token using PKCE
+                                    exchangeCodeForTokenPKCE(authCode)
+                                        .then(tokenData => resolveOnce({ 
+                                            success: true, 
+                                            token: tokenData.access_token,
+                                            expiresIn: tokenData.expires_in || 3600
+                                        }))
+                                        .catch(err => resolveOnce({ success: false, error: err.message }));
+                                } else if (error) {
+                                    popup.close();
+                                    resolveOnce({ success: false, error: urlParams.get('error_description') || error });
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Cross-origin error - expected when popup is on different domain
+                        // This is normal behavior, continue checking
+                    }
+                }, 200); // Check more frequently for better responsiveness
+
+                // Check popup title for authentication completion
+                const titleCheckInterval = setInterval(() => {
+                    try {
+                        const title = popup.document.title;
+                        if (title && (title.includes('Success') || title.includes('Complete') || title.includes('Redirect'))) {
+                            console.log('🔍 Popup title suggests completion:', title);
+                            // Try to extract URL from the popup
+                            const url = popup.location.href;
+                            if (url && url.includes('code=')) {
+                                console.log('🔍 Found auth code via title check');
+                                // Process the URL
+                                const urlParams = new URLSearchParams(url.split('?')[1]);
+                                const authCode = urlParams.get('code');
+                                if (authCode) {
+                                    popup.close();
+                                    exchangeCodeForTokenPKCE(authCode)
+                                        .then(tokenData => resolveOnce({ 
+                                            success: true, 
+                                            token: tokenData.access_token,
+                                            expiresIn: tokenData.expires_in || 3600
+                                        }))
+                                        .catch(err => resolveOnce({ success: false, error: err.message }));
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Cross-origin error - expected
+                    }
+                }, 500);
+
+                // Check if popup is closed
+                const checkClosed = setInterval(() => {
+                    if (popup.closed) {
+                        console.log('🔍 Popup closed, checking last known URL...');
+                        
+                        // Try to extract auth code from the last known URL
+                        if (lastKnownUrl && lastKnownUrl.includes('code=')) {
+                            console.log('🔍 Found auth code in last known URL');
+                            
+                            try {
+                                const urlParts = lastKnownUrl.split('?');
+                                if (urlParts.length > 1) {
+                                    const urlParams = new URLSearchParams(urlParts[1].split('#')[0]);
+                                    const authCode = urlParams.get('code');
+                                    const returnedState = urlParams.get('state');
+                                    
+                                    if (authCode) {
+                                        console.log('🔐 Extracted auth code from closed popup');
+                                        
+                                        // Validate state
+                                        const storedState = sessionStorage.getItem('pkce_state');
+                                        if (returnedState && storedState && returnedState !== storedState) {
+                                            resolveOnce({ success: false, error: 'Invalid state parameter' });
+                                            return;
+                                        }
+                                        
+                                        // Exchange code for token
+                                        exchangeCodeForTokenPKCE(authCode)
+                                            .then(tokenData => resolveOnce({ 
+                                                success: true, 
+                                                token: tokenData.access_token,
+                                                expiresIn: tokenData.expires_in || 3600
+                                            }))
+                                            .catch(err => resolveOnce({ success: false, error: err.message }));
+                                        return;
+                                    }
+                                }
+                            } catch (e) {
+                                console.log('🔍 Could not extract auth code from last known URL');
+                            }
+                        }
+                        
+                        resolveOnce({ success: false, error: 'Authentication cancelled by user' });
+                    }
+                }, 500);
+
+                // Timeout after 5 minutes
+                const timeoutId = setTimeout(() => {
+                    console.log('⏰ Authentication timeout reached');
+                    if (!popup.closed) popup.close();
+                    resolveOnce({ success: false, error: 'Authentication timeout' });
+                }, 300000);
+            });
+        }
+
         async function exchangeCodeForTokenPKCE(authCode) {
             try {
                 console.log('🔄 PKCE token exchange starting...');
@@ -1782,7 +2008,7 @@
                 
                 const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
                 
-                const redirectUri = 'https://app.shill.es/';
+                const redirectUri = window.location.origin + window.location.pathname;
                 
                 const body = new URLSearchParams({
                     client_id: SHAREPOINT_CONFIG.CLIENT_ID,
@@ -1838,6 +2064,9 @@
                         source: 'microsoft_365'
                     };
                     
+                    // Check SharePoint permissions after getting user info
+                    await checkUserPermissions(token, user);
+                    
                     return user;
                 } else {
                     // Fallback user info with limited permissions
@@ -1868,126 +2097,84 @@
             try {
                 console.log('🔐 Checking user authorization in SharePoint Users list:', email);
                 
-                // Must have SharePoint access token to validate users
-                if (!sharePointAccessToken) {
-                    console.log('❌ No SharePoint access token available for user validation');
-                    throw new Error('SharePoint connection required for user validation');
-                }
-                
-                // Query SharePoint Users Management List
-                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Email eq '${email}'`;
-                
-                console.log('🔍 Querying SharePoint Users list:', url);
-                
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${sharePointAccessToken}`,
-                        'Accept': 'application/json'
+                // If we have SharePoint access token, check the Users list
+                if (sharePointAccessToken) {
+                    const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Email eq '${email}'`;
+                    
+                    const response = await fetch(url, {
+                        headers: {
+                            'Authorization': `Bearer ${sharePointAccessToken}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const userItems = data.value || [];
+                        
+                        if (userItems.length > 0) {
+                            const userRecord = userItems[0].fields;
+                            
+                            // Check if user is active
+                            if (userRecord.Status !== 'Active') {
+                                console.log('❌ User found but not active:', userRecord.Status);
+                                return null;
+                            }
+                            
+                            // Map SharePoint role to permissions
+                            const role = userRecord.Role || 'User';
+                            const permissions = mapRoleToPermissions(role);
+                            
+                            console.log('✅ User authorized with role:', role);
+                            
+                            return {
+                                name: userRecord.DisplayName || name,
+                                email: email,
+                                id: userRecord.UserID || email,
+                                role: role,
+                                permissions: role,
+                                status: userRecord.Status,
+                                source: authProvider,
+                                department: userRecord.Department || '',
+                                lastLogin: new Date().toISOString()
+                            };
+                        } else {
+                            console.log('❌ User not found in SharePoint Users list');
+                            return null;
+                        }
+                    } else {
+                        console.log('⚠️ Could not access SharePoint Users list, falling back to basic permissions');
                     }
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ Failed to query SharePoint Users list:', response.status, errorText);
-                    throw new Error(`Failed to access Users list: ${response.status} ${response.statusText}`);
                 }
                 
-                const data = await response.json();
-                const userItems = data.value || [];
+                // Fallback: Check against a hardcoded admin list for development
+                const adminEmails = [
+                    'admin@getonasia.onmicrosoft.com',
+                    'your-email@gmail.com', // Add your email here for testing
+                    'test@example.com'
+                ];
                 
-                console.log('📊 SharePoint query result:', {
-                    email: email,
-                    foundUsers: userItems.length,
-                    users: userItems.map(item => ({
-                        email: item.fields.Email,
-                        status: item.fields.Status,
-                        role: item.fields.Role
-                    }))
-                });
-                
-                // Check if user exists in the list
-                if (userItems.length === 0) {
-                    console.log('❌ User email not found in SharePoint Users Management list');
-                    return null;
+                if (adminEmails.includes(email.toLowerCase())) {
+                    console.log('✅ User found in admin fallback list');
+                    return {
+                        name: name,
+                        email: email,
+                        id: email,
+                        role: 'Admin',
+                        permissions: 'Full Control',
+                        status: 'Active',
+                        source: authProvider,
+                        department: 'IT',
+                        lastLogin: new Date().toISOString()
+                    };
                 }
                 
-                const userRecord = userItems[0].fields;
-                
-                // Validate user status - must be Active
-                if (userRecord.Status !== 'Active') {
-                    console.log('❌ User found but status is not Active:', userRecord.Status);
-                    return null;
-                }
-                
-                // Validate role exists
-                const role = userRecord.Role;
-                if (!role || role.trim() === '') {
-                    console.log('❌ User found but no role assigned');
-                    return null;
-                }
-                
-                // Map SharePoint role to permissions
-                const permissions = mapRoleToPermissions(role);
-                
-                console.log('✅ User authorized successfully:', {
-                    email: email,
-                    role: role,
-                    status: userRecord.Status,
-                    permissions: permissions
-                });
-                
-                // Update last login in SharePoint
-                await updateUserLastLogin(userItems[0].id, email);
-                
-                return {
-                    name: userRecord.DisplayName || name,
-                    email: email,
-                    id: userRecord.UserID || userItems[0].id,
-                    role: role,
-                    permissions: role,
-                    status: userRecord.Status,
-                    source: authProvider,
-                    department: userRecord.Department || '',
-                    notes: userRecord.Notes || '',
-                    lastLogin: new Date().toISOString(),
-                    sharePointId: userItems[0].id
-                };
+                console.log('❌ User not authorized');
+                return null;
                 
             } catch (error) {
                 console.error('❌ Error checking user authorization:', error);
-                
-                // For security, don't allow fallback access
-                // All users must be properly configured in SharePoint
-                throw error; // Re-throw to allow fallback handling in calling function
-            }
-        }
-
-        async function updateUserLastLogin(sharePointItemId, email) {
-            try {
-                console.log('🔄 Updating last login for user:', email);
-                
-                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items/${sharePointItemId}/fields`;
-                
-                const response = await fetch(url, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${sharePointAccessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        LastLogin: new Date().toISOString()
-                    })
-                });
-                
-                if (response.ok) {
-                    console.log('✅ Last login updated successfully');
-                } else {
-                    console.log('⚠️ Could not update last login:', response.status);
-                }
-                
-            } catch (error) {
-                console.log('⚠️ Error updating last login:', error.message);
-                // Don't throw error as this is not critical for authentication
+                return null;
             }
         }
 
@@ -2038,6 +2225,25 @@
             console.log('🔐 Permissions set for role', role, ':', permissions);
             
             return permissions;
+        }
+
+        async function checkUserPermissions(token, user) {
+            // This function is now replaced by checkUserInSharePointList
+            // Keep for backward compatibility but redirect to new system
+            console.log('🔄 Redirecting to new user management system...');
+            
+            if (user && user.role) {
+                mapRoleToPermissions(user.role);
+            } else {
+                // Default to basic user permissions
+                userPermissions = {
+                    canAdd: true,
+                    canEdit: false,
+                    canDelete: false,
+                    canViewAll: false,
+                    isAdmin: false
+                };
+            }
         }
 
         async function loadDataFromSharePoint() {
@@ -2247,5 +2453,1718 @@
             try {
                 console.log('📊 Updating fruit in SharePoint:', fruitId, fruitData);
                 
-                const url = `${SHAREPOINT_CONFIG.GRAPH_API_
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a57f48e476b4dc',t:'MTc1OTc1NzI1Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}/fields`;
+                
+                const response = await fetch(url, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        Title: fruitData.name,
+                        AssignedTo: fruitData.assignedTo,
+                        Phone: fruitData.phone,
+                        Instagram: fruitData.instagram,
+                        Facebook: fruitData.facebook,
+                        Twitter: fruitData.twitter,
+                        LeadSource: fruitData.leadSource,
+                        Campaign: fruitData.campaign,
+                        Status: fruitData.status,
+                        Notes: fruitData.notes,
+                        UpdatedByUser: fruitData.updatedBy
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Failed to update fruit in SharePoint:', errorText);
+                    throw new Error(`Failed to update fruit: ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ Fruit updated in SharePoint successfully:', result);
+                
+                return result;
+                
+            } catch (error) {
+                console.error('❌ Error updating fruit in SharePoint:', error);
+                throw error;
+            }
+        }
+
+        async function deleteFruitFromSharePoint(fruitId) {
+            try {
+                console.log('📊 Deleting fruit from SharePoint:', fruitId);
+                
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}`;
+                
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Failed to delete fruit from SharePoint:', errorText);
+                    throw new Error(`Failed to delete fruit: ${response.status} ${response.statusText}`);
+                }
+                
+                console.log('✅ Fruit deleted from SharePoint successfully');
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error deleting fruit from SharePoint:', error);
+                throw error;
+            }
+        }
+
+        // Dashboard functions
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            // Update user display
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+            
+            if (currentUser) {
+                userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
+                userName.textContent = currentUser.name;
+                
+                // Show admin tab if user is admin
+                if (userPermissions.isAdmin) {
+                    document.getElementById('adminTabBtn').classList.remove('hidden');
+                }
+            }
+            
+            updateConnectionStatus();
+            updateStats();
+            updateRecentActivities();
+            updateFruitsGrid();
+            populateDropdowns();
+            applyPermissionBasedUI();
+            
+            // Update admin stats
+            updateAdminStats();
+        }
+
+        function applyPermissionBasedUI() {
+            console.log('🔐 Applying permission-based UI restrictions...');
+            
+            // Get all action buttons
+            const addFruitButtons = document.querySelectorAll('[onclick*="showAddFruitModal"]');
+            const addActivityButtons = document.querySelectorAll('[onclick*="showActivityModal"]');
+            const scheduleButtons = document.querySelectorAll('[onclick*="showScheduleModal"]');
+            const editButtons = document.querySelectorAll('[onclick*="editFruit"]');
+            const deleteButtons = document.querySelectorAll('[onclick*="deleteFruit"]');
+            
+            // Apply add permissions
+            addFruitButtons.forEach(button => {
+                if (!userPermissions.canAdd) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to add fruits';
+                    // Replace onclick with permission message
+                    button.setAttribute('onclick', 'showPermissionMessage("add")');
+                }
+            });
+            
+            addActivityButtons.forEach(button => {
+                if (!userPermissions.canAdd) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to log activities';
+                    button.setAttribute('onclick', 'showPermissionMessage("add")');
+                }
+            });
+            
+            scheduleButtons.forEach(button => {
+                if (!userPermissions.canAdd) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to schedule sessions';
+                    button.setAttribute('onclick', 'showPermissionMessage("add")');
+                }
+            });
+            
+            // Apply edit permissions
+            editButtons.forEach(button => {
+                if (!userPermissions.canEdit) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to edit fruits';
+                    button.setAttribute('onclick', 'showPermissionMessage("edit")');
+                }
+            });
+            
+            // Apply delete permissions
+            deleteButtons.forEach(button => {
+                if (!userPermissions.canDelete) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to delete items';
+                    button.setAttribute('onclick', 'showPermissionMessage("delete")');
+                }
+            });
+            
+            // Show permission status in navigation
+            updatePermissionStatus();
+            
+            console.log('✅ Permission-based UI applied');
+        }
+
+        function updatePermissionStatus() {
+            // Add permission indicator to navigation
+            const statusContainer = document.querySelector('#connectionStatus').parentElement;
+            
+            // Remove existing permission indicator
+            const existingIndicator = document.getElementById('permissionIndicator');
+            if (existingIndicator) {
+                existingIndicator.remove();
+            }
+            
+            // Create new permission indicator
+            const permissionIndicator = document.createElement('div');
+            permissionIndicator.id = 'permissionIndicator';
+            permissionIndicator.className = 'flex items-center space-x-1 text-xs';
+            
+            let permissionText = '';
+            let permissionColor = '';
+            
+            if (userPermissions.isAdmin) {
+                permissionText = 'Full Control';
+                permissionColor = 'text-green-600';
+            } else if (userPermissions.canAdd && userPermissions.canEdit) {
+                permissionText = 'Contributor';
+                permissionColor = 'text-blue-600';
+            } else if (userPermissions.canViewAll) {
+                permissionText = 'Read Only';
+                permissionColor = 'text-yellow-600';
+            } else {
+                permissionText = 'No Access';
+                permissionColor = 'text-red-600';
+            }
+            
+            permissionIndicator.innerHTML = `
+                <i class="fas fa-shield-alt ${permissionColor}"></i>
+                <span class="${permissionColor}">${permissionText}</span>
+            `;
+            
+            statusContainer.appendChild(permissionIndicator);
+        }
+
+        function showPermissionMessage(action) {
+            const actionMessages = {
+                'add': 'You need Contribute permissions to add new items. Please contact your SharePoint administrator.',
+                'edit': 'You need Contribute permissions to edit items. Please contact your SharePoint administrator.',
+                'delete': 'You need Full Control permissions to delete items. Please contact your SharePoint administrator.'
+            };
+            
+            showNotification(actionMessages[action] || 'You do not have permission for this action.', 'warning');
+        }
+
+        function updateConnectionStatus() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            if (isSharePointMode && sharePointAccessToken) {
+                if (realTimeSync) {
+                    statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
+                    statusText.textContent = 'Live Sync Active';
+                } else {
+                    statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
+                    statusText.textContent = 'SharePoint Connected';
+                }
+            } else if (currentUser) {
+                statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
+                statusText.textContent = 'Local Only';
+            } else {
+                statusIndicator.className = 'w-2 h-2 bg-gray-400 rounded-full';
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalFruits').textContent = fruits.length;
+            document.getElementById('activeSessions').textContent = fruits.filter(f => f.status === 'In BB Session').length;
+            document.getElementById('weeklyContacts').textContent = getWeeklyContacts();
+            document.getElementById('conversionRate').textContent = getConversionRate() + '%';
+        }
+
+        function getWeeklyContacts() {
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
+            return activities.filter(activity => {
+                const activityDate = new Date(activity.createdDate);
+                return activityDate >= oneWeekAgo;
+            }).length;
+        }
+
+        function getConversionRate() {
+            if (fruits.length === 0) return 0;
+            const converted = fruits.filter(f => 
+                ['Baptized', 'Active Member', 'Attending Class'].includes(f.status)
+            ).length;
+            return Math.round((converted / fruits.length) * 100);
+        }
+
+        function updateRecentActivities() {
+            const container = document.getElementById('recentActivities');
+            if (!container) return;
+            
+            const recentActivities = activities
+                .sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate))
+                .slice(0, 5);
+            
+            if (recentActivities.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>No activities found. Start by adding fruits and logging interactions!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = recentActivities.map(activity => `
+                <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="bg-blue-100 p-2 rounded-full">
+                        <i class="fas fa-phone text-blue-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900">${activity.fruitName}</div>
+                        <div class="text-sm text-gray-600">${activity.type} - ${activity.duration} minutes</div>
+                        <div class="text-xs text-gray-500">${formatDate(activity.createdDate)}</div>
+                    </div>
+                    <div class="text-sm text-gray-500">${activity.outcome}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateFruitsGrid() {
+            const container = document.getElementById('fruitsGrid');
+            if (!container) return;
+            
+            if (fruits.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 col-span-full">
+                        <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-users text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No fruits found</h3>
+                        <p class="text-gray-500 mb-4">Start building your ministry database by adding your first fruit.</p>
+                        <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add Your First Fruit
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = fruits.map(fruit => {
+                const progressData = getProgressData(fruit.status);
+                return `
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">${fruit.name}</h3>
+                            <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}">
+                            ${fruit.status}
+                        </span>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Evangelism Progress</span>
+                            <span class="text-sm text-gray-600">${progressData.percentage}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar h-2.5 rounded-full ${progressData.color}" style="width: ${progressData.percentage}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-phone w-4 mr-2"></i>
+                            ${fruit.phone || 'No phone'}
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-bullhorn w-4 mr-2"></i>
+                            ${fruit.leadSource}
+                        </div>
+                        ${fruit.campaign ? `
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-tag w-4 mr-2"></i>
+                                ${fruit.campaign}
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="editFruit('${fruit.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                        <button onclick="logActivityForFruit('${fruit.name}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                            <i class="fas fa-phone mr-1"></i>Activity
+                        </button>
+                        <button onclick="deleteFruit('${fruit.id}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'Initial Contact': 'bg-gray-100 text-gray-800',
+                'First Response': 'bg-blue-100 text-blue-800',
+                'Interest Shown': 'bg-yellow-100 text-yellow-800',
+                'BB Session Scheduled': 'bg-orange-100 text-orange-800',
+                'In BB Session': 'bg-purple-100 text-purple-800',
+                'BB Session Completed': 'bg-indigo-100 text-indigo-800',
+                'Attending Class': 'bg-green-100 text-green-800',
+                'Baptism Candidate': 'bg-emerald-100 text-emerald-800',
+                'Baptized': 'bg-teal-100 text-teal-800',
+                'Active Member': 'bg-cyan-100 text-cyan-800',
+                'Not Interested': 'bg-red-100 text-red-800',
+                'Lost Contact': 'bg-gray-100 text-gray-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getProgressData(status) {
+            const progressMap = {
+                'Initial Contact': { percentage: 8, color: 'bg-gray-400' },
+                'First Response': { percentage: 16, color: 'bg-blue-400' },
+                'Interest Shown': { percentage: 25, color: 'bg-yellow-400' },
+                'BB Session Scheduled': { percentage: 40, color: 'bg-orange-400' },
+                'In BB Session': { percentage: 55, color: 'bg-purple-400' },
+                'BB Session Completed': { percentage: 70, color: 'bg-indigo-400' },
+                'Attending Class': { percentage: 85, color: 'bg-green-400' },
+                'Baptism Candidate': { percentage: 92, color: 'bg-emerald-400' },
+                'Baptized': { percentage: 100, color: 'bg-teal-500' },
+                'Active Member': { percentage: 100, color: 'bg-cyan-500' },
+                'Not Interested': { percentage: 0, color: 'bg-red-300' },
+                'Lost Contact': { percentage: 0, color: 'bg-gray-300' }
+            };
+            
+            return progressMap[status] || { percentage: 0, color: 'bg-gray-300' };
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function populateDropdowns() {
+            // Populate status filter
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter) {
+                statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
+                    STATUS_PROGRESSION.map(status => 
+                        `<option value="${status}">${status}</option>`
+                    ).join('');
+            }
+
+            // Populate source filter
+            const sourceFilter = document.getElementById('sourceFilter');
+            if (sourceFilter) {
+                sourceFilter.innerHTML = '<option value="">All Sources</option>' + 
+                    LEAD_SOURCES.map(source => 
+                        `<option value="${source}">${source}</option>`
+                    ).join('');
+            }
+
+            // Populate fruit dropdowns in modals
+            populateFruitDropdowns();
+        }
+
+        function populateFruitDropdowns() {
+            const activityFruitSelect = document.getElementById('activityFruitSelect');
+            const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
+            
+            const fruitOptions = fruits.map(fruit => 
+                `<option value="${fruit.name}">${fruit.name}</option>`
+            ).join('');
+            
+            if (activityFruitSelect) {
+                activityFruitSelect.innerHTML = '<option value="">Select fruit...</option>' + fruitOptions;
+            }
+            
+            if (scheduleFruitSelect) {
+                scheduleFruitSelect.innerHTML = '<option value="">Select fruit...</option>' + fruitOptions;
+            }
+        }
+
+        function initializeEventListeners() {
+            // Fruit search functionality
+            const fruitSearch = document.getElementById('fruitSearch');
+            if (fruitSearch) {
+                fruitSearch.addEventListener('input', filterFruits);
+            }
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                const syncOptions = document.getElementById('syncOptions');
+                if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
+                    syncOptions.classList.add('hidden');
+                }
+            });
+        }
+
+        // Modal functions
+        function showAddFruitModal() {
+            document.getElementById('addFruitModal').classList.remove('hidden');
+        }
+
+        function showActivityModal() {
+            populateFruitDropdowns(); // Refresh fruit list
+            document.getElementById('activityModal').classList.remove('hidden');
+        }
+
+        function showScheduleModal() {
+            populateFruitDropdowns(); // Refresh fruit list
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        function showExportModal() {
+            // Update the item counts in the modal
+            const modal = document.getElementById('exportModal');
+            const fruitsButton = modal.querySelector('button[onclick*="exportFruitsCSV"]');
+            const activitiesButton = modal.querySelector('button[onclick*="exportActivitiesCSV"]');
+            
+            if (fruitsButton) {
+                fruitsButton.innerHTML = `
+                    <i class="fas fa-users"></i>
+                    <span>Export Fruits Data</span>
+                    <span class="bg-blue-500 px-2 py-1 rounded text-xs">${fruits.length} items</span>
+                `;
+            }
+            
+            if (activitiesButton) {
+                activitiesButton.innerHTML = `
+                    <i class="fas fa-phone"></i>
+                    <span>Export Activities Data</span>
+                    <span class="bg-green-500 px-2 py-1 rounded text-xs">${activities.length} items</span>
+                `;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function showImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            
+            // Reset add fruit modal if it was being used for editing
+            if (modalId === 'addFruitModal') {
+                resetAddFruitModal();
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            
+            // Set color based on type
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50 ${
+                type === 'error' ? 'bg-red-600 text-white' :
+                type === 'warning' ? 'bg-yellow-600 text-white' :
+                type === 'info' ? 'bg-blue-600 text-white' :
+                'bg-green-600 text-white'
+            }`;
+            
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Add fruit function
+        async function addFruit(event) {
+            event.preventDefault();
+            
+            // Check permissions first
+            if (!userPermissions.canAdd) {
+                showPermissionMessage('add');
+                return;
+            }
+            
+            const formData = new FormData(event.target);
+            const newFruit = {
+                name: formData.get('name'),
+                assignedTo: formData.get('assignee') || currentUser.name,
+                phone: formData.get('phone') || '',
+                instagram: formData.get('instagram') || '',
+                facebook: formData.get('facebook') || '',
+                twitter: formData.get('twitter') || '',
+                leadSource: formData.get('leadSource'),
+                campaign: formData.get('campaign') || '',
+                status: formData.get('status'),
+                notes: formData.get('notes') || '',
+                createdDate: new Date().toISOString(),
+                createdBy: currentUser.email
+            };
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Add to SharePoint first
+                    const result = await addFruitToSharePoint(newFruit);
+                    
+                    // Add the SharePoint ID to our local object
+                    newFruit.id = result.id.toString();
+                    
+                    showNotification(`${newFruit.name} added to SharePoint successfully!`);
+                } else {
+                    // Add locally only
+                    newFruit.id = 'fruit_' + Date.now();
+                    showNotification(`${newFruit.name} added locally (SharePoint not connected)`);
+                }
+                
+                // Add to local array
+                fruits.push(newFruit);
+                saveLocalData();
+                updateFruitsGrid();
+                updateStats();
+                populateFruitDropdowns();
+                
+                closeModal('addFruitModal');
+                event.target.reset();
+                
+            } catch (error) {
+                console.error('❌ Failed to add fruit:', error);
+                
+                // Check if it's a permission error
+                if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Access denied')) {
+                    showNotification('Access denied: You do not have permission to add items to SharePoint.', 'error');
+                } else {
+                    showNotification('Failed to add fruit: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Log activity function
+        async function logActivity(event) {
+            event.preventDefault();
+            
+            // Check permissions first
+            if (!userPermissions.canAdd) {
+                showPermissionMessage('add');
+                return;
+            }
+            
+            const formData = new FormData(event.target);
+            const newActivity = {
+                fruitName: formData.get('fruitName'),
+                type: formData.get('activityType'),
+                duration: formData.get('duration'),
+                notes: formData.get('activityNotes'),
+                outcome: formData.get('outcome'),
+                user: currentUser.name,
+                createdDate: new Date().toISOString()
+            };
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Add to SharePoint first
+                    const result = await addActivityToSharePoint(newActivity);
+                    
+                    // Add the SharePoint ID to our local object
+                    newActivity.id = result.id.toString();
+                    
+                    showNotification('Activity logged to SharePoint successfully!');
+                } else {
+                    // Add locally only
+                    newActivity.id = 'activity_' + Date.now();
+                    showNotification('Activity logged locally (SharePoint not connected)');
+                }
+                
+                // Add to local array
+                activities.push(newActivity);
+                saveLocalData();
+                updateRecentActivities();
+                updateStats();
+                
+                closeModal('activityModal');
+                event.target.reset();
+                
+            } catch (error) {
+                console.error('❌ Failed to log activity:', error);
+                
+                // Check if it's a permission error
+                if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Access denied')) {
+                    showNotification('Access denied: You do not have permission to log activities in SharePoint.', 'error');
+                } else {
+                    showNotification('Failed to log activity: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Schedule BB function
+        async function scheduleBB(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const fruitName = formData.get('fruitName');
+            
+            // Update fruit status
+            const fruit = fruits.find(f => f.name === fruitName);
+            if (fruit) {
+                fruit.status = 'BB Session Scheduled';
+                fruit.lastUpdated = new Date().toISOString();
+                fruit.updatedBy = currentUser.email;
+                
+                saveLocalData();
+                updateFruitsGrid();
+            }
+            
+            // Log the scheduling activity
+            const scheduleActivity = {
+                fruitName: fruitName,
+                type: 'BB Session',
+                duration: '0',
+                notes: `Scheduled ${formData.get('sessionType')} for ${formData.get('date')} at ${formData.get('time')}. Location: ${formData.get('location')}. ${formData.get('scheduleNotes')}`,
+                outcome: 'Scheduled Next Step',
+                user: currentUser.name,
+                createdDate: new Date().toISOString()
+            };
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Add to SharePoint
+                    const result = await addActivityToSharePoint(scheduleActivity);
+                    scheduleActivity.id = result.id.toString();
+                    showNotification('BB Session scheduled in SharePoint!');
+                } else {
+                    scheduleActivity.id = 'activity_' + Date.now();
+                    showNotification('BB Session scheduled locally');
+                }
+                
+                activities.push(scheduleActivity);
+                saveLocalData();
+                updateRecentActivities();
+                updateStats();
+                
+                closeModal('scheduleModal');
+                event.target.reset();
+                
+            } catch (error) {
+                console.error('❌ Failed to schedule BB session:', error);
+                showNotification('Failed to schedule BB session: ' + error.message, 'error');
+            }
+        }
+
+        // Tab functions
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active state from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            
+            // Add active state to selected tab button
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-600', 'text-blue-600');
+            
+            currentTab = tabName;
+        }
+
+        // Utility functions
+        function filterFruits() {
+            updateFruitsGrid();
+        }
+
+        function logActivityForFruit(fruitName) {
+            showActivityModal();
+            // Pre-fill the fruit name
+            setTimeout(() => {
+                const fruitSelect = document.getElementById('activityFruitSelect');
+                if (fruitSelect) {
+                    fruitSelect.value = fruitName;
+                }
+            }, 100);
+        }
+
+        async function editFruit(fruitId) {
+            // Check permissions first
+            if (!userPermissions.canEdit) {
+                showPermissionMessage('edit');
+                return;
+            }
+            
+            const fruit = fruits.find(f => f.id === fruitId);
+            if (!fruit) {
+                showNotification('Fruit not found', 'error');
+                return;
+            }
+            
+            // Pre-fill the add fruit modal with existing data for editing
+            showAddFruitModal();
+            
+            // Wait for modal to be visible, then populate fields
+            setTimeout(() => {
+                const form = document.querySelector('#addFruitModal form');
+                if (form) {
+                    form.querySelector('[name="name"]').value = fruit.name || '';
+                    form.querySelector('[name="assignee"]').value = fruit.assignedTo || '';
+                    form.querySelector('[name="phone"]').value = fruit.phone || '';
+                    form.querySelector('[name="instagram"]').value = fruit.instagram || '';
+                    form.querySelector('[name="facebook"]').value = fruit.facebook || '';
+                    form.querySelector('[name="twitter"]').value = fruit.twitter || '';
+                    form.querySelector('[name="leadSource"]').value = fruit.leadSource || '';
+                    form.querySelector('[name="campaign"]').value = fruit.campaign || '';
+                    form.querySelector('[name="status"]').value = fruit.status || '';
+                    form.querySelector('[name="notes"]').value = fruit.notes || '';
+                    
+                    // Change form title and button text
+                    document.querySelector('#addFruitModal h3').textContent = 'Edit Fruit';
+                    document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Update in SharePoint';
+                    
+                    // Store the fruit ID for updating
+                    form.setAttribute('data-editing-id', fruitId);
+                    
+                    // Change form handler
+                    form.setAttribute('onsubmit', 'updateFruit(event)');
+                }
+            }, 100);
+        }
+
+        async function updateFruit(event) {
+            event.preventDefault();
+            
+            // Check permissions first
+            if (!userPermissions.canEdit) {
+                showPermissionMessage('edit');
+                return;
+            }
+            
+            const form = event.target;
+            const fruitId = form.getAttribute('data-editing-id');
+            const fruitIndex = fruits.findIndex(f => f.id === fruitId);
+            
+            if (fruitIndex === -1) {
+                showNotification('Fruit not found', 'error');
+                return;
+            }
+            
+            const formData = new FormData(event.target);
+            const updatedFruit = {
+                ...fruits[fruitIndex], // Keep existing data
+                name: formData.get('name'),
+                assignedTo: formData.get('assignee') || currentUser.name,
+                phone: formData.get('phone') || '',
+                instagram: formData.get('instagram') || '',
+                facebook: formData.get('facebook') || '',
+                twitter: formData.get('twitter') || '',
+                leadSource: formData.get('leadSource'),
+                campaign: formData.get('campaign') || '',
+                status: formData.get('status'),
+                notes: formData.get('notes') || '',
+                lastUpdated: new Date().toISOString(),
+                updatedBy: currentUser.email
+            };
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Update in SharePoint first
+                    await updateFruitInSharePoint(fruitId, updatedFruit);
+                    showNotification(`${updatedFruit.name} updated in SharePoint successfully!`);
+                } else {
+                    showNotification(`${updatedFruit.name} updated locally (SharePoint not connected)`);
+                }
+                
+                // Update local array
+                fruits[fruitIndex] = updatedFruit;
+                saveLocalData();
+                updateFruitsGrid();
+                updateStats();
+                populateFruitDropdowns();
+                
+                // Reset modal
+                closeModal('addFruitModal');
+                resetAddFruitModal();
+                
+            } catch (error) {
+                console.error('❌ Failed to update fruit:', error);
+                
+                // Check if it's a permission error
+                if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Access denied')) {
+                    showNotification('Access denied: You do not have permission to edit items in SharePoint.', 'error');
+                } else {
+                    showNotification('Failed to update fruit: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function deleteFruit(fruitId) {
+            // Check permissions first
+            if (!userPermissions.canDelete) {
+                showPermissionMessage('delete');
+                return;
+            }
+            
+            const fruit = fruits.find(f => f.id === fruitId);
+            if (!fruit) {
+                showNotification('Fruit not found', 'error');
+                return;
+            }
+            
+            // Confirm deletion
+            if (!confirm(`Are you sure you want to delete "${fruit.name}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Delete from SharePoint first
+                    await deleteFruitFromSharePoint(fruitId);
+                    showNotification(`${fruit.name} deleted from SharePoint successfully!`);
+                } else {
+                    showNotification(`${fruit.name} deleted locally (SharePoint not connected)`);
+                }
+                
+                // Remove from local array
+                const fruitIndex = fruits.findIndex(f => f.id === fruitId);
+                if (fruitIndex > -1) {
+                    fruits.splice(fruitIndex, 1);
+                }
+                
+                saveLocalData();
+                updateFruitsGrid();
+                updateStats();
+                populateFruitDropdowns();
+                
+            } catch (error) {
+                console.error('❌ Failed to delete fruit:', error);
+                
+                // Check if it's a permission error
+                if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Access denied')) {
+                    showNotification('Access denied: You do not have permission to delete items from SharePoint.', 'error');
+                } else {
+                    showNotification('Failed to delete fruit: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function resetAddFruitModal() {
+            // Reset modal to add mode
+            document.querySelector('#addFruitModal h3').textContent = 'Add New Fruit';
+            document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Add to SharePoint';
+            
+            const form = document.querySelector('#addFruitModal form');
+            if (form) {
+                form.removeAttribute('data-editing-id');
+                form.setAttribute('onsubmit', 'addFruit(event)');
+                form.reset();
+            }
+        }
+
+        function generateReport() {
+            showNotification('Report generation coming soon!', 'info');
+        }
+
+        function exportReport() {
+            showNotification('Report export coming soon!', 'info');
+        }
+
+        function importData() {
+            showImportModal();
+        }
+
+        function importFruitsFromCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showNotification('Please select a CSV file', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    
+                    if (lines.length < 2) {
+                        throw new Error('CSV file must have at least a header row and one data row');
+                    }
+
+                    // Parse header
+                    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                    
+                    // Validate required columns
+                    const requiredColumns = ['Name'];
+                    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+                    if (missingColumns.length > 0) {
+                        throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+                    }
+
+                    const importedFruits = [];
+                    let successCount = 0;
+                    let errorCount = 0;
+
+                    // Parse data rows
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue; // Skip empty lines
+
+                        try {
+                            const values = parseCSVLine(line);
+                            if (values.length !== headers.length) {
+                                console.warn(`Row ${i + 1}: Column count mismatch, skipping`);
+                                errorCount++;
+                                continue;
+                            }
+
+                            const fruitData = {};
+                            headers.forEach((header, index) => {
+                                fruitData[header] = values[index] || '';
+                            });
+
+                            // Map CSV columns to our fruit object structure
+                            const newFruit = {
+                                id: 'imported_' + Date.now() + '_' + i,
+                                name: fruitData['Name'] || '',
+                                assignedTo: fruitData['Assigned To'] || currentUser.name,
+                                phone: fruitData['Phone'] || '',
+                                instagram: fruitData['Instagram'] || '',
+                                facebook: fruitData['Facebook'] || '',
+                                twitter: fruitData['Twitter'] || '',
+                                leadSource: fruitData['Lead Source'] || 'Other',
+                                campaign: fruitData['Campaign'] || '',
+                                status: fruitData['Status'] || 'Initial Contact',
+                                notes: fruitData['Notes'] || '',
+                                createdDate: fruitData['Created Date'] ? new Date(fruitData['Created Date']).toISOString() : new Date().toISOString(),
+                                createdBy: fruitData['Created By'] || currentUser.email
+                            };
+
+                            // Validate required fields
+                            if (!newFruit.name.trim()) {
+                                console.warn(`Row ${i + 1}: Missing name, skipping`);
+                                errorCount++;
+                                continue;
+                            }
+
+                            importedFruits.push(newFruit);
+                            successCount++;
+
+                        } catch (rowError) {
+                            console.error(`Error parsing row ${i + 1}:`, rowError);
+                            errorCount++;
+                        }
+                    }
+
+                    if (importedFruits.length === 0) {
+                        throw new Error('No valid data found in CSV file');
+                    }
+
+                    // Add imported fruits to the main array
+                    fruits.push(...importedFruits);
+                    saveLocalData();
+                    updateFruitsGrid();
+                    updateStats();
+                    populateFruitDropdowns();
+
+                    closeModal('importModal');
+                    showNotification(`Import completed! ${successCount} fruits imported successfully${errorCount > 0 ? `, ${errorCount} errors` : ''}`);
+
+                } catch (error) {
+                    console.error('CSV import error:', error);
+                    showNotification('Import failed: ' + error.message, 'error');
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        function importActivitiesFromCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showNotification('Please select a CSV file', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    
+                    if (lines.length < 2) {
+                        throw new Error('CSV file must have at least a header row and one data row');
+                    }
+
+                    // Parse header
+                    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                    
+                    // Validate required columns
+                    const requiredColumns = ['Fruit Name', 'Activity Type'];
+                    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+                    if (missingColumns.length > 0) {
+                        throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+                    }
+
+                    const importedActivities = [];
+                    let successCount = 0;
+                    let errorCount = 0;
+
+                    // Parse data rows
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue; // Skip empty lines
+
+                        try {
+                            const values = parseCSVLine(line);
+                            if (values.length !== headers.length) {
+                                console.warn(`Row ${i + 1}: Column count mismatch, skipping`);
+                                errorCount++;
+                                continue;
+                            }
+
+                            const activityData = {};
+                            headers.forEach((header, index) => {
+                                activityData[header] = values[index] || '';
+                            });
+
+                            // Map CSV columns to our activity object structure
+                            const newActivity = {
+                                id: 'imported_' + Date.now() + '_' + i,
+                                fruitName: activityData['Fruit Name'] || '',
+                                type: activityData['Activity Type'] || '',
+                                duration: activityData['Duration (minutes)'] || '0',
+                                notes: activityData['Notes'] || '',
+                                outcome: activityData['Outcome'] || '',
+                                user: activityData['User'] || currentUser.name,
+                                createdDate: activityData['Created Date'] ? new Date(activityData['Created Date']).toISOString() : new Date().toISOString()
+                            };
+
+                            // Validate required fields
+                            if (!newActivity.fruitName.trim() || !newActivity.type.trim()) {
+                                console.warn(`Row ${i + 1}: Missing required fields, skipping`);
+                                errorCount++;
+                                continue;
+                            }
+
+                            importedActivities.push(newActivity);
+                            successCount++;
+
+                        } catch (rowError) {
+                            console.error(`Error parsing row ${i + 1}:`, rowError);
+                            errorCount++;
+                        }
+                    }
+
+                    if (importedActivities.length === 0) {
+                        throw new Error('No valid data found in CSV file');
+                    }
+
+                    // Add imported activities to the main array
+                    activities.push(...importedActivities);
+                    saveLocalData();
+                    updateRecentActivities();
+                    updateStats();
+
+                    closeModal('importModal');
+                    showNotification(`Import completed! ${successCount} activities imported successfully${errorCount > 0 ? `, ${errorCount} errors` : ''}`);
+
+                } catch (error) {
+                    console.error('CSV import error:', error);
+                    showNotification('Import failed: ' + error.message, 'error');
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        function parseCSVLine(line) {
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const nextChar = line[i + 1];
+                
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        // Escaped quote
+                        current += '"';
+                        i++; // Skip next quote
+                    } else {
+                        // Toggle quote state
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    // End of field
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            // Add the last field
+            values.push(current.trim());
+            
+            return values;
+        }
+
+        function exportData() {
+            // Show export options modal
+            showExportModal();
+        }
+
+        function exportFruitsCSV() {
+            if (fruits.length === 0) {
+                showNotification('No fruits data to export', 'warning');
+                return;
+            }
+
+            const headers = [
+                'Name', 'Assigned To', 'Phone', 'Instagram', 'Facebook', 'Twitter', 
+                'Lead Source', 'Campaign', 'Status', 'Notes', 'Created Date', 'Created By'
+            ];
+            
+            const csvContent = [
+                headers.join(','),
+                ...fruits.map(fruit => [
+                    `"${(fruit.name || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.assignedTo || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.phone || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.instagram || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.facebook || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.twitter || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.leadSource || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.campaign || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.status || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.notes || '').replace(/"/g, '""')}"`,
+                    `"${formatDateForCSV(fruit.createdDate)}"`,
+                    `"${(fruit.createdBy || '').replace(/"/g, '""')}"`
+                ].join(','))
+            ].join('\n');
+            
+            downloadCSV(csvContent, `fruits-export-${new Date().toISOString().split('T')[0]}.csv`);
+            showNotification('Fruits data exported to CSV successfully!');
+        }
+
+        function exportActivitiesCSV() {
+            if (activities.length === 0) {
+                showNotification('No activities data to export', 'warning');
+                return;
+            }
+
+            const headers = [
+                'Fruit Name', 'Activity Type', 'Duration (minutes)', 'Notes', 'Outcome', 'User', 'Created Date'
+            ];
+            
+            const csvContent = [
+                headers.join(','),
+                ...activities.map(activity => [
+                    `"${(activity.fruitName || '').replace(/"/g, '""')}"`,
+                    `"${(activity.type || '').replace(/"/g, '""')}"`,
+                    `"${activity.duration || '0'}"`,
+                    `"${(activity.notes || '').replace(/"/g, '""')}"`,
+                    `"${(activity.outcome || '').replace(/"/g, '""')}"`,
+                    `"${(activity.user || '').replace(/"/g, '""')}"`,
+                    `"${formatDateForCSV(activity.createdDate)}"`
+                ].join(','))
+            ].join('\n');
+            
+            downloadCSV(csvContent, `activities-export-${new Date().toISOString().split('T')[0]}.csv`);
+            showNotification('Activities data exported to CSV successfully!');
+        }
+
+        function exportAllDataCSV() {
+            exportFruitsCSV();
+            setTimeout(() => exportActivitiesCSV(), 500); // Small delay to avoid browser blocking multiple downloads
+        }
+
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function formatDateForCSV(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+
+        // SharePoint-specific functions
+
+        async function testSharePointConnection() {
+            try {
+                showNotification('Testing SharePoint connection...', 'info');
+                
+                if (!sharePointAccessToken) {
+                    throw new Error('No access token. Please authenticate first.');
+                }
+                
+                // Test by getting site information
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const siteInfo = await response.json();
+                console.log('✅ SharePoint connection test successful:', siteInfo);
+                
+                showNotification('✅ SharePoint connection test successful!');
+                
+            } catch (error) {
+                console.error('❌ SharePoint connection test failed:', error);
+                showNotification('❌ SharePoint connection test failed: ' + error.message, 'error');
+            }
+        }
+
+        async function testGraphApiConnection() {
+            return testSharePointConnection(); // Same test
+        }
+
+
+
+        function showDataOptions() {
+            const syncOptions = document.getElementById('syncOptions');
+            syncOptions.classList.toggle('hidden');
+        }
+
+        // Migration function
+        async function migrateFromGoogleSheets() {
+            showNotification('Google Sheets migration coming soon!', 'info');
+        }
+
+        // User Management Functions
+        let authorizedUsers = [];
+
+        async function loadUsersFromSharePoint() {
+            try {
+                if (!sharePointAccessToken) {
+                    console.log('⚠️ No SharePoint access token for loading users');
+                    return;
+                }
+
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const items = data.value || [];
+                
+                authorizedUsers = items.map(item => ({
+                    id: item.id.toString(),
+                    email: item.fields.Email || '',
+                    displayName: item.fields.DisplayName || '',
+                    role: item.fields.Role || 'User',
+                    status: item.fields.Status || 'Active',
+                    department: item.fields.Department || '',
+                    notes: item.fields.Notes || '',
+                    createdDate: item.fields.Created || item.createdDateTime,
+                    lastLogin: item.fields.LastLogin || 'Never'
+                }));
+                
+                console.log('👥 Loaded', authorizedUsers.length, 'users from SharePoint');
+                updateUsersTable();
+                updateUserStats();
+                
+            } catch (error) {
+                console.error('❌ Error loading users from SharePoint:', error);
+                showNotification('Failed to load users from SharePoint', 'error');
+            }
+        }
+
+        function updateUsersTable() {
+            const tbody = document.getElementById('usersTable');
+            if (!tbody) return;
+            
+            if (authorizedUsers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            <i class="fas fa-users text-2xl mb-2"></i>
+                            <p>No users found. Add your first user to get started.</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = authorizedUsers.map(user => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                                    ${user.displayName.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${user.displayName}</div>
+                                <div class="text-sm text-gray-500">${user.email}</div>
+                                ${user.department ? `<div class="text-xs text-gray-400">${user.department}</div>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}">
+                            ${user.role}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(user.status)}">
+                            ${user.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="editUser('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteUser('${user.id}')" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getRoleBadgeColor(role) {
+            const colors = {
+                'Admin': 'bg-red-100 text-red-800',
+                'Manager': 'bg-purple-100 text-purple-800',
+                'Contributor': 'bg-blue-100 text-blue-800',
+                'User': 'bg-green-100 text-green-800',
+                'Viewer': 'bg-gray-100 text-gray-800'
+            };
+            return colors[role] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getStatusBadgeColor(status) {
+            const colors = {
+                'Active': 'bg-green-100 text-green-800',
+                'Inactive': 'bg-red-100 text-red-800',
+                'Pending': 'bg-yellow-100 text-yellow-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function updateUserStats() {
+            document.getElementById('totalUsers').textContent = authorizedUsers.length;
+            document.getElementById('activeUsers').textContent = authorizedUsers.filter(u => u.status === 'Active').length;
+            document.getElementById('adminUsers').textContent = authorizedUsers.filter(u => u.role === 'Admin').length;
+            
+            // Calculate recent logins (last 7 days)
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const recentLogins = authorizedUsers.filter(u => {
+                if (u.lastLogin === 'Never') return false;
+                const loginDate = new Date(u.lastLogin);
+                return loginDate >= sevenDaysAgo;
+            }).length;
+            document.getElementById('recentLogins').textContent = recentLogins;
+        }
+
+        function showAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('hidden');
+        }
+
+        async function addUser(event) {
+            event.preventDefault();
+            
+            if (!userPermissions.isAdmin) {
+                showNotification('Only administrators can add users', 'error');
+                return;
+            }
+            
+            const formData = new FormData(event.target);
+            const newUser = {
+                email: formData.get('email'),
+                displayName: formData.get('displayName'),
+                role: formData.get('role'),
+                status: formData.get('status'),
+                department: formData.get('department') || '',
+                notes: formData.get('notes') || '',
+                createdDate: new Date().toISOString(),
+                lastLogin: 'Never'
+            };
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Add to SharePoint Users list
+                    const result = await addUserToSharePoint(newUser);
+                    newUser.id = result.id.toString();
+                    showNotification(`User ${newUser.displayName} added successfully!`);
+                } else {
+                    newUser.id = 'user_' + Date.now();
+                    showNotification(`User ${newUser.displayName} added locally (SharePoint not connected)`);
+                }
+                
+                // Add to local array
+                authorizedUsers.push(newUser);
+                updateUsersTable();
+                updateUserStats();
+                
+                closeModal('addUserModal');
+                event.target.reset();
+                
+            } catch (error) {
+                console.error('❌ Failed to add user:', error);
+                showNotification('Failed to add user: ' + error.message, 'error');
+            }
+        }
+
+        async function addUserToSharePoint(userData) {
+            try {
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fields: {
+                            Title: userData.displayName,
+                            Email: userData.email,
+                            DisplayName: userData.displayName,
+                            Role: userData.role,
+                            Status: userData.status,
+                            Department: userData.department,
+                            Notes: userData.notes,
+                            LastLogin: userData.lastLogin
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to add user: ${response.status} ${response.statusText}`);
+                }
+                
+                return await response.json();
+                
+            } catch (error) {
+                console.error('❌ Error adding user to SharePoint:', error);
+                throw error;
+            }
+        }
+
+        async function editUser(userId) {
+            showNotification('User editing coming soon!', 'info');
+        }
+
+        async function deleteUser(userId) {
+            if (!userPermissions.isAdmin) {
+                showNotification('Only administrators can delete users', 'error');
+                return;
+            }
+            
+            const user = authorizedUsers.find(u => u.id === userId);
+            if (!user) {
+                showNotification('User not found', 'error');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete user "${user.displayName}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    await deleteUserFromSharePoint(userId);
+                    showNotification(`User ${user.displayName} deleted successfully!`);
+                } else {
+                    showNotification(`User ${user.displayName} deleted locally`);
+                }
+                
+                // Remove from local array
+                const userIndex = authorizedUsers.findIndex(u => u.id === userId);
+                if (userIndex > -1) {
+                    authorizedUsers.splice(userIndex, 1);
+                }
+                
+                updateUsersTable();
+                updateUserStats();
+                
+            } catch (error) {
+                console.error('❌ Failed to delete user:', error);
+                showNotification('Failed to delete user: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteUserFromSharePoint(userId) {
+            try {
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items/${userId}`;
+                
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to delete user: ${response.status} ${response.statusText}`);
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error deleting user from SharePoint:', error);
+                throw error;
+            }
+        }
+
+        // Admin functions
+        function updateAdminStats() {
+            document.getElementById('sharePointFruits').textContent = fruits.length;
+            document.getElementById('sharePointActivities').textContent = activities.length;
+            document.getElementById('lastSyncStatus').textContent = isSharePointMode ? 'Connected' : 'Not Connected';
+            
+            // Load and update user stats if admin
+            if (userPermissions.isAdmin) {
+                loadUsersFromSharePoint();
+            }
+        }
+
+        function refreshUserList() {
+            updateAdminStats();
+            showNotification('Admin data refreshed!');
+        }
+
+        function exportMigrationReport() {
+            const report = {
+                migrationDate: new Date().toISOString(),
+                sharePointConnected: isSharePointMode,
+                totalFruits: fruits.length,
+                totalActivities: activities.length,
+                configuration: {
+                    siteUrl: SHAREPOINT_CONFIG.SITE_URL,
+                    fruitsListId: SHAREPOINT_CONFIG.FRUITS_LIST_ID,
+                    activitiesListId: SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID
+                },
+                fruits: fruits,
+                activities: activities
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sharepoint-migration-report-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Migration report exported successfully!');
+        }
+
+        // Local data management (fallback)
+        function saveLocalData() {
+            localStorage.setItem('crm_fruits', JSON.stringify(fruits));
+            localStorage.setItem('crm_activities', JSON.stringify(activities));
+            localStorage.setItem('crm_sharepoint_mode', isSharePointMode.toString());
+        }
+
+        function loadLocalData() {
+            const savedFruits = localStorage.getItem('crm_fruits');
+            const savedActivities = localStorage.getItem('crm_activities');
+            const savedSharePointMode = localStorage.getItem('crm_sharepoint_mode');
+            
+            if (savedFruits) {
+                fruits = JSON.parse(savedFruits);
+            }
+            
+            if (savedActivities) {
+                activities = JSON.parse(savedActivities);
+            }
+            
+            if (savedSharePointMode) {
+                isSharePointMode = savedSharePointMode === 'true';
+            }
+            
+            updateFruitsGrid();
+            updateStats();
+            updateRecentActivities();
+            populateFruitDropdowns();
+        }
+
+        function logout() {
+            // Stop real-time sync
+            stopRealTimeSync();
+            
+            currentUser = null;
+            sharePointAccessToken = null;
+            isSharePointMode = false;
+            
+            // Clear all session data
+            sessionStorage.removeItem('access_token');
+            sessionStorage.removeItem('token_expiry');
+            sessionStorage.removeItem('current_user');
+            sessionStorage.removeItem('pkce_code_verifier');
+            sessionStorage.removeItem('pkce_state');
+            
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('adminTabBtn').classList.add('hidden');
+            
+            updateConnectionStatus();
+            showNotification('Logged out successfully');
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a55c79c2abb4dc',t:'MTc1OTc1NTgzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
