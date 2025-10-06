@@ -1438,7 +1438,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 console.log('👤 User email:', email);
                 
                 // Show loading message
-                showNotification('Validating access and loading data from Google Sheets...', 'info');
+                showNotification('Validating access and requesting Google Sheets permissions...', 'info');
                 
                 // Validate user against Google Sheets - PRIMARY VALIDATION
                 let validationResult = null;
@@ -1500,11 +1500,21 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 // Update last login time
                 updateUserLastLogin(email);
                 
+                // CRITICAL: Get OAuth token for Google Sheets write access
+                try {
+                    console.log('🔐 Requesting OAuth token for Google Sheets write access...');
+                    await getOAuthToken();
+                    console.log('✅ OAuth token obtained successfully');
+                } catch (oauthError) {
+                    console.error('❌ OAuth failed:', oauthError);
+                    showNotification('Google Sheets access required for sync functionality', 'warning');
+                }
+                
                 // Load real data from Google Sheets
                 await loadRealDataFromSheets();
                 
                 showDashboard();
-                showNotification(`Welcome ${currentUser.name}! Loaded real data from Google Sheets.`);
+                showNotification(`Welcome ${currentUser.name}! Real-time sync is ${accessToken ? 'enabled' : 'disabled'}.`);
                 
             } catch (connectionError) {
                 console.error('❌ Authentication error:', connectionError);
@@ -1538,28 +1548,34 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 }
             }
             
-            // Automatically enable real-time sync since edit access is granted
-            isOnlineMode = true;
-            console.log('🔄 Auto-enabling real-time sync with granted edit access');
-            
+            // Update connection status based on OAuth token availability
             updateConnectionStatus();
             updateStats();
             updateRecentActivities();
             updateFruitsGrid();
             populateTeamMemberDropdown();
             
-            // Start real-time sync automatically
-            startRealTimeSync();
-            
-            // Update the enable button to show it's active
+            // Update the enable button based on OAuth status
             const enableBtn = document.getElementById('enableOnlineBtn');
             if (enableBtn) {
-                enableBtn.innerHTML = `
-                    <i class="fas fa-check-circle text-green-600"></i>
-                    <span>Real-Time Sync Active</span>
-                `;
-                enableBtn.disabled = true;
-                enableBtn.classList.add('bg-green-50');
+                if (accessToken) {
+                    enableBtn.innerHTML = `
+                        <i class="fas fa-check-circle text-green-600"></i>
+                        <span>Real-Time Sync Active</span>
+                    `;
+                    enableBtn.disabled = true;
+                    enableBtn.classList.add('bg-green-50');
+                    
+                    // Start real-time sync if we have token
+                    startRealTimeSync();
+                } else {
+                    enableBtn.innerHTML = `
+                        <i class="fas fa-key text-orange-600"></i>
+                        <span>Enable Online Mode</span>
+                    `;
+                    enableBtn.disabled = false;
+                    enableBtn.classList.remove('bg-green-50');
+                }
             }
         }
 
@@ -1617,24 +1633,44 @@ function validateSpreadsheetAccess(spreadsheetId) {
             try {
                 console.log('🔐 Starting OAuth flow for Google Sheets access...');
                 
+                // Check if Google OAuth2 is available
+                if (!google.accounts || !google.accounts.oauth2) {
+                    throw new Error('Google OAuth2 not available');
+                }
+                
                 return new Promise((resolve, reject) => {
-                    google.accounts.oauth2.initTokenClient({
+                    const tokenClient = google.accounts.oauth2.initTokenClient({
                         client_id: GOOGLE_CONFIG.CLIENT_ID,
                         scope: GOOGLE_CONFIG.SCOPES,
                         callback: (response) => {
+                            console.log('🔐 OAuth response received:', response);
+                            
                             if (response.error) {
                                 console.error('❌ OAuth error:', response.error);
                                 reject(new Error(response.error));
                                 return;
                             }
                             
-                            console.log('✅ OAuth token received');
+                            if (!response.access_token) {
+                                console.error('❌ No access token in response');
+                                reject(new Error('No access token received'));
+                                return;
+                            }
+                            
+                            console.log('✅ OAuth token received successfully');
                             accessToken = response.access_token;
                             isOnlineMode = true;
                             updateConnectionStatus();
+                            
+                            // Start real-time sync immediately
+                            startRealTimeSync();
+                            
                             resolve(response.access_token);
                         }
-                    }).requestAccessToken();
+                    });
+                    
+                    console.log('🔐 Requesting access token...');
+                    tokenClient.requestAccessToken();
                 });
                 
             } catch (error) {
@@ -2321,20 +2357,26 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         async function updateSheetData(sheetName, rows) {
+            if (!accessToken) {
+                throw new Error('No access token available. Please enable online mode first.');
+            }
+            
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${sheetName}?valueInputOption=RAW`;
             
             console.log('📊 Updating sheet data:', {
                 sheetName,
                 url,
                 rowCount: rows.length,
-                hasToken: !!accessToken
+                hasToken: !!accessToken,
+                tokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : 'none'
             });
             
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({
                     values: rows
@@ -2346,6 +2388,15 @@ function validateSpreadsheetAccess(spreadsheetId) {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('📊 Update error response:', errorText);
+                
+                // Handle token expiration
+                if (response.status === 401) {
+                    console.log('🔐 Token expired, requesting new token...');
+                    accessToken = null;
+                    isOnlineMode = false;
+                    updateConnectionStatus();
+                    throw new Error('Authentication expired. Please click "Enable Online Mode" again.');
+                }
                 
                 let errorMessage = `Failed to update ${sheetName}: ${response.status} ${response.statusText}`;
                 try {
@@ -2364,28 +2415,58 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         async function appendToSheetDirectAPI(sheetName, rows) {
-            // Since you've granted edit access to anyone with the link, we can use the Apps Script approach
-            // This bypasses OAuth requirements
+            if (!accessToken) {
+                throw new Error('No access token available. Please enable online mode first.');
+            }
+            
             try {
-                console.log('📊 Appending to sheet via direct API:', {
+                console.log('📊 Appending to sheet via OAuth API:', {
                     sheetName,
                     rowCount: rows.length,
                     rows: rows,
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
+                    hasToken: !!accessToken
                 });
                 
-                // Use Apps Script Web App for direct access
-                const result = await callAppsScript('appendData', {
-                    sheetName: sheetName,
-                    values: rows,
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                // Use Google Sheets API with OAuth token
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${sheetName}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: rows
+                    })
                 });
                 
-                console.log('✅ Direct API append successful:', result);
+                console.log('📊 Append response status:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('📊 Append error response:', errorText);
+                    
+                    // Handle token expiration
+                    if (response.status === 401) {
+                        console.log('🔐 Token expired, requesting new token...');
+                        accessToken = null;
+                        isOnlineMode = false;
+                        updateConnectionStatus();
+                        throw new Error('Authentication expired. Please click "Enable Online Mode" again.');
+                    }
+                    
+                    throw new Error(`Failed to append to ${sheetName}: ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ OAuth API append successful:', result);
                 return result;
                 
             } catch (error) {
-                console.error('❌ Direct API append failed, trying fallback method:', error);
+                console.error('❌ OAuth API append failed, trying fallback method:', error);
                 
                 // Fallback: Try to sync all data instead of append
                 if (sheetName === 'Fruits') {
@@ -4233,5 +4314,5 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a42f122239b4dc',t:'MTc1OTc0MzQ4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a44755133bb4dc',t:'MTc1OTc0NDQ4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
