@@ -430,7 +430,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm text-gray-600 mb-1">User Access Sheet</label>
-                                <input type="text" id="userAccessSheet" value="User Access & Admin Config Sheet" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                                <input type="text" id="userAccessSheet" value="User Access & Admin Config" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
                             </div>
                             <button onclick="testGoogleSheetsConnection()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                                 <i class="fas fa-plug mr-2"></i>Test Connection
@@ -688,14 +688,14 @@
     </div>
 
     <script>
-        // Configuration
+        // Configuration - Updated to use your exact sheet name
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
             CLIENT_SECRET: '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',
             API_KEY: 'AIzaSyBqvopK2QrsiUSLO4M7McX4EZI0cbTF0uY',
             SCOPES: 'openid profile email https://www.googleapis.com/auth/spreadsheets',
             SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
-            SHEET_NAME: 'User Access & Admin Config Sheet'
+            SHEET_NAME: 'User Access & Admin Config'
         };
 
         const APPS_SCRIPT_CONFIG = {
@@ -714,6 +714,8 @@
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 App initializing...');
+            console.log('📊 Using Spreadsheet ID:', GOOGLE_CONFIG.SPREADSHEET_ID);
+            console.log('📋 Using Sheet Name:', GOOGLE_CONFIG.SHEET_NAME);
             initializeGoogleAPIs();
             updateConnectionStatus();
             loadLocalData();
@@ -779,13 +781,21 @@
                 const email = payload.email.toLowerCase();
                 
                 console.log('👤 User email:', email);
+                console.log('📊 Validating against spreadsheet:', GOOGLE_CONFIG.SPREADSHEET_ID);
+                console.log('📋 Using sheet:', GOOGLE_CONFIG.SHEET_NAME);
                 
                 // Validate user access via Apps Script
-                const validationResponse = await fetch(`${APPS_SCRIPT_CONFIG.WEB_APP_URL}?action=validateUser&email=${encodeURIComponent(email)}`);
+                const validationUrl = `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?action=validateUser&email=${encodeURIComponent(email)}&spreadsheetId=${GOOGLE_CONFIG.SPREADSHEET_ID}&sheetName=${encodeURIComponent(GOOGLE_CONFIG.SHEET_NAME)}`;
+                console.log('🔗 Validation URL:', validationUrl);
+                
+                const validationResponse = await fetch(validationUrl);
                 const validation = await validationResponse.json();
+                
+                console.log('📋 Validation response:', validation);
                 
                 if (!validation.hasAccess) {
                     showNotification('Access denied. Contact your administrator.', 'error');
+                    console.log('❌ Access denied for user:', email);
                     return;
                 }
                 
@@ -798,6 +808,8 @@
                     role: validation.user?.role || 'User',
                     permissions: validation.user?.permissions || 'Read'
                 };
+                
+                console.log('✅ User authenticated:', currentUser);
                 
                 // Get OAuth token for Google Sheets access
                 await getOAuthToken();
@@ -825,6 +837,7 @@
                             scope: GOOGLE_CONFIG.SCOPES
                         }).then((user) => {
                             accessToken = user.getAuthResponse().access_token;
+                            console.log('🔑 OAuth token obtained');
                             resolve(accessToken);
                         }).catch(reject);
                     }).catch(reject);
@@ -880,12 +893,24 @@
         // Apps Script API calls
         async function callAppsScript(action, data = {}) {
             try {
+                const payload = { 
+                    action, 
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
+                    sheetName: GOOGLE_CONFIG.SHEET_NAME,
+                    ...data 
+                };
+                
+                console.log('📡 Calling Apps Script:', action, payload);
+                
                 const response = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action, ...data })
+                    body: JSON.stringify(payload)
                 });
-                return await response.json();
+                
+                const result = await response.json();
+                console.log('📡 Apps Script response:', result);
+                return result;
             } catch (error) {
                 console.error('Apps Script error:', error);
                 throw error;
@@ -1434,5 +1459,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a2d145f5c5b4dc',t:'MTc1OTcyOTE1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a2e2724373b4dc',t:'MTc1OTcyOTg2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
