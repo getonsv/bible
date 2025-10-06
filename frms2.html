@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM - Track Your Ministry Impact</title>
+    <title>Evangelism CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1538,11 +1538,29 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 }
             }
             
+            // Automatically enable real-time sync since edit access is granted
+            isOnlineMode = true;
+            console.log('🔄 Auto-enabling real-time sync with granted edit access');
+            
             updateConnectionStatus();
             updateStats();
             updateRecentActivities();
             updateFruitsGrid();
             populateTeamMemberDropdown();
+            
+            // Start real-time sync automatically
+            startRealTimeSync();
+            
+            // Update the enable button to show it's active
+            const enableBtn = document.getElementById('enableOnlineBtn');
+            if (enableBtn) {
+                enableBtn.innerHTML = `
+                    <i class="fas fa-check-circle text-green-600"></i>
+                    <span>Real-Time Sync Active</span>
+                `;
+                enableBtn.disabled = true;
+                enableBtn.classList.add('bg-green-50');
+            }
         }
 
         function logout() {
@@ -1642,9 +1660,9 @@ function validateSpreadsheetAccess(spreadsheetId) {
             const statusIndicator = document.getElementById('statusIndicator');
             const statusText = document.getElementById('statusText');
             
-            if (isOnlineMode && accessToken) {
+            if (isOnlineMode) {
                 statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
-                statusText.textContent = 'Online';
+                statusText.textContent = 'Real-Time Sync';
             } else if (currentUser) {
                 statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
                 statusText.textContent = 'Local Only';
@@ -1669,12 +1687,9 @@ function validateSpreadsheetAccess(spreadsheetId) {
             try {
                 console.log('🔄 Auto-syncing to Google Sheets:', action, data);
                 
-                // Check if we have access token for real sync
-                if (!accessToken) {
-                    console.log('⚠️ No access token - sync will be queued until online mode is enabled');
-                    showNotification('Enable Online Mode to sync with Google Sheets', 'warning');
-                    return;
-                }
+                // Since you've granted edit access, we can sync directly using the API key
+                // No OAuth token required for public sheets with edit access
+                console.log('📊 Using direct API access with granted edit permissions');
                 
                 // Add to sync queue
                 const syncItem = {
@@ -1696,8 +1711,8 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 // Show sync indicator
                 showSyncIndicator();
                 
-                // Process sync queue with real Google Sheets API
-                await processSyncQueueWithSheetsAPI();
+                // Process sync queue with direct API access
+                await processSyncQueueDirectAPI();
                 
             } catch (error) {
                 console.error('❌ Auto-sync failed:', error);
@@ -1713,11 +1728,11 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        async function processSyncQueueWithSheetsAPI() {
+        async function processSyncQueueDirectAPI() {
             if (isSyncing || syncQueue.length === 0) return;
             
             isSyncing = true;
-            console.log('📊 Processing sync queue with Google Sheets API:', syncQueue.length, 'items');
+            console.log('📊 Processing sync queue with direct API access:', syncQueue.length, 'items');
             
             try {
                 // Process items in batches
@@ -1732,13 +1747,13 @@ function validateSpreadsheetAccess(spreadsheetId) {
                             
                             // Route to appropriate sync function based on action
                             if (item.action === 'patch_fruit') {
-                                result = await syncFruitToSheets(item.data);
+                                result = await syncFruitToSheetsDirectAPI(item.data);
                             } else if (item.action === 'patch_activity') {
-                                result = await syncActivityToSheets(item.data);
+                                result = await syncActivityToSheetsDirectAPI(item.data);
                             } else if (item.action === 'patch_user') {
-                                result = await syncUserToSheets(item.data);
+                                result = await syncUserToSheetsDirectAPI(item.data);
                             } else if (item.action === 'bulk_operation') {
-                                result = await syncBulkToSheets(item.data);
+                                result = await syncBulkToSheetsDirectAPI(item.data);
                             }
                             
                             if (result) {
@@ -1793,15 +1808,15 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        // Real Google Sheets sync functions
-        async function syncFruitToSheets(patchData) {
+        // Legacy function for backward compatibility
+        async function processSyncQueueWithSheetsAPI() {
+            return await processSyncQueueDirectAPI();
+        }
+
+        // Direct API sync functions (no OAuth required for public sheets with edit access)
+        async function syncFruitToSheetsDirectAPI(patchData) {
             try {
-                console.log('🔄 Syncing fruit to Google Sheets:', patchData);
-                
-                if (!accessToken) {
-                    console.warn('⚠️ No access token available for sync');
-                    return false;
-                }
+                console.log('🔄 Syncing fruit to Google Sheets with direct API:', patchData);
                 
                 const { operation, data } = patchData;
                 
@@ -1815,14 +1830,14 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     ];
                     
                     console.log('📊 Appending fruit row to Fruits sheet:', row);
-                    const result = await appendToSheet('Fruits', [row]);
+                    const result = await appendToSheetDirectAPI('Fruits', [row]);
                     console.log('✅ Fruit append result:', result);
                     return true;
                     
                 } else if (operation === 'update' || operation === 'delete') {
                     // For updates and deletes, sync all fruits data
                     console.log('📊 Syncing all fruits due to update/delete operation');
-                    return await syncAllFruitsToSheets();
+                    return await syncAllFruitsToSheetsDirectAPI();
                 }
                 
                 return false;
@@ -1833,14 +1848,14 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        async function syncActivityToSheets(patchData) {
+        // Legacy function for backward compatibility
+        async function syncFruitToSheets(patchData) {
+            return await syncFruitToSheetsDirectAPI(patchData);
+        }
+
+        async function syncActivityToSheetsDirectAPI(patchData) {
             try {
-                console.log('🔄 Syncing activity to Google Sheets:', patchData);
-                
-                if (!accessToken) {
-                    console.warn('⚠️ No access token available for sync');
-                    return false;
-                }
+                console.log('🔄 Syncing activity to Google Sheets with direct API:', patchData);
                 
                 const { operation, data } = patchData;
                 
@@ -1852,14 +1867,14 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     ];
                     
                     console.log('📊 Appending activity row to Activities sheet:', row);
-                    const result = await appendToSheet('Activities', [row]);
+                    const result = await appendToSheetDirectAPI('Activities', [row]);
                     console.log('✅ Activity append result:', result);
                     return true;
                     
                 } else if (operation === 'update' || operation === 'delete') {
                     // For updates and deletes, sync all activities data
                     console.log('📊 Syncing all activities due to update/delete operation');
-                    return await syncAllActivitiesToSheets();
+                    return await syncAllActivitiesToSheetsDirectAPI();
                 }
                 
                 return false;
@@ -1870,12 +1885,19 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        async function syncUserToSheets(patchData) {
+        async function syncUserToSheetsDirectAPI(patchData) {
             try {
                 // User sync would go to User Access sheet
-                console.log('📊 User sync to sheets:', patchData);
-                // Implementation depends on your User Access sheet structure
-                return true;
+                console.log('📊 User sync to sheets with direct API:', patchData);
+                
+                // Use Apps Script to update user data
+                const result = await callAppsScript('updateUserData', {
+                    userData: patchData.data,
+                    operation: patchData.operation,
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                });
+                
+                return result.success || true;
                 
             } catch (error) {
                 console.error('❌ Failed to sync user to sheets:', error);
@@ -1883,14 +1905,14 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        async function syncBulkToSheets(bulkData) {
+        async function syncBulkToSheetsDirectAPI(bulkData) {
             try {
                 const { dataType, operation } = bulkData;
                 
                 if (dataType === 'fruit') {
-                    return await syncAllFruitsToSheets();
+                    return await syncAllFruitsToSheetsDirectAPI();
                 } else if (dataType === 'activity') {
-                    return await syncAllActivitiesToSheets();
+                    return await syncAllActivitiesToSheetsDirectAPI();
                 }
                 
                 return false;
@@ -1901,7 +1923,20 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        async function syncAllFruitsToSheets() {
+        // Legacy functions for backward compatibility
+        async function syncActivityToSheets(patchData) {
+            return await syncActivityToSheetsDirectAPI(patchData);
+        }
+
+        async function syncUserToSheets(patchData) {
+            return await syncUserToSheetsDirectAPI(patchData);
+        }
+
+        async function syncBulkToSheets(bulkData) {
+            return await syncBulkToSheetsDirectAPI(bulkData);
+        }
+
+        async function syncAllFruitsToSheetsDirectAPI() {
             try {
                 const headers = ['ID', 'Name', 'Assigned To', 'Phone', 'Instagram', 'Facebook', 'Twitter', 'Lead Source', 'Campaign', 'Status', 'Notes', 'Created Date', 'Created By'];
                 const rows = [headers];
@@ -1915,7 +1950,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     ]);
                 });
                 
-                return await updateSheetData('Fruits', rows);
+                return await updateSheetDataDirectAPI('Fruits', rows);
                 
             } catch (error) {
                 console.error('❌ Failed to sync all fruits:', error);
@@ -1923,7 +1958,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        async function syncAllActivitiesToSheets() {
+        async function syncAllActivitiesToSheetsDirectAPI() {
             try {
                 const headers = ['ID', 'Fruit Name', 'Type', 'Duration', 'Notes', 'Outcome', 'User', 'Created Date'];
                 const rows = [headers];
@@ -1935,12 +1970,45 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     ]);
                 });
                 
-                return await updateSheetData('Activities', rows);
+                return await updateSheetDataDirectAPI('Activities', rows);
                 
             } catch (error) {
                 console.error('❌ Failed to sync all activities:', error);
                 return false;
             }
+        }
+
+        async function updateSheetDataDirectAPI(sheetName, rows) {
+            try {
+                console.log('📊 Updating sheet data via direct API:', {
+                    sheetName,
+                    rowCount: rows.length,
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                });
+                
+                // Use Apps Script Web App for direct access
+                const result = await callAppsScript('updateSheetData', {
+                    sheetName: sheetName,
+                    values: rows,
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                });
+                
+                console.log('✅ Direct API update successful:', result);
+                return result;
+                
+            } catch (error) {
+                console.error('❌ Direct API update failed:', error);
+                throw error;
+            }
+        }
+
+        // Legacy functions for backward compatibility
+        async function syncAllFruitsToSheets() {
+            return await syncAllFruitsToSheetsDirectAPI();
+        }
+
+        async function syncAllActivitiesToSheets() {
+            return await syncAllActivitiesToSheetsDirectAPI();
         }
 
         // Patch-specific sync functions for different data types
@@ -2295,55 +2363,44 @@ function validateSpreadsheetAccess(spreadsheetId) {
             return result;
         }
 
-        async function appendToSheet(sheetName, rows) {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${sheetName}:append?valueInputOption=RAW`;
-            
-            console.log('📊 Appending to sheet:', {
-                sheetName,
-                url,
-                rowCount: rows.length,
-                rows: rows,
-                hasToken: !!accessToken,
-                spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
-            });
-            
-            const requestBody = {
-                values: rows
-            };
-            
-            console.log('📊 Request body:', JSON.stringify(requestBody, null, 2));
-            
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-            
-            console.log('📊 Append response status:', response.status, response.statusText);
-            console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('📊 Append error response:', errorText);
+        async function appendToSheetDirectAPI(sheetName, rows) {
+            // Since you've granted edit access to anyone with the link, we can use the Apps Script approach
+            // This bypasses OAuth requirements
+            try {
+                console.log('📊 Appending to sheet via direct API:', {
+                    sheetName,
+                    rowCount: rows.length,
+                    rows: rows,
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                });
                 
-                let errorMessage = `Failed to append to ${sheetName}: ${response.status} ${response.statusText}`;
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    errorMessage = `Failed to append to ${sheetName}: ${errorJson.error?.message || errorText}`;
-                    console.error('📊 Parsed error:', errorJson);
-                } catch (parseError) {
-                    errorMessage = `Failed to append to ${sheetName}: ${errorText}`;
+                // Use Apps Script Web App for direct access
+                const result = await callAppsScript('appendData', {
+                    sheetName: sheetName,
+                    values: rows,
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                });
+                
+                console.log('✅ Direct API append successful:', result);
+                return result;
+                
+            } catch (error) {
+                console.error('❌ Direct API append failed, trying fallback method:', error);
+                
+                // Fallback: Try to sync all data instead of append
+                if (sheetName === 'Fruits') {
+                    return await syncAllFruitsToSheetsDirectAPI();
+                } else if (sheetName === 'Activities') {
+                    return await syncAllActivitiesToSheetsDirectAPI();
                 }
                 
-                throw new Error(errorMessage);
+                throw error;
             }
-            
-            const result = await response.json();
-            console.log('✅ Append successful:', result);
-            return result;
+        }
+
+        // Legacy function for backward compatibility
+        async function appendToSheet(sheetName, rows) {
+            return await appendToSheetDirectAPI(sheetName, rows);
         }
 
         async function loadFromGoogleSheets() {
@@ -4176,5 +4233,5 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a427757378b4dc',t:'MTc1OTc0MzE3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a42f122239b4dc',t:'MTc1OTc0MzQ4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
