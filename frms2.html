@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM</title>
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1276,16 +1276,19 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 const email = payload.email.toLowerCase();
                 
                 console.log('👤 User email:', email);
+                console.log('📋 Checking against authorized users:', CHAT_HISTORY_DATA.userAccess.map(u => u.email));
                 
                 // Show loading message
                 showNotification('Validating access...', 'info');
                 
-                // Validate user against authorized list
-                let validationResult = validateUserFromHistory(email);
+                // Validate user against authorized list - STRICT VALIDATION
+                const validationResult = validateUserFromHistory(email);
                 
                 // If not in authorized list, deny access
-                if (!validationResult) {
+                if (!validationResult || !validationResult.hasAccess) {
                     console.log('❌ User not authorized:', email);
+                    console.log('❌ Available authorized emails:', CHAT_HISTORY_DATA.userAccess.map(u => u.email));
+                    
                     showNotification('Access denied. Your email is not authorized for this system.', 'error');
                     
                     // Show access denied message
@@ -1294,6 +1297,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                             <i class="fas fa-exclamation-triangle mr-2"></i>
                             Access Denied: ${email}
                             <div class="text-sm mt-2">Contact your administrator to request access.</div>
+                            <div class="text-xs mt-1 text-red-600">Only pre-authorized ministry team members can access this system.</div>
                         </div>
                     `;
                     return;
@@ -1301,7 +1305,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 
                 // Check if user status is active
                 if (validationResult.user.status !== 'Active') {
-                    console.log('❌ User account inactive:', email);
+                    console.log('❌ User account inactive:', email, 'Status:', validationResult.user.status);
                     showNotification('Your account is inactive. Contact your administrator.', 'error');
                     
                     document.getElementById('googleSignInButton').innerHTML = `
@@ -1317,8 +1321,8 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 // Set up user data from validation result
                 currentUser = {
                     googleId: payload.sub,
-                    name: payload.name,
-                    email: payload.email,
+                    name: validationResult.user.name, // Use name from authorized list
+                    email: validationResult.user.email,
                     picture: payload.picture,
                     role: validationResult.user.role,
                     permissions: validationResult.user.permissions,
@@ -1326,7 +1330,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     source: validationResult.source
                 };
                 
-                console.log('✅ User authenticated:', currentUser);
+                console.log('✅ User authenticated successfully:', currentUser);
                 
                 // Update last login time
                 updateUserLastLogin(email);
@@ -1334,11 +1338,18 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 // Load local data and show dashboard
                 loadLocalData();
                 showDashboard();
-                showNotification(`Welcome ${currentUser.name}!`);
+                showNotification(`Welcome ${currentUser.name}! Role: ${currentUser.role}`);
                 
             } catch (connectionError) {
-                console.error('❌ Connection error:', connectionError);
+                console.error('❌ Authentication error:', connectionError);
                 showNotification('Authentication failed. Please try again.', 'error');
+                
+                // Reset sign-in button
+                document.getElementById('googleSignInButton').innerHTML = `
+                    <div class="w-full bg-red-100 text-red-600 font-medium py-3 px-4 rounded-lg text-center">
+                        Authentication Error - Please refresh and try again
+                    </div>
+                `;
             }
         }
 
@@ -1853,20 +1864,30 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         function validateUserFromHistory(email) {
-            const user = CHAT_HISTORY_DATA.userAccess.find(u => 
-                u.email.toLowerCase() === email.toLowerCase()
-            );
+            console.log('🔍 Validating email:', email);
+            console.log('🔍 Against authorized list:', CHAT_HISTORY_DATA.userAccess);
+            
+            const user = CHAT_HISTORY_DATA.userAccess.find(u => {
+                const userEmail = u.email.toLowerCase().trim();
+                const checkEmail = email.toLowerCase().trim();
+                console.log('🔍 Comparing:', userEmail, 'vs', checkEmail);
+                return userEmail === checkEmail;
+            });
             
             if (user) {
-                console.log('👤 Found user in authorized list:', user);
+                console.log('✅ Found user in authorized list:', user);
+                const hasAccess = user.status === 'Active';
+                console.log('🔐 Access granted:', hasAccess, 'Status:', user.status);
+                
                 return {
-                    hasAccess: user.status === 'Active',
+                    hasAccess: hasAccess,
                     user: user,
                     source: 'authorized_users'
                 };
             }
             
             console.log('❌ User not found in authorized list:', email);
+            console.log('❌ Available emails:', CHAT_HISTORY_DATA.userAccess.map(u => u.email));
             return null;
         }
 
@@ -2951,5 +2972,5 @@ function doGet(e) {
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3b25347bcb4dc',t:'MTc1OTczODM3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3bc5e9290b4dc',t:'MTc1OTczODc4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
