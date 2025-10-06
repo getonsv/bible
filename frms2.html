@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM</title>
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -91,10 +91,18 @@
                             <button onclick="showDataOptions()" class="bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded-lg ml-1 transition-colors">
                                 <i class="fas fa-chevron-down text-xs"></i>
                             </button>
-                            <div id="syncOptions" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
-                                <button onclick="syncWithGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2">
+                            <div id="syncOptions" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border z-10">
+                                <button onclick="enableOnlineMode()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2" id="enableOnlineBtn">
+                                    <i class="fas fa-key text-orange-600"></i>
+                                    <span>Enable Online Mode</span>
+                                </button>
+                                <button onclick="syncWithGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
                                     <i class="fas fa-cloud-upload-alt text-blue-600"></i>
                                     <span>Sync to Sheets</span>
+                                </button>
+                                <button onclick="loadFromGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-cloud-download-alt text-green-600"></i>
+                                    <span>Load from Sheets</span>
                                 </button>
                                 <button onclick="refreshData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
                                     <i class="fas fa-refresh text-green-600"></i>
@@ -1576,10 +1584,35 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        // OAuth flow for Google Sheets access (disabled for now due to CORS issues)
+        // OAuth flow for Google Sheets access
         async function getOAuthToken() {
-            console.log('⚠️ OAuth disabled due to CORS policy restrictions');
-            return null;
+            try {
+                console.log('🔐 Starting OAuth flow for Google Sheets access...');
+                
+                return new Promise((resolve, reject) => {
+                    google.accounts.oauth2.initTokenClient({
+                        client_id: GOOGLE_CONFIG.CLIENT_ID,
+                        scope: GOOGLE_CONFIG.SCOPES,
+                        callback: (response) => {
+                            if (response.error) {
+                                console.error('❌ OAuth error:', response.error);
+                                reject(new Error(response.error));
+                                return;
+                            }
+                            
+                            console.log('✅ OAuth token received');
+                            accessToken = response.access_token;
+                            isOnlineMode = true;
+                            updateConnectionStatus();
+                            resolve(response.access_token);
+                        }
+                    }).requestAccessToken();
+                });
+                
+            } catch (error) {
+                console.error('❌ OAuth initialization failed:', error);
+                throw error;
+            }
         }
 
         function startOAuthFlow() {
@@ -1944,24 +1977,37 @@ function validateSpreadsheetAccess(spreadsheetId) {
             });
         }
 
-        // Google Sheets sync (simplified for demo)
+        // Google Sheets sync with OAuth
         async function syncWithGoogleSheets() {
             try {
-                showSyncProgress('Preparing data for sync...');
+                showSyncProgress('Connecting to Google Sheets...');
                 
-                // Simulate sync process
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Get OAuth token if not available
+                if (!accessToken) {
+                    console.log('🔐 No access token, requesting OAuth...');
+                    await getOAuthToken();
+                }
+                
+                showSyncProgress('Syncing data to Google Sheets...');
+                
+                // Sync data directly to Google Sheets
+                await syncDataDirectToSheets();
                 
                 // Save data locally as backup
                 saveLocalData();
                 
                 hideSyncProgress();
-                showNotification('Data prepared for sync! (External sync disabled for security)', 'info');
+                showNotification('Data synced successfully to Google Sheets!');
                 
             } catch (error) {
-                console.error('Sync error:', error);
+                console.error('❌ Sync error:', error);
                 hideSyncProgress();
-                showNotification('Sync preparation failed: ' + error.message, 'error');
+                
+                if (error.message.includes('OAuth') || error.message.includes('token')) {
+                    showNotification('Authentication required. Please grant access to Google Sheets.', 'warning');
+                } else {
+                    showNotification('Sync failed: ' + error.message, 'error');
+                }
             }
         }
 
@@ -2065,9 +2111,31 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         async function loadFromGoogleSheets() {
-            // For now, just load local data due to API restrictions
-            console.log('📊 Loading local data (external APIs disabled for security)');
-            loadLocalData();
+            try {
+                console.log('📊 Loading data from Google Sheets...');
+                
+                // Get OAuth token if not available
+                if (!accessToken) {
+                    console.log('🔐 No access token, requesting OAuth...');
+                    await getOAuthToken();
+                }
+                
+                // Load data directly from Google Sheets
+                await loadDataDirectFromSheets();
+                
+                console.log('✅ Successfully loaded data from Google Sheets');
+                
+            } catch (error) {
+                console.error('❌ Failed to load from Google Sheets:', error);
+                console.log('📱 Falling back to local data...');
+                loadLocalData();
+                
+                if (error.message.includes('OAuth') || error.message.includes('token')) {
+                    showNotification('Authentication required to load from Google Sheets', 'warning');
+                } else {
+                    showNotification('Loading from local data - Google Sheets unavailable', 'warning');
+                }
+            }
         }
 
         async function loadDataDirectFromSheets() {
@@ -3481,6 +3549,37 @@ function validateSpreadsheetAccess(spreadsheetId) {
             updateAdminStats();
             showNotification('User list refreshed!');
         }
+
+        // Enable online mode with OAuth
+        async function enableOnlineMode() {
+            try {
+                showNotification('Requesting Google Sheets access...', 'info');
+                
+                await getOAuthToken();
+                
+                // Update UI to show online status
+                const enableBtn = document.getElementById('enableOnlineBtn');
+                if (enableBtn) {
+                    enableBtn.innerHTML = `
+                        <i class="fas fa-check-circle text-green-600"></i>
+                        <span>Online Mode Active</span>
+                    `;
+                    enableBtn.disabled = true;
+                    enableBtn.classList.add('bg-green-50');
+                }
+                
+                showNotification('Online mode enabled! You can now sync with Google Sheets.');
+                
+                // Automatically try to load fresh data
+                setTimeout(() => {
+                    loadFromGoogleSheets();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Failed to enable online mode:', error);
+                showNotification('Failed to enable online mode: ' + error.message, 'error');
+            }
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3faef900ab4dc',t:'MTc1OTc0MTM1MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a40201065eb4dc',t:'MTc1OTc0MTY0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
