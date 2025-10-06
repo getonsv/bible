@@ -1,1 +1,2168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        .notification {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-cross text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism CRM</h1>
+                <p class="text-gray-600">Track your ministry impact and grow God's kingdom</p>
+            </div>
+            
+            <div id="googleSignInButton" class="w-full"></div>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Secure access with Google authentication</p>
+            </div>
+        </div>
+    </div>
 
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-cross text-white"></i>
+                        </div>
+                        <h1 class="text-xl font-bold text-gray-800">Evangelism CRM</h1>
+                        <div class="flex items-center space-x-2">
+                            <div id="connectionStatus" class="flex items-center space-x-1">
+                                <div class="w-2 h-2 bg-gray-400 rounded-full" id="statusIndicator"></div>
+                                <span class="text-xs text-gray-500" id="statusText">Offline</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <button onclick="refreshData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors" id="syncButton">
+                                <i class="fas fa-refresh" id="syncIcon"></i>
+                                <span class="hidden sm:inline">Sync</span>
+                            </button>
+                            <button onclick="showDataOptions()" class="bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded-lg ml-1 transition-colors">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div id="syncOptions" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+                                <button onclick="syncWithGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2">
+                                    <i class="fas fa-cloud-upload-alt text-blue-600"></i>
+                                    <span>Sync to Google Sheets</span>
+                                </button>
+                                <button onclick="refreshData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-refresh text-green-600"></i>
+                                    <span>Refresh Data</span>
+                                </button>
+                                <button onclick="exportData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-download text-blue-600"></i>
+                                    <span>Export Data</span>
+                                </button>
+                                <button onclick="importData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-lg flex items-center space-x-2">
+                                    <i class="fas fa-upload text-purple-600"></i>
+                                    <span>Import Data</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <img id="userAvatar" src="https://via.placeholder.com/32" alt="User" class="w-8 h-8 rounded-full">
+                            <span id="userName" class="text-gray-700 hidden sm:inline">User</span>
+                        </div>
+                        <button onclick="logout()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Tab Navigation -->
+        <div class="bg-white border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-8 overflow-x-auto">
+                    <button onclick="showTab('overview')" class="tab-btn py-4 px-2 border-b-2 border-blue-600 text-blue-600 font-medium whitespace-nowrap">
+                        <i class="fas fa-chart-line mr-2"></i>Overview
+                    </button>
+                    <button onclick="showTab('fruits')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-users mr-2"></i>Fruits
+                    </button>
+                    <button onclick="showTab('activities')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-phone mr-2"></i>Activities
+                    </button>
+                    <button onclick="showTab('reports')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-chart-bar mr-2"></i>Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overviewTab" class="tab-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Fruits</p>
+                            <p class="text-3xl font-bold text-gray-900" id="totalFruits">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Active Sessions</p>
+                            <p class="text-3xl font-bold text-gray-900" id="activeSessions">0</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-calendar-check text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">This Week</p>
+                            <p class="text-3xl font-bold text-gray-900" id="weeklyContacts">0</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-phone text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Conversion Rate</p>
+                            <p class="text-3xl font-bold text-gray-900" id="conversionRate">0%</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-chart-line text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-user-plus text-2xl"></i>
+                        <span class="text-sm font-medium">Add Fruit</span>
+                    </button>
+                    <button onclick="showScheduleModal()" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-calendar-plus text-2xl"></i>
+                        <span class="text-sm font-medium">Schedule BB</span>
+                    </button>
+                    <button onclick="showActivityModal()" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-phone-alt text-2xl"></i>
+                        <span class="text-sm font-medium">Log Activity</span>
+                    </button>
+                    <button onclick="generateReport()" class="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-file-alt text-2xl"></i>
+                        <span class="text-sm font-medium">Generate Report</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activities</h3>
+                <div class="space-y-4" id="recentActivities">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>No activities logged yet. Start by adding fruits and logging interactions!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fruits Tab -->
+        <div id="fruitsTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Fruits Management</h2>
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                    <input type="text" placeholder="Search fruits..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="fruitSearch">
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Fruit</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fruits Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="fruitsGrid">
+                <div class="text-center py-12 col-span-full">
+                    <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-users text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No fruits added yet</h3>
+                    <p class="text-gray-500 mb-4">Start building your ministry database by adding your first fruit.</p>
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Your First Fruit
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activities Tab -->
+        <div id="activitiesTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Activity Log</h2>
+                <button onclick="showActivityModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                    <i class="fas fa-plus"></i>
+                    <span>Log Activity</span>
+                </button>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="space-y-6" id="activityTimeline">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>No activities logged yet. Start tracking your ministry interactions!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reportsTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Reports & Analytics</h2>
+                <div class="flex space-x-4">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option>Last 30 Days</option>
+                        <option>Last 3 Months</option>
+                        <option>Last Year</option>
+                    </select>
+                    <button onclick="exportReport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-download"></i>
+                        <span>Export</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Evangelism Progress</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Initial Contact</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <span class="text-sm font-medium">0</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">BB Sessions</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-purple-500 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <span class="text-sm font-medium">0</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Attending Class</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <span class="text-sm font-medium">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Campaign Performance</h3>
+                    <div class="space-y-4">
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-chart-bar text-4xl mb-4"></i>
+                            <p>Campaign data will appear here as you add fruits and track their sources.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Reports Table -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Detailed Activity Report</h3>
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-table text-4xl mb-4"></i>
+                    <p>Detailed reports will be generated as you add fruits and log activities.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Fruit Modal -->
+    <div id="addFruitModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Add New Fruit</h3>
+                    <button onclick="closeModal('addFruitModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="addFruit(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+                        <div class="relative">
+                            <input type="text" name="assignee" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Type to search team members..." onkeyup="searchAssignees(this)" autocomplete="off">
+                            <div class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden" id="assigneeDropdown">
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssignee(this, 'John D.')">John D.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssignee(this, 'Mary S.')">Mary S.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssignee(this, 'David L.')">David L.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssignee(this, 'Sarah K.')">Sarah K.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssignee(this, 'Michael R.')">Michael R.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssignee(this, 'Jennifer L.')">Jennifer L.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssignee(this, 'Robert W.')">Robert W.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssignee(this, 'Lisa M.')">Lisa M.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input type="tel" name="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Social Media Platforms</label>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-instagram text-pink-500 w-5"></i>
+                                <input type="text" name="instagram" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Instagram username">
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-facebook text-blue-600 w-5"></i>
+                                <input type="text" name="facebook" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Facebook username">
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-twitter text-blue-400 w-5"></i>
+                                <input type="text" name="twitter" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Twitter username">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lead Source</label>
+                        <select name="leadSource" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Facebook Ads</option>
+                            <option>Instagram Ads</option>
+                            <option>Google Ads</option>
+                            <option>YouTube Ads</option>
+                            <option>TikTok Ads</option>
+                            <option>Organic Social Media</option>
+                            <option>Referral</option>
+                            <option>Event/Outreach</option>
+                            <option>Website Contact Form</option>
+                            <option>Cold Outreach</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Campaign Name (Optional)</label>
+                        <input type="text" name="campaign" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Christmas Outreach 2024, Youth Campaign">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Initial Status</label>
+                        <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Initial Contact</option>
+                            <option>BB Session Scheduled</option>
+                            <option>In BB Session</option>
+                            <option>Attending Class</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="notes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Add any notes about this person..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('addFruitModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Add Fruit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Modal -->
+    <div id="activityModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Log Activity</h3>
+                    <button onclick="closeModal('activityModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="logActivity(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+                        <select name="activityType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Phone Call</option>
+                            <option>WhatsApp Message</option>
+                            <option>WhatsApp Call</option>
+                            <option>Instagram DM</option>
+                            <option>Facebook Message</option>
+                            <option>Twitter DM</option>
+                            <option>In-Person Meeting</option>
+                            <option>BB Session</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fruit</label>
+                        <div class="relative">
+                            <input type="text" name="fruitName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Type to search fruits..." onkeyup="searchFruitsSchedule(this)" autocomplete="off">
+                            <div class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden" id="fruitDropdownSchedule">
+                                <!-- Dynamic fruit list will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
+                        <input type="number" name="duration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="15">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="activityNotes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="What was discussed or accomplished?"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Outcome</label>
+                        <select name="outcome" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Positive Response</option>
+                            <option>Neutral Response</option>
+                            <option>Need Follow-up</option>
+                            <option>Not Interested</option>
+                            <option>Scheduled Next Step</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('activityModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Log Activity
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Fruit Modal -->
+    <div id="editFruitModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Edit Fruit</h3>
+                    <button onclick="closeModal('editFruitModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="updateFruit(event)" class="space-y-4">
+                    <input type="hidden" id="editFruitId" value="">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <input type="text" id="editFruitName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+                        <div class="relative">
+                            <input type="text" id="editFruitAssignee" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Type to search team members..." onkeyup="searchAssigneesEdit(this)" autocomplete="off">
+                            <div class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden" id="assigneeDropdownEdit">
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssigneeEdit(this, 'John D.')">John D.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssigneeEdit(this, 'Mary S.')">Mary S.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssigneeEdit(this, 'David L.')">David L.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssigneeEdit(this, 'Sarah K.')">Sarah K.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssigneeEdit(this, 'Michael R.')">Michael R.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssigneeEdit(this, 'Jennifer L.')">Jennifer L.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssigneeEdit(this, 'Robert W.')">Robert W.</div>
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectAssigneeEdit(this, 'Lisa M.')">Lisa M.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input type="tel" id="editFruitPhone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Social Media Platforms</label>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-instagram text-pink-500 w-5"></i>
+                                <input type="text" id="editFruitInstagram" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Instagram username">
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-facebook text-blue-600 w-5"></i>
+                                <input type="text" id="editFruitFacebook" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Facebook username">
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-twitter text-blue-400 w-5"></i>
+                                <input type="text" id="editFruitTwitter" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Twitter username">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lead Source</label>
+                        <select id="editFruitLeadSource" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Facebook Ads</option>
+                            <option>Instagram Ads</option>
+                            <option>Google Ads</option>
+                            <option>YouTube Ads</option>
+                            <option>TikTok Ads</option>
+                            <option>Organic Social Media</option>
+                            <option>Referral</option>
+                            <option>Event/Outreach</option>
+                            <option>Website Contact Form</option>
+                            <option>Cold Outreach</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Campaign Name (Optional)</label>
+                        <input type="text" id="editFruitCampaign" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Christmas Outreach 2024, Youth Campaign">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select id="editFruitStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Initial Contact</option>
+                            <option>BB Session Scheduled</option>
+                            <option>In BB Session</option>
+                            <option>Attending Class</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea id="editFruitNotes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Add any notes about this person..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('editFruitModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Update Fruit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div id="scheduleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Schedule BB Session</h3>
+                    <button onclick="closeModal('scheduleModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="scheduleBB(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fruit</label>
+                        <div class="relative">
+                            <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Type to search fruits..." onkeyup="searchFruitsSchedule(this)" autocomplete="off">
+                            <div class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden" id="fruitDropdownSchedule">
+                                <!-- Dynamic fruit list will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                        <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                        <input type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>First BB Session</option>
+                            <option>Follow-up BB Session</option>
+                            <option>Group BB Session</option>
+                            <option>Online BB Session</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Location/Platform</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Church, Zoom, Home">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="2" placeholder="Any special notes for this session..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('scheduleModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            Schedule Session
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg notification z-50">
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-check-circle"></i>
+            <span id="notificationText">Success!</span>
+        </div>
+    </div>
+
+    <script>
+        // Apps Script Web App Configuration
+        const APPS_SCRIPT_CONFIG = {
+            WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzmHmCzT9thHYRBeNUVswOiGXEak5hMAc-Ch_SlaUDxEoI2Q4oxoAh9MlzJZW6YHyof9A/exec',
+            TIMEOUT: 30000, // 30 seconds
+            RETRY_ATTEMPTS: 3,
+            RETRY_DELAY: 1000 // 1 second
+        };
+        
+        // Global state
+        let currentUser = null;
+        let currentTab = 'overview';
+        let fruits = [];
+        let activities = [];
+        let isOnlineMode = false;
+        
+        // Google OAuth 2.0 Web Application Configuration
+        const GOOGLE_CONFIG = {
+            CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
+            // OAuth 2.0 scopes for user authentication and Google Sheets access
+            SCOPES: 'openid profile email https://www.googleapis.com/auth/spreadsheets.readonly',
+            // Google Sheets configuration for user access validation
+            SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
+            SHEET_NAME: 'User Access & Admin Config Sheet',
+            // Authorized domains for this OAuth client
+            AUTHORIZED_DOMAINS: [
+                'http://localhost:3000',
+                'http://127.0.0.1:3000', 
+                'https://shill.es',
+                'https://app.shill.es',
+                'https://app.geton.asia',
+                'https://geton.asia',
+                'https://canva.com'
+            ]
+        };
+        
+        // Local storage keys for production data
+        const STORAGE_KEYS = {
+            FRUITS: 'crm_fruits_data',
+            ACTIVITIES: 'crm_activities_data',
+            USER_SETTINGS: 'crm_user_settings'
+        };
+        
+        // Google Sign-In state
+        let google;
+        let isGoogleSignInLoaded = false;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check connection status
+            updateConnectionStatus();
+            
+            // Add a fallback timer in case Google APIs never load
+            const fallbackTimer = setTimeout(() => {
+                console.warn('Google APIs taking too long to load, showing fallback options');
+                const buttonContainer = document.getElementById('googleSignInButton');
+                if (buttonContainer && buttonContainer.innerHTML.includes('Loading Google Sign-In')) {
+                    buttonContainer.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                <div class="flex items-center space-x-2 text-yellow-800 mb-2">
+                                    <i class="fas fa-clock"></i>
+                                    <span class="font-medium">Loading Taking Too Long</span>
+                                </div>
+                                <p class="text-sm text-yellow-700">Google Sign-In is taking longer than expected to load.</p>
+                            </div>
+                            
+                            <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                <i class="fas fa-redo mr-2"></i>Try Again
+                            </button>
+                            
+                            <button onclick="showTroubleshooting()" class="w-full text-blue-600 hover:text-blue-800 text-sm underline">
+                                Show Troubleshooting Tips
+                            </button>
+                        </div>
+                    `;
+                }
+            }, 15000); // 15 second fallback
+            
+            // Try to initialize Google APIs
+            initializeGoogleAPIs().then(() => {
+                clearTimeout(fallbackTimer);
+            }).catch(() => {
+                clearTimeout(fallbackTimer);
+            });
+        });
+
+        // Connection status management
+        function updateConnectionStatus() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            if (navigator.onLine) {
+                // Test connection to Apps Script
+                testAppsScriptConnection().then(isConnected => {
+                    if (isConnected) {
+                        statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
+                        statusText.textContent = 'Online';
+                        isOnlineMode = true;
+                    } else {
+                        statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
+                        statusText.textContent = 'Limited';
+                        isOnlineMode = false;
+                    }
+                });
+            } else {
+                statusIndicator.className = 'w-2 h-2 bg-red-500 rounded-full';
+                statusText.textContent = 'Offline';
+                isOnlineMode = false;
+            }
+        }
+
+        // Test Apps Script connection
+        async function testAppsScriptConnection() {
+            try {
+                const response = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL + '?action=ping', {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                return response.ok;
+            } catch (error) {
+                console.log('Apps Script connection test failed:', error);
+                return false;
+            }
+        }
+
+        // Apps Script API functions
+        async function callAppsScript(action, data = {}, retryCount = 0) {
+            try {
+                console.log(`📡 Calling Apps Script: ${action}`, data);
+                
+                const requestData = {
+                    action: action,
+                    ...data
+                };
+
+                const response = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log(`✅ Apps Script response for ${action}:`, result);
+                
+                if (!result.success && result.error) {
+                    throw new Error(result.error);
+                }
+
+                return result;
+                
+            } catch (error) {
+                console.error(`❌ Apps Script error for ${action}:`, error);
+                
+                // Retry logic
+                if (retryCount < APPS_SCRIPT_CONFIG.RETRY_ATTEMPTS) {
+                    console.log(`🔄 Retrying ${action} (attempt ${retryCount + 1}/${APPS_SCRIPT_CONFIG.RETRY_ATTEMPTS})`);
+                    await new Promise(resolve => setTimeout(resolve, APPS_SCRIPT_CONFIG.RETRY_DELAY));
+                    return callAppsScript(action, data, retryCount + 1);
+                }
+                
+                throw error;
+            }
+        }
+
+        // Sync functions
+        async function syncWithGoogleSheets() {
+            if (!isOnlineMode) {
+                showNotification('No internet connection. Cannot sync with Google Sheets.', 'error');
+                return;
+            }
+
+            try {
+                showSyncProgress('Syncing with Google Sheets...');
+                
+                // Sync fruits to Google Sheets
+                for (const fruit of fruits) {
+                    await callAppsScript('addFruit', { fruit: fruit });
+                }
+                
+                // Sync activities to Google Sheets
+                for (const activity of activities) {
+                    await callAppsScript('addActivity', { activity: activity });
+                }
+                
+                hideSyncProgress();
+                showNotification('Successfully synced all data to Google Sheets!');
+                updateConnectionStatus();
+                
+            } catch (error) {
+                console.error('Sync error:', error);
+                hideSyncProgress();
+                showNotification(`Sync failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadFromGoogleSheets() {
+            if (!isOnlineMode) {
+                console.log('Offline mode - loading from local storage');
+                loadLocalData();
+                return;
+            }
+
+            try {
+                showSyncProgress('Loading data from Google Sheets...');
+                
+                // Load fruits from Google Sheets
+                const fruitsResponse = await callAppsScript('getFruits');
+                if (fruitsResponse.success && fruitsResponse.data) {
+                    fruits = fruitsResponse.data;
+                }
+                
+                // Load activities from Google Sheets
+                const activitiesResponse = await callAppsScript('getActivities');
+                if (activitiesResponse.success && activitiesResponse.data) {
+                    activities = activitiesResponse.data;
+                }
+                
+                // Save to local storage as backup
+                saveLocalData();
+                
+                hideSyncProgress();
+                showNotification('Data loaded from Google Sheets successfully!');
+                
+                // Update UI
+                updateFruitsGrid();
+                updateStats();
+                
+            } catch (error) {
+                console.error('Load from Google Sheets error:', error);
+                hideSyncProgress();
+                showNotification('Failed to load from Google Sheets. Using local data.', 'warning');
+                loadLocalData();
+            }
+        }
+
+        function showSyncProgress(message) {
+            const syncButton = document.getElementById('syncButton');
+            const syncIcon = document.getElementById('syncIcon');
+            
+            syncIcon.className = 'fas fa-spinner fa-spin';
+            syncButton.disabled = true;
+            
+            showNotification(message, 'info');
+        }
+
+        function hideSyncProgress() {
+            const syncButton = document.getElementById('syncButton');
+            const syncIcon = document.getElementById('syncIcon');
+            
+            syncIcon.className = 'fas fa-refresh';
+            syncButton.disabled = false;
+        }
+
+        // Initialize Google Sign-In with OAuth 2.0 Web Application
+        async function initializeGoogleAPIs() {
+            const buttonContainer = document.getElementById('googleSignInButton');
+            
+            try {
+                // Show loading state
+                if (buttonContainer) {
+                    buttonContainer.innerHTML = `
+                        <div class="w-full bg-gray-100 text-gray-600 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span>Loading Google Sign-In...</span>
+                        </div>
+                    `;
+                }
+
+                // Check current domain and validate against authorized domains
+                const currentOrigin = window.location.origin;
+                console.log('Current origin:', currentOrigin);
+                console.log('Authorized domains:', GOOGLE_CONFIG.AUTHORIZED_DOMAINS);
+                
+                // Check if current domain is authorized for OAuth
+                const isDomainAuthorized = GOOGLE_CONFIG.AUTHORIZED_DOMAINS.includes(currentOrigin) || 
+                                         currentOrigin.includes('localhost') || 
+                                         currentOrigin.includes('127.0.0.1') ||
+                                         currentOrigin.includes('canva.com');
+                
+                if (!isDomainAuthorized) {
+                    console.warn(`Domain ${currentOrigin} may not be authorized. Continuing anyway...`);
+                }
+
+                // Wait for Google Sign-In to load
+                await new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 100; // 10 seconds total
+                    
+                    const checkGoogleLoaded = () => {
+                        attempts++;
+                        
+                        // Check if Google Sign-In is available
+                        const googleSignInAvailable = window.google?.accounts?.id;
+                        
+                        if (googleSignInAvailable) {
+                            console.log('✅ Google Sign-In found after', attempts, 'attempts');
+                            resolve();
+                        } else if (attempts >= maxAttempts) {
+                            console.error('❌ Google Sign-In timeout after', attempts, 'attempts');
+                            console.log('Available APIs:', {
+                                google: !!window.google,
+                                googleAccounts: !!window.google?.accounts,
+                                googleAccountsId: !!window.google?.accounts?.id
+                            });
+                            reject(new Error('Google Sign-In failed to load. This may be due to ad blockers, network issues, or browser security settings.'));
+                        } else {
+                            setTimeout(checkGoogleLoaded, 100);
+                        }
+                    };
+                    
+                    // Start checking after a brief delay to allow scripts to load
+                    setTimeout(checkGoogleLoaded, 200);
+                });
+
+                google = window.google;
+
+                console.log('🔧 Initializing Google Sign-In...');
+                
+                // Initialize Google API client for Sheets access
+                await new Promise((resolve, reject) => {
+                    if (window.gapi) {
+                        gapi.load('auth2', {
+                            callback: () => {
+                                gapi.auth2.init({
+                                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                                    scope: GOOGLE_CONFIG.SCOPES
+                                }).then(resolve, reject);
+                            },
+                            onerror: reject
+                        });
+                    } else {
+                        reject(new Error('Google API client not available'));
+                    }
+                });
+                
+                // Initialize Google Sign-In with OAuth 2.0 Web Application configuration
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                    callback: handleGoogleSignInResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: false,
+                    use_fedcm_for_prompt: false
+                });
+
+                // Render the sign-in button
+                if (buttonContainer) {
+                    console.log('🎨 Rendering Google Sign-In button...');
+                    
+                    // Clear the container first
+                    buttonContainer.innerHTML = '';
+                    
+                    google.accounts.id.renderButton(buttonContainer, {
+                        theme: 'outline',
+                        size: 'large',
+                        width: '100%',
+                        text: 'continue_with',
+                        shape: 'rectangular',
+                        logo_alignment: 'left'
+                    });
+                    
+                    console.log('✅ Google Sign-In button rendered successfully');
+                } else {
+                    throw new Error('Sign-in button container not found');
+                }
+
+                isGoogleSignInLoaded = true;
+                console.log('🎉 Google Sign-In initialized successfully!');
+
+            } catch (error) {
+                console.error('❌ Error initializing Google Sign-In:', error);
+                
+                // Show detailed error and options
+                if (buttonContainer) {
+                    buttonContainer.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <div class="flex items-center space-x-2 text-red-800 mb-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span class="font-medium">Google Sign-In Error</span>
+                                </div>
+                                <p class="text-sm text-red-700">${error.message}</p>
+                            </div>
+                            
+                            <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                <i class="fas fa-redo mr-2"></i>Retry
+                            </button>
+                            
+                            <button onclick="showTroubleshooting()" class="w-full text-blue-600 hover:text-blue-800 text-sm underline">
+                                Show Troubleshooting Tips
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Retry function for Google Sign-In initialization
+        function retryGoogleInit() {
+            console.log('Retrying Google Sign-In initialization...');
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="w-full bg-gray-100 text-gray-600 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span>Retrying...</span>
+                    </div>
+                `;
+            }
+            
+            // Wait a moment then retry
+            setTimeout(() => {
+                initializeGoogleAPIs();
+            }, 1000);
+        }
+
+        // Show troubleshooting tips
+        function showTroubleshooting() {
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-4 text-sm">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-800 mb-3">🔧 Troubleshooting Google Sign-In</h4>
+                            
+                            <div class="space-y-3">
+                                <div>
+                                    <h5 class="font-medium text-blue-800 mb-1">Common Issues:</h5>
+                                    <ul class="list-disc list-inside space-y-1 text-blue-700 text-xs">
+                                        <li>Domain not authorized in Google Console</li>
+                                        <li>Ad blockers blocking Google APIs</li>
+                                        <li>Browser security settings too strict</li>
+                                        <li>Network firewall blocking Google services</li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h5 class="font-medium text-blue-800 mb-1">Quick Fixes:</h5>
+                                    <ol class="list-decimal list-inside space-y-1 text-blue-700 text-xs">
+                                        <li>Disable ad blockers (uBlock, AdBlock, etc.)</li>
+                                        <li>Try incognito/private browsing mode</li>
+                                        <li>Clear browser cache and cookies</li>
+                                        <li>Try a different browser (Chrome, Firefox, Safari)</li>
+                                        <li>Check if JavaScript is enabled</li>
+                                        <li>Ensure stable internet connection</li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="bg-yellow-50 border border-yellow-200 rounded p-2">
+                                    <p class="text-yellow-800 text-xs">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        <strong>Current Domain:</strong> ${window.location.origin}
+                                    </p>
+                                    <p class="text-yellow-700 text-xs mt-1">
+                                        This domain must be added to Google Console's authorized JavaScript origins.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-redo mr-2"></i>Try Again
+                        </button>
+                        
+                        <div class="text-center">
+                            <button onclick="checkGoogleConsoleSetup()" class="text-blue-600 hover:text-blue-800 text-xs underline">
+                                Check Google Console Setup
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Google Console setup checker
+        function checkGoogleConsoleSetup() {
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-4 text-sm">
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-green-800 mb-3">✅ Google Console Configuration</h4>
+                            
+                            <div class="space-y-3">
+                                <div>
+                                    <h5 class="font-medium text-green-800 mb-2">Current Configuration:</h5>
+                                    <div class="bg-white rounded border p-3 space-y-2">
+                                        <div class="flex justify-between text-xs">
+                                            <span class="text-gray-600">Client ID:</span>
+                                            <span class="font-mono text-gray-800">${GOOGLE_CONFIG.CLIENT_ID}</span>
+                                        </div>
+                                        <div class="flex justify-between text-xs">
+                                            <span class="text-gray-600">Apps Script URL:</span>
+                                            <span class="font-mono text-gray-800 truncate">${APPS_SCRIPT_CONFIG.WEB_APP_URL}</span>
+                                        </div>
+                                        <div class="flex justify-between text-xs">
+                                            <span class="text-gray-600">Current Domain:</span>
+                                            <span class="font-mono text-gray-800">${window.location.origin}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h5 class="font-medium text-green-800 mb-2">Authorized Domains:</h5>
+                                    <div class="bg-white rounded border p-3">
+                                        ${GOOGLE_CONFIG.AUTHORIZED_DOMAINS.map(origin => `
+                                            <div class="flex items-center justify-between text-xs py-1">
+                                                <span class="font-mono text-gray-800">${origin}</span>
+                                                <span class="text-xs ${origin === window.location.origin ? 'text-green-600' : 'text-gray-500'}">
+                                                    ${origin === window.location.origin ? '✓ Current' : ''}
+                                                </span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                                    <p class="text-blue-800 text-xs">
+                                        <i class="fas fa-lightbulb mr-1"></i>
+                                        <strong>OAuth Status:</strong> 
+                                        ${GOOGLE_CONFIG.AUTHORIZED_DOMAINS.includes(window.location.origin) || window.location.origin.includes('localhost') 
+                                            ? '<span class="text-green-600">✓ Domain is authorized for OAuth</span>' 
+                                            : '<span class="text-red-600">✗ Domain needs OAuth authorization</span>'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-redo mr-2"></i>Try Again
+                        </button>
+                        
+                        <div class="text-center">
+                            <button onclick="showTroubleshooting()" class="text-blue-600 hover:text-blue-800 text-xs underline">
+                                ← Back to Troubleshooting
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Authentication functions
+        async function handleGoogleSignInResponse(response) {
+            try {
+                console.log('🔐 Processing Google Sign-In response...');
+                
+                // Show loading state
+                showAuthenticationLoading('Verifying your access...');
+                
+                // Decode the JWT token
+                const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                console.log('👤 User email:', payload.email);
+                
+                // Validate user access using Apps Script
+                const userAccess = await callAppsScript('validateUser', { email: payload.email });
+                
+                if (!userAccess.hasAccess) {
+                    showAuthenticationError('Access Denied', userAccess.reason || 'Your email is not authorized to access this system. Please contact your administrator.');
+                    return;
+                }
+                
+                // Get user location and IP
+                const locationData = await getUserLocationAndIP();
+                
+                const userData = {
+                    googleId: payload.sub,
+                    name: payload.name,
+                    email: payload.email,
+                    picture: payload.picture,
+                    location: locationData.location,
+                    ipAddress: locationData.ip,
+                    loginTime: new Date().toISOString(),
+                    role: userAccess.user?.role || 'User',
+                    permissions: userAccess.user?.permissions || 'Read'
+                };
+
+                // Log user login activity
+                await callAppsScript('logUserActivity', {
+                    email: userData.email,
+                    action: 'login',
+                    timestamp: userData.loginTime,
+                    ipAddress: userData.ipAddress,
+                    location: userData.location
+                });
+
+                // Set current user and show dashboard
+                currentUser = userData;
+                localStorage.setItem('crmUser', JSON.stringify(userData));
+                
+                // Load data from Google Sheets if online, otherwise local
+                await loadFromGoogleSheets();
+                
+                console.log('✅ Authentication successful, showing dashboard...');
+                showDashboard();
+                showNotification(`Welcome ${userData.name}! Role: ${userData.role}`);
+
+            } catch (error) {
+                console.error('❌ Sign-in error:', error);
+                showAuthenticationError('Authentication Failed', error.message || 'Please try again or contact support.');
+            }
+        }
+
+        async function getUserLocationAndIP() {
+            try {
+                // Get IP address
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                
+                // Get location (with user permission)
+                const location = await new Promise((resolve) => {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                resolve({
+                                    latitude: position.coords.latitude,
+                                    longitude: position.coords.longitude
+                                });
+                            },
+                            () => {
+                                resolve({ latitude: null, longitude: null });
+                            }
+                        );
+                    } else {
+                        resolve({ latitude: null, longitude: null });
+                    }
+                });
+
+                return {
+                    ip: ipData.ip,
+                    location: location
+                };
+            } catch (error) {
+                console.error('Error getting location/IP:', error);
+                return {
+                    ip: 'Unknown',
+                    location: { latitude: null, longitude: null }
+                };
+            }
+        }
+
+        // Authentication UI functions
+        function showAuthenticationLoading(message) {
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="w-full bg-blue-50 border border-blue-200 text-blue-800 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span>${message}</span>
+                    </div>
+                `;
+            }
+        }
+
+        function showAuthenticationError(title, message) {
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-center space-x-2 text-red-800 mb-2">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span class="font-medium">${title}</span>
+                            </div>
+                            <p class="text-sm text-red-700">${message}</p>
+                        </div>
+                        
+                        <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-redo mr-2"></i>Try Again
+                        </button>
+                        
+                        <div class="text-center">
+                            <button onclick="showAccessHelp()" class="text-blue-600 hover:text-blue-800 text-sm underline">
+                                Need access? Contact administrator
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function showAccessHelp() {
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-4 text-sm">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-800 mb-3">🔐 Access Requirements</h4>
+                            
+                            <div class="space-y-3">
+                                <div>
+                                    <h5 class="font-medium text-blue-800 mb-2">To gain access to this system:</h5>
+                                    <ol class="list-decimal list-inside space-y-1 text-blue-700 text-xs">
+                                        <li>Your email must be added to the authorized users list</li>
+                                        <li>Your account status must be set to "Active"</li>
+                                        <li>You must have appropriate role permissions</li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                                    <p class="text-yellow-800 text-xs">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        <strong>Your Email:</strong> Will be checked against the Google Sheet after sign-in
+                                    </p>
+                                </div>
+                                
+                                <div>
+                                    <h5 class="font-medium text-blue-800 mb-2">Contact Information:</h5>
+                                    <p class="text-blue-700 text-xs">
+                                        Please contact your system administrator to request access. 
+                                        Provide them with your Google email address for authorization.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-redo mr-2"></i>Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Local data management functions
+        function loadLocalData() {
+            try {
+                // Load fruits from localStorage
+                const storedFruits = localStorage.getItem(STORAGE_KEYS.FRUITS);
+                if (storedFruits) {
+                    fruits = JSON.parse(storedFruits);
+                } else {
+                    fruits = [];
+                }
+                
+                // Load activities from localStorage
+                const storedActivities = localStorage.getItem(STORAGE_KEYS.ACTIVITIES);
+                if (storedActivities) {
+                    activities = JSON.parse(storedActivities);
+                } else {
+                    activities = [];
+                }
+                
+                console.log(`Loaded ${fruits.length} fruits and ${activities.length} activities from local storage`);
+            } catch (error) {
+                console.error('Error loading local data:', error);
+                fruits = [];
+                activities = [];
+            }
+        }
+
+        function saveLocalData() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.FRUITS, JSON.stringify(fruits));
+                localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
+                console.log('Data saved to local storage');
+            } catch (error) {
+                console.error('Error saving local data:', error);
+            }
+        }
+
+        async function logout() {
+            try {
+                // Log user logout activity
+                if (currentUser && isOnlineMode) {
+                    await callAppsScript('logUserActivity', {
+                        email: currentUser.email,
+                        action: 'logout',
+                        timestamp: new Date().toISOString(),
+                        ipAddress: currentUser.ipAddress || 'Unknown',
+                        location: currentUser.location || { latitude: null, longitude: null }
+                    });
+                }
+            } catch (error) {
+                console.error('Error logging logout activity:', error);
+            }
+            
+            localStorage.removeItem('crmUser');
+            currentUser = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+            
+            // Reinitialize Google Sign-In
+            initializeGoogleAPIs();
+        }
+
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            // Update user info
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userAvatar').src = currentUser.picture || 'https://via.placeholder.com/32';
+            
+            // Update fruits grid and stats
+            updateFruitsGrid();
+            updateStats();
+            updateConnectionStatus();
+        }
+
+        // Tab navigation
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-600', 'text-blue-600');
+            
+            currentTab = tabName;
+        }
+
+        // Modal functions
+        function showAddFruitModal() {
+            document.getElementById('addFruitModal').classList.remove('hidden');
+        }
+
+        function showActivityModal() {
+            document.getElementById('activityModal').classList.remove('hidden');
+        }
+
+        function showScheduleModal() {
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Form handlers
+        async function addFruit(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const fruitId = generateFruitId();
+            const timestamp = new Date().toISOString();
+            
+            const newFruit = {
+                id: fruitId,
+                name: formData.get('name') || '',
+                assignedTo: formData.get('assignee') || '',
+                phone: formData.get('phone') || '',
+                instagram: formData.get('instagram') || '',
+                facebook: formData.get('facebook') || '',
+                twitter: formData.get('twitter') || '',
+                leadSource: formData.get('leadSource') || '',
+                campaign: formData.get('campaign') || '',
+                status: formData.get('status') || 'Initial Contact',
+                notes: formData.get('notes') || '',
+                createdDate: timestamp,
+                lastModified: timestamp,
+                nextFollowup: '',
+                priority: 'Medium',
+                createdBy: currentUser.email
+            };
+
+            // Add to fruits array
+            fruits.push(newFruit);
+            
+            // Save to localStorage
+            saveLocalData();
+
+            // Try to sync to Google Sheets if online
+            if (isOnlineMode) {
+                try {
+                    await callAppsScript('addFruit', { fruit: newFruit });
+                    showNotification('New fruit added and synced to Google Sheets!');
+                } catch (error) {
+                    console.error('Failed to sync to Google Sheets:', error);
+                    showNotification('New fruit added locally. Sync to Google Sheets failed.', 'warning');
+                }
+            } else {
+                showNotification('New fruit added locally. Will sync when online.');
+            }
+
+            closeModal('addFruitModal');
+            event.target.reset();
+            
+            // Refresh display
+            updateFruitsGrid();
+            updateStats();
+        }
+
+        function generateFruitId() {
+            return 'fruit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        async function logActivity(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            
+            const activityId = 'activity_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const timestamp = new Date().toISOString();
+            
+            const newActivity = {
+                id: activityId,
+                fruitName: formData.get('fruitName') || '',
+                type: formData.get('activityType') || '',
+                duration: formData.get('duration') || '',
+                notes: formData.get('activityNotes') || '',
+                outcome: formData.get('outcome') || '',
+                user: currentUser.name,
+                userEmail: currentUser.email,
+                createdDate: timestamp
+            };
+
+            // Add to activities array
+            activities.push(newActivity);
+            
+            // Save to localStorage
+            saveLocalData();
+
+            // Try to sync to Google Sheets if online
+            if (isOnlineMode) {
+                try {
+                    await callAppsScript('addActivity', { activity: newActivity });
+                    showNotification('Activity logged and synced to Google Sheets!');
+                } catch (error) {
+                    console.error('Failed to sync activity to Google Sheets:', error);
+                    showNotification('Activity logged locally. Sync to Google Sheets failed.', 'warning');
+                }
+            } else {
+                showNotification('Activity logged locally. Will sync when online.');
+            }
+
+            closeModal('activityModal');
+            event.target.reset();
+            
+            // Update recent activities
+            updateRecentActivities();
+        }
+
+        function scheduleBB(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            
+            // In a real app, this would save to database/Google Sheets
+            showNotification('BB session scheduled successfully!');
+            closeModal('scheduleModal');
+            event.target.reset();
+        }
+
+        // Update functions
+        function updateFruitsGrid() {
+            const fruitsGrid = document.getElementById('fruitsGrid');
+            
+            if (fruits.length === 0) {
+                fruitsGrid.innerHTML = `
+                    <div class="text-center py-12 col-span-full">
+                        <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-users text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No fruits added yet</h3>
+                        <p class="text-gray-500 mb-4">Start building your ministry database by adding your first fruit.</p>
+                        <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add Your First Fruit
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            fruitsGrid.innerHTML = fruits.map(fruit => {
+                const initials = fruit.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                const progressWidth = getProgressWidth(fruit.status);
+                
+                return `
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    ${initials}
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-800">${fruit.name}</h3>
+                                    <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo}</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="editFruit('${fruit.id}')" class="text-gray-400 hover:text-blue-600">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteFruit('${fruit.id}')" class="text-gray-400 hover:text-red-600">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3 mb-4">
+                            ${fruit.instagram ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fab fa-instagram text-pink-500"></i>
+                                    <span class="text-sm text-gray-600">@${fruit.instagram}</span>
+                                    <button onclick="openSocialMedia('instagram', '${fruit.instagram}')" class="text-blue-600 hover:text-blue-800 text-xs">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                            ${fruit.facebook ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fab fa-facebook text-blue-600"></i>
+                                    <span class="text-sm text-gray-600">${fruit.facebook}</span>
+                                    <button onclick="openSocialMedia('facebook', '${fruit.facebook}')" class="text-blue-600 hover:text-blue-800 text-xs">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                            ${fruit.phone ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fab fa-whatsapp text-green-500"></i>
+                                    <span class="text-sm text-gray-600">${fruit.phone}</span>
+                                    <button onclick="openWhatsApp('${fruit.phone.replace(/\D/g, '')}')" class="text-green-600 hover:text-green-800 text-xs">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-bullhorn text-orange-500"></i>
+                                <span class="text-sm text-gray-600">${fruit.leadSource}${fruit.campaign ? ' - ' + fruit.campaign : ''}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-700">Progress</span>
+                                <span class="text-sm text-gray-600">${fruit.status}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full progress-bar" style="width: ${progressWidth}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs ${getStatusColor(fruit.status)} px-2 py-1 rounded-full">${fruit.status}</span>
+                            <span class="text-xs text-gray-500">Added: ${new Date(fruit.createdDate).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getProgressWidth(status) {
+            const progressMap = {
+                'Initial Contact': 25,
+                'BB Session Scheduled': 50,
+                'In BB Session': 75,
+                'Attending Class': 100
+            };
+            return progressMap[status] || 25;
+        }
+
+        function getStatusColor(status) {
+            const colorMap = {
+                'Initial Contact': 'bg-yellow-100 text-yellow-800',
+                'BB Session Scheduled': 'bg-blue-100 text-blue-800',
+                'In BB Session': 'bg-purple-100 text-purple-800',
+                'Attending Class': 'bg-green-100 text-green-800'
+            };
+            return colorMap[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function updateStats() {
+            document.getElementById('totalFruits').textContent = fruits.length;
+            
+            const activeSessions = fruits.filter(f => f.status === 'In BB Session' || f.status === 'BB Session Scheduled').length;
+            document.getElementById('activeSessions').textContent = activeSessions;
+            
+            // Calculate weekly contacts from activities
+            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const weeklyContacts = activities.filter(a => new Date(a.createdDate) > oneWeekAgo).length;
+            document.getElementById('weeklyContacts').textContent = weeklyContacts;
+            
+            // Calculate conversion rate
+            const attendingClass = fruits.filter(f => f.status === 'Attending Class').length;
+            const conversionRate = fruits.length > 0 ? Math.round((attendingClass / fruits.length) * 100) : 0;
+            document.getElementById('conversionRate').textContent = conversionRate + '%';
+        }
+
+        function updateRecentActivities() {
+            const recentActivitiesContainer = document.getElementById('recentActivities');
+            
+            if (activities.length === 0) {
+                recentActivitiesContainer.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>No activities logged yet. Start by adding fruits and logging interactions!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Show last 5 activities
+            const recentActivities = activities.slice(-5).reverse();
+            
+            recentActivitiesContainer.innerHTML = recentActivities.map(activity => {
+                const timeAgo = getTimeAgo(activity.createdDate);
+                const icon = getActivityIcon(activity.type);
+                
+                return `
+                    <div class="flex items-start space-x-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="bg-blue-100 p-2 rounded-full">
+                            <i class="${icon} text-blue-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800">${activity.type} - ${activity.fruitName}</p>
+                            <p class="text-sm text-gray-600">${activity.notes || 'No notes provided'}</p>
+                        </div>
+                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">${activity.outcome}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getTimeAgo(dateString) {
+            const now = new Date();
+            const date = new Date(dateString);
+            const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+            
+            if (diffInMinutes < 1) return 'Just now';
+            if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+            if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+            return `${Math.floor(diffInMinutes / 1440)} days ago`;
+        }
+
+        function getActivityIcon(type) {
+            const iconMap = {
+                'Phone Call': 'fas fa-phone',
+                'WhatsApp Message': 'fab fa-whatsapp',
+                'WhatsApp Call': 'fab fa-whatsapp',
+                'Instagram DM': 'fab fa-instagram',
+                'Facebook Message': 'fab fa-facebook',
+                'Twitter DM': 'fab fa-twitter',
+                'In-Person Meeting': 'fas fa-handshake',
+                'BB Session': 'fas fa-book'
+            };
+            return iconMap[type] || 'fas fa-comment';
+        }
+
+        // Social media and communication functions
+        function openSocialMedia(platform, username) {
+            const urls = {
+                instagram: `https://instagram.com/${username}`,
+                facebook: `https://facebook.com/${username}`,
+                twitter: `https://twitter.com/${username}`
+            };
+            
+            if (urls[platform]) {
+                window.open(urls[platform], '_blank', 'noopener,noreferrer');
+            }
+        }
+
+        function openWhatsApp(phone) {
+            const cleanPhone = phone.replace(/\D/g, '');
+            window.open(`https://wa.me/${cleanPhone}`, '_blank', 'noopener,noreferrer');
+        }
+
+        function makeCall(phone) {
+            window.open(`tel:${phone}`, '_self');
+        }
+
+        // Data management functions
+        function showDataOptions() {
+            const syncOptions = document.getElementById('syncOptions');
+            syncOptions.classList.toggle('hidden');
+        }
+
+        function refreshData() {
+            loadFromGoogleSheets();
+        }
+
+        function exportData() {
+            const data = {
+                fruits: fruits,
+                activities: activities,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentUser.email
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `evangelism-crm-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Data exported successfully!');
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (data.fruits && data.activities) {
+                                fruits = data.fruits;
+                                activities = data.activities;
+                                saveLocalData();
+                                updateFruitsGrid();
+                                updateStats();
+                                updateRecentActivities();
+                                showNotification('Data imported successfully!');
+                            } else {
+                                showNotification('Invalid file format', 'error');
+                            }
+                        } catch (error) {
+                            showNotification('Error reading file', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function generateReport() {
+            showNotification('Report generation feature coming soon!', 'info');
+        }
+
+        function exportReport() {
+            showNotification('Report export feature coming soon!', 'info');
+        }
+
+        // Search and filter functions
+        function searchAssignees(input) {
+            const dropdown = document.getElementById('assigneeDropdown');
+            const query = input.value.toLowerCase();
+            
+            if (query.length > 0) {
+                dropdown.classList.remove('hidden');
+                const items = dropdown.querySelectorAll('div');
+                items.forEach(item => {
+                    if (item.textContent.toLowerCase().includes(query)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function selectAssignee(element, name) {
+            const input = element.closest('.relative').querySelector('input');
+            input.value = name;
+            document.getElementById('assigneeDropdown').classList.add('hidden');
+        }
+
+        function searchFruitsSchedule(input) {
+            const dropdown = document.getElementById('fruitDropdownSchedule');
+            const query = input.value.toLowerCase();
+            
+            if (query.length > 0 && fruits.length > 0) {
+                dropdown.innerHTML = fruits
+                    .filter(fruit => fruit.name.toLowerCase().includes(query))
+                    .map(fruit => `
+                        <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectFruitSchedule(this, '${fruit.name}')">
+                            ${fruit.name}
+                        </div>
+                    `).join('');
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function selectFruitSchedule(element, name) {
+            const input = element.closest('.relative').querySelector('input');
+            input.value = name;
+            document.getElementById('fruitDropdownSchedule').classList.add('hidden');
+        }
+
+        // Edit and delete functions
+        function editFruit(fruitId) {
+            const fruit = fruits.find(f => f.id === fruitId);
+            if (!fruit) return;
+            
+            // Populate edit modal
+            document.getElementById('editFruitId').value = fruit.id;
+            document.getElementById('editFruitName').value = fruit.name;
+            document.getElementById('editFruitAssignee').value = fruit.assignedTo;
+            document.getElementById('editFruitPhone').value = fruit.phone;
+            document.getElementById('editFruitInstagram').value = fruit.instagram;
+            document.getElementById('editFruitFacebook').value = fruit.facebook;
+            document.getElementById('editFruitTwitter').value = fruit.twitter;
+            document.getElementById('editFruitLeadSource').value = fruit.leadSource;
+            document.getElementById('editFruitCampaign').value = fruit.campaign;
+            document.getElementById('editFruitStatus').value = fruit.status;
+            document.getElementById('editFruitNotes').value = fruit.notes;
+            
+            document.getElementById('editFruitModal').classList.remove('hidden');
+        }
+
+        async function updateFruit(event) {
+            event.preventDefault();
+            
+            const fruitId = document.getElementById('editFruitId').value;
+            const fruitIndex = fruits.findIndex(f => f.id === fruitId);
+            
+            if (fruitIndex === -1) return;
+            
+            // Update fruit data
+            fruits[fruitIndex] = {
+                ...fruits[fruitIndex],
+                name: document.getElementById('editFruitName').value,
+                assignedTo: document.getElementById('editFruitAssignee').value,
+                phone: document.getElementById('editFruitPhone').value,
+                instagram: document.getElementById('editFruitInstagram').value,
+                facebook: document.getElementById('editFruitFacebook').value,
+                twitter: document.getElementById('editFruitTwitter').value,
+                leadSource: document.getElementById('editFruitLeadSource').value,
+                campaign: document.getElementById('editFruitCampaign').value,
+                status: document.getElementById('editFruitStatus').value,
+                notes: document.getElementById('editFruitNotes').value,
+                lastModified: new Date().toISOString()
+            };
+            
+            // Save to localStorage
+            saveLocalData();
+
+            // Try to sync to Google Sheets if online
+            if (isOnlineMode) {
+                try {
+                    await callAppsScript('updateFruit', { fruit: fruits[fruitIndex] });
+                    showNotification('Fruit updated and synced to Google Sheets!');
+                } catch (error) {
+                    console.error('Failed to sync to Google Sheets:', error);
+                    showNotification('Fruit updated locally. Sync to Google Sheets failed.', 'warning');
+                }
+            } else {
+                showNotification('Fruit updated locally. Will sync when online.');
+            }
+
+            closeModal('editFruitModal');
+            updateFruitsGrid();
+            updateStats();
+        }
+
+        async function deleteFruit(fruitId) {
+            if (!confirm('Are you sure you want to delete this fruit? This action cannot be undone.')) {
+                return;
+            }
+            
+            const fruitIndex = fruits.findIndex(f => f.id === fruitId);
+            if (fruitIndex === -1) return;
+            
+            const deletedFruit = fruits[fruitIndex];
+            fruits.splice(fruitIndex, 1);
+            
+            // Save to localStorage
+            saveLocalData();
+
+            // Try to sync to Google Sheets if online
+            if (isOnlineMode) {
+                try {
+                    await callAppsScript('deleteFruit', { fruitId: fruitId });
+                    showNotification('Fruit deleted and synced to Google Sheets!');
+                } catch (error) {
+                    console.error('Failed to sync to Google Sheets:', error);
+                    showNotification('Fruit deleted locally. Sync to Google Sheets failed.', 'warning');
+                }
+            } else {
+                showNotification('Fruit deleted locally. Will sync when online.');
+            }
+
+            updateFruitsGrid();
+            updateStats();
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            
+            // Set color based on type
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50`;
+            
+            switch (type) {
+                case 'success':
+                    notification.classList.add('bg-green-600', 'text-white');
+                    break;
+                case 'error':
+                    notification.classList.add('bg-red-600', 'text-white');
+                    break;
+                case 'warning':
+                    notification.classList.add('bg-yellow-600', 'text-white');
+                    break;
+                case 'info':
+                    notification.classList.add('bg-blue-600', 'text-white');
+                    break;
+                default:
+                    notification.classList.add('bg-green-600', 'text-white');
+            }
+            
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdowns = ['assigneeDropdown', 'assigneeDropdownEdit', 'fruitDropdownSchedule', 'syncOptions'];
+            dropdowns.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                if (dropdown && !dropdown.contains(event.target) && !event.target.closest('.relative')) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        });
+
+        // Initialize app on load
+        window.addEventListener('load', function() {
+            // Check if user is already logged in
+            const storedUser = localStorage.getItem('crmUser');
+            if (storedUser) {
+                try {
+                    currentUser = JSON.parse(storedUser);
+                    loadFromGoogleSheets();
+                    showDashboard();
+                    showNotification(`Welcome back, ${currentUser.name}!`);
+                } catch (error) {
+                    console.error('Error loading stored user:', error);
+                    localStorage.removeItem('crmUser');
+                }
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a2639dc6c9b4dc',t:'MTc1OTcyNDY2Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
