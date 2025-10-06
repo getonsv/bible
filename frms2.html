@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM - TEST</title>
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -95,6 +95,10 @@
                                 <button onclick="enableOnlineMode()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2" id="enableOnlineBtn">
                                     <i class="fas fa-key text-orange-600"></i>
                                     <span>Enable Online Mode</span>
+                                </button>
+                                <button onclick="testConnection()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-stethoscope text-purple-600"></i>
+                                    <span>Test Connection</span>
                                 </button>
                                 <button onclick="syncWithGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
                                     <i class="fas fa-cloud-upload-alt text-blue-600"></i>
@@ -3702,72 +3706,101 @@ function validateSpreadsheetAccess(spreadsheetId) {
             showNotification('Data import coming soon!', 'info');
         }
 
-        async function testGoogleSheetsConnection() {
+        async function testConnection() {
             try {
-                showNotification('Testing Google Sheets connection...', 'info');
+                console.log('🧪 Starting comprehensive connection test...');
+                showNotification('Testing connection to Google Sheets...', 'info');
                 
-                console.log('🧪 Testing Google Sheets connection...');
-                console.log('📊 Configuration:', {
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    hasAccessToken: !!accessToken,
-                    accessTokenLength: accessToken ? accessToken.length : 0
-                });
-                
+                // Step 1: Check if we have access token
+                console.log('🔐 Step 1: Checking access token...');
                 if (!accessToken) {
-                    showNotification('No access token! Please enable Online Mode first.', 'error');
+                    console.log('❌ No access token found');
+                    showNotification('❌ No access token! Click "Enable Online Mode" first.', 'error');
                     return;
                 }
+                console.log('✅ Access token found:', accessToken.substring(0, 20) + '...');
                 
-                // Test 1: Try to read from the spreadsheet
-                console.log('🧪 Test 1: Reading spreadsheet info...');
+                // Step 2: Test spreadsheet access
+                console.log('📊 Step 2: Testing spreadsheet access...');
                 const infoUrl = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}?key=${GOOGLE_CONFIG.API_KEY}`;
+                console.log('📊 Request URL:', infoUrl);
                 
                 const infoResponse = await fetch(infoUrl, {
                     headers: {
-                        'Authorization': `Bearer ${accessToken}`
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json'
                     }
                 });
                 
-                console.log('📊 Info response:', infoResponse.status, infoResponse.statusText);
+                console.log('📊 Response status:', infoResponse.status, infoResponse.statusText);
                 
-                if (infoResponse.ok) {
-                    const info = await infoResponse.json();
-                    console.log('✅ Spreadsheet info:', info.properties?.title);
-                    console.log('📊 Available sheets:', info.sheets?.map(s => s.properties?.title));
-                    
-                    // Test 2: Try to append a test row
-                    console.log('🧪 Test 2: Attempting test append...');
-                    const testRow = [
-                        'TEST_' + Date.now(),
-                        'Test Fruit',
-                        'Test User',
-                        '+1-555-TEST',
-                        'test_ig',
-                        'test_fb',
-                        'test_tw',
-                        'Test Source',
-                        'Test Campaign',
-                        'Initial Contact',
-                        'This is a test entry - safe to delete',
-                        new Date().toISOString(),
-                        'test@example.com'
-                    ];
-                    
-                    const testResult = await appendToSheet('Fruits', [testRow]);
-                    console.log('✅ Test append successful:', testResult);
-                    
-                    showNotification('✅ Connection test successful! Check console for details.', 'success');
-                    
-                } else {
+                if (!infoResponse.ok) {
                     const errorText = await infoResponse.text();
-                    console.error('❌ Info request failed:', errorText);
-                    showNotification('❌ Connection test failed: ' + infoResponse.statusText, 'error');
+                    console.error('❌ Spreadsheet access failed:', errorText);
+                    showNotification(`❌ Spreadsheet access failed: ${infoResponse.status} ${infoResponse.statusText}`, 'error');
+                    return;
+                }
+                
+                const info = await infoResponse.json();
+                console.log('✅ Spreadsheet accessed successfully!');
+                console.log('📊 Spreadsheet title:', info.properties?.title);
+                console.log('📊 Available sheets:', info.sheets?.map(s => s.properties?.title));
+                
+                // Step 3: Test reading data from Fruits sheet
+                console.log('📊 Step 3: Testing data read from Fruits sheet...');
+                const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/Fruits!A1:M10?key=${GOOGLE_CONFIG.API_KEY}`;
+                
+                const readResponse = await fetch(readUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (readResponse.ok) {
+                    const readData = await readResponse.json();
+                    console.log('✅ Data read successful!');
+                    console.log('📊 Rows found:', readData.values?.length || 0);
+                    console.log('📊 Sample data:', readData.values?.slice(0, 3));
+                } else {
+                    console.warn('⚠️ Data read failed:', readResponse.status);
+                }
+                
+                // Step 4: Test write capability with a test row
+                console.log('📊 Step 4: Testing write capability...');
+                const testRow = [
+                    'TEST_' + Date.now(),
+                    'Connection Test',
+                    currentUser?.name || 'Test User',
+                    '+1-555-TEST',
+                    'test_ig',
+                    'test_fb',
+                    'test_tw',
+                    'Connection Test',
+                    'Test Campaign',
+                    'Initial Contact',
+                    'This is a connection test - safe to delete',
+                    new Date().toISOString(),
+                    currentUser?.email || 'test@example.com'
+                ];
+                
+                try {
+                    const appendResult = await appendToSheet('Fruits', [testRow]);
+                    console.log('✅ Write test successful!', appendResult);
+                    showNotification('✅ Connection test PASSED! All systems working correctly.', 'success');
+                } catch (writeError) {
+                    console.error('❌ Write test failed:', writeError);
+                    showNotification('⚠️ Read access OK, but write failed. Check sheet permissions.', 'warning');
                 }
                 
             } catch (error) {
-                console.error('❌ Connection test error:', error);
+                console.error('❌ Connection test failed:', error);
                 showNotification('❌ Connection test failed: ' + error.message, 'error');
             }
+        }
+
+        async function testGoogleSheetsConnection() {
+            return testConnection(); // Redirect to the new comprehensive test
         }
 
         function testAppsScriptConnection() {
@@ -3855,5 +3888,5 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a4147a116fb4dc',t:'MTc1OTc0MjM5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a419ea2756b4dc',t:'MTc1OTc0MjYxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
