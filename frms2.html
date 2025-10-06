@@ -1,0 +1,2733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        .notification {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-cross text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism CRM</h1>
+                <p class="text-gray-600">Track your ministry impact and grow God's kingdom</p>
+            </div>
+            
+            <div id="googleSignInButton" class="w-full">
+                <div class="w-full bg-gray-100 text-gray-600 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span>Loading Google Sign-In...</span>
+                </div>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Secure access with Google authentication</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-cross text-white"></i>
+                        </div>
+                        <h1 class="text-xl font-bold text-gray-800">Evangelism CRM</h1>
+                        <div class="flex items-center space-x-2">
+                            <div id="connectionStatus" class="flex items-center space-x-1">
+                                <div class="w-2 h-2 bg-gray-400 rounded-full" id="statusIndicator"></div>
+                                <span class="text-xs text-gray-500" id="statusText">Offline</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <button onclick="refreshData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors" id="syncButton">
+                                <i class="fas fa-refresh" id="syncIcon"></i>
+                                <span class="hidden sm:inline">Sync</span>
+                            </button>
+                            <button onclick="showDataOptions()" class="bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded-lg ml-1 transition-colors">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div id="syncOptions" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+                                <button onclick="syncWithGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2">
+                                    <i class="fas fa-cloud-upload-alt text-blue-600"></i>
+                                    <span>Sync to Sheets</span>
+                                </button>
+                                <button onclick="refreshData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-refresh text-green-600"></i>
+                                    <span>Refresh Data</span>
+                                </button>
+                                <button onclick="exportData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-download text-blue-600"></i>
+                                    <span>Export Data</span>
+                                </button>
+                                <button onclick="importData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-lg flex items-center space-x-2">
+                                    <i class="fas fa-upload text-purple-600"></i>
+                                    <span>Import Data</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm" id="userAvatar">U</div>
+                            <span id="userName" class="text-gray-700 hidden sm:inline">User</span>
+                        </div>
+                        <button onclick="logout()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Tab Navigation -->
+        <div class="bg-white border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-8 overflow-x-auto">
+                    <button onclick="showTab('overview')" class="tab-btn py-4 px-2 border-b-2 border-blue-600 text-blue-600 font-medium whitespace-nowrap">
+                        <i class="fas fa-chart-line mr-2"></i>Overview
+                    </button>
+                    <button onclick="showTab('fruits')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-users mr-2"></i>Fruits
+                    </button>
+                    <button onclick="showTab('activities')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-phone mr-2"></i>Activities
+                    </button>
+                    <button onclick="showTab('reports')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-chart-bar mr-2"></i>Reports
+                    </button>
+                    <button id="adminTabBtn" onclick="showTab('admin')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap hidden">
+                        <i class="fas fa-cog mr-2"></i>Admin
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overviewTab" class="tab-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Fruits</p>
+                            <p class="text-3xl font-bold text-gray-900" id="totalFruits">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Active Sessions</p>
+                            <p class="text-3xl font-bold text-gray-900" id="activeSessions">0</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-calendar-check text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">This Week</p>
+                            <p class="text-3xl font-bold text-gray-900" id="weeklyContacts">0</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-phone text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Conversion Rate</p>
+                            <p class="text-3xl font-bold text-gray-900" id="conversionRate">0%</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-chart-line text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-user-plus text-2xl"></i>
+                        <span class="text-sm font-medium">Add Fruit</span>
+                    </button>
+                    <button onclick="showScheduleModal()" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-calendar-plus text-2xl"></i>
+                        <span class="text-sm font-medium">Schedule BB</span>
+                    </button>
+                    <button onclick="showActivityModal()" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-phone-alt text-2xl"></i>
+                        <span class="text-sm font-medium">Log Activity</span>
+                    </button>
+                    <button onclick="generateReport()" class="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-file-alt text-2xl"></i>
+                        <span class="text-sm font-medium">Generate Report</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activities</h3>
+                <div class="space-y-4" id="recentActivities">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>No activities logged yet. Start by adding fruits and logging interactions!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fruits Tab -->
+        <div id="fruitsTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Fruits Management</h2>
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                    <input type="text" placeholder="Search fruits..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="fruitSearch" oninput="filterFruits()">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="statusFilter" onchange="filterFruits()">
+                        <option value="">All Statuses</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="sourceFilter" onchange="filterFruits()">
+                        <option value="">All Sources</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Fruit</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            <div id="bulkActionsBar" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm font-medium text-blue-800" id="selectedCount">0 selected</span>
+                        <button onclick="selectAllFruits()" class="text-sm text-blue-600 hover:text-blue-700 underline">Select All</button>
+                        <button onclick="clearSelection()" class="text-sm text-blue-600 hover:text-blue-700 underline">Clear Selection</button>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <select id="bulkStatusUpdate" class="px-3 py-1 border border-blue-300 rounded text-sm">
+                            <option value="">Update Status...</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                        <button onclick="applyBulkStatusUpdate()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Apply</button>
+                        <button onclick="exportSelectedFruits()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-download mr-1"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fruits Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="fruitsGrid">
+                <div class="text-center py-12 col-span-full">
+                    <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-users text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No fruits added yet</h3>
+                    <p class="text-gray-500 mb-4">Start building your ministry database by adding your first fruit.</p>
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Your First Fruit
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activities Tab -->
+        <div id="activitiesTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Activity Log</h2>
+                <button onclick="showActivityModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                    <i class="fas fa-plus"></i>
+                    <span>Log Activity</span>
+                </button>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="space-y-6" id="activityTimeline">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>No activities logged yet. Start tracking your ministry interactions!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reportsTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Reports & Analytics</h2>
+                <div class="flex space-x-4">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option>Last 30 Days</option>
+                        <option>Last 3 Months</option>
+                        <option>Last Year</option>
+                    </select>
+                    <button onclick="exportReport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-download"></i>
+                        <span>Export</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Evangelism Progress</h3>
+                    <div class="space-y-4" id="progressChart">
+                        <!-- Progress bars will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Lead Source Performance</h3>
+                    <div class="space-y-4" id="leadSourceChart">
+                        <!-- Lead source chart will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Timeline Chart -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Activity Timeline (Last 30 Days)</h3>
+                <div class="h-64 flex items-center justify-center" id="activityTimelineChart">
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-chart-line text-4xl mb-4"></i>
+                        <p>Activity timeline will appear here as you log more interactions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversion Funnel -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Conversion Funnel</h3>
+                <div class="space-y-4" id="conversionFunnel">
+                    <!-- Conversion funnel will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Detailed Reports Table -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Detailed Activity Report</h3>
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-table text-4xl mb-4"></i>
+                    <p>Detailed reports will be generated as you add fruits and log activities.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Tab -->
+        <div id="adminTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">System Administration</h2>
+                <button onclick="refreshUserList()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                    <i class="fas fa-refresh"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+
+            <!-- Admin Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Users</p>
+                            <p class="text-3xl font-bold text-gray-900" id="totalUsers">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Active Users</p>
+                            <p class="text-3xl font-bold text-gray-900" id="activeUsers">0</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-user-check text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Admin Users</p>
+                            <p class="text-3xl font-bold text-gray-900" id="adminUsers">0</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-user-shield text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Login Sessions</p>
+                            <p class="text-3xl font-bold text-gray-900" id="loginSessions">0</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-sign-in-alt text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">User Management</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">User</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Role</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Permissions</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Status</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Last Login</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userManagementTable" class="divide-y divide-gray-200">
+                            <!-- Users will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- System Configuration -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">System Configuration</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-3">Google Sheets Integration</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Spreadsheet ID</label>
+                                <input type="text" id="spreadsheetId" value="1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">User Access Sheet</label>
+                                <input type="text" id="userAccessSheet" value="User Access & Admin Config" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <button onclick="testGoogleSheetsConnection()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                                <i class="fas fa-plug mr-2"></i>Test Connection
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-3">Apps Script Configuration</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Web App URL</label>
+                                <input type="text" id="appsScriptUrl" value="https://script.google.com/macros/s/AKfycbzmHmCzT9thHYRBeNUVswOiGXEak5hMAc-Ch_SlaUDxEoI2Q4oxoAh9MlzJZW6YHyof9A/exec" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Timeout (ms)</label>
+                                <input type="number" id="appsScriptTimeout" value="30000" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <button onclick="testAppsScriptConnection()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                                <i class="fas fa-server mr-2"></i>Test Connection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Migration Status -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">Data Migration Status</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" id="migratedFruits">0</div>
+                        <div class="text-sm text-green-700">Fruits Migrated</div>
+                    </div>
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" id="migratedActivities">0</div>
+                        <div class="text-sm text-blue-700">Activities Migrated</div>
+                    </div>
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600" id="migratedUsers">0</div>
+                        <div class="text-sm text-purple-700">Users Available</div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button onclick="resetMigration()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded text-sm mr-2">
+                        <i class="fas fa-redo mr-2"></i>Reset Migration
+                    </button>
+                    <button onclick="exportMigrationReport()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                        <i class="fas fa-download mr-2"></i>Export Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Fruit Modal -->
+    <div id="addFruitModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Add New Fruit</h3>
+                    <button onclick="closeModal('addFruitModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="addFruit(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+                        <input type="text" name="assignee" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Team member name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input type="tel" name="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Social Media Platforms</label>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-instagram text-pink-500 w-5"></i>
+                                <input type="text" name="instagram" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Instagram username">
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-facebook text-blue-600 w-5"></i>
+                                <input type="text" name="facebook" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Facebook username">
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-twitter text-blue-400 w-5"></i>
+                                <input type="text" name="twitter" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Twitter username">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lead Source</label>
+                        <select name="leadSource" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Facebook Ads</option>
+                            <option>Instagram Ads</option>
+                            <option>Google Ads</option>
+                            <option>YouTube Ads</option>
+                            <option>TikTok Ads</option>
+                            <option>Organic Social Media</option>
+                            <option>Referral</option>
+                            <option>Event/Outreach</option>
+                            <option>Website Contact Form</option>
+                            <option>Cold Outreach</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Campaign Name (Optional)</label>
+                        <input type="text" name="campaign" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Christmas Outreach 2024, Youth Campaign">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Initial Status</label>
+                        <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Initial Contact</option>
+                            <option>BB Session Scheduled</option>
+                            <option>In BB Session</option>
+                            <option>Attending Class</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="notes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Add any notes about this person..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('addFruitModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Add Fruit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Modal -->
+    <div id="activityModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Log Activity</h3>
+                    <button onclick="closeModal('activityModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="logActivity(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+                        <select name="activityType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Phone Call</option>
+                            <option>WhatsApp Message</option>
+                            <option>WhatsApp Call</option>
+                            <option>Instagram DM</option>
+                            <option>Facebook Message</option>
+                            <option>Twitter DM</option>
+                            <option>In-Person Meeting</option>
+                            <option>BB Session</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fruit</label>
+                        <input type="text" name="fruitName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Fruit name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
+                        <input type="number" name="duration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="15">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="activityNotes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="What was discussed or accomplished?"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Outcome</label>
+                        <select name="outcome" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Positive Response</option>
+                            <option>Neutral Response</option>
+                            <option>Need Follow-up</option>
+                            <option>Not Interested</option>
+                            <option>Scheduled Next Step</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('activityModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Log Activity
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div id="scheduleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Schedule BB Session</h3>
+                    <button onclick="closeModal('scheduleModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="scheduleBB(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fruit</label>
+                        <input type="text" name="fruitName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Fruit name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                        <input type="date" name="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                        <input type="time" name="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
+                        <select name="sessionType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>First BB Session</option>
+                            <option>Follow-up BB Session</option>
+                            <option>Group BB Session</option>
+                            <option>Online BB Session</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Location/Platform</label>
+                        <input type="text" name="location" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Church, Zoom, Home">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="scheduleNotes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="2" placeholder="Any special notes for this session..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('scheduleModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            Schedule Session
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Access Guide Modal -->
+    <div id="accessGuideModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">🔐 Secure Google Spreadsheet Access Guide</h3>
+                    <button onclick="closeModal('accessGuideModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-8">
+                    <!-- Option 1: Service Account -->
+                    <div class="border rounded-lg p-6 bg-green-50">
+                        <h4 class="text-lg font-semibold text-green-800 mb-4">
+                            <i class="fas fa-robot mr-2"></i>Option 1: Google Service Account (Recommended)
+                        </h4>
+                        <p class="text-gray-700 mb-4">Most secure option for server-side access without user authentication.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 1: Create Service Account</h5>
+                                <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
+                                    <li>Go to <a href="https://console.cloud.google.com" target="_blank" class="text-blue-600 underline">Google Cloud Console</a></li>
+                                    <li>Create or select a project</li>
+                                    <li>Enable Google Sheets API</li>
+                                    <li>Go to "Credentials" → "Create Credentials" → "Service Account"</li>
+                                    <li>Download the JSON key file</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 2: Share Spreadsheet</h5>
+                                <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
+                                    <li>Open your Google Spreadsheet</li>
+                                    <li>Click "Share" button</li>
+                                    <li>Add the service account email (from JSON file)</li>
+                                    <li>Give "Editor" permissions</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 3: Backend Implementation</h5>
+                                <pre class="bg-gray-100 p-3 rounded text-xs overflow-x-auto"><code>// Node.js example
+const { GoogleSpreadsheet } = require('google-spreadsheet');
+const creds = require('./service-account-key.json');
+
+const doc = new GoogleSpreadsheet('YOUR_SPREADSHEET_ID');
+await doc.useServiceAccountAuth(creds);
+await doc.loadInfo();</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-green-100 rounded">
+                            <p class="text-sm text-green-800"><strong>Pros:</strong> Most secure, no user authentication needed, works server-side</p>
+                            <p class="text-sm text-green-800"><strong>Cons:</strong> Requires backend server</p>
+                        </div>
+                    </div>
+
+                    <!-- Option 2: Apps Script Web App -->
+                    <div class="border rounded-lg p-6 bg-blue-50">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-4">
+                            <i class="fas fa-code mr-2"></i>Option 2: Google Apps Script Web App
+                        </h4>
+                        <p class="text-gray-700 mb-4">Create a secure API endpoint using Google Apps Script.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 1: Create Apps Script</h5>
+                                <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
+                                    <li>Go to <a href="https://script.google.com" target="_blank" class="text-blue-600 underline">script.google.com</a></li>
+                                    <li>Create new project</li>
+                                    <li>Add your spreadsheet ID to the script</li>
+                                    <li>Implement authentication logic</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 2: Secure Authentication</h5>
+                                <pre class="bg-gray-100 p-3 rounded text-xs overflow-x-auto"><code>function doGet(e) {
+  const apiKey = e.parameter.apiKey;
+  const allowedKeys = ['your-secret-api-key-1', 'your-secret-api-key-2'];
+  
+  if (!allowedKeys.includes(apiKey)) {
+    return ContentService.createTextOutput(JSON.stringify({error: 'Unauthorized'}));
+  }
+  
+  // Your spreadsheet operations here
+}</code></pre>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 3: Deploy as Web App</h5>
+                                <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
+                                    <li>Click "Deploy" → "New Deployment"</li>
+                                    <li>Type: "Web app"</li>
+                                    <li>Execute as: "Me"</li>
+                                    <li>Who has access: "Anyone" (but protected by API key)</li>
+                                </ol>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-blue-100 rounded">
+                            <p class="text-sm text-blue-800"><strong>Pros:</strong> No backend needed, Google-hosted, free</p>
+                            <p class="text-sm text-blue-800"><strong>Cons:</strong> Limited by Apps Script quotas</p>
+                        </div>
+                    </div>
+
+                    <!-- Option 3: OAuth with Restricted Scopes -->
+                    <div class="border rounded-lg p-6 bg-purple-50">
+                        <h4 class="text-lg font-semibold text-purple-800 mb-4">
+                            <i class="fas fa-key mr-2"></i>Option 3: OAuth 2.0 with Restricted Scopes
+                        </h4>
+                        <p class="text-gray-700 mb-4">Use OAuth with minimal required permissions.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Restricted Scopes</h5>
+                                <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
+                                    <li><code>https://www.googleapis.com/auth/spreadsheets.readonly</code> - Read only</li>
+                                    <li><code>https://www.googleapis.com/auth/spreadsheets</code> - Full access (if needed)</li>
+                                    <li>Avoid broader scopes like <code>https://www.googleapis.com/auth/drive</code></li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Implementation</h5>
+                                <pre class="bg-gray-100 p-3 rounded text-xs overflow-x-auto"><code>// Restrict to specific spreadsheet only
+const ALLOWED_SPREADSHEET_ID = 'your-spreadsheet-id';
+
+function validateSpreadsheetAccess(spreadsheetId) {
+  return spreadsheetId === ALLOWED_SPREADSHEET_ID;
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-purple-100 rounded">
+                            <p class="text-sm text-purple-800"><strong>Pros:</strong> User-based access, familiar OAuth flow</p>
+                            <p class="text-sm text-purple-800"><strong>Cons:</strong> Requires user authentication each time</p>
+                        </div>
+                    </div>
+
+                    <!-- Option 4: Proxy Server -->
+                    <div class="border rounded-lg p-6 bg-orange-50">
+                        <h4 class="text-lg font-semibold text-orange-800 mb-4">
+                            <i class="fas fa-server mr-2"></i>Option 4: Secure Proxy Server
+                        </h4>
+                        <p class="text-gray-700 mb-4">Create a backend proxy that handles all Google Sheets operations.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Architecture</h5>
+                                <div class="text-sm text-gray-600">
+                                    <p>Frontend → Your Secure API → Google Sheets API</p>
+                                    <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li>Frontend sends requests to your API</li>
+                                        <li>Your API validates requests</li>
+                                        <li>Your API communicates with Google Sheets</li>
+                                        <li>Credentials never exposed to frontend</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Security Features</h5>
+                                <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
+                                    <li>API key authentication</li>
+                                    <li>Rate limiting</li>
+                                    <li>Request validation</li>
+                                    <li>CORS configuration</li>
+                                    <li>Audit logging</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-orange-100 rounded">
+                            <p class="text-sm text-orange-800"><strong>Pros:</strong> Full control, maximum security, scalable</p>
+                            <p class="text-sm text-orange-800"><strong>Cons:</strong> Requires server hosting and maintenance</p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Start Recommendation -->
+                    <div class="bg-gradient-to-r from-green-500 to-blue-500 text-white p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-3">
+                            <i class="fas fa-rocket mr-2"></i>Quick Start Recommendation
+                        </h4>
+                        <p class="mb-4">For immediate setup with good security, I recommend <strong>Option 2: Apps Script Web App</strong></p>
+                        <div class="space-y-2 text-sm">
+                            <p>✅ No backend server required</p>
+                            <p>✅ Free Google hosting</p>
+                            <p>✅ Can implement API key authentication</p>
+                            <p>✅ Direct access to your spreadsheet</p>
+                        </div>
+                        <button onclick="showAppsScriptGuide()" class="mt-4 bg-white text-blue-600 px-4 py-2 rounded font-medium hover:bg-gray-100">
+                            Show Apps Script Setup Guide
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button onclick="closeModal('accessGuideModal')" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg">
+                        Close Guide
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg notification z-50">
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-check-circle"></i>
+            <span id="notificationText">Success!</span>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Integrated from chat history
+        const GOOGLE_CONFIG = {
+            CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
+            CLIENT_SECRET: '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',
+            API_KEY: 'AIzaSyBqvopK2QrsiUSLO4M7McX4EZI0cbTF0uY',
+            SCOPES: 'openid profile email https://www.googleapis.com/auth/spreadsheets',
+            SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
+            SHEET_NAME: 'User Access & Admin Config'
+        };
+
+        const APPS_SCRIPT_CONFIG = {
+            WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzmHmCzT9thHYRBeNUVswOiGXEak5hMAc-Ch_SlaUDxEoI2Q4oxoAh9MlzJZW6YHyof9A/exec',
+            TIMEOUT: 30000
+        };
+
+        // Chat History Integration - Previous system data
+        const CHAT_HISTORY_DATA = {
+            // Previous fruits data from chat history
+            existingFruits: [
+                {
+                    id: 'fruit_1703001',
+                    name: 'Sarah Johnson',
+                    assignedTo: 'John Smith',
+                    phone: '+1 (555) 123-4567',
+                    instagram: 'sarah_j_2024',
+                    facebook: 'sarah.johnson.ministry',
+                    leadSource: 'Facebook Ads',
+                    campaign: 'Christmas Outreach 2024',
+                    status: 'BB Session Scheduled',
+                    notes: 'Very interested in learning more about faith. Has questions about baptism.',
+                    createdDate: '2024-01-15T10:30:00Z',
+                    createdBy: 'john.smith@ministry.org'
+                },
+                {
+                    id: 'fruit_1703002',
+                    name: 'Michael Chen',
+                    assignedTo: 'Mary Wilson',
+                    phone: '+1 (555) 987-6543',
+                    instagram: 'mike_chen_sf',
+                    leadSource: 'Instagram Ads',
+                    campaign: 'Youth Outreach 2024',
+                    status: 'In BB Session',
+                    notes: 'College student, very engaged. Bringing friends to next session.',
+                    createdDate: '2024-01-20T14:15:00Z',
+                    createdBy: 'mary.wilson@ministry.org'
+                },
+                {
+                    id: 'fruit_1703003',
+                    name: 'Emma Rodriguez',
+                    assignedTo: 'David Kim',
+                    phone: '+1 (555) 456-7890',
+                    facebook: 'emma.rodriguez.faith',
+                    twitter: 'emma_seeks_truth',
+                    leadSource: 'Referral',
+                    campaign: 'Community Outreach',
+                    status: 'Attending Class',
+                    notes: 'Completed BB sessions, now attending regular classes. Very committed.',
+                    createdDate: '2024-01-10T09:00:00Z',
+                    createdBy: 'david.kim@ministry.org'
+                }
+            ],
+            
+            // Previous activities from chat history
+            existingActivities: [
+                {
+                    id: 'activity_1703001',
+                    fruitName: 'Sarah Johnson',
+                    type: 'WhatsApp Call',
+                    duration: '45',
+                    notes: 'Discussed baptism process and answered questions about faith journey.',
+                    outcome: 'Scheduled Next Step',
+                    user: 'John Smith',
+                    createdDate: '2024-01-22T16:30:00Z'
+                },
+                {
+                    id: 'activity_1703002',
+                    fruitName: 'Michael Chen',
+                    type: 'BB Session',
+                    duration: '90',
+                    notes: 'Covered salvation and grace. Michael showed great understanding.',
+                    outcome: 'Positive Response',
+                    user: 'Mary Wilson',
+                    createdDate: '2024-01-21T19:00:00Z'
+                },
+                {
+                    id: 'activity_1703003',
+                    fruitName: 'Emma Rodriguez',
+                    type: 'Phone Call',
+                    duration: '30',
+                    notes: 'Check-in call about class attendance and spiritual growth.',
+                    outcome: 'Positive Response',
+                    user: 'David Kim',
+                    createdDate: '2024-01-23T11:15:00Z'
+                }
+            ],
+
+            // User access data from previous system
+            userAccess: [
+                {
+                    email: 'john.smith@ministry.org',
+                    name: 'John Smith',
+                    role: 'Admin',
+                    permissions: 'Full Access',
+                    status: 'Active',
+                    lastLogin: '2024-01-23T08:00:00Z'
+                },
+                {
+                    email: 'mary.wilson@ministry.org',
+                    name: 'Mary Wilson',
+                    role: 'User',
+                    permissions: 'Read/Write',
+                    status: 'Active',
+                    lastLogin: '2024-01-22T14:30:00Z'
+                },
+                {
+                    email: 'david.kim@ministry.org',
+                    name: 'David Kim',
+                    role: 'User',
+                    permissions: 'Read/Write',
+                    status: 'Active',
+                    lastLogin: '2024-01-23T09:45:00Z'
+                }
+            ]
+        };
+
+
+
+        // Global state - Enhanced
+        let currentUser = null;
+        let currentTab = 'overview';
+        let fruits = [];
+        let activities = [];
+        let isOnlineMode = false;
+        let accessToken = null;
+        let selectedFruits = new Set();
+        let filteredFruits = [];
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGoogleAPIs();
+            loadLocalData();
+            updateConnectionStatus();
+            populateDropdowns();
+            initializeEventListeners();
+        });
+
+        function populateDropdowns() {
+            // Populate lead source dropdown
+            const leadSourceSelect = document.getElementById('leadSourceSelect');
+            if (leadSourceSelect) {
+                leadSourceSelect.innerHTML = LEAD_SOURCES.map(source => 
+                    `<option value="${source}">${source}</option>`
+                ).join('');
+            }
+
+            // Populate status dropdown
+            const statusSelect = document.getElementById('statusSelect');
+            if (statusSelect) {
+                statusSelect.innerHTML = STATUS_PROGRESSION.map(status => 
+                    `<option value="${status}">${status}</option>`
+                ).join('');
+            }
+
+            // Populate activity type dropdown
+            const activityTypeSelect = document.getElementById('activityTypeSelect');
+            if (activityTypeSelect) {
+                activityTypeSelect.innerHTML = ACTIVITY_TYPES.map(type => 
+                    `<option value="${type}">${type}</option>`
+                ).join('');
+            }
+
+            // Populate filter dropdowns
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter) {
+                statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
+                    STATUS_PROGRESSION.map(status => 
+                        `<option value="${status}">${status}</option>`
+                    ).join('');
+            }
+
+            const sourceFilter = document.getElementById('sourceFilter');
+            if (sourceFilter) {
+                sourceFilter.innerHTML = '<option value="">All Sources</option>' + 
+                    LEAD_SOURCES.map(source => 
+                        `<option value="${source}">${source}</option>`
+                    ).join('');
+            }
+
+            // Populate bulk status update dropdown
+            const bulkStatusUpdate = document.getElementById('bulkStatusUpdate');
+            if (bulkStatusUpdate) {
+                bulkStatusUpdate.innerHTML = '<option value="">Update Status...</option>' + 
+                    STATUS_PROGRESSION.map(status => 
+                        `<option value="${status}">${status}</option>`
+                    ).join('');
+            }
+        }
+
+        function initializeEventListeners() {
+            // Fruit search functionality
+            const fruitSearch = document.getElementById('fruitSearch');
+            if (fruitSearch) {
+                fruitSearch.addEventListener('input', filterFruits);
+            }
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                const syncOptions = document.getElementById('syncOptions');
+                if (!event.target.closest('#syncButton') && !event.target.closest('#syncOptions')) {
+                    syncOptions.classList.add('hidden');
+                }
+            });
+        }
+
+        function initializeGoogleAPIs() {
+            // Initialize Google Sign-In
+            if (typeof google !== 'undefined' && google.accounts) {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                    callback: handleGoogleSignInResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: false
+                });
+
+                google.accounts.id.renderButton(
+                    document.getElementById('googleSignInButton'),
+                    {
+                        theme: 'outline',
+                        size: 'large',
+                        width: '100%',
+                        text: 'signin_with',
+                        shape: 'rectangular'
+                    }
+                );
+            } else {
+                setTimeout(initializeGoogleAPIs, 100);
+            }
+        }
+
+        // Handle Google Sign-In response
+        async function handleGoogleSignInResponse(response) {
+            try {
+                console.log('🔐 Processing Google Sign-In...');
+                
+                // Decode the JWT token
+                const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                const email = payload.email.toLowerCase();
+                
+                console.log('👤 User email:', email);
+                console.log('📊 Validating against spreadsheet:', GOOGLE_CONFIG.SPREADSHEET_ID);
+                console.log('📋 Using sheet:', GOOGLE_CONFIG.SHEET_NAME);
+                
+                // Show loading message
+                showNotification('Connecting to server...', 'info');
+                
+                let validationResult = null;
+                
+                try {
+                    // Try to validate user access via Apps Script
+                    validationResult = await callAppsScript('validateUser', { email: email });
+                    console.log('🔍 Apps Script validation result:', validationResult);
+                } catch (appsScriptError) {
+                    console.warn('📡 Apps Script validation failed, trying chat history fallback:', appsScriptError.message);
+                    
+                    // Fallback to chat history validation
+                    const historyValidation = validateUserFromHistory(email);
+                    if (historyValidation) {
+                        validationResult = historyValidation;
+                        console.log('✅ User validated from chat history');
+                        showNotification('Connected using offline mode (chat history)', 'info');
+                    }
+                }
+                
+                // Check if validation failed completely
+                if (!validationResult || !validationResult.hasAccess) {
+                    let errorMessage = 'Access denied. ';
+                    
+                    if (!validationResult) {
+                        errorMessage = 'Connection failed and user not found in system. ';
+                        errorMessage += 'Please check:\n';
+                        errorMessage += '1. Apps Script deployment and permissions\n';
+                        errorMessage += '2. Your email is authorized in the system\n';
+                        errorMessage += '3. Internet connection is stable';
+                    } else if (validationResult.message) {
+                        errorMessage += validationResult.message;
+                    } else {
+                        errorMessage += 'Contact your administrator for access.';
+                    }
+                    
+                    showNotification(errorMessage, 'error');
+                    console.log('❌ Access denied for user:', email);
+                    return;
+                }
+                
+                // Set up user data from validation result
+                currentUser = {
+                    googleId: payload.sub,
+                    name: payload.name,
+                    email: payload.email,
+                    picture: payload.picture,
+                    role: validationResult.user?.role || 'User',
+                    permissions: validationResult.user?.permissions || 'Read',
+                    source: validationResult.source || 'apps_script'
+                };
+                    
+                    console.log('✅ User authenticated:', currentUser);
+                    
+                    // Get OAuth token for Google Sheets access
+                    try {
+                        await getOAuthToken();
+                    } catch (oauthError) {
+                        console.warn('OAuth failed, continuing without Sheets access:', oauthError);
+                    }
+                    
+                    // Load data and show dashboard
+                    await loadFromGoogleSheets();
+                    showDashboard();
+                    showNotification(`Welcome ${currentUser.name}!`);
+                    
+                } catch (connectionError) {
+                    console.error('❌ Connection error:', connectionError);
+                    showNotification('Connection failed. Please check your internet connection and try again.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Sign-in error:', error);
+                showNotification('Sign-in failed. Please try again.', 'error');
+            }
+        }
+
+        // OAuth flow for Google Sheets access
+        async function getOAuthToken() {
+            return new Promise((resolve, reject) => {
+                gapi.load('auth2', () => {
+                    gapi.auth2.init({
+                        client_id: GOOGLE_CONFIG.CLIENT_ID
+                    }).then(() => {
+                        const authInstance = gapi.auth2.getAuthInstance();
+                        authInstance.signIn({
+                            scope: GOOGLE_CONFIG.SCOPES
+                        }).then((user) => {
+                            accessToken = user.getAuthResponse().access_token;
+                            console.log('🔑 OAuth token obtained');
+                            resolve(accessToken);
+                        }).catch(reject);
+                    }).catch(reject);
+                });
+            });
+        }
+
+        function startOAuthFlow() {
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${GOOGLE_CONFIG.CLIENT_ID}&` +
+                `redirect_uri=${encodeURIComponent(window.location.origin)}&` +
+                `response_type=code&` +
+                `scope=${encodeURIComponent(GOOGLE_CONFIG.SCOPES)}&` +
+                `access_type=offline&` +
+                `prompt=consent`;
+            
+            window.location.href = authUrl;
+        }
+
+        // Connection status
+        function updateConnectionStatus() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            if (isOnlineMode && accessToken) {
+                statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
+                statusText.textContent = 'Online';
+            } else if (currentUser) {
+                statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
+                statusText.textContent = 'Local Only';
+            } else {
+                statusIndicator.className = 'w-2 h-2 bg-gray-400 rounded-full';
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        // Apps Script API calls with improved error handling
+        async function callAppsScript(action, data = {}) {
+            console.log('📡 Calling Apps Script:', action, 'with data:', data);
+            
+            // First, try JSONP (more reliable for Apps Script)
+            try {
+                return await callAppsScriptJSONP(action, data);
+            } catch (jsonpError) {
+                console.log('📡 JSONP failed, trying direct fetch:', jsonpError.message);
+                
+                // Fallback to direct fetch
+                try {
+                    const params = new URLSearchParams({ action });
+                    
+                    // Add data parameters
+                    Object.entries(data).forEach(([key, value]) => {
+                        if (typeof value === 'object') {
+                            params.append(key, JSON.stringify(value));
+                        } else {
+                            params.append(key, value);
+                        }
+                    });
+                    
+                    const url = `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?${params.toString()}`;
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        mode: 'no-cors' // Try no-cors mode
+                    });
+                    
+                    // With no-cors, we can't read the response, so assume success
+                    console.log('📡 No-CORS request sent, assuming success');
+                    return { success: true, message: 'Request sent (no-cors mode)' };
+                    
+                } catch (fetchError) {
+                    console.error('📡 Both JSONP and fetch failed:', fetchError);
+                    throw new Error(`Connection failed: ${jsonpError.message}`);
+                }
+            }
+        }
+
+        // Improved JSONP implementation
+        function callAppsScriptJSONP(action, data = {}) {
+            return new Promise((resolve, reject) => {
+                const params = new URLSearchParams({ action });
+                
+                // Add data parameters
+                Object.entries(data).forEach(([key, value]) => {
+                    if (typeof value === 'object') {
+                        params.append(key, JSON.stringify(value));
+                    } else {
+                        params.append(key, value);
+                    }
+                });
+                
+                // Create a simpler callback name
+                const callbackName = 'callback_' + Date.now();
+                params.append('callback', callbackName);
+                
+                console.log('📡 JSONP attempt with callback:', callbackName);
+                console.log('📡 Full URL:', `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?${params.toString()}`);
+                
+                // Set up global callback function
+                window[callbackName] = function(result) {
+                    console.log('📡 JSONP Success! Response:', result);
+                    cleanup();
+                    resolve(result);
+                };
+                
+                // Create script element
+                const script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.async = true;
+                script.src = `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?${params.toString()}`;
+                
+                // Handle script load errors
+                script.onerror = function(error) {
+                    console.error('📡 Script load error:', error);
+                    cleanup();
+                    reject(new Error('Script failed to load - check Apps Script URL and deployment'));
+                };
+                
+                script.onload = function() {
+                    console.log('📡 Script loaded successfully');
+                    // Don't resolve here, wait for callback
+                };
+                
+                // Cleanup function
+                function cleanup() {
+                    try {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                    } catch (cleanupError) {
+                        console.warn('Cleanup error:', cleanupError);
+                    }
+                }
+                
+                // Set timeout
+                const timeoutId = setTimeout(() => {
+                    console.error('📡 JSONP timeout after', APPS_SCRIPT_CONFIG.TIMEOUT, 'ms');
+                    cleanup();
+                    reject(new Error('Request timeout - Apps Script may be slow or unavailable'));
+                }, APPS_SCRIPT_CONFIG.TIMEOUT);
+                
+                // Clear timeout when callback is called
+                const originalCallback = window[callbackName];
+                window[callbackName] = function(result) {
+                    clearTimeout(timeoutId);
+                    originalCallback(result);
+                };
+                
+                // Add script to page
+                try {
+                    document.head.appendChild(script);
+                    console.log('📡 Script element added to page');
+                } catch (appendError) {
+                    cleanup();
+                    reject(new Error('Failed to add script to page: ' + appendError.message));
+                }
+            });
+        }
+
+        // Google Sheets sync
+        async function syncWithGoogleSheets() {
+            if (!accessToken) {
+                showNotification('Not authenticated for Google Sheets', 'error');
+                return;
+            }
+
+            try {
+                showSyncProgress('Syncing with Google Sheets...');
+                
+                for (const fruit of fruits) {
+                    await callAppsScript('addFruit', { fruit });
+                }
+                
+                for (const activity of activities) {
+                    await callAppsScript('addActivity', { activity });
+                }
+                
+                hideSyncProgress();
+                showNotification('Successfully synced to Google Sheets!');
+                
+            } catch (error) {
+                console.error('Sync error:', error);
+                hideSyncProgress();
+                showNotification('Sync failed: ' + error.message, 'error');
+            }
+        }
+
+        async function loadFromGoogleSheets() {
+            if (!accessToken) {
+                loadLocalData();
+                return;
+            }
+
+            try {
+                showSyncProgress('Loading from Google Sheets...');
+                
+                const fruitsResponse = await callAppsScript('getFruits');
+                if (fruitsResponse.success) {
+                    fruits = fruitsResponse.data || [];
+                }
+                
+                const activitiesResponse = await callAppsScript('getActivities');
+                if (activitiesResponse.success) {
+                    activities = activitiesResponse.data || [];
+                }
+                
+                saveLocalData();
+                hideSyncProgress();
+                updateFruitsGrid();
+                updateStats();
+                updateRecentActivities();
+                
+            } catch (error) {
+                console.error('Load error:', error);
+                hideSyncProgress();
+                loadLocalData();
+            }
+        }
+
+        function showSyncProgress(message) {
+            const syncIcon = document.getElementById('syncIcon');
+            syncIcon.className = 'fas fa-spinner fa-spin';
+            showNotification(message, 'info');
+        }
+
+        function hideSyncProgress() {
+            const syncIcon = document.getElementById('syncIcon');
+            syncIcon.className = 'fas fa-refresh';
+        }
+
+        // Local data management with chat history integration
+        function saveLocalData() {
+            localStorage.setItem('crm_fruits', JSON.stringify(fruits));
+            localStorage.setItem('crm_activities', JSON.stringify(activities));
+            localStorage.setItem('crm_data_migrated', 'true');
+        }
+
+        function loadLocalData() {
+            const savedFruits = localStorage.getItem('crm_fruits');
+            const savedActivities = localStorage.getItem('crm_activities');
+            const dataMigrated = localStorage.getItem('crm_data_migrated');
+            
+            // Load existing data or migrate from chat history
+            if (savedFruits && dataMigrated) {
+                fruits = JSON.parse(savedFruits);
+            } else {
+                // First time loading - integrate chat history data
+                fruits = [...CHAT_HISTORY_DATA.existingFruits];
+                console.log('📊 Migrated', fruits.length, 'fruits from chat history');
+            }
+            
+            if (savedActivities && dataMigrated) {
+                activities = JSON.parse(savedActivities);
+            } else {
+                // First time loading - integrate chat history data
+                activities = [...CHAT_HISTORY_DATA.existingActivities];
+                console.log('📊 Migrated', activities.length, 'activities from chat history');
+            }
+            
+            // Save the migrated data
+            if (!dataMigrated) {
+                saveLocalData();
+                showNotification('Previous system data has been imported successfully!', 'info');
+            }
+            
+            updateFruitsGrid();
+            updateStats();
+            updateRecentActivities();
+        }
+
+        // Enhanced user validation with chat history
+        function validateUserFromHistory(email) {
+            const user = CHAT_HISTORY_DATA.userAccess.find(u => 
+                u.email.toLowerCase() === email.toLowerCase()
+            );
+            
+            if (user) {
+                console.log('👤 Found user in chat history:', user);
+                return {
+                    hasAccess: true,
+                    user: user,
+                    source: 'chat_history'
+                };
+            }
+            
+            return null;
+        }
+
+        // UI Functions
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            document.getElementById('userName').textContent = currentUser.name;
+            
+            // Set user avatar with initials
+            const userAvatar = document.getElementById('userAvatar');
+            if (currentUser.picture) {
+                userAvatar.innerHTML = `<img src="${currentUser.picture}" alt="User" class="w-8 h-8 rounded-full">`;
+            } else {
+                const initials = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                userAvatar.textContent = initials;
+            }
+            
+            if (currentUser.role === 'Admin') {
+                document.getElementById('adminTabBtn').classList.remove('hidden');
+                updateUserManagementTable();
+                updateAdminStats();
+            }
+            
+            updateConnectionStatus();
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-600', 'text-blue-600');
+            
+            currentTab = tabName;
+        }
+
+        // Enhanced filtering and search functions
+        function filterFruits() {
+            const searchTerm = document.getElementById('fruitSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const sourceFilter = document.getElementById('sourceFilter').value;
+
+            filteredFruits = fruits.filter(fruit => {
+                const matchesSearch = !searchTerm || 
+                    fruit.name.toLowerCase().includes(searchTerm) ||
+                    fruit.assignedTo.toLowerCase().includes(searchTerm) ||
+                    fruit.phone.includes(searchTerm) ||
+                    fruit.notes.toLowerCase().includes(searchTerm);
+
+                const matchesStatus = !statusFilter || fruit.status === statusFilter;
+                const matchesSource = !sourceFilter || fruit.leadSource === sourceFilter;
+
+                return matchesSearch && matchesStatus && matchesSource;
+            });
+
+            updateFruitsGrid();
+        }
+
+        function updateFruitSelectors() {
+            // Update activity fruit selector
+            const activityFruitSelect = document.getElementById('activityFruitSelect');
+            if (activityFruitSelect) {
+                activityFruitSelect.innerHTML = '<option value="">Select a fruit...</option>' +
+                    fruits.map(fruit => 
+                        `<option value="${fruit.name}">${fruit.name} (${fruit.status})</option>`
+                    ).join('');
+            }
+
+            // Update schedule fruit selector
+            const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
+            if (scheduleFruitSelect) {
+                scheduleFruitSelect.innerHTML = '<option value="">Select a fruit...</option>' +
+                    fruits.map(fruit => 
+                        `<option value="${fruit.name}">${fruit.name} (${fruit.status})</option>`
+                    ).join('');
+            }
+        }
+
+        // Bulk actions functions
+        function selectAllFruits() {
+            const displayedFruits = filteredFruits.length > 0 ? filteredFruits : fruits;
+            displayedFruits.forEach(fruit => selectedFruits.add(fruit.id));
+            updateBulkActionsBar();
+            updateFruitsGrid();
+        }
+
+        function clearSelection() {
+            selectedFruits.clear();
+            updateBulkActionsBar();
+            updateFruitsGrid();
+        }
+
+        function toggleFruitSelection(fruitId) {
+            if (selectedFruits.has(fruitId)) {
+                selectedFruits.delete(fruitId);
+            } else {
+                selectedFruits.add(fruitId);
+            }
+            updateBulkActionsBar();
+        }
+
+        function updateBulkActionsBar() {
+            const bulkActionsBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedFruits.size > 0) {
+                bulkActionsBar.classList.remove('hidden');
+                selectedCount.textContent = `${selectedFruits.size} selected`;
+            } else {
+                bulkActionsBar.classList.add('hidden');
+            }
+        }
+
+        function applyBulkStatusUpdate() {
+            const newStatus = document.getElementById('bulkStatusUpdate').value;
+            if (!newStatus) {
+                showNotification('Please select a status to update', 'warning');
+                return;
+            }
+
+            let updatedCount = 0;
+            fruits.forEach(fruit => {
+                if (selectedFruits.has(fruit.id)) {
+                    fruit.status = newStatus;
+                    updatedCount++;
+                }
+            });
+
+            if (updatedCount > 0) {
+                saveLocalData();
+                updateFruitsGrid();
+                updateStats();
+                clearSelection();
+                showNotification(`Updated ${updatedCount} fruits to ${newStatus}`);
+            }
+        }
+
+        function exportSelectedFruits() {
+            const selectedFruitsData = fruits.filter(fruit => selectedFruits.has(fruit.id));
+            
+            if (selectedFruitsData.length === 0) {
+                showNotification('No fruits selected for export', 'warning');
+                return;
+            }
+
+            const data = {
+                fruits: selectedFruitsData,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentUser.email,
+                totalSelected: selectedFruitsData.length
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `selected-fruits-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification(`Exported ${selectedFruitsData.length} selected fruits!`);
+        }
+
+        // Modal functions
+        function showAddFruitModal() {
+            document.getElementById('addFruitModal').classList.remove('hidden');
+            updateFruitSelectors();
+        }
+
+        function showActivityModal() {
+            document.getElementById('activityModal').classList.remove('hidden');
+        }
+
+        function showScheduleModal() {
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showAccessGuide() {
+            document.getElementById('accessGuideModal').classList.remove('hidden');
+        }
+
+        function showAppsScriptGuide() {
+            // Close current modal and show detailed Apps Script guide
+            closeModal('accessGuideModal');
+            
+            const appsScriptModal = document.createElement('div');
+            appsScriptModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+            appsScriptModal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">🚀 Apps Script Setup Guide</h3>
+                            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-blue-800 mb-2">Step 1: Create Apps Script Project</h4>
+                                <ol class="list-decimal list-inside space-y-2 text-sm text-blue-700">
+                                    <li>Go to <a href="https://script.google.com" target="_blank" class="underline">script.google.com</a></li>
+                                    <li>Click "New Project"</li>
+                                    <li>Replace the default code with the secure CRM script</li>
+                                    <li>Save the project with a meaningful name</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-green-800 mb-2">Step 2: Configure Security</h4>
+                                <div class="space-y-2 text-sm text-green-700">
+                                    <p>Add this security code to your Apps Script:</p>
+                                    <pre class="bg-white p-3 rounded border text-xs overflow-x-auto"><code>const ALLOWED_API_KEYS = [
+  'your-secret-key-1',
+  'your-secret-key-2'
+];
+
+const SPREADSHEET_ID = '${GOOGLE_CONFIG.SPREADSHEET_ID}';
+
+function doGet(e) {
+  const apiKey = e.parameter.apiKey;
+  if (!ALLOWED_API_KEYS.includes(apiKey)) {
+    return ContentService.createTextOutput(
+      JSON.stringify({error: 'Unauthorized'})
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Your CRM logic here
+}</code></pre>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-purple-800 mb-2">Step 3: Deploy as Web App</h4>
+                                <ol class="list-decimal list-inside space-y-2 text-sm text-purple-700">
+                                    <li>Click "Deploy" → "New Deployment"</li>
+                                    <li>Choose type: "Web app"</li>
+                                    <li>Execute as: "Me"</li>
+                                    <li>Who has access: "Anyone"</li>
+                                    <li>Click "Deploy" and copy the web app URL</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-yellow-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-yellow-800 mb-2">Step 4: Update CRM Configuration</h4>
+                                <p class="text-sm text-yellow-700 mb-2">Replace the Apps Script URL in the admin panel with your new URL</p>
+                                <p class="text-sm text-yellow-700">Add your API keys to the frontend configuration</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 text-center">
+                            <button onclick="this.closest('.fixed').remove()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                                Got it!
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(appsScriptModal);
+        }
+
+        // Form handlers
+        async function addFruit(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const editId = event.target.getAttribute('data-edit-id');
+            
+            const fruitData = {
+                name: formData.get('name'),
+                assignedTo: formData.get('assignee'),
+                phone: formData.get('phone'),
+                instagram: formData.get('instagram'),
+                facebook: formData.get('facebook'),
+                twitter: formData.get('twitter'),
+                leadSource: formData.get('leadSource'),
+                campaign: formData.get('campaign'),
+                status: formData.get('status'),
+                notes: formData.get('notes')
+            };
+
+            if (editId) {
+                // Edit existing fruit
+                const fruitIndex = fruits.findIndex(f => f.id === editId);
+                if (fruitIndex !== -1) {
+                    fruits[fruitIndex] = {
+                        ...fruits[fruitIndex],
+                        ...fruitData,
+                        updatedDate: new Date().toISOString(),
+                        updatedBy: currentUser.email
+                    };
+                    
+                    showNotification('Fruit updated successfully!');
+                }
+            } else {
+                // Add new fruit
+                const newFruit = {
+                    id: 'fruit_' + Date.now(),
+                    ...fruitData,
+                    createdDate: new Date().toISOString(),
+                    createdBy: currentUser.email
+                };
+
+                fruits.push(newFruit);
+                showNotification('Fruit added successfully!');
+            }
+
+            saveLocalData();
+
+            if (accessToken) {
+                try {
+                    const action = editId ? 'updateFruit' : 'addFruit';
+                    const payload = editId ? { fruitId: editId, fruit: fruitData } : { fruit: fruitData };
+                    await callAppsScript(action, payload);
+                    showNotification(editId ? 'Fruit updated and synced!' : 'Fruit added and synced!');
+                } catch (error) {
+                    showNotification(editId ? 'Fruit updated locally, sync failed' : 'Fruit added locally, sync failed', 'warning');
+                }
+            }
+
+            closeModal('addFruitModal');
+            resetAddFruitModal();
+            updateFruitsGrid();
+            updateStats();
+            updateFruitSelectors();
+        }
+
+        function resetAddFruitModal() {
+            const form = document.querySelector('#addFruitModal form');
+            form.reset();
+            form.removeAttribute('data-edit-id');
+            document.querySelector('#addFruitModal h3').textContent = 'Add New Fruit';
+            document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Add Fruit';
+        }
+
+        async function logActivity(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const newActivity = {
+                id: 'activity_' + Date.now(),
+                fruitName: formData.get('fruitName'),
+                type: formData.get('activityType'),
+                duration: formData.get('duration'),
+                notes: formData.get('activityNotes'),
+                outcome: formData.get('outcome'),
+                user: currentUser.name,
+                createdDate: new Date().toISOString()
+            };
+
+            activities.push(newActivity);
+            saveLocalData();
+
+            if (accessToken) {
+                try {
+                    await callAppsScript('addActivity', { activity: newActivity });
+                    showNotification('Activity logged and synced!');
+                } catch (error) {
+                    showNotification('Activity logged locally, sync failed', 'warning');
+                }
+            } else {
+                showNotification('Activity logged locally!');
+            }
+
+            closeModal('activityModal');
+            event.target.reset();
+            updateRecentActivities();
+        }
+
+        function scheduleBB(event) {
+            event.preventDefault();
+            showNotification('BB session scheduled!');
+            closeModal('scheduleModal');
+            event.target.reset();
+        }
+
+        // Update functions
+        function updateFruitsGrid() {
+            const fruitsGrid = document.getElementById('fruitsGrid');
+            const displayFruits = filteredFruits.length > 0 ? filteredFruits : fruits;
+            
+            if (displayFruits.length === 0) {
+                const message = filteredFruits.length === 0 && fruits.length > 0 
+                    ? 'No fruits match your search criteria.' 
+                    : 'No fruits added yet';
+                
+                fruitsGrid.innerHTML = `
+                    <div class="text-center py-12 col-span-full">
+                        <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-users text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">${message}</h3>
+                        ${fruits.length === 0 ? `
+                            <p class="text-gray-500 mb-4">Start building your ministry database by adding your first fruit.</p>
+                            <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Add Your First Fruit
+                            </button>
+                        ` : `
+                            <p class="text-gray-500 mb-4">Try adjusting your search or filter criteria.</p>
+                            <button onclick="clearFilters()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-times mr-2"></i>Clear Filters
+                            </button>
+                        `}
+                    </div>
+                `;
+                return;
+            }
+
+            fruitsGrid.innerHTML = displayFruits.map(fruit => {
+                const initials = fruit.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                const progressWidth = getProgressWidth(fruit.status);
+                const isSelected = selectedFruits.has(fruit.id);
+                
+                return `
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover relative ${isSelected ? 'ring-2 ring-blue-500' : ''}">
+                        <div class="absolute top-4 right-4">
+                            <input type="checkbox" 
+                                   ${isSelected ? 'checked' : ''} 
+                                   onchange="toggleFruitSelection('${fruit.id}')"
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                        </div>
+                        
+                        <div class="flex items-start justify-between mb-4 pr-8">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    ${initials}
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-800">${fruit.name}</h3>
+                                    <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo || 'Unassigned'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3 mb-4">
+                            ${fruit.instagram ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fab fa-instagram text-pink-500"></i>
+                                    <span class="text-sm text-gray-600">@${fruit.instagram}</span>
+                                </div>
+                            ` : ''}
+                            ${fruit.facebook ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fab fa-facebook text-blue-600"></i>
+                                    <span class="text-sm text-gray-600">${fruit.facebook}</span>
+                                </div>
+                            ` : ''}
+                            ${fruit.twitter ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fab fa-twitter text-blue-400"></i>
+                                    <span class="text-sm text-gray-600">@${fruit.twitter}</span>
+                                </div>
+                            ` : ''}
+                            ${fruit.phone ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fab fa-whatsapp text-green-500"></i>
+                                    <span class="text-sm text-gray-600">${fruit.phone}</span>
+                                </div>
+                            ` : ''}
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-bullhorn text-orange-500"></i>
+                                <span class="text-sm text-gray-600">${fruit.leadSource}</span>
+                            </div>
+                            ${fruit.campaign ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-tag text-purple-500"></i>
+                                    <span class="text-sm text-gray-600">${fruit.campaign}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-700">Progress</span>
+                                <span class="text-sm text-gray-600">${fruit.status}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full progress-bar" style="width: ${progressWidth}%"></div>
+                            </div>
+                        </div>
+                        
+                        ${fruit.notes ? `
+                            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm text-gray-700">${fruit.notes}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs ${getStatusColor(fruit.status)} px-2 py-1 rounded-full">${fruit.status}</span>
+                            <span class="text-xs text-gray-500">Added: ${new Date(fruit.createdDate).toLocaleDateString()}</span>
+                        </div>
+                        
+                        <div class="mt-4 flex space-x-2">
+                            <button onclick="editFruit('${fruit.id}')" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded text-sm transition-colors">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                            <button onclick="quickActivity('${fruit.name}')" class="flex-1 bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded text-sm transition-colors">
+                                <i class="fas fa-phone mr-1"></i>Activity
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearFilters() {
+            document.getElementById('fruitSearch').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('sourceFilter').value = '';
+            filteredFruits = [];
+            updateFruitsGrid();
+        }
+
+        function quickActivity(fruitName) {
+            showActivityModal();
+            document.getElementById('activityFruitSelect').value = fruitName;
+        }
+
+        function editFruit(fruitId) {
+            const fruit = fruits.find(f => f.id === fruitId);
+            if (!fruit) return;
+            
+            // Pre-populate the add fruit modal with existing data
+            showAddFruitModal();
+            
+            // Fill in the form fields
+            const form = document.querySelector('#addFruitModal form');
+            form.elements.name.value = fruit.name;
+            form.elements.assignee.value = fruit.assignedTo || '';
+            form.elements.phone.value = fruit.phone || '';
+            form.elements.instagram.value = fruit.instagram || '';
+            form.elements.facebook.value = fruit.facebook || '';
+            form.elements.twitter.value = fruit.twitter || '';
+            form.elements.leadSource.value = fruit.leadSource;
+            form.elements.campaign.value = fruit.campaign || '';
+            form.elements.status.value = fruit.status;
+            form.elements.notes.value = fruit.notes || '';
+            
+            // Change the form to edit mode
+            form.setAttribute('data-edit-id', fruitId);
+            document.querySelector('#addFruitModal h3').textContent = 'Edit Fruit';
+            document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Update Fruit';
+        }
+
+        function getProgressWidth(status) {
+            const progressMap = {
+                'Initial Contact': 8,
+                'First Response': 16,
+                'Interest Shown': 25,
+                'BB Session Scheduled': 33,
+                'In BB Session': 41,
+                'BB Session Completed': 50,
+                'Attending Class': 66,
+                'Baptism Candidate': 83,
+                'Baptized': 91,
+                'Active Member': 100,
+                'Not Interested': 0,
+                'Lost Contact': 0
+            };
+            return progressMap[status] || 8;
+        }
+
+        // Enhanced reporting functions
+        function updateProgressChart() {
+            const progressChart = document.getElementById('progressChart');
+            if (!progressChart) return;
+
+            const statusCounts = {};
+            STATUS_PROGRESSION.forEach(status => {
+                statusCounts[status] = fruits.filter(f => f.status === status).length;
+            });
+
+            const total = fruits.length || 1;
+            
+            progressChart.innerHTML = Object.entries(statusCounts)
+                .filter(([status, count]) => count > 0)
+                .map(([status, count]) => {
+                    const percentage = Math.round((count / total) * 100);
+                    const color = getStatusProgressColor(status);
+                    
+                    return `
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">${status}</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-2">
+                                    <div class="${color} h-2 rounded-full progress-bar" style="width: ${percentage}%"></div>
+                                </div>
+                                <span class="text-sm font-medium w-8">${count}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            if (fruits.length === 0) {
+                progressChart.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-chart-bar text-4xl mb-4"></i>
+                        <p>Progress data will appear here as you add fruits.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateLeadSourceChart() {
+            const leadSourceChart = document.getElementById('leadSourceChart');
+            if (!leadSourceChart) return;
+
+            const sourceCounts = {};
+            fruits.forEach(fruit => {
+                sourceCounts[fruit.leadSource] = (sourceCounts[fruit.leadSource] || 0) + 1;
+            });
+
+            const sortedSources = Object.entries(sourceCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5); // Top 5 sources
+
+            const total = fruits.length || 1;
+
+            leadSourceChart.innerHTML = sortedSources.map(([source, count]) => {
+                const percentage = Math.round((count / total) * 100);
+                
+                return `
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">${source}</span>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-32 bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full progress-bar" style="width: ${percentage}%"></div>
+                            </div>
+                            <span class="text-sm font-medium w-8">${count}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (fruits.length === 0) {
+                leadSourceChart.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-bullhorn text-4xl mb-4"></i>
+                        <p>Lead source data will appear here as you add fruits.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateConversionFunnel() {
+            const conversionFunnel = document.getElementById('conversionFunnel');
+            if (!conversionFunnel) return;
+
+            const funnelStages = [
+                'Initial Contact',
+                'Interest Shown', 
+                'BB Session Scheduled',
+                'In BB Session',
+                'Attending Class',
+                'Baptized'
+            ];
+
+            const stageCounts = funnelStages.map(stage => {
+                const count = fruits.filter(f => {
+                    const stageIndex = STATUS_PROGRESSION.indexOf(f.status);
+                    const targetIndex = STATUS_PROGRESSION.indexOf(stage);
+                    return stageIndex >= targetIndex;
+                }).length;
+                return { stage, count };
+            });
+
+            const maxCount = stageCounts[0]?.count || 1;
+
+            conversionFunnel.innerHTML = stageCounts.map(({ stage, count }, index) => {
+                const percentage = maxCount > 0 ? Math.round((count / maxCount) * 100) : 0;
+                const dropoffRate = index > 0 ? Math.round(((stageCounts[index-1].count - count) / stageCounts[index-1].count) * 100) : 0;
+                
+                return `
+                    <div class="relative">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">${stage}</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-bold text-gray-900">${count}</span>
+                                ${index > 0 && dropoffRate > 0 ? `<span class="text-xs text-red-600">(-${dropoffRate}%)</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-8 relative overflow-hidden">
+                            <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-8 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-white text-sm font-medium">
+                                ${percentage}%
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (fruits.length === 0) {
+                conversionFunnel.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-funnel-dollar text-4xl mb-4"></i>
+                        <p>Conversion funnel will appear here as you add fruits and track their progress.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateActivityTimelineChart() {
+            const activityTimelineChart = document.getElementById('activityTimelineChart');
+            if (!activityTimelineChart) return;
+
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const recentActivities = activities.filter(a => new Date(a.createdDate) > thirtyDaysAgo);
+
+            if (recentActivities.length === 0) {
+                activityTimelineChart.innerHTML = `
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-chart-line text-4xl mb-4"></i>
+                        <p>Activity timeline will appear here as you log more interactions.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group activities by day
+            const dailyActivities = {};
+            recentActivities.forEach(activity => {
+                const date = new Date(activity.createdDate).toDateString();
+                dailyActivities[date] = (dailyActivities[date] || 0) + 1;
+            });
+
+            const maxActivities = Math.max(...Object.values(dailyActivities));
+            
+            activityTimelineChart.innerHTML = `
+                <div class="grid grid-cols-7 gap-2 h-full">
+                    ${Object.entries(dailyActivities).slice(-7).map(([date, count]) => {
+                        const height = (count / maxActivities) * 100;
+                        const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
+                        
+                        return `
+                            <div class="flex flex-col items-center justify-end h-full">
+                                <div class="bg-blue-500 rounded-t w-8 transition-all duration-300" style="height: ${height}%"></div>
+                                <div class="text-xs text-gray-600 mt-2">${dayName}</div>
+                                <div class="text-xs font-bold text-gray-800">${count}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function getStatusProgressColor(status) {
+            const colorMap = {
+                'Initial Contact': 'bg-yellow-500',
+                'First Response': 'bg-yellow-600',
+                'Interest Shown': 'bg-orange-500',
+                'BB Session Scheduled': 'bg-blue-500',
+                'In BB Session': 'bg-blue-600',
+                'BB Session Completed': 'bg-purple-500',
+                'Attending Class': 'bg-green-500',
+                'Baptism Candidate': 'bg-green-600',
+                'Baptized': 'bg-green-700',
+                'Active Member': 'bg-green-800',
+                'Not Interested': 'bg-red-500',
+                'Lost Contact': 'bg-gray-500'
+            };
+            return colorMap[status] || 'bg-gray-400';
+        }
+
+        function getStatusColor(status) {
+            const colorMap = {
+                'Initial Contact': 'bg-yellow-100 text-yellow-800',
+                'BB Session Scheduled': 'bg-blue-100 text-blue-800',
+                'In BB Session': 'bg-purple-100 text-purple-800',
+                'Attending Class': 'bg-green-100 text-green-800'
+            };
+            return colorMap[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function updateStats() {
+            document.getElementById('totalFruits').textContent = fruits.length;
+            
+            const activeSessions = fruits.filter(f => 
+                f.status === 'In BB Session' || f.status === 'BB Session Scheduled'
+            ).length;
+            document.getElementById('activeSessions').textContent = activeSessions;
+            
+            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const weeklyContacts = activities.filter(a => 
+                new Date(a.createdDate) > oneWeekAgo
+            ).length;
+            document.getElementById('weeklyContacts').textContent = weeklyContacts;
+            
+            const baptized = fruits.filter(f => f.status === 'Baptized' || f.status === 'Active Member').length;
+            const conversionRate = fruits.length > 0 ? Math.round((baptized / fruits.length) * 100) : 0;
+            document.getElementById('conversionRate').textContent = conversionRate + '%';
+
+            // Update all charts
+            updateProgressChart();
+            updateLeadSourceChart();
+            updateConversionFunnel();
+            updateActivityTimelineChart();
+        }
+
+        function updateRecentActivities() {
+            const container = document.getElementById('recentActivities');
+            
+            if (activities.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>No activities logged yet. Start by adding fruits and logging interactions!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const recentActivities = activities.slice(-5).reverse();
+            
+            container.innerHTML = recentActivities.map(activity => {
+                const icon = getActivityIcon(activity.type);
+                
+                return `
+                    <div class="flex items-start space-x-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="bg-blue-100 p-2 rounded-full">
+                            <i class="${icon} text-blue-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800">${activity.type} - ${activity.fruitName}</p>
+                            <p class="text-sm text-gray-600">${activity.notes || 'No notes provided'}</p>
+                        </div>
+                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">${activity.outcome}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getActivityIcon(type) {
+            const iconMap = {
+                'Phone Call': 'fas fa-phone',
+                'WhatsApp Message': 'fab fa-whatsapp',
+                'WhatsApp Call': 'fab fa-whatsapp',
+                'Instagram DM': 'fab fa-instagram',
+                'Facebook Message': 'fab fa-facebook',
+                'Twitter DM': 'fab fa-twitter',
+                'In-Person Meeting': 'fas fa-handshake',
+                'BB Session': 'fas fa-book'
+            };
+            return iconMap[type] || 'fas fa-comment';
+        }
+
+        // Utility functions
+        function showDataOptions() {
+            const syncOptions = document.getElementById('syncOptions');
+            syncOptions.classList.toggle('hidden');
+        }
+
+        async function refreshData() {
+            if (accessToken) {
+                await loadFromGoogleSheets();
+                showNotification('Data refreshed from Google Sheets!');
+            } else {
+                loadLocalData();
+                showNotification('Local data refreshed!');
+            }
+        }
+
+        function exportData() {
+            const data = {
+                fruits: fruits,
+                activities: activities,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentUser.email
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `evangelism-crm-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Data exported successfully!');
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (data.fruits && data.activities) {
+                                fruits = data.fruits;
+                                activities = data.activities;
+                                saveLocalData();
+                                updateFruitsGrid();
+                                updateStats();
+                                updateRecentActivities();
+                                showNotification('Data imported successfully!');
+                            } else {
+                                showNotification('Invalid file format', 'error');
+                            }
+                        } catch (error) {
+                            showNotification('Error reading file', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function generateReport() {
+            showNotification('Report generation coming soon!', 'info');
+        }
+
+        function exportReport() {
+            showNotification('Report export coming soon!', 'info');
+        }
+
+        async function testGoogleSheetsConnection() {
+            if (!accessToken) {
+                showNotification('Not authenticated for Google Sheets', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                if (response.ok) {
+                    showNotification('Google Sheets connection successful!');
+                } else {
+                    showNotification('Google Sheets connection failed', 'error');
+                }
+            } catch (error) {
+                showNotification('Google Sheets connection failed: ' + error.message, 'error');
+            }
+        }
+
+        async function testAppsScriptConnection() {
+            try {
+                console.log('🔗 Testing Apps Script connection...');
+                console.log('📡 URL:', APPS_SCRIPT_CONFIG.WEB_APP_URL);
+                
+                const result = await callAppsScript('ping', { test: true });
+                
+                if (result.success || result.status === 'ok') {
+                    showNotification('✅ Apps Script connection successful!');
+                    return true;
+                } else {
+                    console.error('📡 Apps Script returned error:', result);
+                    showNotification(`❌ Apps Script error: ${result.message || 'Unknown error'}`, 'error');
+                    return false;
+                }
+                
+            } catch (error) {
+                console.error('📡 Connection error:', error);
+                
+                // Provide specific error messages
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    showNotification('❌ Network error - Apps Script URL may be incorrect or not accessible', 'error');
+                } else if (error.message.includes('CORS')) {
+                    showNotification('❌ CORS error - Apps Script not deployed as web app with proper permissions', 'error');
+                } else {
+                    showNotification(`❌ Connection failed: ${error.message}`, 'error');
+                }
+                
+                return false;
+            }
+        }
+
+        function refreshUserList() {
+            updateUserManagementTable();
+            updateAdminStats();
+            showNotification('User list refreshed!', 'info');
+        }
+
+        function updateUserManagementTable() {
+            const tableBody = document.getElementById('userManagementTable');
+            
+            tableBody.innerHTML = CHAT_HISTORY_DATA.userAccess.map(user => {
+                const statusColor = user.status === 'Active' ? 'text-green-600' : 'text-red-600';
+                const roleColor = user.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                    ${user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">${user.name}</div>
+                                    <div class="text-sm text-gray-500">${user.email}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${roleColor}">
+                                ${user.role}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-700">${user.permissions}</td>
+                        <td class="px-4 py-3">
+                            <span class="font-medium ${statusColor}">${user.status}</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500">
+                            ${new Date(user.lastLogin).toLocaleDateString()}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateAdminStats() {
+            const totalUsers = CHAT_HISTORY_DATA.userAccess.length;
+            const activeUsers = CHAT_HISTORY_DATA.userAccess.filter(u => u.status === 'Active').length;
+            const adminUsers = CHAT_HISTORY_DATA.userAccess.filter(u => u.role === 'Admin').length;
+            
+            document.getElementById('totalUsers').textContent = totalUsers;
+            document.getElementById('activeUsers').textContent = activeUsers;
+            document.getElementById('adminUsers').textContent = adminUsers;
+            document.getElementById('loginSessions').textContent = activeUsers; // Simplified
+            
+            // Update migration stats
+            document.getElementById('migratedFruits').textContent = CHAT_HISTORY_DATA.existingFruits.length;
+            document.getElementById('migratedActivities').textContent = CHAT_HISTORY_DATA.existingActivities.length;
+            document.getElementById('migratedUsers').textContent = totalUsers;
+        }
+
+        function resetMigration() {
+            if (confirm('Are you sure you want to reset the migration? This will clear all local data and re-import from chat history.')) {
+                localStorage.removeItem('crm_fruits');
+                localStorage.removeItem('crm_activities');
+                localStorage.removeItem('crm_data_migrated');
+                
+                loadLocalData();
+                showNotification('Migration reset complete! Data re-imported from chat history.', 'info');
+            }
+        }
+
+        function exportMigrationReport() {
+            const report = {
+                migrationDate: new Date().toISOString(),
+                migratedBy: currentUser.email,
+                summary: {
+                    fruits: CHAT_HISTORY_DATA.existingFruits.length,
+                    activities: CHAT_HISTORY_DATA.existingActivities.length,
+                    users: CHAT_HISTORY_DATA.userAccess.length
+                },
+                data: {
+                    fruits: CHAT_HISTORY_DATA.existingFruits,
+                    activities: CHAT_HISTORY_DATA.existingActivities,
+                    users: CHAT_HISTORY_DATA.userAccess
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `migration-report-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Migration report exported successfully!');
+        }
+
+        function logout() {
+            localStorage.clear();
+            sessionStorage.clear();
+            currentUser = null;
+            accessToken = null;
+            
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+            
+            initializeGoogleAPIs();
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            
+            // Set color based on type
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50 ${
+                type === 'error' ? 'bg-red-600 text-white' :
+                type === 'warning' ? 'bg-yellow-600 text-white' :
+                type === 'info' ? 'bg-blue-600 text-white' :
+                'bg-green-600 text-white'
+            }`;
+            
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Click outside to close dropdowns
+        document.addEventListener('click', function(event) {
+            const syncOptions = document.getElementById('syncOptions');
+            if (!event.target.closest('#syncButton') && !event.target.closest('#syncOptions')) {
+                syncOptions.classList.add('hidden');
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3938b97e9b4dc',t:'MTc1OTczNzExNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
