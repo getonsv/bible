@@ -1183,25 +1183,37 @@ function validateSpreadsheetAccess(spreadsheetId) {
         function initializeGoogleAPIs() {
             // Initialize Google Sign-In
             if (typeof google !== 'undefined' && google.accounts) {
-                google.accounts.id.initialize({
-                    client_id: GOOGLE_CONFIG.CLIENT_ID,
-                    callback: handleGoogleSignInResponse,
-                    auto_select: false,
-                    cancel_on_tap_outside: false
-                });
+                try {
+                    google.accounts.id.initialize({
+                        client_id: GOOGLE_CONFIG.CLIENT_ID,
+                        callback: handleGoogleSignInResponse,
+                        auto_select: false,
+                        cancel_on_tap_outside: false
+                    });
 
-                google.accounts.id.renderButton(
-                    document.getElementById('googleSignInButton'),
-                    {
-                        theme: 'outline',
-                        size: 'large',
-                        width: '100%',
-                        text: 'signin_with',
-                        shape: 'rectangular'
-                    }
-                );
+                    google.accounts.id.renderButton(
+                        document.getElementById('googleSignInButton'),
+                        {
+                            theme: 'outline',
+                            size: 'large',
+                            width: '100%',
+                            text: 'signin_with',
+                            shape: 'rectangular'
+                        }
+                    );
+                    
+                    console.log('✅ Google Sign-In initialized successfully');
+                } catch (error) {
+                    console.error('❌ Google Sign-In initialization error:', error);
+                    document.getElementById('googleSignInButton').innerHTML = `
+                        <div class="w-full bg-red-100 text-red-600 font-medium py-3 px-4 rounded-lg text-center">
+                            Google Sign-In failed to load. Please refresh the page.
+                        </div>
+                    `;
+                }
             } else {
-                setTimeout(initializeGoogleAPIs, 100);
+                console.log('⏳ Waiting for Google APIs to load...');
+                setTimeout(initializeGoogleAPIs, 500);
             }
         }
 
@@ -1284,35 +1296,36 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     permissions: validationResult.user?.permissions || 'Read',
                     source: validationResult.source || 'apps_script'
                 };
-                    
-                    console.log('✅ User authenticated:', currentUser);
-                    
-                    // Get OAuth token for Google Sheets access
-                    try {
-                        await getOAuthToken();
-                    } catch (oauthError) {
-                        console.warn('OAuth failed, continuing without Sheets access:', oauthError);
-                    }
-                    
-                    // Load data and show dashboard
-                    await loadFromGoogleSheets();
-                    showDashboard();
-                    showNotification(`Welcome ${currentUser.name}!`);
-                    
-                } catch (connectionError) {
-                    console.error('❌ Connection error:', connectionError);
-                    showNotification('Connection failed. Please check your internet connection and try again.', 'error');
+                
+                console.log('✅ User authenticated:', currentUser);
+                
+                // Get OAuth token for Google Sheets access
+                try {
+                    await getOAuthToken();
+                } catch (oauthError) {
+                    console.warn('OAuth failed, continuing without Sheets access:', oauthError);
                 }
                 
-            } catch (error) {
-                console.error('❌ Sign-in error:', error);
-                showNotification('Sign-in failed. Please try again.', 'error');
+                // Load data and show dashboard
+                await loadFromGoogleSheets();
+                showDashboard();
+                showNotification(`Welcome ${currentUser.name}!`);
+                
+            } catch (connectionError) {
+                console.error('❌ Connection error:', connectionError);
+                showNotification('Connection failed. Please check your internet connection and try again.', 'error');
             }
         }
 
         // OAuth flow for Google Sheets access
         async function getOAuthToken() {
             return new Promise((resolve, reject) => {
+                if (typeof gapi === 'undefined') {
+                    console.warn('⚠️ GAPI not loaded, skipping OAuth');
+                    resolve(null);
+                    return;
+                }
+                
                 gapi.load('auth2', () => {
                     gapi.auth2.init({
                         client_id: GOOGLE_CONFIG.CLIENT_ID
@@ -1324,8 +1337,14 @@ function validateSpreadsheetAccess(spreadsheetId) {
                             accessToken = user.getAuthResponse().access_token;
                             console.log('🔑 OAuth token obtained');
                             resolve(accessToken);
-                        }).catch(reject);
-                    }).catch(reject);
+                        }).catch((error) => {
+                            console.warn('OAuth sign-in cancelled or failed:', error);
+                            resolve(null);
+                        });
+                    }).catch((error) => {
+                        console.warn('OAuth init failed:', error);
+                        resolve(null);
+                    });
                 });
             });
         }
@@ -3078,5 +3097,5 @@ function doGet(e) {
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a398c8b359b4dc',t:'MTc1OTczNzMzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3a1994112b4dc',t:'MTc1OTczNzY5MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
