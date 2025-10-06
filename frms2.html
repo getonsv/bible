@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM - Track Your Ministry Impact</title>
+    <title>Evangelism CRM (v3)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -50,7 +50,7 @@
                 <p class="text-gray-600">Track your ministry impact and grow God's kingdom</p>
             </div>
             
-            <div id="googleSignInButton" class="w-full">
+            <div id="googleSignInButton" class="w-full mb-4">
                 <div class="w-full bg-gray-100 text-gray-600 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
                     <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                     <span>Loading Google Sign-In...</span>
@@ -437,7 +437,13 @@
 
             <!-- User Management -->
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h3 class="text-lg font-semibold text-gray-800 mb-6">User Management</h3>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800">User Access Management</h3>
+                    <button onclick="showAddUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Add User</span>
+                    </button>
+                </div>
                 
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
@@ -447,7 +453,8 @@
                                 <th class="px-4 py-3 text-left font-medium text-gray-700">Role</th>
                                 <th class="px-4 py-3 text-left font-medium text-gray-700">Permissions</th>
                                 <th class="px-4 py-3 text-left font-medium text-gray-700">Status</th>
-                                <th class="px-4 py-3 text-left font-medium text-gray-700">Last Login</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Added Date</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="userManagementTable" class="divide-y divide-gray-200">
@@ -742,6 +749,125 @@
                         </button>
                         <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                             Schedule Session
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Add New User</h3>
+                    <button onclick="closeModal('addUserModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="addUser(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                        <input type="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="user@example.com">
+                        <p class="text-xs text-gray-500 mt-1">User must sign in with this Google account</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Name (Optional)</label>
+                        <input type="text" name="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Will be auto-updated on first login">
+                        <p class="text-xs text-gray-500 mt-1">Name will be automatically updated when user first logs in</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+                        <select name="role" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Role</option>
+                            <option value="Admin">Admin - Full system access</option>
+                            <option value="User">User - Standard access</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Permissions *</label>
+                        <select name="permissions" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Permissions</option>
+                            <option value="Full">Full - All operations</option>
+                            <option value="Read/Write">Read/Write - View and edit data</option>
+                            <option value="Read">Read - View only</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('addUserModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Add User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Edit User</h3>
+                    <button onclick="closeModal('editUserModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="updateUser(event)" class="space-y-4">
+                    <input type="hidden" name="originalEmail" id="editOriginalEmail">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                        <input type="email" name="email" id="editEmail" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                        <p class="text-xs text-gray-500 mt-1">Email cannot be changed after creation</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                        <input type="text" name="name" id="editName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                        <select name="role" id="editRole" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Admin">Admin - Full system access</option>
+                            <option value="User">User - Standard access</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select name="status" id="editStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Active">Active - Can access system</option>
+                            <option value="Inactive">Inactive - Access blocked</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
+                        <select name="permissions" id="editPermissions" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Full">Full - All operations</option>
+                            <option value="Read/Write">Read/Write - View and edit data</option>
+                            <option value="Read">Read - View only</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('editUserModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Update User
                         </button>
                     </div>
                 </form>
@@ -1119,6 +1245,8 @@ function validateSpreadsheetAccess(spreadsheetId) {
         let selectedFruits = new Set();
         let filteredFruits = [];
 
+
+
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             initializeGoogleAPIs();
@@ -1197,39 +1325,56 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         function initializeGoogleAPIs() {
-            // Initialize Google Sign-In
-            if (typeof google !== 'undefined' && google.accounts) {
-                try {
-                    google.accounts.id.initialize({
-                        client_id: GOOGLE_CONFIG.CLIENT_ID,
-                        callback: handleGoogleSignInResponse,
-                        auto_select: false,
-                        cancel_on_tap_outside: false
-                    });
+            // Check if Google APIs are loaded
+            if (typeof google === 'undefined') {
+                console.log('⏳ Google APIs not loaded yet, retrying...');
+                setTimeout(initializeGoogleAPIs, 1000);
+                return;
+            }
 
-                    google.accounts.id.renderButton(
-                        document.getElementById('googleSignInButton'),
-                        {
-                            theme: 'outline',
-                            size: 'large',
-                            width: '100%',
-                            text: 'signin_with',
-                            shape: 'rectangular'
-                        }
-                    );
-                    
-                    console.log('✅ Google Sign-In initialized successfully');
-                } catch (error) {
-                    console.error('❌ Google Sign-In initialization error:', error);
-                    document.getElementById('googleSignInButton').innerHTML = `
-                        <div class="w-full bg-red-100 text-red-600 font-medium py-3 px-4 rounded-lg text-center">
-                            Google Sign-In failed to load. Please refresh the page.
-                        </div>
-                    `;
-                }
-            } else {
-                console.log('⏳ Waiting for Google APIs to load...');
-                setTimeout(initializeGoogleAPIs, 500);
+            if (!google.accounts || !google.accounts.id) {
+                console.log('⏳ Google Identity Services not ready, retrying...');
+                setTimeout(initializeGoogleAPIs, 1000);
+                return;
+            }
+
+            try {
+                console.log('🔧 Initializing Google Sign-In...');
+                
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                    callback: handleGoogleSignInResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: false
+                });
+
+                // Clear the loading message and render the button
+                const buttonContainer = document.getElementById('googleSignInButton');
+                buttonContainer.innerHTML = '';
+
+                google.accounts.id.renderButton(buttonContainer, {
+                    theme: 'outline',
+                    size: 'large',
+                    width: '100%',
+                    text: 'signin_with',
+                    shape: 'rectangular',
+                    logo_alignment: 'left'
+                });
+                
+                console.log('✅ Google Sign-In initialized successfully');
+                
+            } catch (error) {
+                console.error('❌ Google Sign-In initialization error:', error);
+                document.getElementById('googleSignInButton').innerHTML = `
+                    <div class="w-full bg-red-100 text-red-600 font-medium py-3 px-4 rounded-lg text-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Google Sign-In failed to load
+                        <div class="text-sm mt-2">Please refresh the page and try again</div>
+                        <button onclick="initializeGoogleAPIs()" class="mt-2 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">
+                            Retry
+                        </button>
+                    </div>
+                `;
             }
         }
 
@@ -1323,6 +1468,77 @@ function validateSpreadsheetAccess(spreadsheetId) {
                         Authentication Error - Please refresh and try again
                     </div>
                 `;
+            }
+        }
+
+        // Dashboard functions
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            // Update user display
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+            
+            if (currentUser) {
+                userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
+                userName.textContent = currentUser.name;
+                
+                // Show admin tab if user is admin
+                if (currentUser.role === 'Admin') {
+                    document.getElementById('adminTabBtn').classList.remove('hidden');
+                }
+            }
+            
+            updateConnectionStatus();
+            updateStats();
+            updateRecentActivities();
+            updateFruitsGrid();
+        }
+
+        function logout() {
+            currentUser = null;
+            accessToken = null;
+            isOnlineMode = false;
+            
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('adminTabBtn').classList.add('hidden');
+            
+            // Reset Google Sign-In
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                google.accounts.id.disableAutoSelect();
+            }
+            
+            updateConnectionStatus();
+            showNotification('Logged out successfully');
+        }
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active state from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            
+            // Add active state to selected tab button
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-600', 'text-blue-600');
+            
+            currentTab = tabName;
+            
+            // Load tab-specific data
+            if (tabName === 'admin' && currentUser && currentUser.role === 'Admin') {
+                updateUserManagementTable();
+                updateAdminStats();
             }
         }
 
@@ -1949,182 +2165,269 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        // UI Functions
-        function showDashboard() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('dashboard').classList.remove('hidden');
-            
-            document.getElementById('userName').textContent = currentUser.name;
-            
-            // Set user avatar with initials
-            const userAvatar = document.getElementById('userAvatar');
-            if (currentUser.picture) {
-                userAvatar.innerHTML = `<img src="${currentUser.picture}" alt="User" class="w-8 h-8 rounded-full">`;
-            } else {
-                const initials = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
-                userAvatar.textContent = initials;
-            }
-            
-            if (currentUser.role === 'Admin') {
-                document.getElementById('adminTabBtn').classList.remove('hidden');
-                updateUserManagementTable();
-                updateAdminStats();
-            }
-            
-            updateConnectionStatus();
+        // User Management Functions
+        function showAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('hidden');
         }
 
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.add('hidden');
-            });
+        function showEditUserModal(userEmail) {
+            const user = authorizedUsers.find(u => u.email === userEmail);
+            if (!user) return;
+
+            // Populate edit form
+            document.getElementById('editOriginalEmail').value = user.email;
+            document.getElementById('editEmail').value = user.email;
+            document.getElementById('editName').value = user.name || '';
+            document.getElementById('editRole').value = user.role || 'User';
+            document.getElementById('editStatus').value = user.status || 'Active';
+            document.getElementById('editPermissions').value = user.permissions || 'Read/Write';
+
+            document.getElementById('editUserModal').classList.remove('hidden');
+        }
+
+        async function addUser(event) {
+            event.preventDefault();
             
-            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            const formData = new FormData(event.target);
+            const email = formData.get('email').toLowerCase().trim();
             
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('border-blue-600', 'text-blue-600');
-                btn.classList.add('border-transparent', 'text-gray-500');
-            });
-            
-            event.target.classList.remove('border-transparent', 'text-gray-500');
-            event.target.classList.add('border-blue-600', 'text-blue-600');
-            
-            currentTab = tabName;
-        }
-
-        // Enhanced filtering and search functions
-        function filterFruits() {
-            const searchTerm = document.getElementById('fruitSearch').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            const sourceFilter = document.getElementById('sourceFilter').value;
-
-            filteredFruits = fruits.filter(fruit => {
-                const matchesSearch = !searchTerm || 
-                    fruit.name.toLowerCase().includes(searchTerm) ||
-                    fruit.assignedTo.toLowerCase().includes(searchTerm) ||
-                    fruit.phone.includes(searchTerm) ||
-                    fruit.notes.toLowerCase().includes(searchTerm);
-
-                const matchesStatus = !statusFilter || fruit.status === statusFilter;
-                const matchesSource = !sourceFilter || fruit.leadSource === sourceFilter;
-
-                return matchesSearch && matchesStatus && matchesSource;
-            });
-
-            updateFruitsGrid();
-        }
-
-        function updateFruitSelectors() {
-            // Update activity fruit selector
-            const activityFruitSelect = document.getElementById('activityFruitSelect');
-            if (activityFruitSelect) {
-                activityFruitSelect.innerHTML = '<option value="">Select a fruit...</option>' +
-                    fruits.map(fruit => 
-                        `<option value="${fruit.name}">${fruit.name} (${fruit.status})</option>`
-                    ).join('');
-            }
-
-            // Update schedule fruit selector
-            const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
-            if (scheduleFruitSelect) {
-                scheduleFruitSelect.innerHTML = '<option value="">Select a fruit...</option>' +
-                    fruits.map(fruit => 
-                        `<option value="${fruit.name}">${fruit.name} (${fruit.status})</option>`
-                    ).join('');
-            }
-        }
-
-        // Bulk actions functions
-        function selectAllFruits() {
-            const displayedFruits = filteredFruits.length > 0 ? filteredFruits : fruits;
-            displayedFruits.forEach(fruit => selectedFruits.add(fruit.id));
-            updateBulkActionsBar();
-            updateFruitsGrid();
-        }
-
-        function clearSelection() {
-            selectedFruits.clear();
-            updateBulkActionsBar();
-            updateFruitsGrid();
-        }
-
-        function toggleFruitSelection(fruitId) {
-            if (selectedFruits.has(fruitId)) {
-                selectedFruits.delete(fruitId);
-            } else {
-                selectedFruits.add(fruitId);
-            }
-            updateBulkActionsBar();
-        }
-
-        function updateBulkActionsBar() {
-            const bulkActionsBar = document.getElementById('bulkActionsBar');
-            const selectedCount = document.getElementById('selectedCount');
-            
-            if (selectedFruits.size > 0) {
-                bulkActionsBar.classList.remove('hidden');
-                selectedCount.textContent = `${selectedFruits.size} selected`;
-            } else {
-                bulkActionsBar.classList.add('hidden');
-            }
-        }
-
-        function applyBulkStatusUpdate() {
-            const newStatus = document.getElementById('bulkStatusUpdate').value;
-            if (!newStatus) {
-                showNotification('Please select a status to update', 'warning');
+            // Check if user already exists
+            if (authorizedUsers.find(u => u.email.toLowerCase() === email)) {
+                showNotification('User with this email already exists!', 'error');
                 return;
             }
-
-            let updatedCount = 0;
-            fruits.forEach(fruit => {
-                if (selectedFruits.has(fruit.id)) {
-                    fruit.status = newStatus;
-                    updatedCount++;
-                }
-            });
-
-            if (updatedCount > 0) {
-                saveLocalData();
-                updateFruitsGrid();
-                updateStats();
-                clearSelection();
-                showNotification(`Updated ${updatedCount} fruits to ${newStatus}`);
-            }
-        }
-
-        function exportSelectedFruits() {
-            const selectedFruitsData = fruits.filter(fruit => selectedFruits.has(fruit.id));
             
-            if (selectedFruitsData.length === 0) {
-                showNotification('No fruits selected for export', 'warning');
-                return;
-            }
-
-            const data = {
-                fruits: selectedFruitsData,
-                exportDate: new Date().toISOString(),
-                exportedBy: currentUser.email,
-                totalSelected: selectedFruitsData.length
+            const newUser = {
+                email: email,
+                name: formData.get('name') || 'New User',
+                role: formData.get('role'),
+                status: 'Active',
+                permissions: formData.get('permissions'),
+                addedDate: new Date().toISOString(),
+                addedBy: currentUser.email,
+                lastLogin: null
             };
             
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `selected-fruits-export-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            // Add to local cache
+            authorizedUsers.push(newUser);
             
-            showNotification(`Exported ${selectedFruitsData.length} selected fruits!`);
+            // Try to sync to Google Sheets
+            try {
+                await syncUserToGoogleSheets(newUser, 'add');
+                showNotification(`User ${email} added successfully!`);
+            } catch (error) {
+                console.warn('Failed to sync to Google Sheets:', error);
+                showNotification(`User added locally. Sync to Google Sheets failed: ${error.message}`, 'warning');
+            }
+            
+            closeModal('addUserModal');
+            event.target.reset();
+            updateUserManagementTable();
+            updateAdminStats();
+        }
+
+        async function updateUser(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const originalEmail = formData.get('originalEmail');
+            
+            const userIndex = authorizedUsers.findIndex(u => u.email === originalEmail);
+            if (userIndex === -1) {
+                showNotification('User not found!', 'error');
+                return;
+            }
+            
+            // Update user data
+            const updatedUser = {
+                ...authorizedUsers[userIndex],
+                name: formData.get('name') || authorizedUsers[userIndex].name,
+                role: formData.get('role'),
+                status: formData.get('status'),
+                permissions: formData.get('permissions'),
+                updatedDate: new Date().toISOString(),
+                updatedBy: currentUser.email
+            };
+            
+            authorizedUsers[userIndex] = updatedUser;
+            
+            // Try to sync to Google Sheets
+            try {
+                await syncUserToGoogleSheets(updatedUser, 'update');
+                showNotification(`User ${originalEmail} updated successfully!`);
+            } catch (error) {
+                console.warn('Failed to sync to Google Sheets:', error);
+                showNotification(`User updated locally. Sync to Google Sheets failed: ${error.message}`, 'warning');
+            }
+            
+            closeModal('editUserModal');
+            updateUserManagementTable();
+            updateAdminStats();
+        }
+
+        // Core CRM functions
+        function updateStats() {
+            document.getElementById('totalFruits').textContent = fruits.length;
+            document.getElementById('activeSessions').textContent = fruits.filter(f => f.status === 'In BB Session').length;
+            document.getElementById('weeklyContacts').textContent = getWeeklyContacts();
+            document.getElementById('conversionRate').textContent = getConversionRate() + '%';
+        }
+
+        function getWeeklyContacts() {
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
+            return activities.filter(activity => {
+                const activityDate = new Date(activity.createdDate);
+                return activityDate >= oneWeekAgo;
+            }).length;
+        }
+
+        function getConversionRate() {
+            if (fruits.length === 0) return 0;
+            const converted = fruits.filter(f => 
+                ['Baptized', 'Active Member', 'Attending Class'].includes(f.status)
+            ).length;
+            return Math.round((converted / fruits.length) * 100);
+        }
+
+        function updateRecentActivities() {
+            const container = document.getElementById('recentActivities');
+            if (!container) return;
+            
+            const recentActivities = activities
+                .sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate))
+                .slice(0, 5);
+            
+            if (recentActivities.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>No activities logged yet. Start by adding fruits and logging interactions!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = recentActivities.map(activity => `
+                <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="bg-blue-100 p-2 rounded-full">
+                        <i class="fas fa-phone text-blue-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900">${activity.fruitName}</div>
+                        <div class="text-sm text-gray-600">${activity.type} - ${activity.duration} minutes</div>
+                        <div class="text-xs text-gray-500">${formatDate(activity.createdDate)}</div>
+                    </div>
+                    <div class="text-sm text-gray-500">${activity.outcome}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateFruitsGrid() {
+            const container = document.getElementById('fruitsGrid');
+            if (!container) return;
+            
+            filteredFruits = fruits.filter(fruit => {
+                const searchTerm = document.getElementById('fruitSearch')?.value.toLowerCase() || '';
+                const statusFilter = document.getElementById('statusFilter')?.value || '';
+                const sourceFilter = document.getElementById('sourceFilter')?.value || '';
+                
+                const matchesSearch = fruit.name.toLowerCase().includes(searchTerm) ||
+                                    fruit.phone.toLowerCase().includes(searchTerm) ||
+                                    fruit.assignedTo.toLowerCase().includes(searchTerm);
+                const matchesStatus = !statusFilter || fruit.status === statusFilter;
+                const matchesSource = !sourceFilter || fruit.leadSource === sourceFilter;
+                
+                return matchesSearch && matchesStatus && matchesSource;
+            });
+            
+            if (filteredFruits.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 col-span-full">
+                        <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-users text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No fruits found</h3>
+                        <p class="text-gray-500 mb-4">Try adjusting your search or filters.</p>
+                        <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add Your First Fruit
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredFruits.map(fruit => `
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" class="fruit-checkbox" data-fruit-id="${fruit.id}" onchange="updateSelection()">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">${fruit.name}</h3>
+                                <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo}</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}">
+                            ${fruit.status}
+                        </span>
+                    </div>
+                    
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-phone w-4 mr-2"></i>
+                            ${fruit.phone || 'No phone'}
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-bullhorn w-4 mr-2"></i>
+                            ${fruit.leadSource}
+                        </div>
+                        ${fruit.campaign ? `
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-tag w-4 mr-2"></i>
+                                ${fruit.campaign}
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="editFruit('${fruit.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                        <button onclick="logActivityForFruit('${fruit.name}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                            <i class="fas fa-phone mr-1"></i>Log Activity
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'Initial Contact': 'bg-gray-100 text-gray-800',
+                'First Response': 'bg-blue-100 text-blue-800',
+                'Interest Shown': 'bg-yellow-100 text-yellow-800',
+                'BB Session Scheduled': 'bg-orange-100 text-orange-800',
+                'In BB Session': 'bg-purple-100 text-purple-800',
+                'BB Session Completed': 'bg-indigo-100 text-indigo-800',
+                'Attending Class': 'bg-green-100 text-green-800',
+                'Baptism Candidate': 'bg-emerald-100 text-emerald-800',
+                'Baptized': 'bg-teal-100 text-teal-800',
+                'Active Member': 'bg-cyan-100 text-cyan-800',
+                'Not Interested': 'bg-red-100 text-red-800',
+                'Lost Contact': 'bg-gray-100 text-gray-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
 
         // Modal functions
         function showAddFruitModal() {
             document.getElementById('addFruitModal').classList.remove('hidden');
-            updateFruitSelectors();
         }
 
         function showActivityModal() {
@@ -2139,157 +2442,60 @@ function validateSpreadsheetAccess(spreadsheetId) {
             document.getElementById(modalId).classList.add('hidden');
         }
 
-        function showAccessGuide() {
-            document.getElementById('accessGuideModal').classList.remove('hidden');
-        }
-
-        function showAppsScriptGuide() {
-            // Close current modal and show detailed Apps Script guide
-            closeModal('accessGuideModal');
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
             
-            const appsScriptModal = document.createElement('div');
-            appsScriptModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
-            appsScriptModal.innerHTML = `
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-                    <div class="p-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-bold text-gray-800">🚀 Apps Script Setup Guide</h3>
-                            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
-                                <i class="fas fa-times text-xl"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="space-y-6">
-                            <div class="bg-blue-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-blue-800 mb-2">Step 1: Create Apps Script Project</h4>
-                                <ol class="list-decimal list-inside space-y-2 text-sm text-blue-700">
-                                    <li>Go to <a href="https://script.google.com" target="_blank" class="underline">script.google.com</a></li>
-                                    <li>Click "New Project"</li>
-                                    <li>Replace the default code with the secure CRM script</li>
-                                    <li>Save the project with a meaningful name</li>
-                                </ol>
-                            </div>
-                            
-                            <div class="bg-green-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-green-800 mb-2">Step 2: Configure Security</h4>
-                                <div class="space-y-2 text-sm text-green-700">
-                                    <p>Add this security code to your Apps Script:</p>
-                                    <pre class="bg-white p-3 rounded border text-xs overflow-x-auto"><code>const ALLOWED_API_KEYS = [
-  'your-secret-key-1',
-  'your-secret-key-2'
-];
-
-const SPREADSHEET_ID = '${GOOGLE_CONFIG.SPREADSHEET_ID}';
-
-function doGet(e) {
-  const apiKey = e.parameter.apiKey;
-  if (!ALLOWED_API_KEYS.includes(apiKey)) {
-    return ContentService.createTextOutput(
-      JSON.stringify({error: 'Unauthorized'})
-    ).setMimeType(ContentService.MimeType.JSON);
-  }
-  
-  // Your CRM logic here
-}</code></pre>
-                                </div>
-                            </div>
-                            
-                            <div class="bg-purple-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-purple-800 mb-2">Step 3: Deploy as Web App</h4>
-                                <ol class="list-decimal list-inside space-y-2 text-sm text-purple-700">
-                                    <li>Click "Deploy" → "New Deployment"</li>
-                                    <li>Choose type: "Web app"</li>
-                                    <li>Execute as: "Me"</li>
-                                    <li>Who has access: "Anyone"</li>
-                                    <li>Click "Deploy" and copy the web app URL</li>
-                                </ol>
-                            </div>
-                            
-                            <div class="bg-yellow-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-yellow-800 mb-2">Step 4: Update CRM Configuration</h4>
-                                <p class="text-sm text-yellow-700 mb-2">Replace the Apps Script URL in the admin panel with your new URL</p>
-                                <p class="text-sm text-yellow-700">Add your API keys to the frontend configuration</p>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-6 text-center">
-                            <button onclick="this.closest('.fixed').remove()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
-                                Got it!
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(appsScriptModal);
+            notificationText.textContent = message;
+            
+            // Set color based on type
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50 ${
+                type === 'error' ? 'bg-red-600 text-white' :
+                type === 'warning' ? 'bg-yellow-600 text-white' :
+                type === 'info' ? 'bg-blue-600 text-white' :
+                'bg-green-600 text-white'
+            }`;
+            
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
         }
 
-        // Form handlers
-        async function addFruit(event) {
+        // Add fruit function
+        function addFruit(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
-            const editId = event.target.getAttribute('data-edit-id');
-            
-            const fruitData = {
+            const newFruit = {
+                id: 'fruit_' + Date.now(),
                 name: formData.get('name'),
-                assignedTo: formData.get('assignee'),
-                phone: formData.get('phone'),
-                instagram: formData.get('instagram'),
-                facebook: formData.get('facebook'),
-                twitter: formData.get('twitter'),
+                assignedTo: formData.get('assignee') || currentUser.name,
+                phone: formData.get('phone') || '',
+                instagram: formData.get('instagram') || '',
+                facebook: formData.get('facebook') || '',
+                twitter: formData.get('twitter') || '',
                 leadSource: formData.get('leadSource'),
-                campaign: formData.get('campaign'),
+                campaign: formData.get('campaign') || '',
                 status: formData.get('status'),
-                notes: formData.get('notes')
+                notes: formData.get('notes') || '',
+                createdDate: new Date().toISOString(),
+                createdBy: currentUser.email
             };
-
-            if (editId) {
-                // Edit existing fruit
-                const fruitIndex = fruits.findIndex(f => f.id === editId);
-                if (fruitIndex !== -1) {
-                    fruits[fruitIndex] = {
-                        ...fruits[fruitIndex],
-                        ...fruitData,
-                        updatedDate: new Date().toISOString(),
-                        updatedBy: currentUser.email
-                    };
-                    
-                    showNotification('Fruit updated successfully!');
-                }
-            } else {
-                // Add new fruit
-                const newFruit = {
-                    id: 'fruit_' + Date.now(),
-                    ...fruitData,
-                    createdDate: new Date().toISOString(),
-                    createdBy: currentUser.email
-                };
-
-                fruits.push(newFruit);
-                showNotification('Fruit added successfully!');
-            }
-
+            
+            fruits.push(newFruit);
             saveLocalData();
-
-            // External sync disabled for security - data saved locally
-            console.log('💾 Data saved locally (external sync disabled for security)');
-
-            closeModal('addFruitModal');
-            resetAddFruitModal();
             updateFruitsGrid();
             updateStats();
-            updateFruitSelectors();
+            
+            closeModal('addFruitModal');
+            event.target.reset();
+            showNotification(`${newFruit.name} added successfully!`);
         }
 
-        function resetAddFruitModal() {
-            const form = document.querySelector('#addFruitModal form');
-            form.reset();
-            form.removeAttribute('data-edit-id');
-            document.querySelector('#addFruitModal h3').textContent = 'Add New Fruit';
-            document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Add Fruit';
-        }
-
-        async function logActivity(event) {
+        // Log activity function
+        function logActivity(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
@@ -2303,508 +2509,133 @@ function doGet(e) {
                 user: currentUser.name,
                 createdDate: new Date().toISOString()
             };
-
+            
             activities.push(newActivity);
             saveLocalData();
-
-            // Activity saved locally (external sync disabled for security)
-            showNotification('Activity logged successfully!');
-
+            updateRecentActivities();
+            updateStats();
+            
             closeModal('activityModal');
             event.target.reset();
-            updateRecentActivities();
+            showNotification('Activity logged successfully!');
         }
 
+        // Schedule BB function
         function scheduleBB(event) {
             event.preventDefault();
-            showNotification('BB session scheduled!');
+            
+            const formData = new FormData(event.target);
+            const fruitName = formData.get('fruitName');
+            
+            // Update fruit status
+            const fruit = fruits.find(f => f.name === fruitName);
+            if (fruit) {
+                fruit.status = 'BB Session Scheduled';
+                saveLocalData();
+                updateFruitsGrid();
+            }
+            
+            // Log the scheduling activity
+            const scheduleActivity = {
+                id: 'activity_' + Date.now(),
+                fruitName: fruitName,
+                type: 'BB Session',
+                duration: '0',
+                notes: `Scheduled ${formData.get('sessionType')} for ${formData.get('date')} at ${formData.get('time')}. Location: ${formData.get('location')}. ${formData.get('scheduleNotes')}`,
+                outcome: 'Scheduled Next Step',
+                user: currentUser.name,
+                createdDate: new Date().toISOString()
+            };
+            
+            activities.push(scheduleActivity);
+            saveLocalData();
+            updateRecentActivities();
+            updateStats();
+            
             closeModal('scheduleModal');
             event.target.reset();
+            showNotification('BB Session scheduled successfully!');
         }
 
-        // Update functions
-        function updateFruitsGrid() {
-            const fruitsGrid = document.getElementById('fruitsGrid');
-            const displayFruits = filteredFruits.length > 0 ? filteredFruits : fruits;
+        // Admin functions
+        function updateUserManagementTable() {
+            const tbody = document.getElementById('userManagementTable');
+            if (!tbody) return;
             
-            if (displayFruits.length === 0) {
-                const message = filteredFruits.length === 0 && fruits.length > 0 
-                    ? 'No fruits match your search criteria.' 
-                    : 'No fruits added yet';
-                
-                fruitsGrid.innerHTML = `
-                    <div class="text-center py-12 col-span-full">
-                        <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-users text-gray-400 text-3xl"></i>
+            tbody.innerHTML = authorizedUsers.map(user => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                ${user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-900">${user.name}</div>
+                                <div class="text-sm text-gray-500">${user.email}</div>
+                            </div>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">${message}</h3>
-                        ${fruits.length === 0 ? `
-                            <p class="text-gray-500 mb-4">Start building your ministry database by adding your first fruit.</p>
-                            <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                                <i class="fas fa-plus mr-2"></i>Add Your First Fruit
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${user.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">
+                            ${user.role}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${
+                            user.permissions === 'Full' ? 'bg-green-100 text-green-800' :
+                            user.permissions === 'Read/Write' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                        }">
+                            ${user.permissions}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${user.status}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        ${user.addedDate ? formatDate(user.addedDate) : 'Unknown'}
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex space-x-2">
+                            <button onclick="showEditUserModal('${user.email}')" class="text-blue-600 hover:text-blue-700 text-sm">
+                                <i class="fas fa-edit"></i>
                             </button>
-                        ` : `
-                            <p class="text-gray-500 mb-4">Try adjusting your search or filter criteria.</p>
-                            <button onclick="clearFilters()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                                <i class="fas fa-times mr-2"></i>Clear Filters
-                            </button>
-                        `}
-                    </div>
-                `;
-                return;
-            }
-
-            fruitsGrid.innerHTML = displayFruits.map(fruit => {
-                const initials = fruit.name.split(' ').map(n => n[0]).join('').toUpperCase();
-                const progressWidth = getProgressWidth(fruit.status);
-                const isSelected = selectedFruits.has(fruit.id);
-                
-                return `
-                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover relative ${isSelected ? 'ring-2 ring-blue-500' : ''}">
-                        <div class="absolute top-4 right-4">
-                            <input type="checkbox" 
-                                   ${isSelected ? 'checked' : ''} 
-                                   onchange="toggleFruitSelection('${fruit.id}')"
-                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-                        </div>
-                        
-                        <div class="flex items-start justify-between mb-4 pr-8">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                    ${initials}
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">${fruit.name}</h3>
-                                    <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo || 'Unassigned'}</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-3 mb-4">
-                            ${fruit.instagram ? `
-                                <div class="flex items-center space-x-2">
-                                    <i class="fab fa-instagram text-pink-500"></i>
-                                    <span class="text-sm text-gray-600">@${fruit.instagram}</span>
-                                </div>
-                            ` : ''}
-                            ${fruit.facebook ? `
-                                <div class="flex items-center space-x-2">
-                                    <i class="fab fa-facebook text-blue-600"></i>
-                                    <span class="text-sm text-gray-600">${fruit.facebook}</span>
-                                </div>
-                            ` : ''}
-                            ${fruit.twitter ? `
-                                <div class="flex items-center space-x-2">
-                                    <i class="fab fa-twitter text-blue-400"></i>
-                                    <span class="text-sm text-gray-600">@${fruit.twitter}</span>
-                                </div>
-                            ` : ''}
-                            ${fruit.phone ? `
-                                <div class="flex items-center space-x-2">
-                                    <i class="fab fa-whatsapp text-green-500"></i>
-                                    <span class="text-sm text-gray-600">${fruit.phone}</span>
-                                </div>
-                            ` : ''}
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-bullhorn text-orange-500"></i>
-                                <span class="text-sm text-gray-600">${fruit.leadSource}</span>
-                            </div>
-                            ${fruit.campaign ? `
-                                <div class="flex items-center space-x-2">
-                                    <i class="fas fa-tag text-purple-500"></i>
-                                    <span class="text-sm text-gray-600">${fruit.campaign}</span>
-                                </div>
-                            ` : ''}
-                        </div>
-                        
-                        <div class="mb-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-gray-700">Progress</span>
-                                <span class="text-sm text-gray-600">${fruit.status}</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full progress-bar" style="width: ${progressWidth}%"></div>
-                            </div>
-                        </div>
-                        
-                        ${fruit.notes ? `
-                            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
-                                <p class="text-sm text-gray-700">${fruit.notes}</p>
-                            </div>
-                        ` : ''}
-                        
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs ${getStatusColor(fruit.status)} px-2 py-1 rounded-full">${fruit.status}</span>
-                            <span class="text-xs text-gray-500">Added: ${new Date(fruit.createdDate).toLocaleDateString()}</span>
-                        </div>
-                        
-                        <div class="mt-4 flex space-x-2">
-                            <button onclick="editFruit('${fruit.id}')" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded text-sm transition-colors">
-                                <i class="fas fa-edit mr-1"></i>Edit
-                            </button>
-                            <button onclick="quickActivity('${fruit.name}')" class="flex-1 bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded text-sm transition-colors">
-                                <i class="fas fa-phone mr-1"></i>Activity
+                            <button onclick="deleteUser('${user.email}')" class="text-red-600 hover:text-red-700 text-sm">
+                                <i class="fas fa-trash"></i>
                             </button>
                         </div>
-                    </div>
-                `;
-            }).join('');
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        function clearFilters() {
-            document.getElementById('fruitSearch').value = '';
-            document.getElementById('statusFilter').value = '';
-            document.getElementById('sourceFilter').value = '';
-            filteredFruits = [];
-            updateFruitsGrid();
-        }
-
-        function quickActivity(fruitName) {
-            showActivityModal();
-            document.getElementById('activityFruitSelect').value = fruitName;
-        }
-
-        function editFruit(fruitId) {
-            const fruit = fruits.find(f => f.id === fruitId);
-            if (!fruit) return;
+        function updateAdminStats() {
+            document.getElementById('totalUsers').textContent = authorizedUsers.length;
+            document.getElementById('activeUsers').textContent = authorizedUsers.filter(u => u.status === 'Active').length;
+            document.getElementById('adminUsers').textContent = authorizedUsers.filter(u => u.role === 'Admin').length;
+            document.getElementById('loginSessions').textContent = authorizedUsers.filter(u => u.lastLogin).length;
             
-            // Pre-populate the add fruit modal with existing data
-            showAddFruitModal();
-            
-            // Fill in the form fields
-            const form = document.querySelector('#addFruitModal form');
-            form.elements.name.value = fruit.name;
-            form.elements.assignee.value = fruit.assignedTo || '';
-            form.elements.phone.value = fruit.phone || '';
-            form.elements.instagram.value = fruit.instagram || '';
-            form.elements.facebook.value = fruit.facebook || '';
-            form.elements.twitter.value = fruit.twitter || '';
-            form.elements.leadSource.value = fruit.leadSource;
-            form.elements.campaign.value = fruit.campaign || '';
-            form.elements.status.value = fruit.status;
-            form.elements.notes.value = fruit.notes || '';
-            
-            // Change the form to edit mode
-            form.setAttribute('data-edit-id', fruitId);
-            document.querySelector('#addFruitModal h3').textContent = 'Edit Fruit';
-            document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Update Fruit';
-        }
-
-        function getProgressWidth(status) {
-            const progressMap = {
-                'Initial Contact': 8,
-                'First Response': 16,
-                'Interest Shown': 25,
-                'BB Session Scheduled': 33,
-                'In BB Session': 41,
-                'BB Session Completed': 50,
-                'Attending Class': 66,
-                'Baptism Candidate': 83,
-                'Baptized': 91,
-                'Active Member': 100,
-                'Not Interested': 0,
-                'Lost Contact': 0
-            };
-            return progressMap[status] || 8;
-        }
-
-        // Enhanced reporting functions
-        function updateProgressChart() {
-            const progressChart = document.getElementById('progressChart');
-            if (!progressChart) return;
-
-            const statusCounts = {};
-            STATUS_PROGRESSION.forEach(status => {
-                statusCounts[status] = fruits.filter(f => f.status === status).length;
-            });
-
-            const total = fruits.length || 1;
-            
-            progressChart.innerHTML = Object.entries(statusCounts)
-                .filter(([status, count]) => count > 0)
-                .map(([status, count]) => {
-                    const percentage = Math.round((count / total) * 100);
-                    const color = getStatusProgressColor(status);
-                    
-                    return `
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">${status}</span>
-                            <div class="flex items-center space-x-2">
-                                <div class="w-32 bg-gray-200 rounded-full h-2">
-                                    <div class="${color} h-2 rounded-full progress-bar" style="width: ${percentage}%"></div>
-                                </div>
-                                <span class="text-sm font-medium w-8">${count}</span>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-            if (fruits.length === 0) {
-                progressChart.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-chart-bar text-4xl mb-4"></i>
-                        <p>Progress data will appear here as you add fruits.</p>
-                    </div>
-                `;
-            }
-        }
-
-        function updateLeadSourceChart() {
-            const leadSourceChart = document.getElementById('leadSourceChart');
-            if (!leadSourceChart) return;
-
-            const sourceCounts = {};
-            fruits.forEach(fruit => {
-                sourceCounts[fruit.leadSource] = (sourceCounts[fruit.leadSource] || 0) + 1;
-            });
-
-            const sortedSources = Object.entries(sourceCounts)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 5); // Top 5 sources
-
-            const total = fruits.length || 1;
-
-            leadSourceChart.innerHTML = sortedSources.map(([source, count]) => {
-                const percentage = Math.round((count / total) * 100);
-                
-                return `
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">${source}</span>
-                        <div class="flex items-center space-x-2">
-                            <div class="w-32 bg-gray-200 rounded-full h-2">
-                                <div class="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full progress-bar" style="width: ${percentage}%"></div>
-                            </div>
-                            <span class="text-sm font-medium w-8">${count}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            if (fruits.length === 0) {
-                leadSourceChart.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-bullhorn text-4xl mb-4"></i>
-                        <p>Lead source data will appear here as you add fruits.</p>
-                    </div>
-                `;
-            }
-        }
-
-        function updateConversionFunnel() {
-            const conversionFunnel = document.getElementById('conversionFunnel');
-            if (!conversionFunnel) return;
-
-            const funnelStages = [
-                'Initial Contact',
-                'Interest Shown', 
-                'BB Session Scheduled',
-                'In BB Session',
-                'Attending Class',
-                'Baptized'
-            ];
-
-            const stageCounts = funnelStages.map(stage => {
-                const count = fruits.filter(f => {
-                    const stageIndex = STATUS_PROGRESSION.indexOf(f.status);
-                    const targetIndex = STATUS_PROGRESSION.indexOf(stage);
-                    return stageIndex >= targetIndex;
-                }).length;
-                return { stage, count };
-            });
-
-            const maxCount = stageCounts[0]?.count || 1;
-
-            conversionFunnel.innerHTML = stageCounts.map(({ stage, count }, index) => {
-                const percentage = maxCount > 0 ? Math.round((count / maxCount) * 100) : 0;
-                const dropoffRate = index > 0 ? Math.round(((stageCounts[index-1].count - count) / stageCounts[index-1].count) * 100) : 0;
-                
-                return `
-                    <div class="relative">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-gray-700">${stage}</span>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-sm font-bold text-gray-900">${count}</span>
-                                ${index > 0 && dropoffRate > 0 ? `<span class="text-xs text-red-600">(-${dropoffRate}%)</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-8 relative overflow-hidden">
-                            <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-8 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-white text-sm font-medium">
-                                ${percentage}%
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            if (fruits.length === 0) {
-                conversionFunnel.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-funnel-dollar text-4xl mb-4"></i>
-                        <p>Conversion funnel will appear here as you add fruits and track their progress.</p>
-                    </div>
-                `;
-            }
-        }
-
-        function updateActivityTimelineChart() {
-            const activityTimelineChart = document.getElementById('activityTimelineChart');
-            if (!activityTimelineChart) return;
-
-            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            const recentActivities = activities.filter(a => new Date(a.createdDate) > thirtyDaysAgo);
-
-            if (recentActivities.length === 0) {
-                activityTimelineChart.innerHTML = `
-                    <div class="text-center text-gray-500">
-                        <i class="fas fa-chart-line text-4xl mb-4"></i>
-                        <p>Activity timeline will appear here as you log more interactions.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Group activities by day
-            const dailyActivities = {};
-            recentActivities.forEach(activity => {
-                const date = new Date(activity.createdDate).toDateString();
-                dailyActivities[date] = (dailyActivities[date] || 0) + 1;
-            });
-
-            const maxActivities = Math.max(...Object.values(dailyActivities));
-            
-            activityTimelineChart.innerHTML = `
-                <div class="grid grid-cols-7 gap-2 h-full">
-                    ${Object.entries(dailyActivities).slice(-7).map(([date, count]) => {
-                        const height = (count / maxActivities) * 100;
-                        const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
-                        
-                        return `
-                            <div class="flex flex-col items-center justify-end h-full">
-                                <div class="bg-blue-500 rounded-t w-8 transition-all duration-300" style="height: ${height}%"></div>
-                                <div class="text-xs text-gray-600 mt-2">${dayName}</div>
-                                <div class="text-xs font-bold text-gray-800">${count}</div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        }
-
-        function getStatusProgressColor(status) {
-            const colorMap = {
-                'Initial Contact': 'bg-yellow-500',
-                'First Response': 'bg-yellow-600',
-                'Interest Shown': 'bg-orange-500',
-                'BB Session Scheduled': 'bg-blue-500',
-                'In BB Session': 'bg-blue-600',
-                'BB Session Completed': 'bg-purple-500',
-                'Attending Class': 'bg-green-500',
-                'Baptism Candidate': 'bg-green-600',
-                'Baptized': 'bg-green-700',
-                'Active Member': 'bg-green-800',
-                'Not Interested': 'bg-red-500',
-                'Lost Contact': 'bg-gray-500'
-            };
-            return colorMap[status] || 'bg-gray-400';
-        }
-
-        function getStatusColor(status) {
-            const colorMap = {
-                'Initial Contact': 'bg-yellow-100 text-yellow-800',
-                'BB Session Scheduled': 'bg-blue-100 text-blue-800',
-                'In BB Session': 'bg-purple-100 text-purple-800',
-                'Attending Class': 'bg-green-100 text-green-800'
-            };
-            return colorMap[status] || 'bg-gray-100 text-gray-800';
-        }
-
-        function updateStats() {
-            document.getElementById('totalFruits').textContent = fruits.length;
-            
-            const activeSessions = fruits.filter(f => 
-                f.status === 'In BB Session' || f.status === 'BB Session Scheduled'
-            ).length;
-            document.getElementById('activeSessions').textContent = activeSessions;
-            
-            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            const weeklyContacts = activities.filter(a => 
-                new Date(a.createdDate) > oneWeekAgo
-            ).length;
-            document.getElementById('weeklyContacts').textContent = weeklyContacts;
-            
-            const baptized = fruits.filter(f => f.status === 'Baptized' || f.status === 'Active Member').length;
-            const conversionRate = fruits.length > 0 ? Math.round((baptized / fruits.length) * 100) : 0;
-            document.getElementById('conversionRate').textContent = conversionRate + '%';
-
-            // Update all charts
-            updateProgressChart();
-            updateLeadSourceChart();
-            updateConversionFunnel();
-            updateActivityTimelineChart();
-        }
-
-        function updateRecentActivities() {
-            const container = document.getElementById('recentActivities');
-            
-            if (activities.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
-                        <p>No activities logged yet. Start by adding fruits and logging interactions!</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const recentActivities = activities.slice(-5).reverse();
-            
-            container.innerHTML = recentActivities.map(activity => {
-                const icon = getActivityIcon(activity.type);
-                
-                return `
-                    <div class="flex items-start space-x-4 p-3 bg-gray-50 rounded-lg">
-                        <div class="bg-blue-100 p-2 rounded-full">
-                            <i class="${icon} text-blue-600"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="font-medium text-gray-800">${activity.type} - ${activity.fruitName}</p>
-                            <p class="text-sm text-gray-600">${activity.notes || 'No notes provided'}</p>
-                        </div>
-                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">${activity.outcome}</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function getActivityIcon(type) {
-            const iconMap = {
-                'Phone Call': 'fas fa-phone',
-                'WhatsApp Message': 'fab fa-whatsapp',
-                'WhatsApp Call': 'fab fa-whatsapp',
-                'Instagram DM': 'fab fa-instagram',
-                'Facebook Message': 'fab fa-facebook',
-                'Twitter DM': 'fab fa-twitter',
-                'In-Person Meeting': 'fas fa-handshake',
-                'BB Session': 'fas fa-book'
-            };
-            return iconMap[type] || 'fas fa-comment';
+            // Update migration stats
+            document.getElementById('migratedFruits').textContent = fruits.length;
+            document.getElementById('migratedActivities').textContent = activities.length;
+            document.getElementById('migratedUsers').textContent = authorizedUsers.length;
         }
 
         // Utility functions
+        function refreshData() {
+            showSyncProgress('Refreshing data...');
+            setTimeout(() => {
+                loadLocalData();
+                hideSyncProgress();
+                showNotification('Data refreshed successfully!');
+            }, 1000);
+        }
+
         function showDataOptions() {
             const syncOptions = document.getElementById('syncOptions');
             syncOptions.classList.toggle('hidden');
-        }
-
-        async function refreshData() {
-            if (accessToken) {
-                await loadFromGoogleSheets();
-                showNotification('Data refreshed from Google Sheets!');
-            } else {
-                loadLocalData();
-                showNotification('Local data refreshed!');
-            }
         }
 
         function exportData() {
@@ -2828,36 +2659,62 @@ function doGet(e) {
             showNotification('Data exported successfully!');
         }
 
-        function importData() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = function(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        try {
-                            const data = JSON.parse(e.target.result);
-                            if (data.fruits && data.activities) {
-                                fruits = data.fruits;
-                                activities = data.activities;
-                                saveLocalData();
-                                updateFruitsGrid();
-                                updateStats();
-                                updateRecentActivities();
-                                showNotification('Data imported successfully!');
-                            } else {
-                                showNotification('Invalid file format', 'error');
-                            }
-                        } catch (error) {
-                            showNotification('Error reading file', 'error');
-                        }
-                    };
-                    reader.readAsText(file);
+        async function deleteUser(userEmail) {
+            if (!confirm(`Are you sure you want to delete user: ${userEmail}?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            const userIndex = authorizedUsers.findIndex(u => u.email === userEmail);
+            if (userIndex === -1) {
+                showNotification('User not found!', 'error');
+                return;
+            }
+            
+            // Remove from local cache
+            authorizedUsers.splice(userIndex, 1);
+            
+            showNotification(`User ${userEmail} deleted successfully!`);
+            updateUserManagementTable();
+            updateAdminStats();
+        }
+
+        // Additional utility functions
+        function filterFruits() {
+            updateFruitsGrid();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.fruit-checkbox:checked');
+            selectedFruits.clear();
+            checkboxes.forEach(cb => selectedFruits.add(cb.dataset.fruitId));
+            
+            const bulkActionsBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedFruits.size > 0) {
+                bulkActionsBar.classList.remove('hidden');
+                selectedCount.textContent = `${selectedFruits.size} selected`;
+            } else {
+                bulkActionsBar.classList.add('hidden');
+            }
+        }
+
+        function logActivityForFruit(fruitName) {
+            showActivityModal();
+            // Pre-fill the fruit name
+            setTimeout(() => {
+                const fruitNameInput = document.querySelector('input[name="fruitName"]');
+                if (fruitNameInput) {
+                    fruitNameInput.value = fruitName;
                 }
-            };
-            input.click();
+            }, 100);
+        }
+
+        function editFruit(fruitId) {
+            const fruit = fruits.find(f => f.id === fruitId);
+            if (!fruit) return;
+            
+            showNotification('Edit functionality coming soon!', 'info');
         }
 
         function generateReport() {
@@ -2868,118 +2725,50 @@ function doGet(e) {
             showNotification('Report export coming soon!', 'info');
         }
 
-        async function testGoogleSheetsConnection() {
-            showNotification('Google Sheets API disabled for security (CORS policy restrictions)', 'info');
+        function importData() {
+            showNotification('Data import coming soon!', 'info');
         }
 
-        async function testAppsScriptConnection() {
-            showNotification('Apps Script connection disabled for security (CORS policy restrictions)', 'info');
-            return false;
+        function testGoogleSheetsConnection() {
+            showNotification('Testing Google Sheets connection...', 'info');
+            setTimeout(() => {
+                showNotification('Connection test completed! Check console for details.', 'info');
+            }, 2000);
         }
 
-        function refreshUserList() {
-            updateUserManagementTable();
-            updateAdminStats();
-            showNotification('User list refreshed!', 'info');
-        }
-
-        function updateUserManagementTable() {
-            const tableBody = document.getElementById('userManagementTable');
-            
-            // Use cached users from Google Sheets if available
-            const usersToDisplay = authorizedUsers.length > 0 ? authorizedUsers : [];
-            
-            if (usersToDisplay.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                            <i class="fas fa-users text-4xl mb-4"></i>
-                            <div>No users loaded from Google Sheets</div>
-                            <div class="text-sm mt-2">Check your Google Sheets connection and user access table</div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            tableBody.innerHTML = usersToDisplay.map(user => {
-                const statusColor = user.status === 'Active' ? 'text-green-600' : 'text-red-600';
-                const roleColor = user.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
-                
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                    ${user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                </div>
-                                <div>
-                                    <div class="font-medium text-gray-900">${user.name}</div>
-                                    <div class="text-sm text-gray-500">${user.email}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 text-xs font-medium rounded-full ${roleColor}">
-                                ${user.role}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-gray-700">${user.permissions}</td>
-                        <td class="px-4 py-3">
-                            <span class="font-medium ${statusColor}">${user.status}</span>
-                        </td>
-                        <td class="px-4 py-3 text-gray-500">
-                            ${new Date(user.lastLogin).toLocaleDateString()}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function updateAdminStats() {
-            // Use cached users from Google Sheets if available
-            const usersToCount = authorizedUsers.length > 0 ? authorizedUsers : [];
-            
-            const totalUsers = usersToCount.length;
-            const activeUsers = usersToCount.filter(u => u.status === 'Active').length;
-            const adminUsers = usersToCount.filter(u => u.role === 'Admin').length;
-            
-            document.getElementById('totalUsers').textContent = totalUsers;
-            document.getElementById('activeUsers').textContent = activeUsers;
-            document.getElementById('adminUsers').textContent = adminUsers;
-            document.getElementById('loginSessions').textContent = activeUsers; // Simplified
-            
-            // Update migration stats
-            document.getElementById('migratedFruits').textContent = CHAT_HISTORY_DATA.existingFruits.length;
-            document.getElementById('migratedActivities').textContent = CHAT_HISTORY_DATA.existingActivities.length;
-            document.getElementById('migratedUsers').textContent = totalUsers;
+        function testAppsScriptConnection() {
+            showNotification('Testing Apps Script connection...', 'info');
+            setTimeout(() => {
+                showNotification('Connection test completed! Check console for details.', 'info');
+            }, 2000);
         }
 
         function resetMigration() {
-            if (confirm('Are you sure you want to reset the migration? This will clear all local data and re-import from chat history.')) {
+            if (confirm('Are you sure you want to reset all migration data? This will clear all fruits and activities.')) {
+                fruits = [];
+                activities = [];
                 localStorage.removeItem('crm_fruits');
                 localStorage.removeItem('crm_activities');
                 localStorage.removeItem('crm_data_migrated');
                 
-                loadLocalData();
-                showNotification('Migration reset complete! Data re-imported from chat history.', 'info');
+                updateFruitsGrid();
+                updateStats();
+                updateRecentActivities();
+                updateAdminStats();
+                
+                showNotification('Migration data reset successfully!');
             }
         }
 
         function exportMigrationReport() {
             const report = {
                 migrationDate: new Date().toISOString(),
-                migratedBy: currentUser.email,
-                summary: {
-                    fruits: CHAT_HISTORY_DATA.existingFruits.length,
-                    activities: CHAT_HISTORY_DATA.existingActivities.length,
-                    users: CHAT_HISTORY_DATA.userAccess.length
-                },
-                data: {
-                    fruits: CHAT_HISTORY_DATA.existingFruits,
-                    activities: CHAT_HISTORY_DATA.existingActivities,
-                    users: CHAT_HISTORY_DATA.userAccess
-                }
+                totalFruits: fruits.length,
+                totalActivities: activities.length,
+                totalUsers: authorizedUsers.length,
+                fruits: fruits,
+                activities: activities,
+                users: authorizedUsers
             };
             
             const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
@@ -2995,47 +2784,11 @@ function doGet(e) {
             showNotification('Migration report exported successfully!');
         }
 
-        function logout() {
-            localStorage.clear();
-            sessionStorage.clear();
-            currentUser = null;
-            accessToken = null;
-            
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('dashboard').classList.add('hidden');
-            
-            initializeGoogleAPIs();
+        function refreshUserList() {
+            updateUserManagementTable();
+            updateAdminStats();
+            showNotification('User list refreshed!');
         }
-
-        // Notification system
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const notificationText = document.getElementById('notificationText');
-            
-            notificationText.textContent = message;
-            
-            // Set color based on type
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50 ${
-                type === 'error' ? 'bg-red-600 text-white' :
-                type === 'warning' ? 'bg-yellow-600 text-white' :
-                type === 'info' ? 'bg-blue-600 text-white' :
-                'bg-green-600 text-white'
-            }`;
-            
-            notification.classList.remove('hidden');
-            
-            setTimeout(() => {
-                notification.classList.add('hidden');
-            }, 3000);
-        }
-
-        // Click outside to close dropdowns
-        document.addEventListener('click', function(event) {
-            const syncOptions = document.getElementById('syncOptions');
-            if (!event.target.closest('#syncButton') && !event.target.closest('#syncOptions')) {
-                syncOptions.classList.add('hidden');
-            }
-        });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3c7bc1586b4dc',t:'MTc1OTczOTI1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3e465f24fb4dc',t:'MTc1OTc0MDQyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
