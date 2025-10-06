@@ -785,10 +785,24 @@
                 console.log('📋 Using sheet:', GOOGLE_CONFIG.SHEET_NAME);
                 
                 // Validate user access via Apps Script with detailed logging
-                const validationUrl = `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?action=validateUser&email=${encodeURIComponent(email)}&spreadsheetId=${GOOGLE_CONFIG.SPREADSHEET_ID}&sheetName=${encodeURIComponent(GOOGLE_CONFIG.SHEET_NAME)}`;
-                console.log('🔗 Validation URL:', validationUrl);
+                const validationPayload = {
+                    action: 'validateUser',
+                    email: email,
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
+                    sheetName: GOOGLE_CONFIG.SHEET_NAME
+                };
                 
-                const validationResponse = await fetch(validationUrl);
+                console.log('🔗 Validation payload:', validationPayload);
+                console.log('📡 Apps Script URL:', APPS_SCRIPT_CONFIG.WEB_APP_URL);
+                
+                const validationResponse = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(validationPayload)
+                });
+                
                 const responseText = await validationResponse.text();
                 
                 console.log('📋 Raw validation response:', responseText);
@@ -1559,5 +1573,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a31728153fb4dc',t:'MTc1OTczMjAyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a31ed515eeb4dc',t:'MTc1OTczMjMzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
