@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EV</title>
+    <title>Evangelism CRM - SharePoint Integration</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -824,7 +824,7 @@
             siteId: 'getonasia.sharepoint.com,5790e3b0-0575-4dcb-a345-bef1af2d9a2b,756a3114-aab1-4d05-9c80-a4ce86bce4b7',
             clientId: '23d254db-df47-4a7b-af89-6d29c9cdb650',
             tenantId: '46ba01de-8f81-4731-9062-36cc2dbf48bb',
-            redirectUri: 'https://app.shill.es/ev',
+            redirectUri: window.location.origin + window.location.pathname,
             scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
             
             // List configurations
@@ -893,6 +893,7 @@
                 } else {
                     // Use current page URL as redirect URI
                     const currentUrl = window.location.origin + window.location.pathname;
+                    console.log('🔗 Using redirect URI:', currentUrl);
                     
                     // Microsoft OAuth URL
                     const authUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.tenantId}/oauth2/v2.0/authorize?` +
@@ -902,6 +903,8 @@
                         `scope=${encodeURIComponent(SHAREPOINT_CONFIG.scope)}&` +
                         `response_mode=query&` +
                         `state=microsoft_login`;
+                    
+                    console.log('🔗 Microsoft Auth URL:', authUrl);
                     
                     // Start OAuth flow
                     window.location.href = authUrl;
@@ -934,6 +937,7 @@
                 } else {
                     // Use current page URL as redirect URI
                     const currentUrl = window.location.origin + window.location.pathname;
+                    console.log('🔗 Using Google redirect URI:', currentUrl);
                     
                     const authUrl = `${GOOGLE_CONFIG.AUTH_URI}?` +
                         `client_id=${GOOGLE_CONFIG.CLIENT_ID}&` +
@@ -942,6 +946,8 @@
                         `response_type=code&` +
                         `access_type=offline&` +
                         `state=google_login`;
+                    
+                    console.log('🔗 Google Auth URL:', authUrl);
                     
                     window.location.href = authUrl;
                 }
@@ -1959,5 +1965,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5dbadb15cb4dc',t:'MTc1OTc2MTA0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5de7cb5b3b4dc',t:'MTc1OTc2MTE1Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
