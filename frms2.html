@@ -1782,6 +1782,13 @@ function validateSpreadsheetAccess(spreadsheetId) {
         // Real Google Sheets sync functions
         async function syncFruitToSheets(patchData) {
             try {
+                console.log('🔄 Syncing fruit to Google Sheets:', patchData);
+                
+                if (!accessToken) {
+                    console.warn('⚠️ No access token available for sync');
+                    return false;
+                }
+                
                 const { operation, data } = patchData;
                 
                 if (operation === 'add') {
@@ -1793,15 +1800,14 @@ function validateSpreadsheetAccess(spreadsheetId) {
                         data.notes, data.createdDate, data.createdBy
                     ];
                     
-                    return await appendToSheet('Fruits', [row]);
+                    console.log('📊 Appending fruit row to Fruits sheet:', row);
+                    const result = await appendToSheet('Fruits', [row]);
+                    console.log('✅ Fruit append result:', result);
+                    return true;
                     
-                } else if (operation === 'update') {
-                    // Update existing fruit - for now, we'll reload all data
-                    // In production, you'd want to find and update specific rows
-                    return await syncAllFruitsToSheets();
-                    
-                } else if (operation === 'delete') {
-                    // Delete fruit - for now, we'll reload all data
+                } else if (operation === 'update' || operation === 'delete') {
+                    // For updates and deletes, sync all fruits data
+                    console.log('📊 Syncing all fruits due to update/delete operation');
                     return await syncAllFruitsToSheets();
                 }
                 
@@ -1809,12 +1815,19 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 
             } catch (error) {
                 console.error('❌ Failed to sync fruit to sheets:', error);
-                return false;
+                throw error; // Re-throw to trigger retry logic
             }
         }
 
         async function syncActivityToSheets(patchData) {
             try {
+                console.log('🔄 Syncing activity to Google Sheets:', patchData);
+                
+                if (!accessToken) {
+                    console.warn('⚠️ No access token available for sync');
+                    return false;
+                }
+                
                 const { operation, data } = patchData;
                 
                 if (operation === 'add') {
@@ -1824,14 +1837,14 @@ function validateSpreadsheetAccess(spreadsheetId) {
                         data.notes, data.outcome, data.user, data.createdDate
                     ];
                     
-                    return await appendToSheet('Activities', [row]);
+                    console.log('📊 Appending activity row to Activities sheet:', row);
+                    const result = await appendToSheet('Activities', [row]);
+                    console.log('✅ Activity append result:', result);
+                    return true;
                     
-                } else if (operation === 'update') {
-                    // Update existing activity
-                    return await syncAllActivitiesToSheets();
-                    
-                } else if (operation === 'delete') {
-                    // Delete activity
+                } else if (operation === 'update' || operation === 'delete') {
+                    // For updates and deletes, sync all activities data
+                    console.log('📊 Syncing all activities due to update/delete operation');
                     return await syncAllActivitiesToSheets();
                 }
                 
@@ -1839,7 +1852,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 
             } catch (error) {
                 console.error('❌ Failed to sync activity to sheets:', error);
-                return false;
+                throw error; // Re-throw to trigger retry logic
             }
         }
 
@@ -2217,49 +2230,97 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         async function updateSheetData(sheetName, rows) {
-            const response = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${sheetName}?valueInputOption=RAW`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        values: rows
-                    })
-                }
-            );
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${sheetName}?valueInputOption=RAW`;
+            
+            console.log('📊 Updating sheet data:', {
+                sheetName,
+                url,
+                rowCount: rows.length,
+                hasToken: !!accessToken
+            });
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    values: rows
+                })
+            });
+            
+            console.log('📊 Update response status:', response.status, response.statusText);
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(`Failed to update ${sheetName}: ${error.error?.message || response.statusText}`);
+                const errorText = await response.text();
+                console.error('📊 Update error response:', errorText);
+                
+                let errorMessage = `Failed to update ${sheetName}: ${response.status} ${response.statusText}`;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = `Failed to update ${sheetName}: ${errorJson.error?.message || errorText}`;
+                } catch (parseError) {
+                    errorMessage = `Failed to update ${sheetName}: ${errorText}`;
+                }
+                
+                throw new Error(errorMessage);
             }
             
-            return await response.json();
+            const result = await response.json();
+            console.log('✅ Update successful:', result);
+            return result;
         }
 
         async function appendToSheet(sheetName, rows) {
-            const response = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${sheetName}:append?valueInputOption=RAW`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        values: rows
-                    })
-                }
-            );
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${sheetName}:append?valueInputOption=RAW`;
+            
+            console.log('📊 Appending to sheet:', {
+                sheetName,
+                url,
+                rowCount: rows.length,
+                rows: rows,
+                hasToken: !!accessToken,
+                spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+            });
+            
+            const requestBody = {
+                values: rows
+            };
+            
+            console.log('📊 Request body:', JSON.stringify(requestBody, null, 2));
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            console.log('📊 Append response status:', response.status, response.statusText);
+            console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(`Failed to append to ${sheetName}: ${error.error?.message || response.statusText}`);
+                const errorText = await response.text();
+                console.error('📊 Append error response:', errorText);
+                
+                let errorMessage = `Failed to append to ${sheetName}: ${response.status} ${response.statusText}`;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = `Failed to append to ${sheetName}: ${errorJson.error?.message || errorText}`;
+                    console.error('📊 Parsed error:', errorJson);
+                } catch (parseError) {
+                    errorMessage = `Failed to append to ${sheetName}: ${errorText}`;
+                }
+                
+                throw new Error(errorMessage);
             }
             
-            return await response.json();
+            const result = await response.json();
+            console.log('✅ Append successful:', result);
+            return result;
         }
 
         async function loadFromGoogleSheets() {
@@ -3641,11 +3702,72 @@ function validateSpreadsheetAccess(spreadsheetId) {
             showNotification('Data import coming soon!', 'info');
         }
 
-        function testGoogleSheetsConnection() {
-            showNotification('Testing Google Sheets connection...', 'info');
-            setTimeout(() => {
-                showNotification('Connection test completed! Check console for details.', 'info');
-            }, 2000);
+        async function testGoogleSheetsConnection() {
+            try {
+                showNotification('Testing Google Sheets connection...', 'info');
+                
+                console.log('🧪 Testing Google Sheets connection...');
+                console.log('📊 Configuration:', {
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
+                    hasAccessToken: !!accessToken,
+                    accessTokenLength: accessToken ? accessToken.length : 0
+                });
+                
+                if (!accessToken) {
+                    showNotification('No access token! Please enable Online Mode first.', 'error');
+                    return;
+                }
+                
+                // Test 1: Try to read from the spreadsheet
+                console.log('🧪 Test 1: Reading spreadsheet info...');
+                const infoUrl = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}?key=${GOOGLE_CONFIG.API_KEY}`;
+                
+                const infoResponse = await fetch(infoUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                console.log('📊 Info response:', infoResponse.status, infoResponse.statusText);
+                
+                if (infoResponse.ok) {
+                    const info = await infoResponse.json();
+                    console.log('✅ Spreadsheet info:', info.properties?.title);
+                    console.log('📊 Available sheets:', info.sheets?.map(s => s.properties?.title));
+                    
+                    // Test 2: Try to append a test row
+                    console.log('🧪 Test 2: Attempting test append...');
+                    const testRow = [
+                        'TEST_' + Date.now(),
+                        'Test Fruit',
+                        'Test User',
+                        '+1-555-TEST',
+                        'test_ig',
+                        'test_fb',
+                        'test_tw',
+                        'Test Source',
+                        'Test Campaign',
+                        'Initial Contact',
+                        'This is a test entry - safe to delete',
+                        new Date().toISOString(),
+                        'test@example.com'
+                    ];
+                    
+                    const testResult = await appendToSheet('Fruits', [testRow]);
+                    console.log('✅ Test append successful:', testResult);
+                    
+                    showNotification('✅ Connection test successful! Check console for details.', 'success');
+                    
+                } else {
+                    const errorText = await infoResponse.text();
+                    console.error('❌ Info request failed:', errorText);
+                    showNotification('❌ Connection test failed: ' + infoResponse.statusText, 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Connection test error:', error);
+                showNotification('❌ Connection test failed: ' + error.message, 'error');
+            }
         }
 
         function testAppsScriptConnection() {
@@ -3733,5 +3855,5 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a40aace298b4dc',t:'MTc1OTc0MTk5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a4147a116fb4dc',t:'MTc1OTc0MjM5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
