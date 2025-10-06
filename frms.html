@@ -784,18 +784,54 @@
                 console.log('📊 Validating against spreadsheet:', GOOGLE_CONFIG.SPREADSHEET_ID);
                 console.log('📋 Using sheet:', GOOGLE_CONFIG.SHEET_NAME);
                 
-                // Validate user access via Apps Script
+                // Validate user access via Apps Script with detailed logging
                 const validationUrl = `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?action=validateUser&email=${encodeURIComponent(email)}&spreadsheetId=${GOOGLE_CONFIG.SPREADSHEET_ID}&sheetName=${encodeURIComponent(GOOGLE_CONFIG.SHEET_NAME)}`;
                 console.log('🔗 Validation URL:', validationUrl);
                 
                 const validationResponse = await fetch(validationUrl);
-                const validation = await validationResponse.json();
+                const responseText = await validationResponse.text();
                 
-                console.log('📋 Validation response:', validation);
+                console.log('📋 Raw validation response:', responseText);
+                console.log('📋 Response status:', validationResponse.status);
+                console.log('📋 Response headers:', [...validationResponse.headers.entries()]);
+                
+                let validation;
+                try {
+                    validation = JSON.parse(responseText);
+                    console.log('📋 Parsed validation response:', validation);
+                } catch (parseError) {
+                    console.error('❌ Failed to parse validation response:', parseError);
+                    console.log('📋 Response was not JSON:', responseText);
+                    
+                    if (responseText.includes('<html') || responseText.includes('<!DOCTYPE')) {
+                        showNotification('❌ Apps Script validation failed - returned HTML instead of JSON', 'error');
+                    } else {
+                        showNotification('❌ Apps Script validation failed - invalid response format', 'error');
+                    }
+                    return;
+                }
+                
+                // Show detailed validation info
+                console.log('🔍 Validation Details:');
+                console.log('  - Has Access:', validation.hasAccess);
+                console.log('  - User Found:', validation.user);
+                console.log('  - Error:', validation.error);
+                console.log('  - Debug Info:', validation.debug);
                 
                 if (!validation.hasAccess) {
-                    showNotification('Access denied. Contact your administrator.', 'error');
+                    let errorMessage = 'Access denied. ';
+                    
+                    if (validation.error) {
+                        errorMessage += validation.error;
+                    } else if (validation.debug) {
+                        errorMessage += `Debug: ${validation.debug}`;
+                    } else {
+                        errorMessage += 'Contact your administrator.';
+                    }
+                    
+                    showNotification(errorMessage, 'error');
                     console.log('❌ Access denied for user:', email);
+                    console.log('❌ Validation details:', validation);
                     return;
                 }
                 
@@ -1523,5 +1559,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3110171cab4dc',t:'MTc1OTczMTc2OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a31728153fb4dc',t:'MTc1OTczMjAyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
