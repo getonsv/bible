@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism FRM</title>
+    <title>Evangelism CRM - SharePoint Integration</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -349,6 +349,10 @@
                                 <label class="block text-sm text-gray-600 mb-1">Activities List ID</label>
                                 <input type="text" id="activitiesListId" value="6dfb4043-9d8c-4d38-b2ce-7a2fb7ae4f79" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
                             </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Users List ID</label>
+                                <input type="text" id="usersListId" value="b8f3c2d1-4e5f-6a7b-8c9d-0e1f2a3b4c5d" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
                             <button onclick="testSharePointConnection()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                                 <i class="fas fa-plug mr-2"></i>Test Connection
                             </button>
@@ -381,6 +385,61 @@
                                 <i class="fas fa-server mr-2"></i>Test Graph API
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">User Management</h3>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-medium text-gray-700">Authorized Users</h4>
+                        <button onclick="showAddUserModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                            <i class="fas fa-user-plus mr-2"></i>Add User
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTable" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                                        <i class="fas fa-users text-2xl mb-2"></i>
+                                        <p>Loading users from SharePoint...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" id="totalUsers">0</div>
+                        <div class="text-sm text-blue-700">Total Users</div>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" id="activeUsers">0</div>
+                        <div class="text-sm text-green-700">Active Users</div>
+                    </div>
+                    <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                        <div class="text-2xl font-bold text-yellow-600" id="adminUsers">0</div>
+                        <div class="text-sm text-yellow-700">Administrators</div>
+                    </div>
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600" id="recentLogins">0</div>
+                        <div class="text-sm text-purple-700">Recent Logins</div>
                     </div>
                 </div>
             </div>
@@ -700,6 +759,71 @@
         </div>
     </div>
 
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Add New User</h3>
+                    <button onclick="closeModal('addUserModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="addUser(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                        <input type="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="user@example.com">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
+                        <input type="text" name="displayName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="John Doe">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                        <select name="role" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Viewer">Viewer - Read only access</option>
+                            <option value="User">User - Can add fruits, limited editing</option>
+                            <option value="Contributor">Contributor - Can add and edit</option>
+                            <option value="Manager">Manager - Full access except admin</option>
+                            <option value="Admin">Admin - Full system access</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Department (Optional)</label>
+                        <input type="text" name="department" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ministry, IT, Administration">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Pending">Pending</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                        <textarea name="notes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="2" placeholder="Any additional notes about this user..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('addUserModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            Add User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Import Modal -->
     <div id="importModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -782,6 +906,7 @@
             SITE_URL: 'https://getonasia.sharepoint.com/sites/frms/',
             FRUITS_LIST_ID: '139125e5-1bd9-4172-a7d9-ddf3a1dd8586',
             ACTIVITIES_LIST_ID: '6dfb4043-9d8c-4d38-b2ce-7a2fb7ae4f79',
+            USERS_LIST_ID: 'BFA74452-66DA-4A02-BD4D-D1F3E091DDF0', // Users Management List
             GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
         };
         
@@ -851,16 +976,21 @@
             console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
             
             // Check for OAuth callback parameters first
-            checkForOAuthCallback();
+            const hasCallback = checkForOAuthCallback();
             
-            initializeMicrosoftAuth();
+            // Only initialize auth UI if not processing callback
+            if (!hasCallback) {
+                // Initialize authentication UI immediately
+                initializeMicrosoftAuth();
+                
+                // Check for existing session
+                checkExistingSession();
+            }
+            
             loadLocalData();
             updateConnectionStatus();
             populateDropdowns();
             initializeEventListeners();
-            
-            // Check for existing session
-            checkExistingSession();
         });
 
         // Real-time sync functions
@@ -962,21 +1092,84 @@
         }
 
         function initializeMicrosoftAuth() {
-            console.log('🔧 Initializing PKCE Microsoft Authentication...');
+            console.log('🔧 Initializing authentication options...');
             
-            // Provide Microsoft 365 authentication only
+            // Provide both Microsoft 365 and Google authentication
             const buttonContainer = document.getElementById('googleSignInButton');
-            buttonContainer.innerHTML = `
-                <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                    <i class="fab fa-microsoft text-xl"></i>
-                    <span>Sign in with Microsoft 365</span>
-                </button>
-            `;
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fab fa-microsoft text-xl"></i>
+                            <span>Sign in with Microsoft 365</span>
+                        </button>
+                        
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">or</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="authenticateWithGoogle()" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fab fa-google text-xl text-red-500"></i>
+                            <span>Sign in with Google</span>
+                        </button>
+                        
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">or</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="demoLogin()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fas fa-play text-xl"></i>
+                            <span>Demo Login (Admin Access)</span>
+                        </button>
+                        
+                        <div class="mt-4 text-center">
+                            <p class="text-xs text-gray-500">
+                                <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                                Secure authentication with role-based access control
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
             
-            console.log('✅ PKCE Authentication initialized (no client secrets)');
+            // Initialize Google Sign-In after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                initializeGoogleAuth();
+            }, 500);
+            
+            console.log('✅ Multi-provider authentication initialized');
         }
 
-        async function checkForOAuthCallback() {
+        function initializeGoogleAuth() {
+            // Load Google Identity Services
+            if (typeof google !== 'undefined' && google.accounts) {
+                console.log('🔧 Initializing Google Sign-In...');
+                
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                    callback: handleGoogleSignIn,
+                    auto_select: false,
+                    cancel_on_tap_outside: true
+                });
+                
+                console.log('✅ Google Sign-In initialized');
+            } else {
+                console.log('⏳ Waiting for Google Identity Services to load...');
+                setTimeout(initializeGoogleAuth, 500);
+            }
+        }
+
+        function checkForOAuthCallback() {
             const urlParams = new URLSearchParams(window.location.search);
             const authCode = urlParams.get('code');
             const returnedState = urlParams.get('state');
@@ -987,62 +1180,84 @@
                 showNotification('Authentication failed: ' + (urlParams.get('error_description') || error), 'error');
                 // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname);
-                return;
+                return true; // Return true to indicate callback was processed
             }
             
             if (authCode) {
                 console.log('🔐 OAuth callback detected, processing...');
                 showNotification('Processing authentication...', 'info');
                 
-                try {
-                    // Validate state parameter
-                    const storedState = sessionStorage.getItem('pkce_state');
-                    if (returnedState && storedState && returnedState !== storedState) {
-                        throw new Error('Invalid state parameter - possible security issue');
-                    }
-                    
-                    // Exchange code for token
-                    const tokenData = await exchangeCodeForTokenPKCE(authCode);
-                    
-                    sharePointAccessToken = tokenData.access_token;
-                    isSharePointMode = true;
-                    
-                    // Store token with expiration
-                    sessionStorage.setItem('access_token', tokenData.access_token);
-                    sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
-                    
-                    // Get user info
-                    currentUser = await getUserInfo(tokenData.access_token);
-                    sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-                    
-                    // Clean up PKCE parameters
-                    sessionStorage.removeItem('pkce_code_verifier');
-                    sessionStorage.removeItem('pkce_state');
-                    
-                    // Clean URL
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    
-                    // Load data from SharePoint
-                    await loadDataFromSharePoint();
-                    
-                    showDashboard();
-                    
-                    // Start real-time sync
-                    startRealTimeSync();
-                    
-                    showNotification('Welcome! Connected to SharePoint Lists with real-time sync.');
-                    
-                } catch (error) {
-                    console.error('❌ OAuth callback processing failed:', error);
-                    showNotification('Authentication failed: ' + error.message, 'error');
-                    
-                    // Clean up on failure
-                    sessionStorage.removeItem('pkce_code_verifier');
-                    sessionStorage.removeItem('pkce_state');
-                    
-                    // Clean URL
-                    window.history.replaceState({}, document.title, window.location.pathname);
+                // Process callback asynchronously
+                processOAuthCallback(authCode, returnedState);
+                return true; // Return true to indicate callback is being processed
+            }
+            
+            return false; // No callback parameters found
+        }
+
+        async function processOAuthCallback(authCode, returnedState) {
+            try {
+                // Validate state parameter
+                const storedState = sessionStorage.getItem('pkce_state');
+                if (returnedState && storedState && returnedState !== storedState) {
+                    throw new Error('Invalid state parameter - possible security issue');
                 }
+                
+                // Exchange code for token
+                const tokenData = await exchangeCodeForTokenPKCE(authCode);
+                
+                sharePointAccessToken = tokenData.access_token;
+                isSharePointMode = true;
+                
+                // Store token with expiration
+                sessionStorage.setItem('access_token', tokenData.access_token);
+                sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
+                
+                // Get basic user info from Microsoft
+                const basicUserInfo = await getUserInfo(tokenData.access_token);
+                
+                // Check if user exists in SharePoint Users list and get their role
+                const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
+                
+                if (!userInfo) {
+                    showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
+                    return;
+                }
+                
+                // Set current user with SharePoint-defined permissions
+                currentUser = userInfo;
+                sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+                
+                // Clean up PKCE parameters
+                sessionStorage.removeItem('pkce_code_verifier');
+                sessionStorage.removeItem('pkce_state');
+                
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Load data from SharePoint
+                await loadDataFromSharePoint();
+                
+                showDashboard();
+                
+                // Start real-time sync
+                startRealTimeSync();
+                
+                showNotification('Welcome! Connected to SharePoint Lists with real-time sync.');
+                
+            } catch (error) {
+                console.error('❌ OAuth callback processing failed:', error);
+                showNotification('Authentication failed: ' + error.message, 'error');
+                
+                // Clean up on failure
+                sessionStorage.removeItem('pkce_code_verifier');
+                sessionStorage.removeItem('pkce_state');
+                
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Show login screen again
+                initializeMicrosoftAuth();
             }
         }
 
@@ -1099,6 +1314,282 @@
             const data = encoder.encode(verifier);
             const hash = await crypto.subtle.digest('SHA-256', data);
             return base64URLEncode(new Uint8Array(hash));
+        }
+
+        async function authenticateWithGoogle() {
+            try {
+                console.log('🔐 Starting Google authentication...');
+                showNotification('Redirecting to Google...', 'info');
+                
+                // Trigger Google Sign-In popup
+                google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        console.log('Google Sign-In prompt not displayed, showing manual sign-in');
+                        // Fallback to manual sign-in
+                        showGoogleSignInPopup();
+                    }
+                });
+                
+            } catch (error) {
+                console.error('❌ Google authentication failed:', error);
+                showNotification('Google authentication failed: ' + error.message, 'error');
+            }
+        }
+
+        function showGoogleSignInPopup() {
+            // Create a manual Google Sign-In popup
+            const popup = window.open(
+                `https://accounts.google.com/oauth/authorize?` +
+                `client_id=${GOOGLE_CONFIG.CLIENT_ID}&` +
+                `redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}&` +
+                `response_type=token&` +
+                `scope=${encodeURIComponent('openid profile email')}&` +
+                `state=google_auth`,
+                'googleSignIn',
+                'width=500,height=600,scrollbars=yes,resizable=yes'
+            );
+
+            // Monitor popup for completion
+            const checkClosed = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkClosed);
+                    console.log('Google Sign-In popup closed');
+                }
+            }, 1000);
+        }
+
+        async function handleGoogleSignIn(response) {
+            try {
+                console.log('🔐 Processing Google Sign-In response...');
+                
+                // Decode the JWT token
+                const token = response.credential;
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                
+                console.log('👤 Google user info:', {
+                    email: payload.email,
+                    name: payload.name,
+                    picture: payload.picture
+                });
+                
+                // Check if user exists in SharePoint Users list
+                const userInfo = await checkUserInSharePointList(payload.email, payload.name, 'google');
+                
+                if (!userInfo) {
+                    showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
+                    return;
+                }
+                
+                // Set current user with SharePoint permissions
+                currentUser = userInfo;
+                
+                // Load data from SharePoint (using service account or public access)
+                await loadDataFromSharePoint();
+                
+                showDashboard();
+                
+                // Start real-time sync if we have SharePoint access
+                if (sharePointAccessToken) {
+                    startRealTimeSync();
+                }
+                
+                showNotification(`Welcome ${userInfo.name}! Signed in with Google.`);
+                
+            } catch (error) {
+                console.error('❌ Google Sign-In processing failed:', error);
+                showNotification('Google Sign-In failed: ' + error.message, 'error');
+            }
+        }
+
+        function demoLogin() {
+            console.log('🎭 Starting demo login...');
+            showNotification('Logging in with demo account...', 'info');
+            
+            // Create demo user with admin permissions
+            currentUser = {
+                name: 'Demo Administrator',
+                email: 'demo@evangelismcrm.com',
+                id: 'demo_admin',
+                role: 'Admin',
+                permissions: 'Full Control',
+                status: 'Active',
+                source: 'demo',
+                department: 'Demo',
+                lastLogin: new Date().toISOString()
+            };
+            
+            // Set admin permissions
+            userPermissions = {
+                canAdd: true,
+                canEdit: true,
+                canDelete: true,
+                canViewAll: true,
+                isAdmin: true
+            };
+            
+            // Load sample data for demo
+            loadDemoData();
+            
+            // Show dashboard
+            showDashboard();
+            
+            showNotification('Welcome to the demo! You have full admin access to explore all features.');
+        }
+
+        function loadDemoData() {
+            // Sample fruits data
+            fruits = [
+                {
+                    id: 'demo_1',
+                    name: 'John Smith',
+                    assignedTo: 'Demo Administrator',
+                    phone: '+1 (555) 123-4567',
+                    instagram: 'johnsmith_official',
+                    facebook: 'john.smith.profile',
+                    twitter: '@johnsmith',
+                    leadSource: 'Facebook Ads',
+                    campaign: 'Christmas Outreach 2024',
+                    status: 'BB Session Scheduled',
+                    notes: 'Very interested in learning more about faith. Has questions about baptism.',
+                    createdDate: new Date(Date.now() - 86400000 * 3).toISOString(), // 3 days ago
+                    createdBy: 'demo@evangelismcrm.com'
+                },
+                {
+                    id: 'demo_2',
+                    name: 'Sarah Johnson',
+                    assignedTo: 'Demo Administrator',
+                    phone: '+1 (555) 987-6543',
+                    instagram: 'sarah_j_life',
+                    facebook: '',
+                    twitter: '',
+                    leadSource: 'Instagram Ads',
+                    campaign: 'Youth Campaign 2024',
+                    status: 'Attending Class',
+                    notes: 'Regular attendee, very engaged in discussions. Considering baptism.',
+                    createdDate: new Date(Date.now() - 86400000 * 7).toISOString(), // 1 week ago
+                    createdBy: 'demo@evangelismcrm.com'
+                },
+                {
+                    id: 'demo_3',
+                    name: 'Michael Chen',
+                    assignedTo: 'Demo Administrator',
+                    phone: '+1 (555) 456-7890',
+                    instagram: '',
+                    facebook: 'michael.chen.vancouver',
+                    twitter: '',
+                    leadSource: 'Referral',
+                    campaign: '',
+                    status: 'Initial Contact',
+                    notes: 'Friend referred him. Interested but cautious. Needs gentle approach.',
+                    createdDate: new Date(Date.now() - 86400000 * 1).toISOString(), // 1 day ago
+                    createdBy: 'demo@evangelismcrm.com'
+                },
+                {
+                    id: 'demo_4',
+                    name: 'Emily Rodriguez',
+                    assignedTo: 'Demo Administrator',
+                    phone: '+1 (555) 321-0987',
+                    instagram: 'emily_r_fitness',
+                    facebook: 'emily.rodriguez.fitness',
+                    twitter: '@emilyfit',
+                    leadSource: 'Event/Outreach',
+                    campaign: 'Community Health Fair',
+                    status: 'Baptized',
+                    notes: 'Completed baptism last month! Now helping with outreach events.',
+                    createdDate: new Date(Date.now() - 86400000 * 45).toISOString(), // 45 days ago
+                    createdBy: 'demo@evangelismcrm.com'
+                }
+            ];
+            
+            // Sample activities data
+            activities = [
+                {
+                    id: 'demo_act_1',
+                    fruitName: 'John Smith',
+                    type: 'WhatsApp Call',
+                    duration: '25',
+                    notes: 'Discussed his questions about baptism. Scheduled BB session for this weekend.',
+                    outcome: 'Scheduled Next Step',
+                    user: 'Demo Administrator',
+                    createdDate: new Date(Date.now() - 86400000 * 1).toISOString()
+                },
+                {
+                    id: 'demo_act_2',
+                    fruitName: 'Sarah Johnson',
+                    type: 'In-Person Meeting',
+                    duration: '45',
+                    notes: 'Met at coffee shop. She shared her testimony and expressed interest in baptism.',
+                    outcome: 'Positive Response',
+                    user: 'Demo Administrator',
+                    createdDate: new Date(Date.now() - 86400000 * 2).toISOString()
+                },
+                {
+                    id: 'demo_act_3',
+                    fruitName: 'Michael Chen',
+                    type: 'Phone Call',
+                    duration: '15',
+                    notes: 'Initial contact call. He was polite but seemed hesitant. Will follow up next week.',
+                    outcome: 'Need Follow-up',
+                    user: 'Demo Administrator',
+                    createdDate: new Date(Date.now() - 86400000 * 1).toISOString()
+                },
+                {
+                    id: 'demo_act_4',
+                    fruitName: 'Emily Rodriguez',
+                    type: 'BB Session',
+                    duration: '60',
+                    notes: 'Completed baptism ceremony! Beautiful moment. She wants to help with future outreach.',
+                    outcome: 'Positive Response',
+                    user: 'Demo Administrator',
+                    createdDate: new Date(Date.now() - 86400000 * 30).toISOString()
+                }
+            ];
+            
+            // Sample authorized users for admin demo
+            authorizedUsers = [
+                {
+                    id: 'demo_user_1',
+                    email: 'demo@evangelismcrm.com',
+                    displayName: 'Demo Administrator',
+                    role: 'Admin',
+                    status: 'Active',
+                    department: 'Demo',
+                    notes: 'Demo account with full access',
+                    createdDate: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                },
+                {
+                    id: 'demo_user_2',
+                    email: 'manager@evangelismcrm.com',
+                    displayName: 'Demo Manager',
+                    role: 'Manager',
+                    status: 'Active',
+                    department: 'Ministry',
+                    notes: 'Sample manager account',
+                    createdDate: new Date(Date.now() - 86400000 * 30).toISOString(),
+                    lastLogin: new Date(Date.now() - 86400000 * 2).toISOString()
+                },
+                {
+                    id: 'demo_user_3',
+                    email: 'volunteer@evangelismcrm.com',
+                    displayName: 'Demo Volunteer',
+                    role: 'User',
+                    status: 'Active',
+                    department: 'Outreach',
+                    notes: 'Sample volunteer account',
+                    createdDate: new Date(Date.now() - 86400000 * 15).toISOString(),
+                    lastLogin: new Date(Date.now() - 86400000 * 1).toISOString()
+                }
+            ];
+            
+            // Save demo data locally
+            saveLocalData();
+            
+            console.log('🎭 Demo data loaded:', {
+                fruits: fruits.length,
+                activities: activities.length,
+                users: authorizedUsers.length
+            });
         }
 
         async function authenticateWithMicrosoft() {
@@ -1602,62 +2093,156 @@
             }
         }
 
-        async function checkUserPermissions(token, user) {
+        async function checkUserInSharePointList(email, name, authProvider) {
             try {
-                console.log('🔐 Checking SharePoint permissions for user:', user.email);
+                console.log('🔐 Checking user authorization in SharePoint Users list:', email);
                 
-                // ALWAYS grant full permissions to authenticated users
-                // If they can authenticate and access the app, they should have full control
-                userPermissions = {
-                    canAdd: true,
-                    canEdit: true,
-                    canDelete: true,
-                    canViewAll: true,
-                    isAdmin: true
-                };
-                
-                user.role = 'Owner';
-                user.permissions = 'Full Control';
-                
-                console.log('✅ Granting full permissions to authenticated user');
-                console.log('🔐 User permissions set to:', userPermissions);
-                console.log('👤 User role set to:', user.role);
-                
-                // Test actual API access to confirm permissions work
-                try {
-                    // Test fruits list access
-                    const fruitsListUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}`;
-                    const fruitsResponse = await fetch(fruitsListUrl, {
+                // If we have SharePoint access token, check the Users list
+                if (sharePointAccessToken) {
+                    const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Email eq '${email}'`;
+                    
+                    const response = await fetch(url, {
                         headers: {
-                            'Authorization': `Bearer ${token}`,
+                            'Authorization': `Bearer ${sharePointAccessToken}`,
                             'Accept': 'application/json'
                         }
                     });
                     
-                    if (fruitsResponse.ok) {
-                        console.log('✅ API access confirmed - user can access fruits list');
+                    if (response.ok) {
+                        const data = await response.json();
+                        const userItems = data.value || [];
+                        
+                        if (userItems.length > 0) {
+                            const userRecord = userItems[0].fields;
+                            
+                            // Check if user is active
+                            if (userRecord.Status !== 'Active') {
+                                console.log('❌ User found but not active:', userRecord.Status);
+                                return null;
+                            }
+                            
+                            // Map SharePoint role to permissions
+                            const role = userRecord.Role || 'User';
+                            const permissions = mapRoleToPermissions(role);
+                            
+                            console.log('✅ User authorized with role:', role);
+                            
+                            return {
+                                name: userRecord.DisplayName || name,
+                                email: email,
+                                id: userRecord.UserID || email,
+                                role: role,
+                                permissions: role,
+                                status: userRecord.Status,
+                                source: authProvider,
+                                department: userRecord.Department || '',
+                                lastLogin: new Date().toISOString()
+                            };
+                        } else {
+                            console.log('❌ User not found in SharePoint Users list');
+                            return null;
+                        }
                     } else {
-                        console.log('⚠️ API access test failed, but keeping full permissions for authenticated user');
-                        console.log('Response status:', fruitsResponse.status, fruitsResponse.statusText);
+                        console.log('⚠️ Could not access SharePoint Users list, falling back to basic permissions');
                     }
-                } catch (error) {
-                    console.log('⚠️ API test error (keeping full permissions):', error.message);
                 }
                 
-            } catch (error) {
-                console.error('❌ Error in permission check:', error);
+                // Fallback: Check against a hardcoded admin list for development
+                const adminEmails = [
+                    'admin@getonasia.onmicrosoft.com',
+                    'your-email@gmail.com', // Add your email here for testing
+                    'test@example.com'
+                ];
                 
-                // Even on error, grant full permissions to authenticated users
-                console.log('🔧 Error occurred, but granting full permissions to authenticated user');
-                userPermissions = {
+                if (adminEmails.includes(email.toLowerCase())) {
+                    console.log('✅ User found in admin fallback list');
+                    return {
+                        name: name,
+                        email: email,
+                        id: email,
+                        role: 'Admin',
+                        permissions: 'Full Control',
+                        status: 'Active',
+                        source: authProvider,
+                        department: 'IT',
+                        lastLogin: new Date().toISOString()
+                    };
+                }
+                
+                console.log('❌ User not authorized');
+                return null;
+                
+            } catch (error) {
+                console.error('❌ Error checking user authorization:', error);
+                return null;
+            }
+        }
+
+        function mapRoleToPermissions(role) {
+            const rolePermissions = {
+                'Admin': {
                     canAdd: true,
                     canEdit: true,
                     canDelete: true,
                     canViewAll: true,
                     isAdmin: true
+                },
+                'Manager': {
+                    canAdd: true,
+                    canEdit: true,
+                    canDelete: true,
+                    canViewAll: true,
+                    isAdmin: false
+                },
+                'Contributor': {
+                    canAdd: true,
+                    canEdit: true,
+                    canDelete: false,
+                    canViewAll: true,
+                    isAdmin: false
+                },
+                'User': {
+                    canAdd: true,
+                    canEdit: false,
+                    canDelete: false,
+                    canViewAll: false,
+                    isAdmin: false
+                },
+                'Viewer': {
+                    canAdd: false,
+                    canEdit: false,
+                    canDelete: false,
+                    canViewAll: true,
+                    isAdmin: false
+                }
+            };
+            
+            const permissions = rolePermissions[role] || rolePermissions['User'];
+            
+            // Set global permissions
+            userPermissions = permissions;
+            
+            console.log('🔐 Permissions set for role', role, ':', permissions);
+            
+            return permissions;
+        }
+
+        async function checkUserPermissions(token, user) {
+            // This function is now replaced by checkUserInSharePointList
+            // Keep for backward compatibility but redirect to new system
+            console.log('🔄 Redirecting to new user management system...');
+            
+            if (user && user.role) {
+                mapRoleToPermissions(user.role);
+            } else {
+                // Default to basic user permissions
+                userPermissions = {
+                    canAdd: true,
+                    canEdit: false,
+                    canDelete: false,
+                    canViewAll: false,
+                    isAdmin: false
                 };
-                user.role = 'Owner';
-                user.permissions = 'Full Control';
             }
         }
 
@@ -3190,11 +3775,309 @@
             showNotification('Google Sheets migration coming soon!', 'info');
         }
 
+        // User Management Functions
+        let authorizedUsers = [];
+
+        async function loadUsersFromSharePoint() {
+            try {
+                if (!sharePointAccessToken) {
+                    console.log('⚠️ No SharePoint access token for loading users');
+                    return;
+                }
+
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const items = data.value || [];
+                
+                authorizedUsers = items.map(item => ({
+                    id: item.id.toString(),
+                    email: item.fields.Email || '',
+                    displayName: item.fields.DisplayName || '',
+                    role: item.fields.Role || 'User',
+                    status: item.fields.Status || 'Active',
+                    department: item.fields.Department || '',
+                    notes: item.fields.Notes || '',
+                    createdDate: item.fields.Created || item.createdDateTime,
+                    lastLogin: item.fields.LastLogin || 'Never'
+                }));
+                
+                console.log('👥 Loaded', authorizedUsers.length, 'users from SharePoint');
+                updateUsersTable();
+                updateUserStats();
+                
+            } catch (error) {
+                console.error('❌ Error loading users from SharePoint:', error);
+                showNotification('Failed to load users from SharePoint', 'error');
+            }
+        }
+
+        function updateUsersTable() {
+            const tbody = document.getElementById('usersTable');
+            if (!tbody) return;
+            
+            if (authorizedUsers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            <i class="fas fa-users text-2xl mb-2"></i>
+                            <p>No users found. Add your first user to get started.</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = authorizedUsers.map(user => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                                    ${user.displayName.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${user.displayName}</div>
+                                <div class="text-sm text-gray-500">${user.email}</div>
+                                ${user.department ? `<div class="text-xs text-gray-400">${user.department}</div>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}">
+                            ${user.role}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(user.status)}">
+                            ${user.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="editUser('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteUser('${user.id}')" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getRoleBadgeColor(role) {
+            const colors = {
+                'Admin': 'bg-red-100 text-red-800',
+                'Manager': 'bg-purple-100 text-purple-800',
+                'Contributor': 'bg-blue-100 text-blue-800',
+                'User': 'bg-green-100 text-green-800',
+                'Viewer': 'bg-gray-100 text-gray-800'
+            };
+            return colors[role] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getStatusBadgeColor(status) {
+            const colors = {
+                'Active': 'bg-green-100 text-green-800',
+                'Inactive': 'bg-red-100 text-red-800',
+                'Pending': 'bg-yellow-100 text-yellow-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function updateUserStats() {
+            document.getElementById('totalUsers').textContent = authorizedUsers.length;
+            document.getElementById('activeUsers').textContent = authorizedUsers.filter(u => u.status === 'Active').length;
+            document.getElementById('adminUsers').textContent = authorizedUsers.filter(u => u.role === 'Admin').length;
+            
+            // Calculate recent logins (last 7 days)
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const recentLogins = authorizedUsers.filter(u => {
+                if (u.lastLogin === 'Never') return false;
+                const loginDate = new Date(u.lastLogin);
+                return loginDate >= sevenDaysAgo;
+            }).length;
+            document.getElementById('recentLogins').textContent = recentLogins;
+        }
+
+        function showAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('hidden');
+        }
+
+        async function addUser(event) {
+            event.preventDefault();
+            
+            if (!userPermissions.isAdmin) {
+                showNotification('Only administrators can add users', 'error');
+                return;
+            }
+            
+            const formData = new FormData(event.target);
+            const newUser = {
+                email: formData.get('email'),
+                displayName: formData.get('displayName'),
+                role: formData.get('role'),
+                status: formData.get('status'),
+                department: formData.get('department') || '',
+                notes: formData.get('notes') || '',
+                createdDate: new Date().toISOString(),
+                lastLogin: 'Never'
+            };
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Add to SharePoint Users list
+                    const result = await addUserToSharePoint(newUser);
+                    newUser.id = result.id.toString();
+                    showNotification(`User ${newUser.displayName} added successfully!`);
+                } else {
+                    newUser.id = 'user_' + Date.now();
+                    showNotification(`User ${newUser.displayName} added locally (SharePoint not connected)`);
+                }
+                
+                // Add to local array
+                authorizedUsers.push(newUser);
+                updateUsersTable();
+                updateUserStats();
+                
+                closeModal('addUserModal');
+                event.target.reset();
+                
+            } catch (error) {
+                console.error('❌ Failed to add user:', error);
+                showNotification('Failed to add user: ' + error.message, 'error');
+            }
+        }
+
+        async function addUserToSharePoint(userData) {
+            try {
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fields: {
+                            Title: userData.displayName,
+                            Email: userData.email,
+                            DisplayName: userData.displayName,
+                            Role: userData.role,
+                            Status: userData.status,
+                            Department: userData.department,
+                            Notes: userData.notes,
+                            LastLogin: userData.lastLogin
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to add user: ${response.status} ${response.statusText}`);
+                }
+                
+                return await response.json();
+                
+            } catch (error) {
+                console.error('❌ Error adding user to SharePoint:', error);
+                throw error;
+            }
+        }
+
+        async function editUser(userId) {
+            showNotification('User editing coming soon!', 'info');
+        }
+
+        async function deleteUser(userId) {
+            if (!userPermissions.isAdmin) {
+                showNotification('Only administrators can delete users', 'error');
+                return;
+            }
+            
+            const user = authorizedUsers.find(u => u.id === userId);
+            if (!user) {
+                showNotification('User not found', 'error');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete user "${user.displayName}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    await deleteUserFromSharePoint(userId);
+                    showNotification(`User ${user.displayName} deleted successfully!`);
+                } else {
+                    showNotification(`User ${user.displayName} deleted locally`);
+                }
+                
+                // Remove from local array
+                const userIndex = authorizedUsers.findIndex(u => u.id === userId);
+                if (userIndex > -1) {
+                    authorizedUsers.splice(userIndex, 1);
+                }
+                
+                updateUsersTable();
+                updateUserStats();
+                
+            } catch (error) {
+                console.error('❌ Failed to delete user:', error);
+                showNotification('Failed to delete user: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteUserFromSharePoint(userId) {
+            try {
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items/${userId}`;
+                
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to delete user: ${response.status} ${response.statusText}`);
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error deleting user from SharePoint:', error);
+                throw error;
+            }
+        }
+
         // Admin functions
         function updateAdminStats() {
             document.getElementById('sharePointFruits').textContent = fruits.length;
             document.getElementById('sharePointActivities').textContent = activities.length;
             document.getElementById('lastSyncStatus').textContent = isSharePointMode ? 'Connected' : 'Not Connected';
+            
+            // Load and update user stats if admin
+            if (userPermissions.isAdmin) {
+                loadUsersFromSharePoint();
+            }
         }
 
         function refreshUserList() {
@@ -3283,5 +4166,5 @@
             showNotification('Logged out successfully');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a545eef2f3b4dc',t:'MTc1OTc1NDkwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a55c79c2abb4dc',t:'MTc1OTc1NTgzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
