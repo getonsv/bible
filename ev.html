@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM</title>
+    <title>Evangelism FRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -46,7 +46,7 @@
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-cross text-white text-2xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism FRMS</h1>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism FRM</h1>
                 <p class="text-gray-600">Fruit Relationship Management System</p>
             </div>
             
@@ -59,7 +59,7 @@
             
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-500">Secure PKCE authentication with Microsoft 365</p>
-                <p class="text-xs text-gray-400 mt-2">No client secrets • Enhanced security</p>
+                <p class="text-xs text-gray-400 mt-2">Copyright 2024 • System by GetOn</p>
             </div>
         </div>
     </div>
@@ -740,6 +740,9 @@
             console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
             console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
             
+            // Check for OAuth callback parameters first
+            checkForOAuthCallback();
+            
             initializeMicrosoftAuth();
             loadLocalData();
             updateConnectionStatus();
@@ -763,6 +766,72 @@
             `;
             
             console.log('✅ PKCE Authentication initialized (no client secrets)');
+        }
+
+        async function checkForOAuthCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const authCode = urlParams.get('code');
+            const returnedState = urlParams.get('state');
+            const error = urlParams.get('error');
+            
+            if (error) {
+                console.error('❌ OAuth error:', error);
+                showNotification('Authentication failed: ' + (urlParams.get('error_description') || error), 'error');
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return;
+            }
+            
+            if (authCode) {
+                console.log('🔐 OAuth callback detected, processing...');
+                showNotification('Processing authentication...', 'info');
+                
+                try {
+                    // Validate state parameter
+                    const storedState = sessionStorage.getItem('pkce_state');
+                    if (returnedState && storedState && returnedState !== storedState) {
+                        throw new Error('Invalid state parameter - possible security issue');
+                    }
+                    
+                    // Exchange code for token
+                    const tokenData = await exchangeCodeForTokenPKCE(authCode);
+                    
+                    sharePointAccessToken = tokenData.access_token;
+                    isSharePointMode = true;
+                    
+                    // Store token with expiration
+                    sessionStorage.setItem('access_token', tokenData.access_token);
+                    sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
+                    
+                    // Get user info
+                    currentUser = await getUserInfo(tokenData.access_token);
+                    sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+                    
+                    // Clean up PKCE parameters
+                    sessionStorage.removeItem('pkce_code_verifier');
+                    sessionStorage.removeItem('pkce_state');
+                    
+                    // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // Load data from SharePoint
+                    await loadDataFromSharePoint();
+                    
+                    showDashboard();
+                    showNotification('Welcome! Connected to SharePoint Lists successfully.');
+                    
+                } catch (error) {
+                    console.error('❌ OAuth callback processing failed:', error);
+                    showNotification('Authentication failed: ' + error.message, 'error');
+                    
+                    // Clean up on failure
+                    sessionStorage.removeItem('pkce_code_verifier');
+                    sessionStorage.removeItem('pkce_state');
+                    
+                    // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
         }
 
         function checkExistingSession() {
@@ -840,64 +909,8 @@
                 const authUrl = buildPKCEAuthUrl(codeChallenge, state);
                 console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
                 
-                // Open authentication in a popup window
-                const popup = window.open(
-                    authUrl,
-                    'microsoftAuth',
-                    'width=500,height=600,scrollbars=yes,resizable=yes'
-                );
-                
-                if (!popup) {
-                    throw new Error('Failed to open popup window. Please allow popups for this site.');
-                }
-                
-                // Store popup reference globally for manual close functionality
-                window.currentAuthPopup = popup;
-                
-                console.log('🔐 Popup opened, waiting for authentication...');
-                
-                // Show manual extraction option after a delay (reduced from 10 seconds)
-                setTimeout(() => {
-                    if (!popup.closed && !hasResolved) {
-                        showManualCodeExtractionHelper(popup);
-                    }
-                }, 5000); // Show after 5 seconds if automatic detection fails
-                
-                // Listen for the popup to close or send a message
-                const authResult = await waitForAuthResult(popup);
-                
-                console.log('🔐 Authentication result:', { success: authResult.success, error: authResult.error });
-                
-                if (authResult.success) {
-                    sharePointAccessToken = authResult.token;
-                    isSharePointMode = true;
-                    
-                    // Store token with expiration
-                    sessionStorage.setItem('access_token', authResult.token);
-                    sessionStorage.setItem('token_expiry', Date.now() + (authResult.expiresIn * 1000));
-                    
-                    console.log('🔐 Token stored, getting user info...');
-                    
-                    // Get user info from Microsoft Graph
-                    currentUser = await getUserInfo(authResult.token);
-                    sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-                    
-                    console.log('✅ PKCE authentication successful, user:', currentUser.name);
-                    
-                    // Clean up PKCE parameters
-                    sessionStorage.removeItem('pkce_code_verifier');
-                    sessionStorage.removeItem('pkce_state');
-                    
-                    // Load data from SharePoint
-                    console.log('📊 Loading data from SharePoint...');
-                    await loadDataFromSharePoint();
-                    
-                    console.log('🎉 Showing dashboard...');
-                    showDashboard();
-                    showNotification('Welcome! Connected to SharePoint Lists successfully.');
-                } else {
-                    throw new Error(authResult.error || 'Authentication failed');
-                }
+                // Redirect to Microsoft authentication (same window)
+                window.location.href = authUrl;
                 
             } catch (error) {
                 console.error('❌ PKCE authentication failed:', error);
@@ -1061,7 +1074,7 @@
         }
 
         function buildPKCEAuthUrl(codeChallenge, state) {
-            const redirectUri = 'https://login.microsoftonline.com/common/oauth2/nativeclient';
+            const redirectUri = 'https://app.shill.es/ev';
             
             const params = new URLSearchParams({
                 client_id: SHAREPOINT_CONFIG.CLIENT_ID,
@@ -1279,7 +1292,7 @@
                     client_id: SHAREPOINT_CONFIG.CLIENT_ID,
                     scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
                     code: authCode,
-                    redirect_uri: 'https://login.microsoftonline.com/common/oauth2/nativeclient',
+                    redirect_uri: 'https://app.shill.es/ev',
                     grant_type: 'authorization_code',
                     code_verifier: codeVerifier // PKCE proof
                 });
@@ -2315,5 +2328,5 @@
             showNotification('Logged out successfully');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a519fc75efb4dc',t:'MTc1OTc1MzEwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a52692a6aab4dc',t:'MTc1OTc1MzYyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
