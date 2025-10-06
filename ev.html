@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>We Are One - Evangelism FRM</title>
+    <title>Evangelism FRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1312,35 +1312,44 @@
         }
 
         function checkForOAuthCallback() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const authCode = urlParams.get('code');
-            const returnedState = urlParams.get('state');
-            const error = urlParams.get('error');
-            
-            if (error) {
-                console.error('❌ OAuth error:', error);
-                showNotification('Authentication failed: ' + (urlParams.get('error_description') || error), 'error');
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                return true; // Return true to indicate callback was processed
-            }
-            
-            if (authCode) {
-                console.log('🔐 OAuth callback detected, processing...');
-                showNotification('Processing authentication...', 'info');
-                
-                // Determine if this is Google or Microsoft OAuth based on state
-                if (returnedState && returnedState.startsWith('google_auth_')) {
-                    processGoogleOAuthCallback(authCode, returnedState);
-                } else {
-                    processOAuthCallback(authCode, returnedState);
-                }
-                return true; // Return true to indicate callback is being processed
-            }
-            
-            return false; // No callback parameters found
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    const returnedState = urlParams.get('state');
+    const error = urlParams.get('error');
+    const authProvider = urlParams.get('auth_provider');
+    
+    console.log('🔐 Checking for OAuth callback:', {
+        hasCode: !!authCode,
+        hasState: !!returnedState,
+        hasError: !!error,
+        authProvider: authProvider
+    });
+    
+    if (error) {
+        console.error('❌ OAuth error:', error);
+        showNotification('Authentication failed: ' + (urlParams.get('error_description') || error), 'error');
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return true;
+    }
+    
+    if (authCode) {
+        console.log('🔐 OAuth callback detected, processing...');
+        showNotification('Processing authentication...', 'info');
+        
+        // Determine if this is Google or Microsoft OAuth based on state
+        if (returnedState && returnedState.startsWith('google_auth_')) {
+            console.log('🔐 Processing Google OAuth callback');
+            processGoogleOAuthCallback(authCode, returnedState);
+        } else {
+            console.log('🔐 Processing Microsoft OAuth callback');
+            processOAuthCallback(authCode, returnedState);
         }
-
+        return true;
+    }
+    
+    return false;
+}
         async function processOAuthCallback(authCode, returnedState) {
             try {
                 // Validate state parameter
