@@ -877,15 +877,6 @@
                 showLoginLoading(true);
                 console.log('🔐 Starting Microsoft 365 authentication...');
                 
-                // Microsoft OAuth URL
-                const authUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.tenantId}/oauth2/v2.0/authorize?` +
-                    `client_id=${SHAREPOINT_CONFIG.clientId}&` +
-                    `response_type=code&` +
-                    `redirect_uri=${encodeURIComponent(SHAREPOINT_CONFIG.redirectUri)}&` +
-                    `scope=${encodeURIComponent(SHAREPOINT_CONFIG.scope)}&` +
-                    `response_mode=query&` +
-                    `state=microsoft_login`;
-                
                 // Check if we're returning from OAuth
                 const urlParams = new URLSearchParams(window.location.search);
                 const authCode = urlParams.get('code');
@@ -899,6 +890,18 @@
                     // Clean up URL
                     window.history.replaceState({}, document.title, window.location.pathname);
                 } else {
+                    // Use current page URL as redirect URI
+                    const currentUrl = window.location.origin + window.location.pathname;
+                    
+                    // Microsoft OAuth URL
+                    const authUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.tenantId}/oauth2/v2.0/authorize?` +
+                        `client_id=${SHAREPOINT_CONFIG.clientId}&` +
+                        `response_type=code&` +
+                        `redirect_uri=${encodeURIComponent(currentUrl)}&` +
+                        `scope=${encodeURIComponent(SHAREPOINT_CONFIG.scope)}&` +
+                        `response_mode=query&` +
+                        `state=microsoft_login`;
+                    
                     // Start OAuth flow
                     window.location.href = authUrl;
                 }
@@ -1133,6 +1136,7 @@
         async function exchangeCodeForToken(authCode) {
             try {
                 const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.tenantId}/oauth2/v2.0/token`;
+                const currentUrl = window.location.origin + window.location.pathname;
                 
                 const response = await fetch(tokenUrl, {
                     method: 'POST',
@@ -1143,13 +1147,14 @@
                         client_id: SHAREPOINT_CONFIG.clientId,
                         scope: SHAREPOINT_CONFIG.scope,
                         code: authCode,
-                        redirect_uri: SHAREPOINT_CONFIG.redirectUri,
+                        redirect_uri: currentUrl,
                         grant_type: 'authorization_code'
                     })
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Token exchange failed: ${response.status}`);
+                    const errorText = await response.text();
+                    throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
                 }
                 
                 const tokenData = await response.json();
@@ -1953,5 +1958,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5d6b535b5b4dc',t:'MTc1OTc2MDgzOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5daf69727b4dc',t:'MTc1OTc2MTAxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
