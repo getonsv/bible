@@ -863,7 +863,8 @@
             const statusText = document.getElementById('statusText');
             
             if (navigator.onLine) {
-                testAppsScriptConnection().then(isConnected => {
+                // Quick connection test without detailed logging
+                quickConnectionTest().then(isConnected => {
                     if (isConnected) {
                         statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
                         statusText.textContent = 'Online';
@@ -881,9 +882,13 @@
             }
         }
 
-        async function testAppsScriptConnection() {
+        async function quickConnectionTest() {
             try {
-                const response = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL + '?action=ping');
+                const response = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL + '?action=ping', {
+                    method: 'GET',
+                    mode: 'cors',
+                    timeout: 5000
+                });
                 return response.ok;
             } catch (error) {
                 return false;
@@ -1402,14 +1407,57 @@
 
         async function testAppsScriptConnection() {
             try {
-                const response = await callAppsScript('ping');
-                if (response.success) {
-                    showNotification('Apps Script connection successful!');
-                } else {
-                    showNotification('Apps Script connection failed', 'error');
+                console.log('🔗 Testing Apps Script connection...');
+                console.log('📡 URL:', APPS_SCRIPT_CONFIG.WEB_APP_URL);
+                
+                // First try a simple GET request
+                const getResponse = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL + '?action=ping', {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                console.log('📡 GET Response status:', getResponse.status);
+                console.log('📡 GET Response headers:', [...getResponse.headers.entries()]);
+                
+                if (getResponse.ok) {
+                    const getResult = await getResponse.text();
+                    console.log('📡 GET Response body:', getResult);
+                    
+                    // Try to parse as JSON
+                    try {
+                        const jsonResult = JSON.parse(getResult);
+                        if (jsonResult.success) {
+                            showNotification('Apps Script connection successful!');
+                            return true;
+                        }
+                    } catch (parseError) {
+                        console.log('📡 Response is not JSON, trying POST method...');
+                    }
                 }
+                
+                // If GET fails, try POST
+                const postResponse = await callAppsScript('ping');
+                if (postResponse && postResponse.success) {
+                    showNotification('Apps Script connection successful!');
+                    return true;
+                } else {
+                    console.error('📡 POST Response:', postResponse);
+                    showNotification('Apps Script connection failed - Invalid response', 'error');
+                    return false;
+                }
+                
             } catch (error) {
-                showNotification('Apps Script connection failed: ' + error.message, 'error');
+                console.error('📡 Apps Script connection error:', error);
+                showNotification(`Apps Script connection failed: ${error.message}`, 'error');
+                
+                // Show detailed error information
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showNotification('Network error - Check if Apps Script URL is correct and deployed', 'error');
+                } else if (error.message.includes('CORS')) {
+                    showNotification('CORS error - Apps Script may not be deployed as web app', 'error');
+                }
+                
+                return false;
             }
         }
 
@@ -1459,5 +1507,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a2e2724373b4dc',t:'MTc1OTcyOTg2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a30b7a3404b4dc',t:'MTc1OTczMTU0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
