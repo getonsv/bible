@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM - Track Your Ministry Impact</title>
+    <title>Evangelism CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1092,6 +1092,47 @@ function validateSpreadsheetAccess(spreadsheetId) {
         };
 
 
+
+        // Constants
+        const STATUS_PROGRESSION = [
+            'Initial Contact',
+            'First Response',
+            'Interest Shown',
+            'BB Session Scheduled',
+            'In BB Session',
+            'BB Session Completed',
+            'Attending Class',
+            'Baptism Candidate',
+            'Baptized',
+            'Active Member',
+            'Not Interested',
+            'Lost Contact'
+        ];
+
+        const LEAD_SOURCES = [
+            'Facebook Ads',
+            'Instagram Ads',
+            'Google Ads',
+            'YouTube Ads',
+            'TikTok Ads',
+            'Organic Social Media',
+            'Referral',
+            'Event/Outreach',
+            'Website Contact Form',
+            'Cold Outreach',
+            'Other'
+        ];
+
+        const ACTIVITY_TYPES = [
+            'Phone Call',
+            'WhatsApp Message',
+            'WhatsApp Call',
+            'Instagram DM',
+            'Facebook Message',
+            'Twitter DM',
+            'In-Person Meeting',
+            'BB Session'
+        ];
 
         // Global state - Enhanced
         let currentUser = null;
@@ -3097,5 +3138,5 @@ function doGet(e) {
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3a1994112b4dc',t:'MTc1OTczNzY5MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3a4e797d5b4dc',t:'MTc1OTczNzgyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
