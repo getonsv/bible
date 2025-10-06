@@ -1054,28 +1054,12 @@
             GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
         };
         
-        // Google OAuth configuration
+        // Google configuration for legacy features
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
             CLIENT_SECRET: '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',
-            PROJECT_ID: 'hmbcfrm',
-            AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
-            TOKEN_URI: 'https://oauth2.googleapis.com/token',
+            API_KEY: 'AIzaSyBqvopK2QrsiUSLO4M7McX4EZI0cbTF0uY',
             SCOPES: 'openid profile email https://www.googleapis.com/auth/spreadsheets',
-            REDIRECT_URIS: [
-                'http://localhost:3000/auth/callback',
-                'https://shill.es/auth/callback',
-                'https://app.shill.es/auth/callback',
-                'https://app.geton.asia/auth/callback',
-                'https://geton.asia/auth/callback'
-            ],
-            JAVASCRIPT_ORIGINS: [
-                'http://localhost:3000',
-                'https://shill.es',
-                'https://app.shill.es',
-                'https://app.geton.asia',
-                'https://geton.asia'
-            ],
             SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
             SHEET_NAME: 'User Access & Admin Config'
         };
@@ -1334,12 +1318,8 @@
                 console.log('🔐 OAuth callback detected, processing...');
                 showNotification('Processing authentication...', 'info');
                 
-                // Determine if this is Google or Microsoft OAuth based on state
-                if (returnedState && returnedState.startsWith('google_auth_')) {
-                    processGoogleOAuthCallback(authCode, returnedState);
-                } else {
-                    processOAuthCallback(authCode, returnedState);
-                }
+                // Process callback asynchronously
+                processOAuthCallback(authCode, returnedState);
                 return true; // Return true to indicate callback is being processed
             }
             
@@ -1413,56 +1393,34 @@
         }
 
         function checkExistingSession() {
-            // Check for Microsoft session
-            const msToken = sessionStorage.getItem('access_token');
-            const msExpiry = sessionStorage.getItem('token_expiry');
+            const token = sessionStorage.getItem('access_token');
+            const expiry = sessionStorage.getItem('token_expiry');
             
-            // Check for Google session
-            const googleToken = sessionStorage.getItem('google_access_token');
-            const savedUser = sessionStorage.getItem('current_user');
-            
-            if (msToken && msExpiry && Date.now() < parseInt(msExpiry)) {
-                console.log('🔐 Valid Microsoft session found, restoring...');
-                sharePointAccessToken = msToken;
+            if (token && expiry && Date.now() < parseInt(expiry)) {
+                console.log('🔐 Valid session found, restoring...');
+                sharePointAccessToken = token;
                 isSharePointMode = true;
                 
                 // Restore user info
+                const savedUser = sessionStorage.getItem('current_user');
                 if (savedUser) {
                     currentUser = JSON.parse(savedUser);
                 }
                 
                 loadDataFromSharePoint().then(() => {
                     showDashboard();
+                    
+                    // Start real-time sync for restored session
                     startRealTimeSync();
-                    showNotification('Microsoft session restored with real-time sync!');
+                    
+                    showNotification('Session restored with real-time sync!');
                 });
-            } else if (googleToken && savedUser) {
-                console.log('🔐 Valid Google session found, restoring...');
-                currentUser = JSON.parse(savedUser);
-                
-                // Load data (SharePoint if available, otherwise local)
-                if (sharePointAccessToken) {
-                    loadDataFromSharePoint().then(() => {
-                        showDashboard();
-                        startRealTimeSync();
-                        showNotification('Google session restored with SharePoint sync!');
-                    });
-                } else {
-                    loadLocalData();
-                    showDashboard();
-                    showNotification('Google session restored!');
-                }
             } else {
                 console.log('🔐 No valid session found');
-                // Clean up expired sessions
-                if (msToken) {
+                if (token) {
+                    // Clean up expired session
                     sessionStorage.removeItem('access_token');
                     sessionStorage.removeItem('token_expiry');
-                }
-                if (googleToken) {
-                    sessionStorage.removeItem('google_access_token');
-                }
-                if (savedUser) {
                     sessionStorage.removeItem('current_user');
                 }
             }
@@ -1491,40 +1449,20 @@
 
         async function authenticateWithGoogle() {
             try {
-                console.log('🔐 Starting Google OAuth authentication...');
+                console.log('🔐 Starting Google authentication...');
                 showNotification('Redirecting to Google...', 'info');
                 
-                // Generate state parameter for security
-                const state = 'google_auth_' + Date.now();
-                sessionStorage.setItem('google_auth_state', state);
-                
-                // Determine the correct redirect URI based on current domain
-                const currentOrigin = window.location.origin;
-                let redirectUri = currentOrigin + '/auth/callback';
-                
-                // Check if current origin is in allowed list
-                if (!GOOGLE_CONFIG.JAVASCRIPT_ORIGINS.includes(currentOrigin)) {
-                    console.warn('Current origin not in allowed list, using fallback');
-                    redirectUri = 'https://app.shill.es/auth/callback';
-                }
-                
-                // Build OAuth URL
-                const authUrl = new URL(GOOGLE_CONFIG.AUTH_URI);
-                authUrl.searchParams.set('client_id', GOOGLE_CONFIG.CLIENT_ID);
-                authUrl.searchParams.set('redirect_uri', redirectUri);
-                authUrl.searchParams.set('response_type', 'code');
-                authUrl.searchParams.set('scope', GOOGLE_CONFIG.SCOPES);
-                authUrl.searchParams.set('state', state);
-                authUrl.searchParams.set('access_type', 'offline');
-                authUrl.searchParams.set('prompt', 'consent');
-                
-                console.log('🔗 Google OAuth URL:', authUrl.toString());
-                
-                // Redirect to Google OAuth
-                window.location.href = authUrl.toString();
+                // Trigger Google Sign-In popup
+                google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        console.log('Google Sign-In prompt not displayed, showing manual sign-in');
+                        // Fallback to manual sign-in
+                        showGoogleSignInPopup();
+                    }
+                });
                 
             } catch (error) {
-                console.error('❌ Google OAuth authentication failed:', error);
+                console.error('❌ Google authentication failed:', error);
                 showNotification('Google authentication failed: ' + error.message, 'error');
             }
         }
@@ -1551,133 +1489,46 @@
             }, 1000);
         }
 
-        async function processGoogleOAuthCallback(authCode, returnedState) {
+        async function handleGoogleSignIn(response) {
             try {
-                // Validate state parameter
-                const storedState = sessionStorage.getItem('google_auth_state');
-                if (returnedState && storedState && returnedState !== storedState) {
-                    throw new Error('Invalid state parameter - possible security issue');
-                }
+                console.log('🔐 Processing Google Sign-In response...');
                 
-                // Exchange code for token
-                const tokenData = await exchangeGoogleCodeForToken(authCode);
-                
-                // Get user info from Google
-                const userInfo = await getGoogleUserInfo(tokenData.access_token);
+                // Decode the JWT token
+                const token = response.credential;
+                const payload = JSON.parse(atob(token.split('.')[1]));
                 
                 console.log('👤 Google user info:', {
-                    email: userInfo.email,
-                    name: userInfo.name,
-                    picture: userInfo.picture
+                    email: payload.email,
+                    name: payload.name,
+                    picture: payload.picture
                 });
                 
                 // Check if user exists in SharePoint Users list
-                const authorizedUser = await checkUserInSharePointList(userInfo.email, userInfo.name, 'google');
+                const userInfo = await checkUserInSharePointList(payload.email, payload.name, 'google');
                 
-                if (!authorizedUser) {
+                if (!userInfo) {
                     showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
                     return;
                 }
                 
                 // Set current user with SharePoint permissions
-                currentUser = authorizedUser;
-                sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-                sessionStorage.setItem('google_access_token', tokenData.access_token);
+                currentUser = userInfo;
                 
-                // Clean up OAuth parameters
-                sessionStorage.removeItem('google_auth_state');
-                
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // Load data from SharePoint if we have access
-                if (sharePointAccessToken) {
-                    await loadDataFromSharePoint();
-                    startRealTimeSync();
-                } else {
-                    // Load local data as fallback
-                    loadLocalData();
-                }
+                // Load data from SharePoint (using service account or public access)
+                await loadDataFromSharePoint();
                 
                 showDashboard();
                 
-                showNotification(`Welcome ${authorizedUser.name}! Signed in with Google.`);
-                
-            } catch (error) {
-                console.error('❌ Google OAuth callback processing failed:', error);
-                showNotification('Google authentication failed: ' + error.message, 'error');
-                
-                // Clean up on failure
-                sessionStorage.removeItem('google_auth_state');
-                
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // Show login screen again
-                initializeMicrosoftAuth();
-            }
-        }
-
-        async function exchangeGoogleCodeForToken(authCode) {
-            try {
-                console.log('🔄 Google token exchange starting...');
-                
-                // Determine the correct redirect URI
-                const currentOrigin = window.location.origin;
-                let redirectUri = currentOrigin + '/auth/callback';
-                
-                if (!GOOGLE_CONFIG.JAVASCRIPT_ORIGINS.includes(currentOrigin)) {
-                    redirectUri = 'https://app.shill.es/auth/callback';
+                // Start real-time sync if we have SharePoint access
+                if (sharePointAccessToken) {
+                    startRealTimeSync();
                 }
                 
-                const response = await fetch(GOOGLE_CONFIG.TOKEN_URI, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: new URLSearchParams({
-                        client_id: GOOGLE_CONFIG.CLIENT_ID,
-                        client_secret: GOOGLE_CONFIG.CLIENT_SECRET,
-                        code: authCode,
-                        grant_type: 'authorization_code',
-                        redirect_uri: redirectUri
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error_description || 'Google token exchange failed');
-                }
-                
-                const tokenData = await response.json();
-                console.log('✅ Google token exchange successful');
-                
-                return tokenData;
+                showNotification(`Welcome ${userInfo.name}! Signed in with Google.`);
                 
             } catch (error) {
-                console.error('❌ Google token exchange failed:', error);
-                throw error;
-            }
-        }
-
-        async function getGoogleUserInfo(accessToken) {
-            try {
-                const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Accept': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to get Google user info');
-                }
-
-                return await response.json();
-                
-            } catch (error) {
-                console.error('❌ Failed to get Google user info:', error);
-                throw error;
+                console.error('❌ Google Sign-In processing failed:', error);
+                showNotification('Google Sign-In failed: ' + error.message, 'error');
             }
         }
 
@@ -4343,8 +4194,8 @@
                     id: item.id.toString(),
                     email: item.fields.Email || '',
                     displayName: item.fields.DisplayName || '',
-                    role: item.fields.Role.value || 'User',
-                    status: item.fields.Status.value || 'Active',
+                    role: item.fields.Role || 'User',
+                    status: item.fields.Status || 'Active',
                     department: item.fields.Department || '',
                     notes: item.fields.Notes || '',
                     createdDate: item.fields.Created || item.createdDateTime,
@@ -4515,14 +4366,14 @@
                     },
                     body: JSON.stringify({
                         fields: {
-                            Title: userData.Title,
-                            Email: userData.Email,
-                            DisplayName: userData.DisplayName,
-                            Role: userData.Role.value,
-                            Status: userData.Status.value,
-                            Department: userData.Department,
-                            Notes: userData.Notes,
-                            LastLogin: userData.LastLogin
+                            Title: userData.displayName,
+                            Email: userData.email,
+                            DisplayName: userData.displayName,
+                            Role: userData.role,
+                            Status: userData.status,
+                            Department: userData.department,
+                            Notes: userData.notes,
+                            LastLogin: userData.lastLogin
                         }
                     })
                 });
@@ -4692,11 +4543,9 @@
             // Clear all session data
             sessionStorage.removeItem('access_token');
             sessionStorage.removeItem('token_expiry');
-            sessionStorage.removeItem('google_access_token');
             sessionStorage.removeItem('current_user');
             sessionStorage.removeItem('pkce_code_verifier');
             sessionStorage.removeItem('pkce_state');
-            sessionStorage.removeItem('google_auth_state');
             
             document.getElementById('dashboard').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
@@ -4706,5 +4555,5 @@
             showNotification('Logged out successfully');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a581ef1496b4dc',t:'MTc1OTc1NzM2Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5a404b0a9b4dc',t:'MTc1OTc1ODc2Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
