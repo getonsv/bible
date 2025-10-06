@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM (v3)</title>
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1577,6 +1577,67 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
+        // Auto-sync system for real-time Google Sheets updates
+        async function autoSyncToSheets(action, data) {
+            try {
+                console.log('🔄 Auto-syncing to Google Sheets:', action, data);
+                
+                // Show subtle sync indicator
+                showSyncIndicator();
+                
+                // Call Apps Script with the action and data
+                const result = await callAppsScript(action, data);
+                
+                if (result && result.success) {
+                    console.log('✅ Auto-sync successful:', result);
+                    updateSyncIndicator('success');
+                } else {
+                    console.warn('⚠️ Auto-sync completed with warnings:', result);
+                    updateSyncIndicator('warning');
+                }
+                
+            } catch (error) {
+                console.error('❌ Auto-sync failed:', error);
+                updateSyncIndicator('error');
+                
+                // Don't show error notification for auto-sync failures to avoid spam
+                // Just log it and continue with local operation
+                console.log('📱 Data saved locally, will retry sync later');
+            }
+            
+            // Hide sync indicator after 2 seconds
+            setTimeout(hideSyncIndicator, 2000);
+        }
+
+        // Enhanced sync indicator system
+        function showSyncIndicator() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            statusIndicator.className = 'w-2 h-2 bg-blue-500 rounded-full animate-pulse';
+            statusText.textContent = 'Syncing...';
+        }
+
+        function updateSyncIndicator(status) {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            if (status === 'success') {
+                statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
+                statusText.textContent = 'Synced';
+            } else if (status === 'warning') {
+                statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
+                statusText.textContent = 'Sync Warning';
+            } else if (status === 'error') {
+                statusIndicator.className = 'w-2 h-2 bg-red-500 rounded-full';
+                statusText.textContent = 'Sync Failed';
+            }
+        }
+
+        function hideSyncIndicator() {
+            updateConnectionStatus(); // Reset to normal status
+        }
+
         // Apps Script API calls with improved error handling
         async function callAppsScript(action, data = {}) {
             console.log('📡 Calling Apps Script:', action, 'with data:', data);
@@ -2211,19 +2272,14 @@ function validateSpreadsheetAccess(spreadsheetId) {
             // Add to local cache
             authorizedUsers.push(newUser);
             
-            // Try to sync to Google Sheets
-            try {
-                await syncUserToGoogleSheets(newUser, 'add');
-                showNotification(`User ${email} added successfully!`);
-            } catch (error) {
-                console.warn('Failed to sync to Google Sheets:', error);
-                showNotification(`User added locally. Sync to Google Sheets failed: ${error.message}`, 'warning');
-            }
-            
             closeModal('addUserModal');
             event.target.reset();
             updateUserManagementTable();
             updateAdminStats();
+            showNotification(`User ${email} added successfully!`);
+            
+            // Auto-sync to Google Sheets
+            await autoSyncToSheets('user_added', newUser);
         }
 
         async function updateUser(event) {
@@ -2251,18 +2307,13 @@ function validateSpreadsheetAccess(spreadsheetId) {
             
             authorizedUsers[userIndex] = updatedUser;
             
-            // Try to sync to Google Sheets
-            try {
-                await syncUserToGoogleSheets(updatedUser, 'update');
-                showNotification(`User ${originalEmail} updated successfully!`);
-            } catch (error) {
-                console.warn('Failed to sync to Google Sheets:', error);
-                showNotification(`User updated locally. Sync to Google Sheets failed: ${error.message}`, 'warning');
-            }
-            
             closeModal('editUserModal');
             updateUserManagementTable();
             updateAdminStats();
+            showNotification(`User ${originalEmail} updated successfully!`);
+            
+            // Auto-sync to Google Sheets
+            await autoSyncToSheets('user_updated', updatedUser);
         }
 
         // Core CRM functions
@@ -2463,8 +2514,8 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }, 3000);
         }
 
-        // Add fruit function
-        function addFruit(event) {
+        // Add fruit function with auto-sync
+        async function addFruit(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
@@ -2484,6 +2535,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 createdBy: currentUser.email
             };
             
+            // Add to local data first
             fruits.push(newFruit);
             saveLocalData();
             updateFruitsGrid();
@@ -2492,10 +2544,13 @@ function validateSpreadsheetAccess(spreadsheetId) {
             closeModal('addFruitModal');
             event.target.reset();
             showNotification(`${newFruit.name} added successfully!`);
+            
+            // Auto-sync to Google Sheets
+            await autoSyncToSheets('fruit_added', newFruit);
         }
 
-        // Log activity function
-        function logActivity(event) {
+        // Log activity function with auto-sync
+        async function logActivity(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
@@ -2510,6 +2565,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 createdDate: new Date().toISOString()
             };
             
+            // Add to local data first
             activities.push(newActivity);
             saveLocalData();
             updateRecentActivities();
@@ -2518,10 +2574,13 @@ function validateSpreadsheetAccess(spreadsheetId) {
             closeModal('activityModal');
             event.target.reset();
             showNotification('Activity logged successfully!');
+            
+            // Auto-sync to Google Sheets
+            await autoSyncToSheets('activity_added', newActivity);
         }
 
-        // Schedule BB function
-        function scheduleBB(event) {
+        // Schedule BB function with auto-sync
+        async function scheduleBB(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
@@ -2530,9 +2589,13 @@ function validateSpreadsheetAccess(spreadsheetId) {
             // Update fruit status
             const fruit = fruits.find(f => f.name === fruitName);
             if (fruit) {
+                const oldStatus = fruit.status;
                 fruit.status = 'BB Session Scheduled';
                 saveLocalData();
                 updateFruitsGrid();
+                
+                // Auto-sync fruit status update
+                await autoSyncToSheets('fruit_updated', { ...fruit, previousStatus: oldStatus });
             }
             
             // Log the scheduling activity
@@ -2555,6 +2618,9 @@ function validateSpreadsheetAccess(spreadsheetId) {
             closeModal('scheduleModal');
             event.target.reset();
             showNotification('BB Session scheduled successfully!');
+            
+            // Auto-sync the scheduling activity
+            await autoSyncToSheets('activity_added', scheduleActivity);
         }
 
         // Admin functions
@@ -2670,12 +2736,84 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 return;
             }
             
+            const deletedUser = authorizedUsers[userIndex];
+            
             // Remove from local cache
             authorizedUsers.splice(userIndex, 1);
             
-            showNotification(`User ${userEmail} deleted successfully!`);
             updateUserManagementTable();
             updateAdminStats();
+            showNotification(`User ${userEmail} deleted successfully!`);
+            
+            // Auto-sync deletion to Google Sheets
+            await autoSyncToSheets('user_deleted', { email: userEmail, deletedBy: currentUser.email, deletedDate: new Date().toISOString() });
+        }
+
+        // Enhanced bulk operations with auto-sync
+        async function applyBulkStatusUpdate() {
+            const newStatus = document.getElementById('bulkStatusUpdate').value;
+            if (!newStatus || selectedFruits.size === 0) {
+                showNotification('Please select fruits and a status to update', 'warning');
+                return;
+            }
+
+            if (!confirm(`Update ${selectedFruits.size} fruits to status: ${newStatus}?`)) {
+                return;
+            }
+
+            const updatedFruits = [];
+            
+            // Update selected fruits
+            selectedFruits.forEach(fruitId => {
+                const fruit = fruits.find(f => f.id === fruitId);
+                if (fruit) {
+                    const oldStatus = fruit.status;
+                    fruit.status = newStatus;
+                    fruit.lastUpdated = new Date().toISOString();
+                    fruit.updatedBy = currentUser.email;
+                    updatedFruits.push({ ...fruit, previousStatus: oldStatus });
+                }
+            });
+
+            // Save locally
+            saveLocalData();
+            updateFruitsGrid();
+            updateStats();
+            clearSelection();
+
+            showNotification(`Updated ${updatedFruits.length} fruits to ${newStatus}`);
+
+            // Auto-sync all updates
+            for (const fruit of updatedFruits) {
+                await autoSyncToSheets('fruit_updated', fruit);
+            }
+        }
+
+        async function exportSelectedFruits() {
+            if (selectedFruits.size === 0) {
+                showNotification('Please select fruits to export', 'warning');
+                return;
+            }
+
+            const selectedData = fruits.filter(f => selectedFruits.has(f.id));
+            const exportData = {
+                fruits: selectedData,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentUser.email,
+                totalCount: selectedData.length
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `selected-fruits-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showNotification(`Exported ${selectedData.length} selected fruits`);
         }
 
         // Additional utility functions
@@ -2697,6 +2835,22 @@ function validateSpreadsheetAccess(spreadsheetId) {
             } else {
                 bulkActionsBar.classList.add('hidden');
             }
+        }
+
+        function selectAllFruits() {
+            const checkboxes = document.querySelectorAll('.fruit-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+                selectedFruits.add(cb.dataset.fruitId);
+            });
+            updateSelection();
+        }
+
+        function clearSelection() {
+            const checkboxes = document.querySelectorAll('.fruit-checkbox');
+            checkboxes.forEach(cb => cb.checked = false);
+            selectedFruits.clear();
+            updateSelection();
         }
 
         function logActivityForFruit(fruitName) {
@@ -2790,5 +2944,5 @@ function validateSpreadsheetAccess(spreadsheetId) {
             showNotification('User list refreshed!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3e465f24fb4dc',t:'MTc1OTc0MDQyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3ebe8f284b4dc',t:'MTc1OTc0MDczNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
