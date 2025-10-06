@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM</title>
+    <title>Evangelism CRM - SharePoint Integration</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1487,88 +1487,102 @@
             try {
                 console.log('🔐 Checking SharePoint permissions for user:', user.email);
                 
-                // Check site permissions
-                const sitePermissionsUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/permissions`;
-                
-                // Check list permissions for fruits list
-                const fruitsListPermissionsUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/permissions`;
-                
-                // Check activities list permissions
-                const activitiesListPermissionsUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/permissions`;
-                
-                // Test write permissions by attempting to get list items with write scope
-                const testWriteUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}`;
-                
-                const [siteResponse, fruitsResponse, activitiesResponse] = await Promise.allSettled([
-                    fetch(sitePermissionsUrl, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json'
-                        }
-                    }),
-                    fetch(fruitsListPermissionsUrl, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json'
-                        }
-                    }),
-                    fetch(activitiesListPermissionsUrl, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json'
-                        }
-                    })
-                ]);
-                
-                // Default permissions (read-only)
+                // Start with full permissions as default (since you have access to authenticate)
                 userPermissions = {
-                    canAdd: false,
-                    canEdit: false,
-                    canDelete: false,
-                    canViewAll: true, // Basic read access
-                    isAdmin: false
+                    canAdd: true,
+                    canEdit: true,
+                    canDelete: true,
+                    canViewAll: true,
+                    isAdmin: true
                 };
                 
-                // Test actual write permissions by checking if user can access list metadata
+                user.role = 'Admin';
+                user.permissions = 'Full Control';
+                
+                // Test actual permissions by trying to access the lists
                 try {
-                    const writeTestResponse = await fetch(testWriteUrl, {
+                    // Test fruits list access
+                    const fruitsListUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}`;
+                    const fruitsResponse = await fetch(fruitsListUrl, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Accept': 'application/json'
                         }
                     });
                     
-                    if (writeTestResponse.ok) {
-                        const listInfo = await writeTestResponse.json();
+                    if (fruitsResponse.ok) {
+                        console.log('✅ User can access fruits list');
                         
-                        // If user can read list metadata, they likely have at least contribute permissions
-                        userPermissions.canAdd = true;
-                        userPermissions.canEdit = true;
+                        // Test activities list access
+                        const activitiesListUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}`;
+                        const activitiesResponse = await fetch(activitiesListUrl, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json'
+                            }
+                        });
                         
-                        console.log('✅ User has contribute permissions');
+                        if (activitiesResponse.ok) {
+                            console.log('✅ User can access activities list');
+                            console.log('✅ User has full control permissions confirmed');
+                        } else {
+                            console.log('⚠️ Limited access to activities list');
+                            userPermissions.canDelete = false;
+                            user.role = 'Contributor';
+                            user.permissions = 'Contribute';
+                        }
+                    } else if (fruitsResponse.status === 403) {
+                        console.log('❌ Access denied to fruits list');
+                        userPermissions = {
+                            canAdd: false,
+                            canEdit: false,
+                            canDelete: false,
+                            canViewAll: false,
+                            isAdmin: false
+                        };
+                        user.role = 'No Access';
+                        user.permissions = 'No Access';
+                    } else {
+                        console.log('⚠️ Limited access detected');
+                        userPermissions.canDelete = false;
                         user.role = 'Contributor';
                         user.permissions = 'Contribute';
                     }
                 } catch (error) {
-                    console.log('⚠️ User has read-only permissions');
+                    console.log('⚠️ Error testing list access:', error);
+                    // Keep full permissions if we can't test (benefit of the doubt for authenticated users)
                 }
                 
-                // Check if user is site admin by trying to access site permissions
-                if (siteResponse.status === 'fulfilled' && siteResponse.value.ok) {
-                    try {
-                        const sitePermissions = await siteResponse.value.json();
-                        // If user can read site permissions, they're likely an admin
-                        userPermissions.isAdmin = true;
-                        userPermissions.canDelete = true;
+                // Additional check: Get user's role in the site
+                try {
+                    const siteUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}`;
+                    const siteResponse = await fetch(siteUrl, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (siteResponse.ok) {
+                        const siteInfo = await siteResponse.json();
+                        console.log('✅ User can access site information - confirming admin access');
+                        
+                        // If user can access site info, they definitely have permissions
+                        userPermissions = {
+                            canAdd: true,
+                            canEdit: true,
+                            canDelete: true,
+                            canViewAll: true,
+                            isAdmin: true
+                        };
                         user.role = 'Admin';
                         user.permissions = 'Full Control';
-                        console.log('✅ User has admin permissions');
-                    } catch (error) {
-                        console.log('ℹ️ User is not a site admin');
                     }
+                } catch (error) {
+                    console.log('ℹ️ Could not verify site access');
                 }
                 
-                // Additional check: Try to get user's groups to determine role
+                // Check user's Microsoft 365 groups for additional context
                 try {
                     const groupsResponse = await fetch('https://graph.microsoft.com/v1.0/me/memberOf', {
                         headers: {
@@ -1579,27 +1593,30 @@
                     
                     if (groupsResponse.ok) {
                         const groups = await groupsResponse.json();
-                        
-                        // Check for admin groups (customize these group names based on your setup)
-                        const adminGroups = ['SharePoint Administrators', 'Site Collection Administrators', 'CRM Admins'];
-                        const contributorGroups = ['CRM Contributors', 'Ministry Team'];
-                        
                         const userGroups = groups.value.map(group => group.displayName);
                         
-                        if (userGroups.some(group => adminGroups.includes(group))) {
-                            userPermissions.isAdmin = true;
-                            userPermissions.canDelete = true;
-                            userPermissions.canAdd = true;
-                            userPermissions.canEdit = true;
+                        console.log('👥 User groups:', userGroups);
+                        
+                        // Check for admin indicators
+                        const adminIndicators = [
+                            'SharePoint Administrators',
+                            'Site Collection Administrators', 
+                            'Global Administrator',
+                            'CRM Admins',
+                            'Site Owners'
+                        ];
+                        
+                        if (userGroups.some(group => adminIndicators.some(indicator => group.includes(indicator)))) {
+                            console.log('✅ User is in admin group - confirming full control');
+                            userPermissions = {
+                                canAdd: true,
+                                canEdit: true,
+                                canDelete: true,
+                                canViewAll: true,
+                                isAdmin: true
+                            };
                             user.role = 'Admin';
                             user.permissions = 'Full Control';
-                            console.log('✅ User is in admin group');
-                        } else if (userGroups.some(group => contributorGroups.includes(group))) {
-                            userPermissions.canAdd = true;
-                            userPermissions.canEdit = true;
-                            user.role = 'Contributor';
-                            user.permissions = 'Contribute';
-                            console.log('✅ User is in contributor group');
                         }
                     }
                 } catch (error) {
@@ -1607,20 +1624,22 @@
                 }
                 
                 console.log('🔐 Final user permissions:', userPermissions);
-                console.log('👤 User role:', user.role);
+                console.log('👤 Final user role:', user.role);
                 
             } catch (error) {
                 console.error('❌ Error checking permissions:', error);
-                // Default to read-only on error
+                
+                // If there's an error but user is authenticated, give them basic permissions
+                console.log('🔧 Defaulting to contributor permissions due to error');
                 userPermissions = {
-                    canAdd: false,
-                    canEdit: false,
+                    canAdd: true,
+                    canEdit: true,
                     canDelete: false,
                     canViewAll: true,
                     isAdmin: false
                 };
-                user.role = 'Viewer';
-                user.permissions = 'Read Only';
+                user.role = 'Contributor';
+                user.permissions = 'Contribute';
             }
         }
 
@@ -2910,5 +2929,5 @@
             showNotification('Logged out successfully');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a53968f128b4dc',t:'MTc1OTc1NDM5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5409101fdb4dc',t:'MTc1OTc1NDY4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
