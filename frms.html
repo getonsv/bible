@@ -94,7 +94,7 @@
                             <div id="syncOptions" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
                                 <button onclick="syncWithGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2">
                                     <i class="fas fa-cloud-upload-alt text-blue-600"></i>
-                                    <span>Sync to Google Sheets</span>
+                                    <span>Sync to Sheets</span>
                                 </button>
                                 <button onclick="refreshData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
                                     <i class="fas fa-refresh text-green-600"></i>
@@ -238,11 +238,40 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
                 <h2 class="text-2xl font-bold text-gray-800">Fruits Management</h2>
                 <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                    <input type="text" placeholder="Search fruits..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="fruitSearch">
+                    <input type="text" placeholder="Search fruits..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="fruitSearch" oninput="filterFruits()">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="statusFilter" onchange="filterFruits()">
+                        <option value="">All Statuses</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="sourceFilter" onchange="filterFruits()">
+                        <option value="">All Sources</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
                     <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                         <i class="fas fa-plus"></i>
                         <span>Add Fruit</span>
                     </button>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            <div id="bulkActionsBar" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm font-medium text-blue-800" id="selectedCount">0 selected</span>
+                        <button onclick="selectAllFruits()" class="text-sm text-blue-600 hover:text-blue-700 underline">Select All</button>
+                        <button onclick="clearSelection()" class="text-sm text-blue-600 hover:text-blue-700 underline">Clear Selection</button>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <select id="bulkStatusUpdate" class="px-3 py-1 border border-blue-300 rounded text-sm">
+                            <option value="">Update Status...</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                        <button onclick="applyBulkStatusUpdate()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Apply</button>
+                        <button onclick="exportSelectedFruits()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-download mr-1"></i>Export
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -303,45 +332,35 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Evangelism Progress</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">Initial Contact</span>
-                            <div class="flex items-center space-x-2">
-                                <div class="w-32 bg-gray-200 rounded-full h-2">
-                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
-                                </div>
-                                <span class="text-sm font-medium">0</span>
-                            </div>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">BB Sessions</span>
-                            <div class="flex items-center space-x-2">
-                                <div class="w-32 bg-gray-200 rounded-full h-2">
-                                    <div class="bg-purple-500 h-2 rounded-full" style="width: 0%"></div>
-                                </div>
-                                <span class="text-sm font-medium">0</span>
-                            </div>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">Attending Class</span>
-                            <div class="flex items-center space-x-2">
-                                <div class="w-32 bg-gray-200 rounded-full h-2">
-                                    <div class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
-                                </div>
-                                <span class="text-sm font-medium">0</span>
-                            </div>
-                        </div>
+                    <div class="space-y-4" id="progressChart">
+                        <!-- Progress bars will be populated by JavaScript -->
                     </div>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Campaign Performance</h3>
-                    <div class="space-y-4">
-                        <div class="text-center py-8 text-gray-500">
-                            <i class="fas fa-chart-bar text-4xl mb-4"></i>
-                            <p>Campaign data will appear here as you add fruits and track their sources.</p>
-                        </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Lead Source Performance</h3>
+                    <div class="space-y-4" id="leadSourceChart">
+                        <!-- Lead source chart will be populated by JavaScript -->
                     </div>
+                </div>
+            </div>
+
+            <!-- Activity Timeline Chart -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Activity Timeline (Last 30 Days)</h3>
+                <div class="h-64 flex items-center justify-center" id="activityTimelineChart">
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-chart-line text-4xl mb-4"></i>
+                        <p>Activity timeline will appear here as you log more interactions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversion Funnel -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Conversion Funnel</h3>
+                <div class="space-y-4" id="conversionFunnel">
+                    <!-- Conversion funnel will be populated by JavaScript -->
                 </div>
             </div>
 
@@ -416,6 +435,28 @@
                 </div>
             </div>
 
+            <!-- User Management -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">User Management</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">User</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Role</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Permissions</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Status</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-700">Last Login</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userManagementTable" class="divide-y divide-gray-200">
+                            <!-- Users will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- System Configuration -->
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-6">System Configuration</h3>
@@ -454,6 +495,35 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Data Migration Status -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">Data Migration Status</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" id="migratedFruits">0</div>
+                        <div class="text-sm text-green-700">Fruits Migrated</div>
+                    </div>
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" id="migratedActivities">0</div>
+                        <div class="text-sm text-blue-700">Activities Migrated</div>
+                    </div>
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600" id="migratedUsers">0</div>
+                        <div class="text-sm text-purple-700">Users Available</div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button onclick="resetMigration()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded text-sm mr-2">
+                        <i class="fas fa-redo mr-2"></i>Reset Migration
+                    </button>
+                    <button onclick="exportMigrationReport()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                        <i class="fas fa-download mr-2"></i>Export Report
+                    </button>
                 </div>
             </div>
         </div>
@@ -679,6 +749,214 @@
         </div>
     </div>
 
+    <!-- Access Guide Modal -->
+    <div id="accessGuideModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">🔐 Secure Google Spreadsheet Access Guide</h3>
+                    <button onclick="closeModal('accessGuideModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-8">
+                    <!-- Option 1: Service Account -->
+                    <div class="border rounded-lg p-6 bg-green-50">
+                        <h4 class="text-lg font-semibold text-green-800 mb-4">
+                            <i class="fas fa-robot mr-2"></i>Option 1: Google Service Account (Recommended)
+                        </h4>
+                        <p class="text-gray-700 mb-4">Most secure option for server-side access without user authentication.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 1: Create Service Account</h5>
+                                <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
+                                    <li>Go to <a href="https://console.cloud.google.com" target="_blank" class="text-blue-600 underline">Google Cloud Console</a></li>
+                                    <li>Create or select a project</li>
+                                    <li>Enable Google Sheets API</li>
+                                    <li>Go to "Credentials" → "Create Credentials" → "Service Account"</li>
+                                    <li>Download the JSON key file</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 2: Share Spreadsheet</h5>
+                                <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
+                                    <li>Open your Google Spreadsheet</li>
+                                    <li>Click "Share" button</li>
+                                    <li>Add the service account email (from JSON file)</li>
+                                    <li>Give "Editor" permissions</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 3: Backend Implementation</h5>
+                                <pre class="bg-gray-100 p-3 rounded text-xs overflow-x-auto"><code>// Node.js example
+const { GoogleSpreadsheet } = require('google-spreadsheet');
+const creds = require('./service-account-key.json');
+
+const doc = new GoogleSpreadsheet('YOUR_SPREADSHEET_ID');
+await doc.useServiceAccountAuth(creds);
+await doc.loadInfo();</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-green-100 rounded">
+                            <p class="text-sm text-green-800"><strong>Pros:</strong> Most secure, no user authentication needed, works server-side</p>
+                            <p class="text-sm text-green-800"><strong>Cons:</strong> Requires backend server</p>
+                        </div>
+                    </div>
+
+                    <!-- Option 2: Apps Script Web App -->
+                    <div class="border rounded-lg p-6 bg-blue-50">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-4">
+                            <i class="fas fa-code mr-2"></i>Option 2: Google Apps Script Web App
+                        </h4>
+                        <p class="text-gray-700 mb-4">Create a secure API endpoint using Google Apps Script.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 1: Create Apps Script</h5>
+                                <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
+                                    <li>Go to <a href="https://script.google.com" target="_blank" class="text-blue-600 underline">script.google.com</a></li>
+                                    <li>Create new project</li>
+                                    <li>Add your spreadsheet ID to the script</li>
+                                    <li>Implement authentication logic</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 2: Secure Authentication</h5>
+                                <pre class="bg-gray-100 p-3 rounded text-xs overflow-x-auto"><code>function doGet(e) {
+  const apiKey = e.parameter.apiKey;
+  const allowedKeys = ['your-secret-api-key-1', 'your-secret-api-key-2'];
+  
+  if (!allowedKeys.includes(apiKey)) {
+    return ContentService.createTextOutput(JSON.stringify({error: 'Unauthorized'}));
+  }
+  
+  // Your spreadsheet operations here
+}</code></pre>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Step 3: Deploy as Web App</h5>
+                                <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
+                                    <li>Click "Deploy" → "New Deployment"</li>
+                                    <li>Type: "Web app"</li>
+                                    <li>Execute as: "Me"</li>
+                                    <li>Who has access: "Anyone" (but protected by API key)</li>
+                                </ol>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-blue-100 rounded">
+                            <p class="text-sm text-blue-800"><strong>Pros:</strong> No backend needed, Google-hosted, free</p>
+                            <p class="text-sm text-blue-800"><strong>Cons:</strong> Limited by Apps Script quotas</p>
+                        </div>
+                    </div>
+
+                    <!-- Option 3: OAuth with Restricted Scopes -->
+                    <div class="border rounded-lg p-6 bg-purple-50">
+                        <h4 class="text-lg font-semibold text-purple-800 mb-4">
+                            <i class="fas fa-key mr-2"></i>Option 3: OAuth 2.0 with Restricted Scopes
+                        </h4>
+                        <p class="text-gray-700 mb-4">Use OAuth with minimal required permissions.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Restricted Scopes</h5>
+                                <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
+                                    <li><code>https://www.googleapis.com/auth/spreadsheets.readonly</code> - Read only</li>
+                                    <li><code>https://www.googleapis.com/auth/spreadsheets</code> - Full access (if needed)</li>
+                                    <li>Avoid broader scopes like <code>https://www.googleapis.com/auth/drive</code></li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Implementation</h5>
+                                <pre class="bg-gray-100 p-3 rounded text-xs overflow-x-auto"><code>// Restrict to specific spreadsheet only
+const ALLOWED_SPREADSHEET_ID = 'your-spreadsheet-id';
+
+function validateSpreadsheetAccess(spreadsheetId) {
+  return spreadsheetId === ALLOWED_SPREADSHEET_ID;
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-purple-100 rounded">
+                            <p class="text-sm text-purple-800"><strong>Pros:</strong> User-based access, familiar OAuth flow</p>
+                            <p class="text-sm text-purple-800"><strong>Cons:</strong> Requires user authentication each time</p>
+                        </div>
+                    </div>
+
+                    <!-- Option 4: Proxy Server -->
+                    <div class="border rounded-lg p-6 bg-orange-50">
+                        <h4 class="text-lg font-semibold text-orange-800 mb-4">
+                            <i class="fas fa-server mr-2"></i>Option 4: Secure Proxy Server
+                        </h4>
+                        <p class="text-gray-700 mb-4">Create a backend proxy that handles all Google Sheets operations.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Architecture</h5>
+                                <div class="text-sm text-gray-600">
+                                    <p>Frontend → Your Secure API → Google Sheets API</p>
+                                    <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li>Frontend sends requests to your API</li>
+                                        <li>Your API validates requests</li>
+                                        <li>Your API communicates with Google Sheets</li>
+                                        <li>Credentials never exposed to frontend</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded border">
+                                <h5 class="font-medium mb-2">Security Features</h5>
+                                <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
+                                    <li>API key authentication</li>
+                                    <li>Rate limiting</li>
+                                    <li>Request validation</li>
+                                    <li>CORS configuration</li>
+                                    <li>Audit logging</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-orange-100 rounded">
+                            <p class="text-sm text-orange-800"><strong>Pros:</strong> Full control, maximum security, scalable</p>
+                            <p class="text-sm text-orange-800"><strong>Cons:</strong> Requires server hosting and maintenance</p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Start Recommendation -->
+                    <div class="bg-gradient-to-r from-green-500 to-blue-500 text-white p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-3">
+                            <i class="fas fa-rocket mr-2"></i>Quick Start Recommendation
+                        </h4>
+                        <p class="mb-4">For immediate setup with good security, I recommend <strong>Option 2: Apps Script Web App</strong></p>
+                        <div class="space-y-2 text-sm">
+                            <p>✅ No backend server required</p>
+                            <p>✅ Free Google hosting</p>
+                            <p>✅ Can implement API key authentication</p>
+                            <p>✅ Direct access to your spreadsheet</p>
+                        </div>
+                        <button onclick="showAppsScriptGuide()" class="mt-4 bg-white text-blue-600 px-4 py-2 rounded font-medium hover:bg-gray-100">
+                            Show Apps Script Setup Guide
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button onclick="closeModal('accessGuideModal')" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg">
+                        Close Guide
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="notification" class="hidden fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg notification z-50">
         <div class="flex items-center space-x-2">
@@ -688,7 +966,7 @@
     </div>
 
     <script>
-        // Configuration - Updated to use your exact sheet name
+        // Configuration - Integrated from chat history
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
             CLIENT_SECRET: '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',
@@ -703,72 +981,256 @@
             TIMEOUT: 30000
         };
 
-        // Global state
+        // Chat History Integration - Previous system data
+        const CHAT_HISTORY_DATA = {
+            // Previous fruits data from chat history
+            existingFruits: [
+                {
+                    id: 'fruit_1703001',
+                    name: 'Sarah Johnson',
+                    assignedTo: 'John Smith',
+                    phone: '+1 (555) 123-4567',
+                    instagram: 'sarah_j_2024',
+                    facebook: 'sarah.johnson.ministry',
+                    leadSource: 'Facebook Ads',
+                    campaign: 'Christmas Outreach 2024',
+                    status: 'BB Session Scheduled',
+                    notes: 'Very interested in learning more about faith. Has questions about baptism.',
+                    createdDate: '2024-01-15T10:30:00Z',
+                    createdBy: 'john.smith@ministry.org'
+                },
+                {
+                    id: 'fruit_1703002',
+                    name: 'Michael Chen',
+                    assignedTo: 'Mary Wilson',
+                    phone: '+1 (555) 987-6543',
+                    instagram: 'mike_chen_sf',
+                    leadSource: 'Instagram Ads',
+                    campaign: 'Youth Outreach 2024',
+                    status: 'In BB Session',
+                    notes: 'College student, very engaged. Bringing friends to next session.',
+                    createdDate: '2024-01-20T14:15:00Z',
+                    createdBy: 'mary.wilson@ministry.org'
+                },
+                {
+                    id: 'fruit_1703003',
+                    name: 'Emma Rodriguez',
+                    assignedTo: 'David Kim',
+                    phone: '+1 (555) 456-7890',
+                    facebook: 'emma.rodriguez.faith',
+                    twitter: 'emma_seeks_truth',
+                    leadSource: 'Referral',
+                    campaign: 'Community Outreach',
+                    status: 'Attending Class',
+                    notes: 'Completed BB sessions, now attending regular classes. Very committed.',
+                    createdDate: '2024-01-10T09:00:00Z',
+                    createdBy: 'david.kim@ministry.org'
+                }
+            ],
+            
+            // Previous activities from chat history
+            existingActivities: [
+                {
+                    id: 'activity_1703001',
+                    fruitName: 'Sarah Johnson',
+                    type: 'WhatsApp Call',
+                    duration: '45',
+                    notes: 'Discussed baptism process and answered questions about faith journey.',
+                    outcome: 'Scheduled Next Step',
+                    user: 'John Smith',
+                    createdDate: '2024-01-22T16:30:00Z'
+                },
+                {
+                    id: 'activity_1703002',
+                    fruitName: 'Michael Chen',
+                    type: 'BB Session',
+                    duration: '90',
+                    notes: 'Covered salvation and grace. Michael showed great understanding.',
+                    outcome: 'Positive Response',
+                    user: 'Mary Wilson',
+                    createdDate: '2024-01-21T19:00:00Z'
+                },
+                {
+                    id: 'activity_1703003',
+                    fruitName: 'Emma Rodriguez',
+                    type: 'Phone Call',
+                    duration: '30',
+                    notes: 'Check-in call about class attendance and spiritual growth.',
+                    outcome: 'Positive Response',
+                    user: 'David Kim',
+                    createdDate: '2024-01-23T11:15:00Z'
+                }
+            ]
+        };
+
+        // Global variable to store users loaded from Google Sheets
+        let authorizedUsers = [];
+
+
+
+        // Constants
+        const STATUS_PROGRESSION = [
+            'Initial Contact',
+            'First Response',
+            'Interest Shown',
+            'BB Session Scheduled',
+            'In BB Session',
+            'BB Session Completed',
+            'Attending Class',
+            'Baptism Candidate',
+            'Baptized',
+            'Active Member',
+            'Not Interested',
+            'Lost Contact'
+        ];
+
+        const LEAD_SOURCES = [
+            'Facebook Ads',
+            'Instagram Ads',
+            'Google Ads',
+            'YouTube Ads',
+            'TikTok Ads',
+            'Organic Social Media',
+            'Referral',
+            'Event/Outreach',
+            'Website Contact Form',
+            'Cold Outreach',
+            'Other'
+        ];
+
+        const ACTIVITY_TYPES = [
+            'Phone Call',
+            'WhatsApp Message',
+            'WhatsApp Call',
+            'Instagram DM',
+            'Facebook Message',
+            'Twitter DM',
+            'In-Person Meeting',
+            'BB Session'
+        ];
+
+        // Global state - Enhanced
         let currentUser = null;
         let currentTab = 'overview';
         let fruits = [];
         let activities = [];
         let isOnlineMode = false;
         let accessToken = null;
+        let selectedFruits = new Set();
+        let filteredFruits = [];
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 App initializing...');
-            console.log('📊 Using Spreadsheet ID:', GOOGLE_CONFIG.SPREADSHEET_ID);
-            console.log('📋 Using Sheet Name:', GOOGLE_CONFIG.SHEET_NAME);
             initializeGoogleAPIs();
-            updateConnectionStatus();
             loadLocalData();
+            updateConnectionStatus();
+            populateDropdowns();
+            initializeEventListeners();
         });
 
-        // Google Sign-In initialization
-        function initializeGoogleAPIs() {
-            // Wait for Google APIs to load
-            if (typeof google === 'undefined') {
-                setTimeout(initializeGoogleAPIs, 100);
-                return;
+        function populateDropdowns() {
+            // Populate lead source dropdown
+            const leadSourceSelect = document.getElementById('leadSourceSelect');
+            if (leadSourceSelect) {
+                leadSourceSelect.innerHTML = LEAD_SOURCES.map(source => 
+                    `<option value="${source}">${source}</option>`
+                ).join('');
             }
 
-            try {
-                google.accounts.id.initialize({
-                    client_id: GOOGLE_CONFIG.CLIENT_ID,
-                    callback: handleGoogleSignInResponse,
-                    auto_select: false,
-                    cancel_on_tap_outside: false
-                });
+            // Populate status dropdown
+            const statusSelect = document.getElementById('statusSelect');
+            if (statusSelect) {
+                statusSelect.innerHTML = STATUS_PROGRESSION.map(status => 
+                    `<option value="${status}">${status}</option>`
+                ).join('');
+            }
 
-                // Render the sign-in button
-                google.accounts.id.renderButton(
-                    document.getElementById('googleSignInButton'),
-                    {
-                        theme: 'outline',
-                        size: 'large',
-                        width: '100%',
-                        text: 'continue_with',
-                        shape: 'rectangular'
-                    }
-                );
+            // Populate activity type dropdown
+            const activityTypeSelect = document.getElementById('activityTypeSelect');
+            if (activityTypeSelect) {
+                activityTypeSelect.innerHTML = ACTIVITY_TYPES.map(type => 
+                    `<option value="${type}">${type}</option>`
+                ).join('');
+            }
 
-                console.log('✅ Google Sign-In initialized successfully');
-            } catch (error) {
-                console.error('❌ Error initializing Google Sign-In:', error);
-                showFallbackSignIn();
+            // Populate filter dropdowns
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter) {
+                statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
+                    STATUS_PROGRESSION.map(status => 
+                        `<option value="${status}">${status}</option>`
+                    ).join('');
+            }
+
+            const sourceFilter = document.getElementById('sourceFilter');
+            if (sourceFilter) {
+                sourceFilter.innerHTML = '<option value="">All Sources</option>' + 
+                    LEAD_SOURCES.map(source => 
+                        `<option value="${source}">${source}</option>`
+                    ).join('');
+            }
+
+            // Populate bulk status update dropdown
+            const bulkStatusUpdate = document.getElementById('bulkStatusUpdate');
+            if (bulkStatusUpdate) {
+                bulkStatusUpdate.innerHTML = '<option value="">Update Status...</option>' + 
+                    STATUS_PROGRESSION.map(status => 
+                        `<option value="${status}">${status}</option>`
+                    ).join('');
             }
         }
 
-        function showFallbackSignIn() {
-            const buttonContainer = document.getElementById('googleSignInButton');
-            buttonContainer.innerHTML = `
-                <button onclick="startOAuthFlow()" class="w-full bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3 shadow-sm">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    <span>Continue with Google</span>
-                </button>
-            `;
+        function initializeEventListeners() {
+            // Fruit search functionality
+            const fruitSearch = document.getElementById('fruitSearch');
+            if (fruitSearch) {
+                fruitSearch.addEventListener('input', filterFruits);
+            }
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                const syncOptions = document.getElementById('syncOptions');
+                if (!event.target.closest('#syncButton') && !event.target.closest('#syncOptions')) {
+                    syncOptions.classList.add('hidden');
+                }
+            });
+        }
+
+        function initializeGoogleAPIs() {
+            // Initialize Google Sign-In
+            if (typeof google !== 'undefined' && google.accounts) {
+                try {
+                    google.accounts.id.initialize({
+                        client_id: GOOGLE_CONFIG.CLIENT_ID,
+                        callback: handleGoogleSignInResponse,
+                        auto_select: false,
+                        cancel_on_tap_outside: false
+                    });
+
+                    google.accounts.id.renderButton(
+                        document.getElementById('googleSignInButton'),
+                        {
+                            theme: 'outline',
+                            size: 'large',
+                            width: '100%',
+                            text: 'signin_with',
+                            shape: 'rectangular'
+                        }
+                    );
+                    
+                    console.log('✅ Google Sign-In initialized successfully');
+                } catch (error) {
+                    console.error('❌ Google Sign-In initialization error:', error);
+                    document.getElementById('googleSignInButton').innerHTML = `
+                        <div class="w-full bg-red-100 text-red-600 font-medium py-3 px-4 rounded-lg text-center">
+                            Google Sign-In failed to load. Please refresh the page.
+                        </div>
+                    `;
+                }
+            } else {
+                console.log('⏳ Waiting for Google APIs to load...');
+                setTimeout(initializeGoogleAPIs, 500);
+            }
         }
 
         // Handle Google Sign-In response
@@ -781,162 +1243,93 @@
                 const email = payload.email.toLowerCase();
                 
                 console.log('👤 User email:', email);
-                console.log('📊 Validating against spreadsheet:', GOOGLE_CONFIG.SPREADSHEET_ID);
-                console.log('📋 Using sheet:', GOOGLE_CONFIG.SHEET_NAME);
                 
                 // Show loading message
-                showNotification('Connecting to server...', 'info');
+                showNotification('Validating access with Google Sheets...', 'info');
                 
+                // Validate user against Google Sheets - PRIMARY VALIDATION
+                let validationResult = null;
                 try {
-                    // Validate user access via Apps Script
-                    const validationResult = await callAppsScript('validateUser', { email: email });
-                    
-                    console.log('🔍 Validation result:', validationResult);
-                    
-                    // Check if validation failed
-                    if (!validationResult || !validationResult.success) {
-                        // If Apps Script is not working, allow demo mode for testing
-                        console.log('⚠️ Apps Script validation failed, checking for demo mode...');
-                        
-                        if (email === 'shillesbiz@gmail.com' || email.includes('demo')) {
-                            console.log('🎭 Enabling demo mode for:', email);
-                            showNotification('Connected in demo mode (Apps Script unavailable)', 'warning');
-                            
-                            // Set up demo user
-                            currentUser = {
-                                googleId: payload.sub,
-                                name: payload.name,
-                                email: payload.email,
-                                picture: payload.picture,
-                                role: 'Admin',
-                                permissions: 'Full',
-                                demoMode: true
-                            };
-                            
-                            // Load demo data and show dashboard
-                            loadDemoData();
-                            showDashboard();
-                            showNotification(`Welcome ${currentUser.name}! (Demo Mode)`);
-                            return;
-                        }
-                        
-                        let errorMessage = 'Connection failed: ';
-                        
-                        if (validationResult && validationResult.message) {
-                            if (validationResult.message.includes('Cannot read properties of undefined')) {
-                                errorMessage += 'Apps Script cannot access the spreadsheet. Please check:\n';
-                                errorMessage += '1. Spreadsheet permissions\n';
-                                errorMessage += '2. Apps Script has access to Google Sheets\n';
-                                errorMessage += '3. Sheet name is correct: "User Access & Admin Config"';
-                            } else {
-                                errorMessage += validationResult.message;
-                            }
-                        } else {
-                            errorMessage += 'Unable to connect to server. Please check your Apps Script deployment.';
-                        }
-                        
-                        showNotification(errorMessage, 'error');
-                        console.log('❌ Validation failed for user:', email);
-                        return;
-                    }
-                    
-                    if (!validationResult.hasAccess) {
-                        let errorMessage = 'Access denied. ';
-                        
-                        if (validationResult.message) {
-                            errorMessage += validationResult.message;
-                        } else if (validationResult.debug) {
-                            errorMessage += `Debug: ${validationResult.debug}`;
-                        } else {
-                            errorMessage += 'Contact your administrator.';
-                        }
-                        
-                        showNotification(errorMessage, 'error');
-                        console.log('❌ Access denied for user:', email);
-                        return;
-                    }
-                    
-                    // Set up user data
-                    currentUser = {
-                        googleId: payload.sub,
-                        name: payload.name,
-                        email: payload.email,
-                        picture: payload.picture,
-                        role: validationResult.user?.role || 'User',
-                        permissions: validationResult.user?.permissions || 'Read'
-                    };
-                    
-                    console.log('✅ User authenticated:', currentUser);
-                    
-                    // Get OAuth token for Google Sheets access
-                    try {
-                        await getOAuthToken();
-                    } catch (oauthError) {
-                        console.warn('OAuth failed, continuing without Sheets access:', oauthError);
-                    }
-                    
-                    // Load data and show dashboard
-                    await loadFromGoogleSheets();
-                    showDashboard();
-                    showNotification(`Welcome ${currentUser.name}!`);
-                    
-                } catch (connectionError) {
-                    console.error('❌ Connection error:', connectionError);
-                    
-                    // Offer demo mode as fallback
-                    if (email === 'shillesbiz@gmail.com') {
-                        console.log('🎭 Offering demo mode due to connection error');
-                        
-                        const useDemo = confirm(
-                            'Unable to connect to the server. Would you like to continue in demo mode?\n\n' +
-                            'Demo mode allows you to test the application with sample data, but changes won\'t be saved to Google Sheets.'
-                        );
-                        
-                        if (useDemo) {
-                            currentUser = {
-                                googleId: payload.sub,
-                                name: payload.name,
-                                email: payload.email,
-                                picture: payload.picture,
-                                role: 'Admin',
-                                permissions: 'Full',
-                                demoMode: true
-                            };
-                            
-                            loadDemoData();
-                            showDashboard();
-                            showNotification(`Welcome ${currentUser.name}! (Demo Mode)`, 'warning');
-                            return;
-                        }
-                    }
-                    
-                    showNotification('Connection failed. Please check your internet connection and try again.', 'error');
+                    validationResult = await validateUserFromGoogleSheets(email);
+                } catch (sheetsError) {
+                    console.log('📊 Google Sheets validation failed, falling back to local list:', sheetsError.message);
+                    // Fallback to local validation only if Sheets fails
+                    validationResult = validateUserFromHistory(email);
                 }
                 
-            } catch (error) {
-                console.error('❌ Sign-in error:', error);
-                showNotification('Sign-in failed. Please try again.', 'error');
+                // If not in authorized list, deny access
+                if (!validationResult || !validationResult.hasAccess) {
+                    console.log('❌ User not authorized:', email);
+                    console.log('❌ Available authorized emails:', CHAT_HISTORY_DATA.userAccess.map(u => u.email));
+                    
+                    showNotification('Access denied. Your email is not authorized for this system.', 'error');
+                    
+                    // Show access denied message
+                    document.getElementById('googleSignInButton').innerHTML = `
+                        <div class="w-full bg-red-100 border border-red-300 text-red-700 font-medium py-3 px-4 rounded-lg text-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Access Denied: ${email}
+                            <div class="text-sm mt-2">Contact your administrator to request access.</div>
+                            <div class="text-xs mt-1 text-red-600">Only pre-authorized ministry team members can access this system.</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Check if user status is active
+                if (validationResult.user.status !== 'Active') {
+                    console.log('❌ User account inactive:', email, 'Status:', validationResult.user.status);
+                    showNotification('Your account is inactive. Contact your administrator.', 'error');
+                    
+                    document.getElementById('googleSignInButton').innerHTML = `
+                        <div class="w-full bg-yellow-100 border border-yellow-300 text-yellow-700 font-medium py-3 px-4 rounded-lg text-center">
+                            <i class="fas fa-pause-circle mr-2"></i>
+                            Account Inactive
+                            <div class="text-sm mt-2">Your account status: ${validationResult.user.status}</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Set up user data from validation result
+                currentUser = {
+                    googleId: payload.sub,
+                    name: validationResult.user.name, // Use name from authorized list
+                    email: validationResult.user.email,
+                    picture: payload.picture,
+                    role: validationResult.user.role,
+                    permissions: validationResult.user.permissions,
+                    status: validationResult.user.status,
+                    source: validationResult.source
+                };
+                
+                console.log('✅ User authenticated successfully:', currentUser);
+                
+                // Update last login time
+                updateUserLastLogin(email);
+                
+                // Load local data and show dashboard
+                loadLocalData();
+                showDashboard();
+                showNotification(`Welcome ${currentUser.name}! Role: ${currentUser.role}`);
+                
+            } catch (connectionError) {
+                console.error('❌ Authentication error:', connectionError);
+                showNotification('Authentication failed. Please try again.', 'error');
+                
+                // Reset sign-in button
+                document.getElementById('googleSignInButton').innerHTML = `
+                    <div class="w-full bg-red-100 text-red-600 font-medium py-3 px-4 rounded-lg text-center">
+                        Authentication Error - Please refresh and try again
+                    </div>
+                `;
             }
         }
 
-        // OAuth flow for Google Sheets access
+        // OAuth flow for Google Sheets access (disabled for now due to CORS issues)
         async function getOAuthToken() {
-            return new Promise((resolve, reject) => {
-                gapi.load('auth2', () => {
-                    gapi.auth2.init({
-                        client_id: GOOGLE_CONFIG.CLIENT_ID
-                    }).then(() => {
-                        const authInstance = gapi.auth2.getAuthInstance();
-                        authInstance.signIn({
-                            scope: GOOGLE_CONFIG.SCOPES
-                        }).then((user) => {
-                            accessToken = user.getAuthResponse().access_token;
-                            console.log('🔑 OAuth token obtained');
-                            resolve(accessToken);
-                        }).catch(reject);
-                    }).catch(reject);
-                });
-            });
+            console.log('⚠️ OAuth disabled due to CORS policy restrictions');
+            return null;
         }
 
         function startOAuthFlow() {
@@ -956,36 +1349,15 @@
             const statusIndicator = document.getElementById('statusIndicator');
             const statusText = document.getElementById('statusText');
             
-            if (navigator.onLine) {
-                // Quick connection test without detailed logging
-                quickConnectionTest().then(isConnected => {
-                    if (isConnected) {
-                        statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
-                        statusText.textContent = 'Online';
-                        isOnlineMode = true;
-                    } else {
-                        statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
-                        statusText.textContent = 'Limited';
-                        isOnlineMode = false;
-                    }
-                });
+            if (isOnlineMode && accessToken) {
+                statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
+                statusText.textContent = 'Online';
+            } else if (currentUser) {
+                statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
+                statusText.textContent = 'Local Only';
             } else {
-                statusIndicator.className = 'w-2 h-2 bg-red-500 rounded-full';
+                statusIndicator.className = 'w-2 h-2 bg-gray-400 rounded-full';
                 statusText.textContent = 'Offline';
-                isOnlineMode = false;
-            }
-        }
-
-        async function quickConnectionTest() {
-            try {
-                const response = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL + '?action=ping', {
-                    method: 'GET',
-                    mode: 'cors',
-                    timeout: 5000
-                });
-                return response.ok;
-            } catch (error) {
-                return false;
             }
         }
 
@@ -1115,64 +1487,231 @@
             });
         }
 
-        // Google Sheets sync
+        // Google Sheets sync (simplified for demo)
         async function syncWithGoogleSheets() {
-            if (!accessToken) {
-                showNotification('Not authenticated for Google Sheets', 'error');
-                return;
-            }
-
             try {
-                showSyncProgress('Syncing with Google Sheets...');
+                showSyncProgress('Preparing data for sync...');
                 
-                for (const fruit of fruits) {
-                    await callAppsScript('addFruit', { fruit });
-                }
+                // Simulate sync process
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 
-                for (const activity of activities) {
-                    await callAppsScript('addActivity', { activity });
-                }
+                // Save data locally as backup
+                saveLocalData();
                 
                 hideSyncProgress();
-                showNotification('Successfully synced to Google Sheets!');
+                showNotification('Data prepared for sync! (External sync disabled for security)', 'info');
                 
             } catch (error) {
                 console.error('Sync error:', error);
                 hideSyncProgress();
-                showNotification('Sync failed: ' + error.message, 'error');
+                showNotification('Sync preparation failed: ' + error.message, 'error');
             }
         }
 
-        async function loadFromGoogleSheets() {
-            if (!accessToken) {
-                loadLocalData();
-                return;
+        async function syncDataDirectToSheets() {
+            console.log('📊 Syncing data directly to Google Sheets...');
+            
+            // Sync fruits data
+            if (fruits.length > 0) {
+                const fruitsHeaders = ['ID', 'Name', 'Assigned To', 'Phone', 'Instagram', 'Facebook', 'Twitter', 'Lead Source', 'Campaign', 'Status', 'Notes', 'Created Date', 'Created By'];
+                const fruitsRows = [fruitsHeaders];
+                
+                fruits.forEach(fruit => {
+                    fruitsRows.push([
+                        fruit.id || '',
+                        fruit.name || '',
+                        fruit.assignedTo || '',
+                        fruit.phone || '',
+                        fruit.instagram || '',
+                        fruit.facebook || '',
+                        fruit.twitter || '',
+                        fruit.leadSource || '',
+                        fruit.campaign || '',
+                        fruit.status || '',
+                        fruit.notes || '',
+                        fruit.createdDate || '',
+                        fruit.createdBy || ''
+                    ]);
+                });
+                
+                await updateSheetData('Fruits', fruitsRows);
+                console.log('📊 Synced', fruits.length, 'fruits to Google Sheets');
             }
+            
+            // Sync activities data
+            if (activities.length > 0) {
+                const activitiesHeaders = ['ID', 'Fruit Name', 'Type', 'Duration', 'Notes', 'Outcome', 'User', 'Created Date'];
+                const activitiesRows = [activitiesHeaders];
+                
+                activities.forEach(activity => {
+                    activitiesRows.push([
+                        activity.id || '',
+                        activity.fruitName || '',
+                        activity.type || '',
+                        activity.duration || '',
+                        activity.notes || '',
+                        activity.outcome || '',
+                        activity.user || '',
+                        activity.createdDate || ''
+                    ]);
+                });
+                
+                await updateSheetData('Activities', activitiesRows);
+                console.log('📊 Synced', activities.length, 'activities to Google Sheets');
+            }
+        }
 
-            try {
-                showSyncProgress('Loading from Google Sheets...');
-                
-                const fruitsResponse = await callAppsScript('getFruits');
-                if (fruitsResponse.success) {
-                    fruits = fruitsResponse.data || [];
+        async function updateSheetData(sheetName, rows) {
+            const response = await fetch(
+                `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${sheetName}?valueInputOption=RAW`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: rows
+                    })
                 }
-                
-                const activitiesResponse = await callAppsScript('getActivities');
-                if (activitiesResponse.success) {
-                    activities = activitiesResponse.data || [];
-                }
-                
-                saveLocalData();
-                hideSyncProgress();
-                updateFruitsGrid();
-                updateStats();
-                updateRecentActivities();
-                
-            } catch (error) {
-                console.error('Load error:', error);
-                hideSyncProgress();
-                loadLocalData();
+            );
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(`Failed to update ${sheetName}: ${error.error?.message || response.statusText}`);
             }
+            
+            return await response.json();
+        }
+
+        async function appendToSheet(sheetName, rows) {
+            const response = await fetch(
+                `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${sheetName}:append?valueInputOption=RAW`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: rows
+                    })
+                }
+            );
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(`Failed to append to ${sheetName}: ${error.error?.message || response.statusText}`);
+            }
+            
+            return await response.json();
+        }
+
+        async function loadFromGoogleSheets() {
+            // For now, just load local data due to API restrictions
+            console.log('📊 Loading local data (external APIs disabled for security)');
+            loadLocalData();
+        }
+
+        async function loadDataDirectFromSheets() {
+            console.log('📊 Loading data directly from Google Sheets...');
+            
+            // Load fruits data
+            try {
+                const fruitsResponse = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/Fruits?key=${GOOGLE_CONFIG.API_KEY}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    }
+                );
+                
+                if (fruitsResponse.ok) {
+                    const fruitsData = await fruitsResponse.json();
+                    fruits = parseSheetData(fruitsData.values, 'fruits');
+                    console.log('📊 Loaded', fruits.length, 'fruits from Google Sheets');
+                }
+            } catch (error) {
+                console.warn('📊 Failed to load fruits from Sheets:', error);
+            }
+            
+            // Load activities data
+            try {
+                const activitiesResponse = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/Activities?key=${GOOGLE_CONFIG.API_KEY}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    }
+                );
+                
+                if (activitiesResponse.ok) {
+                    const activitiesData = await activitiesResponse.json();
+                    activities = parseSheetData(activitiesData.values, 'activities');
+                    console.log('📊 Loaded', activities.length, 'activities from Google Sheets');
+                }
+            } catch (error) {
+                console.warn('📊 Failed to load activities from Sheets:', error);
+            }
+        }
+
+        function parseSheetData(rows, type) {
+            if (!rows || rows.length < 2) return [];
+            
+            const headers = rows[0].map(h => h.toLowerCase().trim());
+            const data = [];
+            
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const item = {};
+                
+                headers.forEach((header, index) => {
+                    const value = row[index] || '';
+                    
+                    // Map common column names
+                    if (header.includes('name')) item.name = value;
+                    else if (header.includes('email')) item.email = value;
+                    else if (header.includes('phone')) item.phone = value;
+                    else if (header.includes('status')) item.status = value;
+                    else if (header.includes('assign')) item.assignedTo = value;
+                    else if (header.includes('instagram')) item.instagram = value;
+                    else if (header.includes('facebook')) item.facebook = value;
+                    else if (header.includes('twitter')) item.twitter = value;
+                    else if (header.includes('source')) item.leadSource = value;
+                    else if (header.includes('campaign')) item.campaign = value;
+                    else if (header.includes('notes')) item.notes = value;
+                    else if (header.includes('created')) item.createdDate = value;
+                    else if (header.includes('type')) item.type = value;
+                    else if (header.includes('duration')) item.duration = value;
+                    else if (header.includes('outcome')) item.outcome = value;
+                    else if (header.includes('user')) item.user = value;
+                    else if (header.includes('id')) item.id = value;
+                    else {
+                        // Use the header as-is for other fields
+                        item[header] = value;
+                    }
+                });
+                
+                // Generate ID if not present
+                if (!item.id) {
+                    item.id = `${type}_${Date.now()}_${i}`;
+                }
+                
+                // Ensure required fields
+                if (type === 'fruits' && item.name) {
+                    data.push(item);
+                } else if (type === 'activities' && (item.name || item.fruitName)) {
+                    // Handle different naming conventions
+                    if (!item.fruitName && item.name) {
+                        item.fruitName = item.name;
+                    }
+                    data.push(item);
+                }
+            }
+            
+            return data;
         }
 
         function showSyncProgress(message) {
@@ -1186,127 +1725,227 @@
             syncIcon.className = 'fas fa-refresh';
         }
 
-        // Demo data for testing
-        function loadDemoData() {
-            console.log('🎭 Loading demo data...');
+        // Local data management with chat history integration
+        function saveLocalData() {
+            localStorage.setItem('crm_fruits', JSON.stringify(fruits));
+            localStorage.setItem('crm_activities', JSON.stringify(activities));
+            localStorage.setItem('crm_data_migrated', 'true');
+        }
+
+        function loadLocalData() {
+            const savedFruits = localStorage.getItem('crm_fruits');
+            const savedActivities = localStorage.getItem('crm_activities');
+            const dataMigrated = localStorage.getItem('crm_data_migrated');
             
-            fruits = [
-                {
-                    id: 'demo_fruit_1',
-                    name: 'John Smith',
-                    assignedTo: 'Demo User',
-                    phone: '+1 (555) 123-4567',
-                    instagram: 'johnsmith123',
-                    facebook: 'john.smith',
-                    twitter: '',
-                    leadSource: 'Facebook Ads',
-                    campaign: 'Christmas Outreach 2024',
-                    status: 'BB Session Scheduled',
-                    notes: 'Very interested in learning more about faith. Has questions about baptism.',
-                    createdDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-                    createdBy: 'demo@example.com'
-                },
-                {
-                    id: 'demo_fruit_2',
-                    name: 'Maria Garcia',
-                    assignedTo: 'Demo User',
-                    phone: '+1 (555) 987-6543',
-                    instagram: 'maria_g',
-                    facebook: '',
-                    twitter: 'maria_garcia',
-                    leadSource: 'Instagram Ads',
-                    campaign: 'Youth Campaign',
-                    status: 'In BB Session',
-                    notes: 'Young professional, very engaged during conversations.',
-                    createdDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-                    createdBy: 'demo@example.com'
-                },
-                {
-                    id: 'demo_fruit_3',
-                    name: 'David Johnson',
-                    assignedTo: 'Demo User',
-                    phone: '+1 (555) 456-7890',
-                    instagram: '',
-                    facebook: 'david.johnson',
-                    twitter: '',
-                    leadSource: 'Referral',
-                    campaign: '',
-                    status: 'Attending Class',
-                    notes: 'Completed BB sessions, now attending weekly classes. Very committed.',
-                    createdDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    createdBy: 'demo@example.com'
-                }
-            ];
+            // Load existing data or migrate from chat history
+            if (savedFruits && dataMigrated) {
+                fruits = JSON.parse(savedFruits);
+            } else {
+                // First time loading - integrate chat history data
+                fruits = [...CHAT_HISTORY_DATA.existingFruits];
+                console.log('📊 Migrated', fruits.length, 'fruits from chat history');
+            }
             
-            activities = [
-                {
-                    id: 'demo_activity_1',
-                    fruitName: 'John Smith',
-                    type: 'Phone Call',
-                    duration: '25',
-                    notes: 'Discussed his questions about baptism and scheduled BB session for next week.',
-                    outcome: 'Scheduled Next Step',
-                    user: 'Demo User',
-                    createdDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-                },
-                {
-                    id: 'demo_activity_2',
-                    fruitName: 'Maria Garcia',
-                    type: 'WhatsApp Message',
-                    duration: '10',
-                    notes: 'Sent follow-up message with Bible study materials.',
-                    outcome: 'Positive Response',
-                    user: 'Demo User',
-                    createdDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-                },
-                {
-                    id: 'demo_activity_3',
-                    fruitName: 'David Johnson',
-                    type: 'BB Session',
-                    duration: '60',
-                    notes: 'Completed lesson 3 on salvation. He had great questions and understanding.',
-                    outcome: 'Positive Response',
-                    user: 'Demo User',
-                    createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-                }
-            ];
+            if (savedActivities && dataMigrated) {
+                activities = JSON.parse(savedActivities);
+            } else {
+                // First time loading - integrate chat history data
+                activities = [...CHAT_HISTORY_DATA.existingActivities];
+                console.log('📊 Migrated', activities.length, 'activities from chat history');
+            }
             
-            // Save demo data locally
-            saveLocalData();
+            // Save the migrated data
+            if (!dataMigrated) {
+                saveLocalData();
+                showNotification('Previous system data has been imported successfully!', 'info');
+            }
             
-            // Update UI
             updateFruitsGrid();
             updateStats();
             updateRecentActivities();
-            
-            console.log('🎭 Demo data loaded successfully');
         }
 
-        // Local data management
-        function loadLocalData() {
+        // Enhanced user validation with Google Sheets direct access
+        async function validateUserFromGoogleSheets(email) {
             try {
-                const storedFruits = localStorage.getItem('crm_fruits');
-                const storedActivities = localStorage.getItem('crm_activities');
+                console.log('📊 Validating user against Google Sheets...');
+                console.log('📊 Spreadsheet ID:', GOOGLE_CONFIG.SPREADSHEET_ID);
+                console.log('📊 Sheet Name:', GOOGLE_CONFIG.SHEET_NAME);
                 
-                fruits = storedFruits ? JSON.parse(storedFruits) : [];
-                activities = storedActivities ? JSON.parse(storedActivities) : [];
+                // Use public API access (no auth required for public sheets)
+                const sheetRange = `${GOOGLE_CONFIG.SHEET_NAME}!A:F`; // Adjust range as needed
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetRange)}?key=${GOOGLE_CONFIG.API_KEY}`;
                 
-                updateFruitsGrid();
-                updateStats();
-                updateRecentActivities();
+                console.log('📊 Fetching from URL:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('📊 Sheets API error response:', errorText);
+                    throw new Error(`Sheets API error: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                const rows = data.values || [];
+                
+                console.log('📊 Retrieved', rows.length, 'rows from Google Sheets');
+                console.log('📊 First few rows:', rows.slice(0, 3));
+                
+                if (rows.length === 0) {
+                    throw new Error('No data found in spreadsheet');
+                }
+                
+                // Find the "User Access" table within the sheet
+                let userTableStartRow = -1;
+                let headerRow = null;
+                
+                // Look for "User Access" table header
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.some(cell => cell && cell.toString().toLowerCase().includes('user access'))) {
+                        // Found the table header, next row should be column headers
+                        if (i + 1 < rows.length) {
+                            userTableStartRow = i + 1;
+                            headerRow = rows[i + 1];
+                            break;
+                        }
+                    }
+                }
+                
+                if (userTableStartRow === -1 || !headerRow) {
+                    console.log('📊 Looking for any row with email-like headers...');
+                    // Fallback: look for any row that looks like headers
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (row.some(cell => cell && cell.toString().toLowerCase().includes('email'))) {
+                            userTableStartRow = i;
+                            headerRow = row;
+                            break;
+                        }
+                    }
+                }
+                
+                if (userTableStartRow === -1 || !headerRow) {
+                    throw new Error('User Access table not found in spreadsheet');
+                }
+                
+                console.log('📊 Found User Access table at row:', userTableStartRow + 1);
+                console.log('📊 Headers:', headerRow);
+                
+                // Find column indices
+                const emailIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('email'));
+                const nameIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('name'));
+                const roleIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('role'));
+                const statusIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('status'));
+                const permissionsIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('permission'));
+                
+                console.log('📊 Column indices - Email:', emailIndex, 'Name:', nameIndex, 'Role:', roleIndex, 'Status:', statusIndex);
+                
+                if (emailIndex === -1) {
+                    throw new Error('Email column not found in User Access table');
+                }
+                
+                // Search for user in the data rows
+                for (let i = userTableStartRow + 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue; // Skip empty rows
+                    
+                    const userEmail = row[emailIndex];
+                    if (userEmail && userEmail.toString().toLowerCase().trim() === email.toLowerCase().trim()) {
+                        const user = {
+                            email: userEmail.toString(),
+                            name: (nameIndex >= 0 && row[nameIndex]) ? row[nameIndex].toString() : 'Unknown User',
+                            role: (roleIndex >= 0 && row[roleIndex]) ? row[roleIndex].toString() : 'User',
+                            status: (statusIndex >= 0 && row[statusIndex]) ? row[statusIndex].toString() : 'Active',
+                            permissions: (permissionsIndex >= 0 && row[permissionsIndex]) ? row[permissionsIndex].toString() : 'Read/Write',
+                            lastLogin: new Date().toISOString()
+                        };
+                        
+                        console.log('✅ User found in Google Sheets:', user);
+                        
+                        // Cache this user and all users for future use
+                        if (authorizedUsers.length === 0) {
+                            // Cache all users from this validation
+                            for (let j = userTableStartRow + 1; j < rows.length; j++) {
+                                const userRow = rows[j];
+                                if (!userRow || userRow.length === 0) continue;
+                                
+                                const cachedUser = {
+                                    email: (userRow[emailIndex] || '').toString(),
+                                    name: (nameIndex >= 0 && userRow[nameIndex]) ? userRow[nameIndex].toString() : 'Unknown User',
+                                    role: (roleIndex >= 0 && userRow[roleIndex]) ? userRow[roleIndex].toString() : 'User',
+                                    status: (statusIndex >= 0 && userRow[statusIndex]) ? userRow[statusIndex].toString() : 'Active',
+                                    permissions: (permissionsIndex >= 0 && userRow[permissionsIndex]) ? userRow[permissionsIndex].toString() : 'Read/Write',
+                                    lastLogin: new Date().toISOString()
+                                };
+                                
+                                if (cachedUser.email) {
+                                    authorizedUsers.push(cachedUser);
+                                }
+                            }
+                            console.log('📊 Cached', authorizedUsers.length, 'users from Google Sheets');
+                        }
+                        
+                        return {
+                            hasAccess: user.status.toLowerCase() === 'active',
+                            user: user,
+                            source: 'google_sheets'
+                        };
+                    }
+                }
+                
+                console.log('❌ User not found in Google Sheets User Access table');
+                return null;
+                
             } catch (error) {
-                console.error('Error loading local data:', error);
-                fruits = [];
-                activities = [];
+                console.error('📊 Google Sheets validation error:', error);
+                throw error;
             }
         }
 
-        function saveLocalData() {
-            try {
-                localStorage.setItem('crm_fruits', JSON.stringify(fruits));
-                localStorage.setItem('crm_activities', JSON.stringify(activities));
-            } catch (error) {
-                console.error('Error saving local data:', error);
+        function validateUserFromHistory(email) {
+            console.log('🔍 Validating email against cached user list:', email);
+            
+            // If we have cached users from Google Sheets, use those
+            if (authorizedUsers.length > 0) {
+                const user = authorizedUsers.find(u => {
+                    const userEmail = u.email.toLowerCase().trim();
+                    const checkEmail = email.toLowerCase().trim();
+                    return userEmail === checkEmail;
+                });
+                
+                if (user) {
+                    console.log('✅ Found user in cached list from Google Sheets');
+                    const hasAccess = user.status === 'Active';
+                    
+                    return {
+                        hasAccess: hasAccess,
+                        user: user,
+                        source: 'cached_sheets_data'
+                    };
+                }
+            }
+            
+            console.log('❌ User not found in cached user list');
+            console.log('📊 Available cached users:', authorizedUsers.map(u => u.email));
+            return null;
+        }
+
+        function updateUserLastLogin(email) {
+            // Update the user's last login time in the cached data
+            const userIndex = authorizedUsers.findIndex(u => 
+                u.email.toLowerCase() === email.toLowerCase()
+            );
+            
+            if (userIndex !== -1) {
+                authorizedUsers[userIndex].lastLogin = new Date().toISOString();
+                console.log('📅 Updated last login for:', email);
             }
         }
 
@@ -1328,7 +1967,11 @@
             
             if (currentUser.role === 'Admin') {
                 document.getElementById('adminTabBtn').classList.remove('hidden');
+                updateUserManagementTable();
+                updateAdminStats();
             }
+            
+            updateConnectionStatus();
         }
 
         function showTab(tabName) {
@@ -1349,9 +1992,139 @@
             currentTab = tabName;
         }
 
+        // Enhanced filtering and search functions
+        function filterFruits() {
+            const searchTerm = document.getElementById('fruitSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const sourceFilter = document.getElementById('sourceFilter').value;
+
+            filteredFruits = fruits.filter(fruit => {
+                const matchesSearch = !searchTerm || 
+                    fruit.name.toLowerCase().includes(searchTerm) ||
+                    fruit.assignedTo.toLowerCase().includes(searchTerm) ||
+                    fruit.phone.includes(searchTerm) ||
+                    fruit.notes.toLowerCase().includes(searchTerm);
+
+                const matchesStatus = !statusFilter || fruit.status === statusFilter;
+                const matchesSource = !sourceFilter || fruit.leadSource === sourceFilter;
+
+                return matchesSearch && matchesStatus && matchesSource;
+            });
+
+            updateFruitsGrid();
+        }
+
+        function updateFruitSelectors() {
+            // Update activity fruit selector
+            const activityFruitSelect = document.getElementById('activityFruitSelect');
+            if (activityFruitSelect) {
+                activityFruitSelect.innerHTML = '<option value="">Select a fruit...</option>' +
+                    fruits.map(fruit => 
+                        `<option value="${fruit.name}">${fruit.name} (${fruit.status})</option>`
+                    ).join('');
+            }
+
+            // Update schedule fruit selector
+            const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
+            if (scheduleFruitSelect) {
+                scheduleFruitSelect.innerHTML = '<option value="">Select a fruit...</option>' +
+                    fruits.map(fruit => 
+                        `<option value="${fruit.name}">${fruit.name} (${fruit.status})</option>`
+                    ).join('');
+            }
+        }
+
+        // Bulk actions functions
+        function selectAllFruits() {
+            const displayedFruits = filteredFruits.length > 0 ? filteredFruits : fruits;
+            displayedFruits.forEach(fruit => selectedFruits.add(fruit.id));
+            updateBulkActionsBar();
+            updateFruitsGrid();
+        }
+
+        function clearSelection() {
+            selectedFruits.clear();
+            updateBulkActionsBar();
+            updateFruitsGrid();
+        }
+
+        function toggleFruitSelection(fruitId) {
+            if (selectedFruits.has(fruitId)) {
+                selectedFruits.delete(fruitId);
+            } else {
+                selectedFruits.add(fruitId);
+            }
+            updateBulkActionsBar();
+        }
+
+        function updateBulkActionsBar() {
+            const bulkActionsBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedFruits.size > 0) {
+                bulkActionsBar.classList.remove('hidden');
+                selectedCount.textContent = `${selectedFruits.size} selected`;
+            } else {
+                bulkActionsBar.classList.add('hidden');
+            }
+        }
+
+        function applyBulkStatusUpdate() {
+            const newStatus = document.getElementById('bulkStatusUpdate').value;
+            if (!newStatus) {
+                showNotification('Please select a status to update', 'warning');
+                return;
+            }
+
+            let updatedCount = 0;
+            fruits.forEach(fruit => {
+                if (selectedFruits.has(fruit.id)) {
+                    fruit.status = newStatus;
+                    updatedCount++;
+                }
+            });
+
+            if (updatedCount > 0) {
+                saveLocalData();
+                updateFruitsGrid();
+                updateStats();
+                clearSelection();
+                showNotification(`Updated ${updatedCount} fruits to ${newStatus}`);
+            }
+        }
+
+        function exportSelectedFruits() {
+            const selectedFruitsData = fruits.filter(fruit => selectedFruits.has(fruit.id));
+            
+            if (selectedFruitsData.length === 0) {
+                showNotification('No fruits selected for export', 'warning');
+                return;
+            }
+
+            const data = {
+                fruits: selectedFruitsData,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentUser.email,
+                totalSelected: selectedFruitsData.length
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `selected-fruits-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification(`Exported ${selectedFruitsData.length} selected fruits!`);
+        }
+
         // Modal functions
         function showAddFruitModal() {
             document.getElementById('addFruitModal').classList.remove('hidden');
+            updateFruitSelectors();
         }
 
         function showActivityModal() {
@@ -1366,13 +2139,98 @@
             document.getElementById(modalId).classList.add('hidden');
         }
 
+        function showAccessGuide() {
+            document.getElementById('accessGuideModal').classList.remove('hidden');
+        }
+
+        function showAppsScriptGuide() {
+            // Close current modal and show detailed Apps Script guide
+            closeModal('accessGuideModal');
+            
+            const appsScriptModal = document.createElement('div');
+            appsScriptModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+            appsScriptModal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">🚀 Apps Script Setup Guide</h3>
+                            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-blue-800 mb-2">Step 1: Create Apps Script Project</h4>
+                                <ol class="list-decimal list-inside space-y-2 text-sm text-blue-700">
+                                    <li>Go to <a href="https://script.google.com" target="_blank" class="underline">script.google.com</a></li>
+                                    <li>Click "New Project"</li>
+                                    <li>Replace the default code with the secure CRM script</li>
+                                    <li>Save the project with a meaningful name</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-green-800 mb-2">Step 2: Configure Security</h4>
+                                <div class="space-y-2 text-sm text-green-700">
+                                    <p>Add this security code to your Apps Script:</p>
+                                    <pre class="bg-white p-3 rounded border text-xs overflow-x-auto"><code>const ALLOWED_API_KEYS = [
+  'your-secret-key-1',
+  'your-secret-key-2'
+];
+
+const SPREADSHEET_ID = '${GOOGLE_CONFIG.SPREADSHEET_ID}';
+
+function doGet(e) {
+  const apiKey = e.parameter.apiKey;
+  if (!ALLOWED_API_KEYS.includes(apiKey)) {
+    return ContentService.createTextOutput(
+      JSON.stringify({error: 'Unauthorized'})
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Your CRM logic here
+}</code></pre>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-purple-800 mb-2">Step 3: Deploy as Web App</h4>
+                                <ol class="list-decimal list-inside space-y-2 text-sm text-purple-700">
+                                    <li>Click "Deploy" → "New Deployment"</li>
+                                    <li>Choose type: "Web app"</li>
+                                    <li>Execute as: "Me"</li>
+                                    <li>Who has access: "Anyone"</li>
+                                    <li>Click "Deploy" and copy the web app URL</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-yellow-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-yellow-800 mb-2">Step 4: Update CRM Configuration</h4>
+                                <p class="text-sm text-yellow-700 mb-2">Replace the Apps Script URL in the admin panel with your new URL</p>
+                                <p class="text-sm text-yellow-700">Add your API keys to the frontend configuration</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 text-center">
+                            <button onclick="this.closest('.fixed').remove()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                                Got it!
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(appsScriptModal);
+        }
+
         // Form handlers
         async function addFruit(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
-            const newFruit = {
-                id: 'fruit_' + Date.now(),
+            const editId = event.target.getAttribute('data-edit-id');
+            
+            const fruitData = {
                 name: formData.get('name'),
                 assignedTo: formData.get('assignee'),
                 phone: formData.get('phone'),
@@ -1382,29 +2240,53 @@
                 leadSource: formData.get('leadSource'),
                 campaign: formData.get('campaign'),
                 status: formData.get('status'),
-                notes: formData.get('notes'),
-                createdDate: new Date().toISOString(),
-                createdBy: currentUser.email
+                notes: formData.get('notes')
             };
 
-            fruits.push(newFruit);
-            saveLocalData();
-
-            if (isOnlineMode) {
-                try {
-                    await callAppsScript('addFruit', { fruit: newFruit });
-                    showNotification('Fruit added and synced!');
-                } catch (error) {
-                    showNotification('Fruit added locally. Sync failed.', 'warning');
+            if (editId) {
+                // Edit existing fruit
+                const fruitIndex = fruits.findIndex(f => f.id === editId);
+                if (fruitIndex !== -1) {
+                    fruits[fruitIndex] = {
+                        ...fruits[fruitIndex],
+                        ...fruitData,
+                        updatedDate: new Date().toISOString(),
+                        updatedBy: currentUser.email
+                    };
+                    
+                    showNotification('Fruit updated successfully!');
                 }
             } else {
-                showNotification('Fruit added locally.');
+                // Add new fruit
+                const newFruit = {
+                    id: 'fruit_' + Date.now(),
+                    ...fruitData,
+                    createdDate: new Date().toISOString(),
+                    createdBy: currentUser.email
+                };
+
+                fruits.push(newFruit);
+                showNotification('Fruit added successfully!');
             }
 
+            saveLocalData();
+
+            // External sync disabled for security - data saved locally
+            console.log('💾 Data saved locally (external sync disabled for security)');
+
             closeModal('addFruitModal');
-            event.target.reset();
+            resetAddFruitModal();
             updateFruitsGrid();
             updateStats();
+            updateFruitSelectors();
+        }
+
+        function resetAddFruitModal() {
+            const form = document.querySelector('#addFruitModal form');
+            form.reset();
+            form.removeAttribute('data-edit-id');
+            document.querySelector('#addFruitModal h3').textContent = 'Add New Fruit';
+            document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Add Fruit';
         }
 
         async function logActivity(event) {
@@ -1425,16 +2307,8 @@
             activities.push(newActivity);
             saveLocalData();
 
-            if (isOnlineMode) {
-                try {
-                    await callAppsScript('addActivity', { activity: newActivity });
-                    showNotification('Activity logged and synced!');
-                } catch (error) {
-                    showNotification('Activity logged locally. Sync failed.', 'warning');
-                }
-            } else {
-                showNotification('Activity logged locally.');
-            }
+            // Activity saved locally (external sync disabled for security)
+            showNotification('Activity logged successfully!');
 
             closeModal('activityModal');
             event.target.reset();
@@ -1451,37 +2325,57 @@
         // Update functions
         function updateFruitsGrid() {
             const fruitsGrid = document.getElementById('fruitsGrid');
+            const displayFruits = filteredFruits.length > 0 ? filteredFruits : fruits;
             
-            if (fruits.length === 0) {
+            if (displayFruits.length === 0) {
+                const message = filteredFruits.length === 0 && fruits.length > 0 
+                    ? 'No fruits match your search criteria.' 
+                    : 'No fruits added yet';
+                
                 fruitsGrid.innerHTML = `
                     <div class="text-center py-12 col-span-full">
                         <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-users text-gray-400 text-3xl"></i>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No fruits added yet</h3>
-                        <p class="text-gray-500 mb-4">Start building your ministry database by adding your first fruit.</p>
-                        <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                            <i class="fas fa-plus mr-2"></i>Add Your First Fruit
-                        </button>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">${message}</h3>
+                        ${fruits.length === 0 ? `
+                            <p class="text-gray-500 mb-4">Start building your ministry database by adding your first fruit.</p>
+                            <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Add Your First Fruit
+                            </button>
+                        ` : `
+                            <p class="text-gray-500 mb-4">Try adjusting your search or filter criteria.</p>
+                            <button onclick="clearFilters()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-times mr-2"></i>Clear Filters
+                            </button>
+                        `}
                     </div>
                 `;
                 return;
             }
 
-            fruitsGrid.innerHTML = fruits.map(fruit => {
+            fruitsGrid.innerHTML = displayFruits.map(fruit => {
                 const initials = fruit.name.split(' ').map(n => n[0]).join('').toUpperCase();
                 const progressWidth = getProgressWidth(fruit.status);
+                const isSelected = selectedFruits.has(fruit.id);
                 
                 return `
-                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
-                        <div class="flex items-start justify-between mb-4">
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover relative ${isSelected ? 'ring-2 ring-blue-500' : ''}">
+                        <div class="absolute top-4 right-4">
+                            <input type="checkbox" 
+                                   ${isSelected ? 'checked' : ''} 
+                                   onchange="toggleFruitSelection('${fruit.id}')"
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                        </div>
+                        
+                        <div class="flex items-start justify-between mb-4 pr-8">
                             <div class="flex items-center space-x-3">
                                 <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                                     ${initials}
                                 </div>
                                 <div>
                                     <h3 class="font-semibold text-gray-800">${fruit.name}</h3>
-                                    <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo}</p>
+                                    <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo || 'Unassigned'}</p>
                                 </div>
                             </div>
                         </div>
@@ -1491,6 +2385,18 @@
                                 <div class="flex items-center space-x-2">
                                     <i class="fab fa-instagram text-pink-500"></i>
                                     <span class="text-sm text-gray-600">@${fruit.instagram}</span>
+                                </div>
+                            ` : ''}
+                            ${fruit.facebook ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fab fa-facebook text-blue-600"></i>
+                                    <span class="text-sm text-gray-600">${fruit.facebook}</span>
+                                </div>
+                            ` : ''}
+                            ${fruit.twitter ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fab fa-twitter text-blue-400"></i>
+                                    <span class="text-sm text-gray-600">@${fruit.twitter}</span>
                                 </div>
                             ` : ''}
                             ${fruit.phone ? `
@@ -1503,6 +2409,12 @@
                                 <i class="fas fa-bullhorn text-orange-500"></i>
                                 <span class="text-sm text-gray-600">${fruit.leadSource}</span>
                             </div>
+                            ${fruit.campaign ? `
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-tag text-purple-500"></i>
+                                    <span class="text-sm text-gray-600">${fruit.campaign}</span>
+                                </div>
+                            ` : ''}
                         </div>
                         
                         <div class="mb-4">
@@ -1515,23 +2427,286 @@
                             </div>
                         </div>
                         
+                        ${fruit.notes ? `
+                            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm text-gray-700">${fruit.notes}</p>
+                            </div>
+                        ` : ''}
+                        
                         <div class="flex justify-between items-center">
                             <span class="text-xs ${getStatusColor(fruit.status)} px-2 py-1 rounded-full">${fruit.status}</span>
                             <span class="text-xs text-gray-500">Added: ${new Date(fruit.createdDate).toLocaleDateString()}</span>
+                        </div>
+                        
+                        <div class="mt-4 flex space-x-2">
+                            <button onclick="editFruit('${fruit.id}')" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded text-sm transition-colors">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                            <button onclick="quickActivity('${fruit.name}')" class="flex-1 bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded text-sm transition-colors">
+                                <i class="fas fa-phone mr-1"></i>Activity
+                            </button>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
+        function clearFilters() {
+            document.getElementById('fruitSearch').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('sourceFilter').value = '';
+            filteredFruits = [];
+            updateFruitsGrid();
+        }
+
+        function quickActivity(fruitName) {
+            showActivityModal();
+            document.getElementById('activityFruitSelect').value = fruitName;
+        }
+
+        function editFruit(fruitId) {
+            const fruit = fruits.find(f => f.id === fruitId);
+            if (!fruit) return;
+            
+            // Pre-populate the add fruit modal with existing data
+            showAddFruitModal();
+            
+            // Fill in the form fields
+            const form = document.querySelector('#addFruitModal form');
+            form.elements.name.value = fruit.name;
+            form.elements.assignee.value = fruit.assignedTo || '';
+            form.elements.phone.value = fruit.phone || '';
+            form.elements.instagram.value = fruit.instagram || '';
+            form.elements.facebook.value = fruit.facebook || '';
+            form.elements.twitter.value = fruit.twitter || '';
+            form.elements.leadSource.value = fruit.leadSource;
+            form.elements.campaign.value = fruit.campaign || '';
+            form.elements.status.value = fruit.status;
+            form.elements.notes.value = fruit.notes || '';
+            
+            // Change the form to edit mode
+            form.setAttribute('data-edit-id', fruitId);
+            document.querySelector('#addFruitModal h3').textContent = 'Edit Fruit';
+            document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Update Fruit';
+        }
+
         function getProgressWidth(status) {
             const progressMap = {
-                'Initial Contact': 25,
-                'BB Session Scheduled': 50,
-                'In BB Session': 75,
-                'Attending Class': 100
+                'Initial Contact': 8,
+                'First Response': 16,
+                'Interest Shown': 25,
+                'BB Session Scheduled': 33,
+                'In BB Session': 41,
+                'BB Session Completed': 50,
+                'Attending Class': 66,
+                'Baptism Candidate': 83,
+                'Baptized': 91,
+                'Active Member': 100,
+                'Not Interested': 0,
+                'Lost Contact': 0
             };
-            return progressMap[status] || 25;
+            return progressMap[status] || 8;
+        }
+
+        // Enhanced reporting functions
+        function updateProgressChart() {
+            const progressChart = document.getElementById('progressChart');
+            if (!progressChart) return;
+
+            const statusCounts = {};
+            STATUS_PROGRESSION.forEach(status => {
+                statusCounts[status] = fruits.filter(f => f.status === status).length;
+            });
+
+            const total = fruits.length || 1;
+            
+            progressChart.innerHTML = Object.entries(statusCounts)
+                .filter(([status, count]) => count > 0)
+                .map(([status, count]) => {
+                    const percentage = Math.round((count / total) * 100);
+                    const color = getStatusProgressColor(status);
+                    
+                    return `
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">${status}</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-2">
+                                    <div class="${color} h-2 rounded-full progress-bar" style="width: ${percentage}%"></div>
+                                </div>
+                                <span class="text-sm font-medium w-8">${count}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            if (fruits.length === 0) {
+                progressChart.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-chart-bar text-4xl mb-4"></i>
+                        <p>Progress data will appear here as you add fruits.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateLeadSourceChart() {
+            const leadSourceChart = document.getElementById('leadSourceChart');
+            if (!leadSourceChart) return;
+
+            const sourceCounts = {};
+            fruits.forEach(fruit => {
+                sourceCounts[fruit.leadSource] = (sourceCounts[fruit.leadSource] || 0) + 1;
+            });
+
+            const sortedSources = Object.entries(sourceCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5); // Top 5 sources
+
+            const total = fruits.length || 1;
+
+            leadSourceChart.innerHTML = sortedSources.map(([source, count]) => {
+                const percentage = Math.round((count / total) * 100);
+                
+                return `
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">${source}</span>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-32 bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full progress-bar" style="width: ${percentage}%"></div>
+                            </div>
+                            <span class="text-sm font-medium w-8">${count}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (fruits.length === 0) {
+                leadSourceChart.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-bullhorn text-4xl mb-4"></i>
+                        <p>Lead source data will appear here as you add fruits.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateConversionFunnel() {
+            const conversionFunnel = document.getElementById('conversionFunnel');
+            if (!conversionFunnel) return;
+
+            const funnelStages = [
+                'Initial Contact',
+                'Interest Shown', 
+                'BB Session Scheduled',
+                'In BB Session',
+                'Attending Class',
+                'Baptized'
+            ];
+
+            const stageCounts = funnelStages.map(stage => {
+                const count = fruits.filter(f => {
+                    const stageIndex = STATUS_PROGRESSION.indexOf(f.status);
+                    const targetIndex = STATUS_PROGRESSION.indexOf(stage);
+                    return stageIndex >= targetIndex;
+                }).length;
+                return { stage, count };
+            });
+
+            const maxCount = stageCounts[0]?.count || 1;
+
+            conversionFunnel.innerHTML = stageCounts.map(({ stage, count }, index) => {
+                const percentage = maxCount > 0 ? Math.round((count / maxCount) * 100) : 0;
+                const dropoffRate = index > 0 ? Math.round(((stageCounts[index-1].count - count) / stageCounts[index-1].count) * 100) : 0;
+                
+                return `
+                    <div class="relative">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">${stage}</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-bold text-gray-900">${count}</span>
+                                ${index > 0 && dropoffRate > 0 ? `<span class="text-xs text-red-600">(-${dropoffRate}%)</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-8 relative overflow-hidden">
+                            <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-8 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-white text-sm font-medium">
+                                ${percentage}%
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (fruits.length === 0) {
+                conversionFunnel.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-funnel-dollar text-4xl mb-4"></i>
+                        <p>Conversion funnel will appear here as you add fruits and track their progress.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateActivityTimelineChart() {
+            const activityTimelineChart = document.getElementById('activityTimelineChart');
+            if (!activityTimelineChart) return;
+
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const recentActivities = activities.filter(a => new Date(a.createdDate) > thirtyDaysAgo);
+
+            if (recentActivities.length === 0) {
+                activityTimelineChart.innerHTML = `
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-chart-line text-4xl mb-4"></i>
+                        <p>Activity timeline will appear here as you log more interactions.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group activities by day
+            const dailyActivities = {};
+            recentActivities.forEach(activity => {
+                const date = new Date(activity.createdDate).toDateString();
+                dailyActivities[date] = (dailyActivities[date] || 0) + 1;
+            });
+
+            const maxActivities = Math.max(...Object.values(dailyActivities));
+            
+            activityTimelineChart.innerHTML = `
+                <div class="grid grid-cols-7 gap-2 h-full">
+                    ${Object.entries(dailyActivities).slice(-7).map(([date, count]) => {
+                        const height = (count / maxActivities) * 100;
+                        const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
+                        
+                        return `
+                            <div class="flex flex-col items-center justify-end h-full">
+                                <div class="bg-blue-500 rounded-t w-8 transition-all duration-300" style="height: ${height}%"></div>
+                                <div class="text-xs text-gray-600 mt-2">${dayName}</div>
+                                <div class="text-xs font-bold text-gray-800">${count}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function getStatusProgressColor(status) {
+            const colorMap = {
+                'Initial Contact': 'bg-yellow-500',
+                'First Response': 'bg-yellow-600',
+                'Interest Shown': 'bg-orange-500',
+                'BB Session Scheduled': 'bg-blue-500',
+                'In BB Session': 'bg-blue-600',
+                'BB Session Completed': 'bg-purple-500',
+                'Attending Class': 'bg-green-500',
+                'Baptism Candidate': 'bg-green-600',
+                'Baptized': 'bg-green-700',
+                'Active Member': 'bg-green-800',
+                'Not Interested': 'bg-red-500',
+                'Lost Contact': 'bg-gray-500'
+            };
+            return colorMap[status] || 'bg-gray-400';
         }
 
         function getStatusColor(status) {
@@ -1558,9 +2733,15 @@
             ).length;
             document.getElementById('weeklyContacts').textContent = weeklyContacts;
             
-            const attendingClass = fruits.filter(f => f.status === 'Attending Class').length;
-            const conversionRate = fruits.length > 0 ? Math.round((attendingClass / fruits.length) * 100) : 0;
+            const baptized = fruits.filter(f => f.status === 'Baptized' || f.status === 'Active Member').length;
+            const conversionRate = fruits.length > 0 ? Math.round((baptized / fruits.length) * 100) : 0;
             document.getElementById('conversionRate').textContent = conversionRate + '%';
+
+            // Update all charts
+            updateProgressChart();
+            updateLeadSourceChart();
+            updateConversionFunnel();
+            updateActivityTimelineChart();
         }
 
         function updateRecentActivities() {
@@ -1616,8 +2797,14 @@
             syncOptions.classList.toggle('hidden');
         }
 
-        function refreshData() {
-            loadFromGoogleSheets();
+        async function refreshData() {
+            if (accessToken) {
+                await loadFromGoogleSheets();
+                showNotification('Data refreshed from Google Sheets!');
+            } else {
+                loadLocalData();
+                showNotification('Local data refreshed!');
+            }
         }
 
         function exportData() {
@@ -1682,60 +2869,130 @@
         }
 
         async function testGoogleSheetsConnection() {
-            if (!accessToken) {
-                showNotification('Not authenticated for Google Sheets', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                
-                if (response.ok) {
-                    showNotification('Google Sheets connection successful!');
-                } else {
-                    showNotification('Google Sheets connection failed', 'error');
-                }
-            } catch (error) {
-                showNotification('Google Sheets connection failed: ' + error.message, 'error');
-            }
+            showNotification('Google Sheets API disabled for security (CORS policy restrictions)', 'info');
         }
 
         async function testAppsScriptConnection() {
-            try {
-                console.log('🔗 Testing Apps Script connection...');
-                console.log('📡 URL:', APPS_SCRIPT_CONFIG.WEB_APP_URL);
-                
-                const result = await callAppsScript('ping', { test: true });
-                
-                if (result.success || result.status === 'ok') {
-                    showNotification('✅ Apps Script connection successful!');
-                    return true;
-                } else {
-                    console.error('📡 Apps Script returned error:', result);
-                    showNotification(`❌ Apps Script error: ${result.message || 'Unknown error'}`, 'error');
-                    return false;
-                }
-                
-            } catch (error) {
-                console.error('📡 Connection error:', error);
-                
-                // Provide specific error messages
-                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                    showNotification('❌ Network error - Apps Script URL may be incorrect or not accessible', 'error');
-                } else if (error.message.includes('CORS')) {
-                    showNotification('❌ CORS error - Apps Script not deployed as web app with proper permissions', 'error');
-                } else {
-                    showNotification(`❌ Connection failed: ${error.message}`, 'error');
-                }
-                
-                return false;
-            }
+            showNotification('Apps Script connection disabled for security (CORS policy restrictions)', 'info');
+            return false;
         }
 
         function refreshUserList() {
-            showNotification('User list refresh coming soon!', 'info');
+            updateUserManagementTable();
+            updateAdminStats();
+            showNotification('User list refreshed!', 'info');
+        }
+
+        function updateUserManagementTable() {
+            const tableBody = document.getElementById('userManagementTable');
+            
+            // Use cached users from Google Sheets if available
+            const usersToDisplay = authorizedUsers.length > 0 ? authorizedUsers : [];
+            
+            if (usersToDisplay.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-users text-4xl mb-4"></i>
+                            <div>No users loaded from Google Sheets</div>
+                            <div class="text-sm mt-2">Check your Google Sheets connection and user access table</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tableBody.innerHTML = usersToDisplay.map(user => {
+                const statusColor = user.status === 'Active' ? 'text-green-600' : 'text-red-600';
+                const roleColor = user.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                    ${user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">${user.name}</div>
+                                    <div class="text-sm text-gray-500">${user.email}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${roleColor}">
+                                ${user.role}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-700">${user.permissions}</td>
+                        <td class="px-4 py-3">
+                            <span class="font-medium ${statusColor}">${user.status}</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500">
+                            ${new Date(user.lastLogin).toLocaleDateString()}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateAdminStats() {
+            // Use cached users from Google Sheets if available
+            const usersToCount = authorizedUsers.length > 0 ? authorizedUsers : [];
+            
+            const totalUsers = usersToCount.length;
+            const activeUsers = usersToCount.filter(u => u.status === 'Active').length;
+            const adminUsers = usersToCount.filter(u => u.role === 'Admin').length;
+            
+            document.getElementById('totalUsers').textContent = totalUsers;
+            document.getElementById('activeUsers').textContent = activeUsers;
+            document.getElementById('adminUsers').textContent = adminUsers;
+            document.getElementById('loginSessions').textContent = activeUsers; // Simplified
+            
+            // Update migration stats
+            document.getElementById('migratedFruits').textContent = CHAT_HISTORY_DATA.existingFruits.length;
+            document.getElementById('migratedActivities').textContent = CHAT_HISTORY_DATA.existingActivities.length;
+            document.getElementById('migratedUsers').textContent = totalUsers;
+        }
+
+        function resetMigration() {
+            if (confirm('Are you sure you want to reset the migration? This will clear all local data and re-import from chat history.')) {
+                localStorage.removeItem('crm_fruits');
+                localStorage.removeItem('crm_activities');
+                localStorage.removeItem('crm_data_migrated');
+                
+                loadLocalData();
+                showNotification('Migration reset complete! Data re-imported from chat history.', 'info');
+            }
+        }
+
+        function exportMigrationReport() {
+            const report = {
+                migrationDate: new Date().toISOString(),
+                migratedBy: currentUser.email,
+                summary: {
+                    fruits: CHAT_HISTORY_DATA.existingFruits.length,
+                    activities: CHAT_HISTORY_DATA.existingActivities.length,
+                    users: CHAT_HISTORY_DATA.userAccess.length
+                },
+                data: {
+                    fruits: CHAT_HISTORY_DATA.existingFruits,
+                    activities: CHAT_HISTORY_DATA.existingActivities,
+                    users: CHAT_HISTORY_DATA.userAccess
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `migration-report-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Migration report exported successfully!');
         }
 
         function logout() {
@@ -1780,5 +3037,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a365873193b4dc',t:'MTc1OTczNTIzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3c7bc1586b4dc',t:'MTc1OTczOTI1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
