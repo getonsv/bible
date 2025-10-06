@@ -4515,14 +4515,14 @@
                     },
                     body: JSON.stringify({
                         fields: {
-                            Title: userData.displayName,
-                            Email: userData.email,
-                            DisplayName: userData.displayName,
-                            Role: userData.role,
-                            Status: userData.status,
-                            Department: userData.department,
-                            Notes: userData.notes,
-                            LastLogin: userData.lastLogin
+                            Title: userData.Title,
+                            Email: userData.Email,
+                            DisplayName: userData.DisplayName,
+                            Role: userData.Role.value,
+                            Status: userData.Status.value,
+                            Department: userData.Department,
+                            Notes: userData.Notes,
+                            LastLogin: userData.LastLogin
                         }
                     })
                 });
