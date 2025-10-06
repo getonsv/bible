@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM - SharePoint Integration</title>
+    <title>EV</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -844,18 +844,19 @@
             TOKEN_URI: 'https://oauth2.googleapis.com/token',
             SCOPES: 'openid profile email https://www.googleapis.com/auth/spreadsheets',
             REDIRECT_URIS: [
-                'http://localhost:3000/auth/callback',
-                'https://shill.es/auth/callback',
-                'https://app.shill.es/auth/callback',
-                'https://app.geton.asia/auth/callback',
-                'https://geton.asia/auth/callback'
+                'https://app.shill.es/ev',
+                'https://shill.es/ev',
+                'https://app.geton.asia/ev',
+                'https://geton.asia/ev',
+                'http://localhost:3000/ev',
+                'http://localhost:3000'
             ],
             JAVASCRIPT_ORIGINS: [
-                'http://localhost:3000',
-                'https://shill.es',
                 'https://app.shill.es',
+                'https://shill.es',
                 'https://app.geton.asia',
-                'https://geton.asia'
+                'https://geton.asia',
+                'http://localhost:3000'
             ]
         };
 
@@ -1958,5 +1959,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5daf69727b4dc',t:'MTc1OTc2MTAxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5dbadb15cb4dc',t:'MTc1OTc2MTA0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
