@@ -50,17 +50,7 @@
                 <p class="text-gray-600">Track your ministry impact and grow God's kingdom</p>
             </div>
             
-            <div id="googleSignInButton" class="w-full">
-                <button onclick="handleGoogleSignInClick()" class="w-full bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3 shadow-sm">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    <span>Continue with Google</span>
-                </button>
-            </div>
+            <div id="googleSignInButton" class="w-full"></div>
             
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-500">Secure access with Google authentication</p>
@@ -764,120 +754,25 @@
         let google;
         let isGoogleSignInLoaded = false;
 
-        // Track Google API loading errors
-        window.googleLoadErrors = [];
-        
-        // Override console.error to capture Google API errors
-        const originalConsoleError = console.error;
-        console.error = function(...args) {
-            // Check if this is a Google API related error
-            const errorString = args.join(' ').toLowerCase();
-            if (errorString.includes('google') || errorString.includes('gapi') || errorString.includes('gsi')) {
-                window.googleLoadErrors.push({
-                    timestamp: new Date().toISOString(),
-                    error: args.join(' ')
-                });
-            }
-            originalConsoleError.apply(console, args);
-        };
-
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 App initializing...');
-            
             // Check connection status
             updateConnectionStatus();
             
-            // Show immediate fallback button instead of loading state
-            const buttonContainer = document.getElementById('googleSignInButton');
-            if (buttonContainer) {
-                buttonContainer.innerHTML = `
-                    <div class="space-y-3">
-                        <button onclick="handleGoogleSignInClick()" class="w-full bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3 shadow-sm">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                            </svg>
-                            <span>Continue with Google</span>
-                        </button>
-                        
-                        <div class="text-center">
-                            <p class="text-xs text-gray-500">Secure access with Google authentication</p>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // Add error listeners for script loading
-            const googleScripts = document.querySelectorAll('script[src*="google"]');
-            console.log('📜 Found Google scripts:', googleScripts.length);
-            
-            googleScripts.forEach((script, index) => {
-                console.log(`Script ${index + 1}: ${script.src}`);
-                
-                script.addEventListener('load', () => {
-                    console.log(`✅ Script loaded: ${script.src}`);
-                });
-                
-                script.addEventListener('error', (e) => {
-                    console.error(`❌ Script failed: ${script.src}`, e);
-                    window.googleLoadErrors.push({
-                        timestamp: new Date().toISOString(),
-                        error: `Failed to load script: ${script.src}`,
-                        event: e
-                    });
-                });
-            });
-            
-            // Add a shorter fallback timer for quicker feedback
-            const quickFallbackTimer = setTimeout(() => {
-                console.warn('⚠️ Quick check: Google APIs not ready yet');
-                if (buttonContainer && !window.google?.accounts?.id) {
+            // Add a fallback timer in case Google APIs never load
+            const fallbackTimer = setTimeout(() => {
+                console.warn('Google APIs taking too long to load, showing fallback options');
+                const buttonContainer = document.getElementById('googleSignInButton');
+                if (buttonContainer && buttonContainer.innerHTML.includes('Loading Google Sign-In')) {
                     buttonContainer.innerHTML = `
                         <div class="space-y-3">
                             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                 <div class="flex items-center space-x-2 text-yellow-800 mb-2">
                                     <i class="fas fa-clock"></i>
-                                    <span class="font-medium">Still Loading...</span>
+                                    <span class="font-medium">Loading Taking Too Long</span>
                                 </div>
-                                <p class="text-sm text-yellow-700">Google Sign-In is taking longer than expected. This might be due to ad blockers or network issues.</p>
+                                <p class="text-sm text-yellow-700">Google Sign-In is taking longer than expected to load.</p>
                             </div>
-                            
-                            <button onclick="showDebugInfo()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                <i class="fas fa-bug mr-2"></i>Show Debug Info
-                            </button>
-                            
-                            <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                <i class="fas fa-redo mr-2"></i>Try Again
-                            </button>
-                            
-                            <button onclick="showTroubleshooting()" class="w-full text-blue-600 hover:text-blue-800 text-sm underline">
-                                Troubleshooting Tips
-                            </button>
-                        </div>
-                    `;
-                }
-            }, 5000); // 5 second quick check
-            
-            // Add a longer fallback timer
-            const longFallbackTimer = setTimeout(() => {
-                console.error('❌ Google APIs failed to load after 20 seconds');
-                if (buttonContainer && !isGoogleSignInLoaded) {
-                    buttonContainer.innerHTML = `
-                        <div class="space-y-3">
-                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
-                                <div class="flex items-center space-x-2 text-red-800 mb-2">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <span class="font-medium">Google Sign-In Failed to Load</span>
-                                </div>
-                                <p class="text-sm text-red-700">Unable to load Google authentication. This is likely due to ad blockers, network restrictions, or browser security settings.</p>
-                            </div>
-                            
-                            <button onclick="showDebugInfo()" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                <i class="fas fa-bug mr-2"></i>Show Debug Info
-                            </button>
                             
                             <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
                                 <i class="fas fa-redo mr-2"></i>Try Again
@@ -889,45 +784,13 @@
                         </div>
                     `;
                 }
-            }, 20000); // 20 second final fallback
+            }, 15000); // 15 second fallback
             
             // Try to initialize Google APIs
             initializeGoogleAPIs().then(() => {
-                console.log('✅ Google APIs initialized successfully');
-                clearTimeout(quickFallbackTimer);
-                clearTimeout(longFallbackTimer);
-            }).catch((error) => {
-                console.error('❌ Google APIs initialization failed:', error);
-                clearTimeout(quickFallbackTimer);
-                clearTimeout(longFallbackTimer);
-                window.googleLoadErrors.push({
-                    timestamp: new Date().toISOString(),
-                    error: `Initialization failed: ${error.message}`,
-                    stack: error.stack
-                });
-                
-                // Show error immediately
-                if (buttonContainer) {
-                    buttonContainer.innerHTML = `
-                        <div class="space-y-3">
-                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
-                                <div class="flex items-center space-x-2 text-red-800 mb-2">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <span class="font-medium">Initialization Error</span>
-                                </div>
-                                <p class="text-sm text-red-700">${error.message}</p>
-                            </div>
-                            
-                            <button onclick="showDebugInfo()" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                <i class="fas fa-bug mr-2"></i>Show Debug Info
-                            </button>
-                            
-                            <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                <i class="fas fa-redo mr-2"></i>Try Again
-                            </button>
-                        </div>
-                    `;
-                }
+                clearTimeout(fallbackTimer);
+            }).catch(() => {
+                clearTimeout(fallbackTimer);
             });
         });
 
@@ -1120,32 +983,6 @@
                     `;
                 }
 
-                // Add immediate fallback button in case Google APIs don't load
-                setTimeout(() => {
-                    if (buttonContainer && !isGoogleSignInLoaded) {
-                        console.log('🔄 Adding fallback Google Sign-In button');
-                        buttonContainer.innerHTML = `
-                            <div class="space-y-3">
-                                <button onclick="fallbackGoogleSignIn()" class="w-full bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3">
-                                    <svg class="w-5 h-5" viewBox="0 0 24 24">
-                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                                    </svg>
-                                    <span>Continue with Google</span>
-                                </button>
-                                
-                                <div class="text-center">
-                                    <button onclick="showDebugInfo()" class="text-blue-600 hover:text-blue-800 text-sm underline">
-                                        Having trouble? Show debug info
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }, 2000); // Show fallback after 2 seconds
-
                 // Check current domain and validate against authorized domains
                 const currentOrigin = window.location.origin;
                 console.log('Current origin:', currentOrigin);
@@ -1161,60 +998,28 @@
                     console.warn(`Domain ${currentOrigin} may not be authorized. Continuing anyway...`);
                 }
 
-                // Wait for Google Sign-In to load with detailed debugging
+                // Wait for Google Sign-In to load
                 await new Promise((resolve, reject) => {
                     let attempts = 0;
-                    const maxAttempts = 150; // 15 seconds total
+                    const maxAttempts = 100; // 10 seconds total
                     
                     const checkGoogleLoaded = () => {
                         attempts++;
                         
-                        // Detailed API availability check
-                        const windowGoogle = window.google;
-                        const googleAccounts = windowGoogle?.accounts;
-                        const googleAccountsId = googleAccounts?.id;
-                        const gapiAvailable = window.gapi;
+                        // Check if Google Sign-In is available
+                        const googleSignInAvailable = window.google?.accounts?.id;
                         
-                        console.log(`Attempt ${attempts}: Checking Google APIs...`, {
-                            windowGoogle: !!windowGoogle,
-                            googleAccounts: !!googleAccounts,
-                            googleAccountsId: !!googleAccountsId,
-                            gapiAvailable: !!gapiAvailable,
-                            scripts: Array.from(document.scripts).map(s => s.src).filter(src => src.includes('google'))
-                        });
-                        
-                        if (googleAccountsId) {
+                        if (googleSignInAvailable) {
                             console.log('✅ Google Sign-In found after', attempts, 'attempts');
                             resolve();
                         } else if (attempts >= maxAttempts) {
-                            const errorDetails = {
-                                attempts: attempts,
-                                windowGoogle: !!windowGoogle,
-                                googleAccounts: !!googleAccounts,
-                                googleAccountsId: !!googleAccountsId,
-                                gapiAvailable: !!gapiAvailable,
-                                userAgent: navigator.userAgent,
-                                currentUrl: window.location.href,
-                                scripts: Array.from(document.scripts).map(s => s.src).filter(src => src.includes('google')),
-                                errors: window.googleLoadErrors || []
-                            };
-                            
                             console.error('❌ Google Sign-In timeout after', attempts, 'attempts');
-                            console.error('Debug details:', errorDetails);
-                            
-                            let errorMessage = 'Google Sign-In failed to load after 15 seconds. ';
-                            
-                            if (!windowGoogle) {
-                                errorMessage += 'Google APIs script not loaded. ';
-                            } else if (!googleAccounts) {
-                                errorMessage += 'Google Accounts API not available. ';
-                            } else if (!googleAccountsId) {
-                                errorMessage += 'Google Sign-In ID service not available. ';
-                            }
-                            
-                            errorMessage += 'This may be due to ad blockers, network issues, or browser security settings.';
-                            
-                            reject(new Error(errorMessage));
+                            console.log('Available APIs:', {
+                                google: !!window.google,
+                                googleAccounts: !!window.google?.accounts,
+                                googleAccountsId: !!window.google?.accounts?.id
+                            });
+                            reject(new Error('Google Sign-In failed to load. This may be due to ad blockers, network issues, or browser security settings.'));
                         } else {
                             setTimeout(checkGoogleLoaded, 100);
                         }
@@ -1231,34 +1036,21 @@
                 // Initialize Google API client for Sheets access
                 await new Promise((resolve, reject) => {
                     if (window.gapi) {
-                        console.log('Loading gapi auth2...');
                         gapi.load('auth2', {
                             callback: () => {
-                                console.log('Initializing gapi auth2...');
                                 gapi.auth2.init({
                                     client_id: GOOGLE_CONFIG.CLIENT_ID,
                                     scope: GOOGLE_CONFIG.SCOPES
-                                }).then(() => {
-                                    console.log('✅ gapi auth2 initialized');
-                                    resolve();
-                                }, (error) => {
-                                    console.error('❌ gapi auth2 init error:', error);
-                                    reject(error);
-                                });
+                                }).then(resolve, reject);
                             },
-                            onerror: (error) => {
-                                console.error('❌ gapi load error:', error);
-                                reject(new Error('Failed to load Google API auth2'));
-                            }
+                            onerror: reject
                         });
                     } else {
-                        console.warn('⚠️ gapi not available, skipping auth2 init');
-                        resolve(); // Don't fail if gapi is not available
+                        reject(new Error('Google API client not available'));
                     }
                 });
                 
                 // Initialize Google Sign-In with OAuth 2.0 Web Application configuration
-                console.log('Initializing Google Sign-In ID...');
                 google.accounts.id.initialize({
                     client_id: GOOGLE_CONFIG.CLIENT_ID,
                     callback: handleGoogleSignInResponse,
@@ -1266,7 +1058,6 @@
                     cancel_on_tap_outside: false,
                     use_fedcm_for_prompt: false
                 });
-                console.log('✅ Google Sign-In ID initialized');
 
                 // Render the sign-in button
                 if (buttonContainer) {
@@ -1304,12 +1095,8 @@
                                     <i class="fas fa-exclamation-triangle"></i>
                                     <span class="font-medium">Google Sign-In Error</span>
                                 </div>
-                                <p class="text-sm text-red-700">${error.message || 'Unknown error occurred'}</p>
+                                <p class="text-sm text-red-700">${error.message}</p>
                             </div>
-                            
-                            <button onclick="showDebugInfo()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                <i class="fas fa-bug mr-2"></i>Show Debug Information
-                            </button>
                             
                             <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
                                 <i class="fas fa-redo mr-2"></i>Retry
@@ -1343,259 +1130,6 @@
             }, 1000);
         }
 
-        // Show debug information
-        function showDebugInfo() {
-            const buttonContainer = document.getElementById('googleSignInButton');
-            if (buttonContainer) {
-                const debugInfo = {
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent,
-                    currentUrl: window.location.href,
-                    origin: window.location.origin,
-                    windowGoogle: !!window.google,
-                    googleAccounts: !!window.google?.accounts,
-                    googleAccountsId: !!window.google?.accounts?.id,
-                    gapiAvailable: !!window.gapi,
-                    scripts: Array.from(document.scripts).map(s => s.src).filter(src => src.includes('google')),
-                    clientId: GOOGLE_CONFIG.CLIENT_ID,
-                    authorizedDomains: GOOGLE_CONFIG.AUTHORIZED_DOMAINS,
-                    isDomainAuthorized: GOOGLE_CONFIG.AUTHORIZED_DOMAINS.includes(window.location.origin),
-                    consoleErrors: window.googleLoadErrors || [],
-                    networkOnline: navigator.onLine,
-                    cookiesEnabled: navigator.cookieEnabled,
-                    localStorage: !!window.localStorage,
-                    sessionStorage: !!window.sessionStorage
-                };
-                
-                buttonContainer.innerHTML = `
-                    <div class="space-y-4 text-sm">
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-h-96 overflow-y-auto">
-                            <h4 class="font-semibold text-yellow-800 mb-3">🐛 Debug Information</h4>
-                            
-                            <div class="space-y-3">
-                                <div>
-                                    <h5 class="font-medium text-yellow-800 mb-2">Environment:</h5>
-                                    <div class="bg-white rounded border p-3 space-y-1 text-xs font-mono">
-                                        <div><strong>URL:</strong> ${debugInfo.currentUrl}</div>
-                                        <div><strong>Origin:</strong> ${debugInfo.origin}</div>
-                                        <div><strong>User Agent:</strong> ${debugInfo.userAgent.substring(0, 100)}...</div>
-                                        <div><strong>Online:</strong> ${debugInfo.networkOnline ? '✅' : '❌'}</div>
-                                        <div><strong>Cookies:</strong> ${debugInfo.cookiesEnabled ? '✅' : '❌'}</div>
-                                    </div>
-                                </div>
-                                
-                                <div>
-                                    <h5 class="font-medium text-yellow-800 mb-2">Google APIs Status:</h5>
-                                    <div class="bg-white rounded border p-3 space-y-1 text-xs">
-                                        <div>window.google: ${debugInfo.windowGoogle ? '✅ Available' : '❌ Missing'}</div>
-                                        <div>google.accounts: ${debugInfo.googleAccounts ? '✅ Available' : '❌ Missing'}</div>
-                                        <div>google.accounts.id: ${debugInfo.googleAccountsId ? '✅ Available' : '❌ Missing'}</div>
-                                        <div>window.gapi: ${debugInfo.gapiAvailable ? '✅ Available' : '❌ Missing'}</div>
-                                    </div>
-                                </div>
-                                
-                                <div>
-                                    <h5 class="font-medium text-yellow-800 mb-2">OAuth Configuration:</h5>
-                                    <div class="bg-white rounded border p-3 space-y-1 text-xs">
-                                        <div><strong>Client ID:</strong> ${debugInfo.clientId}</div>
-                                        <div><strong>Domain Authorized:</strong> ${debugInfo.isDomainAuthorized ? '✅ Yes' : '❌ No'}</div>
-                                    </div>
-                                </div>
-                                
-                                <div>
-                                    <h5 class="font-medium text-yellow-800 mb-2">Loaded Scripts:</h5>
-                                    <div class="bg-white rounded border p-3 text-xs">
-                                        ${debugInfo.scripts.length > 0 ? 
-                                            debugInfo.scripts.map(src => `<div class="truncate">${src}</div>`).join('') :
-                                            '<div class="text-red-600">❌ No Google scripts found</div>'
-                                        }
-                                    </div>
-                                </div>
-                                
-                                ${debugInfo.consoleErrors.length > 0 ? `
-                                    <div>
-                                        <h5 class="font-medium text-yellow-800 mb-2">Console Errors:</h5>
-                                        <div class="bg-white rounded border p-3 text-xs max-h-32 overflow-y-auto">
-                                            ${debugInfo.consoleErrors.map(err => `<div class="text-red-600 mb-1">${err.error}</div>`).join('')}
-                                        </div>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                        
-                        <button onclick="copyDebugInfo()" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                            <i class="fas fa-copy mr-2"></i>Copy Debug Info
-                        </button>
-                        
-                        <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                            <i class="fas fa-redo mr-2"></i>Try Again
-                        </button>
-                        
-                        <div class="text-center">
-                            <button onclick="showTroubleshooting()" class="text-blue-600 hover:text-blue-800 text-xs underline">
-                                Show Troubleshooting Tips
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        // Handle Google Sign-In button click
-        function handleGoogleSignInClick() {
-            console.log('🔄 Google Sign-In button clicked');
-            
-            const buttonContainer = document.getElementById('googleSignInButton');
-            if (buttonContainer) {
-                buttonContainer.innerHTML = `
-                    <div class="w-full bg-blue-50 border border-blue-200 text-blue-800 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
-                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                        <span>Signing you in...</span>
-                    </div>
-                `;
-            }
-            
-            // Go directly to the CRM dashboard immediately
-            simulateSuccessfulLogin();
-        }
-
-        // Simulate successful login for demo
-        function simulateSuccessfulLogin() {
-            console.log('🎭 Simulating successful login for demo');
-            
-            // Create a demo user
-            const demoUser = {
-                googleId: 'demo_user_123',
-                name: 'Demo User',
-                email: 'demo@example.com',
-                picture: 'https://via.placeholder.com/32',
-                location: { latitude: null, longitude: null },
-                ipAddress: '127.0.0.1',
-                loginTime: new Date().toISOString(),
-                role: 'Admin',
-                permissions: 'Full Access'
-            };
-
-            // Set current user and show dashboard
-            currentUser = demoUser;
-            localStorage.setItem('crmUser', JSON.stringify(demoUser));
-            
-            // Load local data
-            loadLocalData();
-            
-            console.log('✅ Demo authentication successful, showing dashboard...');
-            showDashboard();
-            showNotification(`Welcome ${demoUser.name}! This is a demo version.`);
-        }
-
-        // Fallback Google Sign-In function
-        function fallbackGoogleSignIn() {
-            console.log('🔄 Attempting fallback Google Sign-In...');
-            
-            const buttonContainer = document.getElementById('googleSignInButton');
-            if (buttonContainer) {
-                buttonContainer.innerHTML = `
-                    <div class="w-full bg-blue-50 border border-blue-200 text-blue-800 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
-                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                        <span>Signing in...</span>
-                    </div>
-                `;
-            }
-            
-            // Try to use Google APIs if they loaded
-            if (window.google?.accounts?.id) {
-                console.log('✅ Google APIs available, using official sign-in');
-                try {
-                    window.google.accounts.id.prompt();
-                } catch (error) {
-                    console.error('❌ Google prompt failed:', error);
-                    showFallbackSignInError();
-                }
-            } else {
-                console.log('⚠️ Google APIs not available, using demo mode');
-                simulateSuccessfulLogin();
-            }
-        }
-
-        function showFallbackSignInError() {
-            const buttonContainer = document.getElementById('googleSignInButton');
-            if (buttonContainer) {
-                buttonContainer.innerHTML = `
-                    <div class="space-y-3">
-                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
-                            <div class="flex items-center space-x-2 text-red-800 mb-2">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <span class="font-medium">Sign-In Failed</span>
-                            </div>
-                            <p class="text-sm text-red-700">Unable to complete Google Sign-In. This may be due to browser restrictions or ad blockers.</p>
-                        </div>
-                        
-                        <button onclick="fallbackGoogleSignIn()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                            <i class="fas fa-redo mr-2"></i>Try Again
-                        </button>
-                        
-                        <button onclick="showDebugInfo()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                            <i class="fas fa-bug mr-2"></i>Show Debug Info
-                        </button>
-                        
-                        <div class="text-center">
-                            <button onclick="showTroubleshooting()" class="text-blue-600 hover:text-blue-800 text-sm underline">
-                                Troubleshooting Tips
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        // Copy debug information to clipboard
-        function copyDebugInfo() {
-            const debugInfo = {
-                timestamp: new Date().toISOString(),
-                userAgent: navigator.userAgent,
-                currentUrl: window.location.href,
-                origin: window.location.origin,
-                windowGoogle: !!window.google,
-                googleAccounts: !!window.google?.accounts,
-                googleAccountsId: !!window.google?.accounts?.id,
-                gapiAvailable: !!window.gapi,
-                scripts: Array.from(document.scripts).map(s => s.src).filter(src => src.includes('google')),
-                clientId: GOOGLE_CONFIG.CLIENT_ID,
-                authorizedDomains: GOOGLE_CONFIG.AUTHORIZED_DOMAINS,
-                isDomainAuthorized: GOOGLE_CONFIG.AUTHORIZED_DOMAINS.includes(window.location.origin),
-                networkOnline: navigator.onLine,
-                cookiesEnabled: navigator.cookieEnabled,
-                consoleErrors: window.googleLoadErrors || []
-            };
-            
-            const debugText = JSON.stringify(debugInfo, null, 2);
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(debugText).then(() => {
-                    showNotification('Debug information copied to clipboard!');
-                }).catch(() => {
-                    fallbackCopyToClipboard(debugText);
-                });
-            } else {
-                fallbackCopyToClipboard(debugText);
-            }
-        }
-
-        // Fallback copy function
-        function fallbackCopyToClipboard(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                showNotification('Debug information copied to clipboard!');
-            } catch (err) {
-                showNotification('Failed to copy debug information', 'error');
-            }
-            document.body.removeChild(textArea);
-        }
-
         // Show troubleshooting tips
         function showTroubleshooting() {
             const buttonContainer = document.getElementById('googleSignInButton');
@@ -1609,24 +1143,22 @@
                                 <div>
                                     <h5 class="font-medium text-blue-800 mb-1">Common Issues:</h5>
                                     <ul class="list-disc list-inside space-y-1 text-blue-700 text-xs">
-                                        <li>Ad blockers blocking Google APIs (uBlock Origin, AdBlock Plus)</li>
+                                        <li>Domain not authorized in Google Console</li>
+                                        <li>Ad blockers blocking Google APIs</li>
                                         <li>Browser security settings too strict</li>
                                         <li>Network firewall blocking Google services</li>
-                                        <li>Third-party cookies disabled</li>
-                                        <li>JavaScript disabled or restricted</li>
                                     </ul>
                                 </div>
                                 
                                 <div>
                                     <h5 class="font-medium text-blue-800 mb-1">Quick Fixes:</h5>
                                     <ol class="list-decimal list-inside space-y-1 text-blue-700 text-xs">
-                                        <li><strong>Disable ad blockers</strong> (uBlock, AdBlock, etc.)</li>
-                                        <li><strong>Try incognito/private mode</strong> to bypass extensions</li>
-                                        <li><strong>Enable third-party cookies</strong> in browser settings</li>
-                                        <li><strong>Clear browser cache and cookies</strong></li>
-                                        <li><strong>Try a different browser</strong> (Chrome, Firefox, Safari)</li>
-                                        <li><strong>Check network connection</strong> and try different WiFi</li>
-                                        <li><strong>Disable VPN</strong> if using one</li>
+                                        <li>Disable ad blockers (uBlock, AdBlock, etc.)</li>
+                                        <li>Try incognito/private browsing mode</li>
+                                        <li>Clear browser cache and cookies</li>
+                                        <li>Try a different browser (Chrome, Firefox, Safari)</li>
+                                        <li>Check if JavaScript is enabled</li>
+                                        <li>Ensure stable internet connection</li>
                                     </ol>
                                 </div>
                                 
@@ -1636,7 +1168,7 @@
                                         <strong>Current Domain:</strong> ${window.location.origin}
                                     </p>
                                     <p class="text-yellow-700 text-xs mt-1">
-                                        This domain is authorized for OAuth. The issue is likely browser-related.
+                                        This domain must be added to Google Console's authorized JavaScript origins.
                                     </p>
                                 </div>
                             </div>
@@ -1647,8 +1179,8 @@
                         </button>
                         
                         <div class="text-center">
-                            <button onclick="showDebugInfo()" class="text-blue-600 hover:text-blue-800 text-xs underline">
-                                Show Debug Information
+                            <button onclick="checkGoogleConsoleSetup()" class="text-blue-600 hover:text-blue-800 text-xs underline">
+                                Check Google Console Setup
                             </button>
                         </div>
                     </div>
@@ -2453,5 +1985,184 @@
             const dropdown = document.getElementById('fruitDropdownSchedule');
             const query = input.value.toLowerCase();
             
-            if (query.length > 0 && fruits.length > 0
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a2914d21b0b4dc',t:'MTc1OTcyNjUzOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+            if (query.length > 0 && fruits.length > 0) {
+                dropdown.innerHTML = fruits
+                    .filter(fruit => fruit.name.toLowerCase().includes(query))
+                    .map(fruit => `
+                        <div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectFruitSchedule(this, '${fruit.name}')">
+                            ${fruit.name}
+                        </div>
+                    `).join('');
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function selectFruitSchedule(element, name) {
+            const input = element.closest('.relative').querySelector('input');
+            input.value = name;
+            document.getElementById('fruitDropdownSchedule').classList.add('hidden');
+        }
+
+        // Edit and delete functions
+        function editFruit(fruitId) {
+            const fruit = fruits.find(f => f.id === fruitId);
+            if (!fruit) return;
+            
+            // Populate edit modal
+            document.getElementById('editFruitId').value = fruit.id;
+            document.getElementById('editFruitName').value = fruit.name;
+            document.getElementById('editFruitAssignee').value = fruit.assignedTo;
+            document.getElementById('editFruitPhone').value = fruit.phone;
+            document.getElementById('editFruitInstagram').value = fruit.instagram;
+            document.getElementById('editFruitFacebook').value = fruit.facebook;
+            document.getElementById('editFruitTwitter').value = fruit.twitter;
+            document.getElementById('editFruitLeadSource').value = fruit.leadSource;
+            document.getElementById('editFruitCampaign').value = fruit.campaign;
+            document.getElementById('editFruitStatus').value = fruit.status;
+            document.getElementById('editFruitNotes').value = fruit.notes;
+            
+            document.getElementById('editFruitModal').classList.remove('hidden');
+        }
+
+        async function updateFruit(event) {
+            event.preventDefault();
+            
+            const fruitId = document.getElementById('editFruitId').value;
+            const fruitIndex = fruits.findIndex(f => f.id === fruitId);
+            
+            if (fruitIndex === -1) return;
+            
+            // Update fruit data
+            fruits[fruitIndex] = {
+                ...fruits[fruitIndex],
+                name: document.getElementById('editFruitName').value,
+                assignedTo: document.getElementById('editFruitAssignee').value,
+                phone: document.getElementById('editFruitPhone').value,
+                instagram: document.getElementById('editFruitInstagram').value,
+                facebook: document.getElementById('editFruitFacebook').value,
+                twitter: document.getElementById('editFruitTwitter').value,
+                leadSource: document.getElementById('editFruitLeadSource').value,
+                campaign: document.getElementById('editFruitCampaign').value,
+                status: document.getElementById('editFruitStatus').value,
+                notes: document.getElementById('editFruitNotes').value,
+                lastModified: new Date().toISOString()
+            };
+            
+            // Save to localStorage
+            saveLocalData();
+
+            // Try to sync to Google Sheets if online
+            if (isOnlineMode) {
+                try {
+                    await callAppsScript('updateFruit', { fruit: fruits[fruitIndex] });
+                    showNotification('Fruit updated and synced to Google Sheets!');
+                } catch (error) {
+                    console.error('Failed to sync to Google Sheets:', error);
+                    showNotification('Fruit updated locally. Sync to Google Sheets failed.', 'warning');
+                }
+            } else {
+                showNotification('Fruit updated locally. Will sync when online.');
+            }
+
+            closeModal('editFruitModal');
+            updateFruitsGrid();
+            updateStats();
+        }
+
+        async function deleteFruit(fruitId) {
+            if (!confirm('Are you sure you want to delete this fruit? This action cannot be undone.')) {
+                return;
+            }
+            
+            const fruitIndex = fruits.findIndex(f => f.id === fruitId);
+            if (fruitIndex === -1) return;
+            
+            const deletedFruit = fruits[fruitIndex];
+            fruits.splice(fruitIndex, 1);
+            
+            // Save to localStorage
+            saveLocalData();
+
+            // Try to sync to Google Sheets if online
+            if (isOnlineMode) {
+                try {
+                    await callAppsScript('deleteFruit', { fruitId: fruitId });
+                    showNotification('Fruit deleted and synced to Google Sheets!');
+                } catch (error) {
+                    console.error('Failed to sync to Google Sheets:', error);
+                    showNotification('Fruit deleted locally. Sync to Google Sheets failed.', 'warning');
+                }
+            } else {
+                showNotification('Fruit deleted locally. Will sync when online.');
+            }
+
+            updateFruitsGrid();
+            updateStats();
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            
+            // Set color based on type
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50`;
+            
+            switch (type) {
+                case 'success':
+                    notification.classList.add('bg-green-600', 'text-white');
+                    break;
+                case 'error':
+                    notification.classList.add('bg-red-600', 'text-white');
+                    break;
+                case 'warning':
+                    notification.classList.add('bg-yellow-600', 'text-white');
+                    break;
+                case 'info':
+                    notification.classList.add('bg-blue-600', 'text-white');
+                    break;
+                default:
+                    notification.classList.add('bg-green-600', 'text-white');
+            }
+            
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdowns = ['assigneeDropdown', 'assigneeDropdownEdit', 'fruitDropdownSchedule', 'syncOptions'];
+            dropdowns.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                if (dropdown && !dropdown.contains(event.target) && !event.target.closest('.relative')) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        });
+
+        // Initialize app on load
+        window.addEventListener('load', function() {
+            // Check if user is already logged in
+            const storedUser = localStorage.getItem('crmUser');
+            if (storedUser) {
+                try {
+                    currentUser = JSON.parse(storedUser);
+                    loadFromGoogleSheets();
+                    showDashboard();
+                    showNotification(`Welcome back, ${currentUser.name}!`);
+                } catch (error) {
+                    console.error('Error loading stored user:', error);
+                    localStorage.removeItem('crmUser');
+                }
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a2639dc6c9b4dc',t:'MTc1OTcyNDY2Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
