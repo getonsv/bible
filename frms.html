@@ -75,25 +75,25 @@
                     
                     <div class="flex items-center space-x-4">
                         <div class="relative">
-                            <button onclick="syncWithGoogleSheets()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors" id="syncButton">
-                                <i class="fas fa-sync-alt" id="syncIcon"></i>
-                                <span class="hidden sm:inline">Sync Sheets</span>
+                            <button onclick="refreshData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors" id="syncButton">
+                                <i class="fas fa-refresh" id="syncIcon"></i>
+                                <span class="hidden sm:inline">Refresh</span>
                             </button>
-                            <button onclick="showSyncOptions()" class="bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded-lg ml-1 transition-colors">
+                            <button onclick="showDataOptions()" class="bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded-lg ml-1 transition-colors">
                                 <i class="fas fa-chevron-down text-xs"></i>
                             </button>
                             <div id="syncOptions" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
-                                <button onclick="syncWithGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2">
-                                    <i class="fas fa-sync-alt text-green-600"></i>
-                                    <span>Quick Sync</span>
+                                <button onclick="refreshData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2">
+                                    <i class="fas fa-refresh text-green-600"></i>
+                                    <span>Refresh Data</span>
                                 </button>
-                                <button onclick="fullSyncWithGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
-                                    <i class="fas fa-sync text-blue-600"></i>
-                                    <span>Full Sync</span>
+                                <button onclick="exportData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-download text-blue-600"></i>
+                                    <span>Export Data</span>
                                 </button>
-                                <button onclick="initializeSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-lg flex items-center space-x-2">
-                                    <i class="fas fa-plus text-purple-600"></i>
-                                    <span>Setup Sheets</span>
+                                <button onclick="importData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-lg flex items-center space-x-2">
+                                    <i class="fas fa-upload text-purple-600"></i>
+                                    <span>Import Data</span>
                                 </button>
                             </div>
                         </div>
@@ -970,13 +970,11 @@
         let fruits = [];
         let activities = [];
         
-        // Google OAuth 2.0 Configuration - Using Client ID only (secure for frontend)
+        // Google OAuth 2.0 Web Application Configuration
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
-            PROJECT_ID: 'hmbcfrm',
-            DISCOVERY_DOC: 'https://sheets.googleapis.com/$discovery/rest?version=v4',
-            SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-            SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
+            // OAuth 2.0 scopes for user authentication only
+            SCOPES: 'openid profile email',
             // Authorized domains for this OAuth client
             AUTHORIZED_DOMAINS: [
                 'http://localhost:3000',
@@ -989,16 +987,16 @@
             ]
         };
         
-        // Sheet names
-        const SHEET_NAMES = {
-            FRUITS: 'Fruits Data Sheet',
-            AUDIT: 'Audit Log Sheet',
-            ACCESS: 'User Access & Admin Config Sheet'
+        // Local storage keys for demo data
+        const STORAGE_KEYS = {
+            FRUITS: 'crm_fruits_data',
+            ACTIVITIES: 'crm_activities_data',
+            USER_SETTINGS: 'crm_user_settings'
         };
         
-        // Google APIs loaded state
-        let gapi, google;
-        let isGoogleAPILoaded = false;
+        // Google Sign-In state
+        let google;
+        let isGoogleSignInLoaded = false;
 
         // Initialize the app with fallback
         document.addEventListener('DOMContentLoaded', function() {
@@ -1042,7 +1040,7 @@
             });
         });
 
-        // Initialize Google APIs with improved loading and fallback
+        // Initialize Google Sign-In with OAuth 2.0 Web Application
         async function initializeGoogleAPIs() {
             const buttonContainer = document.getElementById('googleSignInButton');
             
@@ -1072,7 +1070,7 @@
                     console.warn(`Domain ${currentOrigin} may not be authorized. Continuing anyway...`);
                 }
 
-                // Wait for Google APIs to load with extended timeout and better detection
+                // Wait for Google Sign-In to load
                 await new Promise((resolve, reject) => {
                     let attempts = 0;
                     const maxAttempts = 100; // 10 seconds total
@@ -1080,22 +1078,20 @@
                     const checkGoogleLoaded = () => {
                         attempts++;
                         
-                        // Check multiple ways Google APIs might be available
+                        // Check if Google Sign-In is available
                         const googleSignInAvailable = window.google?.accounts?.id;
-                        const gapiAvailable = window.gapi;
                         
-                        if (googleSignInAvailable && gapiAvailable) {
-                            console.log('✅ Google APIs found after', attempts, 'attempts');
+                        if (googleSignInAvailable) {
+                            console.log('✅ Google Sign-In found after', attempts, 'attempts');
                             resolve();
                         } else if (attempts >= maxAttempts) {
-                            console.error('❌ Google APIs timeout after', attempts, 'attempts');
+                            console.error('❌ Google Sign-In timeout after', attempts, 'attempts');
                             console.log('Available APIs:', {
                                 google: !!window.google,
                                 googleAccounts: !!window.google?.accounts,
-                                googleAccountsId: !!window.google?.accounts?.id,
-                                gapi: !!window.gapi
+                                googleAccountsId: !!window.google?.accounts?.id
                             });
-                            reject(new Error('Google APIs failed to load. This may be due to ad blockers, network issues, or browser security settings.'));
+                            reject(new Error('Google Sign-In failed to load. This may be due to ad blockers, network issues, or browser security settings.'));
                         } else {
                             setTimeout(checkGoogleLoaded, 100);
                         }
@@ -1105,31 +1101,10 @@
                     setTimeout(checkGoogleLoaded, 200);
                 });
 
-                gapi = window.gapi;
                 google = window.google;
 
-                console.log('🔧 Initializing gapi client...');
-                // Initialize gapi client with timeout
-                await Promise.race([
-                    new Promise((resolve, reject) => {
-                        gapi.load('client', {
-                            callback: resolve,
-                            onerror: () => reject(new Error('Failed to load gapi client'))
-                        });
-                    }),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('gapi client load timeout')), 5000)
-                    )
-                ]);
-
-                console.log('🔧 Initializing gapi client configuration...');
-                // Initialize without API key first (for public sheets access)
-                await gapi.client.init({
-                    discoveryDocs: [GOOGLE_CONFIG.DISCOVERY_DOC],
-                });
-
                 console.log('🔧 Initializing Google Sign-In...');
-                // Initialize Google Sign-In with proper configuration
+                // Initialize Google Sign-In with OAuth 2.0 Web Application configuration
                 google.accounts.id.initialize({
                     client_id: GOOGLE_CONFIG.CLIENT_ID,
                     callback: handleGoogleSignInResponse,
@@ -1159,11 +1134,11 @@
                     throw new Error('Sign-in button container not found');
                 }
 
-                isGoogleAPILoaded = true;
-                console.log('🎉 Google APIs initialized successfully!');
+                isGoogleSignInLoaded = true;
+                console.log('🎉 Google Sign-In initialized successfully!');
 
             } catch (error) {
-                console.error('❌ Error initializing Google APIs:', error);
+                console.error('❌ Error initializing Google Sign-In:', error);
                 
                 // Show detailed error and options
                 if (buttonContainer) {
@@ -1195,9 +1170,9 @@
             }
         }
 
-        // Retry function for Google API initialization
+        // Retry function for Google Sign-In initialization
         function retryGoogleInit() {
-            console.log('Retrying Google API initialization...');
+            console.log('Retrying Google Sign-In initialization...');
             const buttonContainer = document.getElementById('googleSignInButton');
             if (buttonContainer) {
                 buttonContainer.innerHTML = `
@@ -1366,30 +1341,16 @@
                     picture: payload.picture,
                     location: locationData.location,
                     ipAddress: locationData.ip,
-                    loginTime: new Date().toISOString()
+                    loginTime: new Date().toISOString(),
+                    role: 'Admin' // Default role for OAuth users
                 };
-
-                // Check if user has access
-                const hasAccess = await checkUserAccess(userData.email);
-                
-                if (!hasAccess) {
-                    showAccessDeniedMessage();
-                    return;
-                }
-
-                // Get user role and permissions
-                const userRole = await getUserRole(userData.email);
-                userData.role = userRole;
-
-                // Log the login action
-                await logUserAction(userData, 'login', 'System', 'User logged in');
 
                 // Set current user and show dashboard
                 currentUser = userData;
                 localStorage.setItem('crmUser', JSON.stringify(userData));
                 
-                // Initialize sheets if needed
-                await initializeSheets();
+                // Load local data
+                loadLocalData();
                 
                 showDashboard();
                 showNotification(`Welcome ${userData.name}!`);
@@ -1438,372 +1399,103 @@
             }
         }
 
-        function showAccessDeniedMessage() {
-            const loginScreen = document.getElementById('loginScreen');
-            loginScreen.innerHTML = `
-                <div class="min-h-screen flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md text-center">
-                        <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
-                        </div>
-                        <h1 class="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
-                        <p class="text-gray-600 mb-6">Your email address is not authorized to access this system. Please contact your administrator.</p>
-                        <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                            Try Again
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Google Sheets Functions
-        async function checkUserAccess(email) {
+        // Local data management functions
+        function loadLocalData() {
             try {
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    range: `${SHEET_NAMES.ACCESS}!A:D`,
-                });
-
-                const rows = response.result.values || [];
-                
-                // Skip header row and check if email exists
-                for (let i = 1; i < rows.length; i++) {
-                    if (rows[i][1] === email) { // Email is in column B
-                        return true;
-                    }
+                // Load fruits from localStorage
+                const storedFruits = localStorage.getItem(STORAGE_KEYS.FRUITS);
+                if (storedFruits) {
+                    fruits = JSON.parse(storedFruits);
+                } else {
+                    // Initialize with sample data if no local data exists
+                    initializeSampleData();
                 }
                 
-                return false;
-            } catch (error) {
-                console.error('Error checking user access:', error);
-                // If sheet doesn't exist or error occurs, deny access for security
-                return false;
-            }
-        }
-
-        async function getUserRole(email) {
-            try {
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    range: `${SHEET_NAMES.ACCESS}!A:D`,
-                });
-
-                const rows = response.result.values || [];
-                
-                // Skip header row and find user's role
-                for (let i = 1; i < rows.length; i++) {
-                    if (rows[i][1] === email) { // Email is in column B
-                        return rows[i][3] || 'Viewer'; // Role is in column D
-                    }
+                // Load activities from localStorage
+                const storedActivities = localStorage.getItem(STORAGE_KEYS.ACTIVITIES);
+                if (storedActivities) {
+                    activities = JSON.parse(storedActivities);
+                } else {
+                    activities = [];
                 }
                 
-                return 'Viewer'; // Default role
+                console.log(`Loaded ${fruits.length} fruits and ${activities.length} activities from local storage`);
             } catch (error) {
-                console.error('Error getting user role:', error);
-                return 'Viewer';
+                console.error('Error loading local data:', error);
+                initializeSampleData();
             }
         }
 
-        async function initializeSheets() {
+        function saveLocalData() {
             try {
-                showNotification('Setting up Google Sheets...');
-                
-                // Check if sheets exist and create them if they don't
-                await createSheetIfNotExists(SHEET_NAMES.ACCESS, [
-                    ['Name', 'Email', 'User ID', 'Role', 'Date Added', 'Last Login', 'Status']
-                ]);
-                
-                await createSheetIfNotExists(SHEET_NAMES.FRUITS, [
-                    ['ID', 'Name', 'Assigned To', 'Phone', 'Instagram', 'Facebook', 'Twitter', 'Lead Source', 'Campaign', 'Status', 'Notes', 'Created Date', 'Last Modified', 'Next Follow-up', 'Priority']
-                ]);
-                
-                await createSheetIfNotExists(SHEET_NAMES.AUDIT, [
-                    ['Timestamp', 'User Name', 'Email', 'Latitude', 'Longitude', 'IP Address', 'Action Type', 'Target', 'Details', 'Session ID']
-                ]);
-
-                // Add sample data if sheets are empty
-                await addSampleDataIfEmpty();
-
-                console.log('All sheets initialized successfully');
-                showNotification('Google Sheets setup completed!');
+                localStorage.setItem(STORAGE_KEYS.FRUITS, JSON.stringify(fruits));
+                localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
+                console.log('Data saved to local storage');
             } catch (error) {
-                console.error('Error initializing sheets:', error);
-                showNotification('Error setting up sheets. Please check your permissions.', 'error');
+                console.error('Error saving local data:', error);
             }
         }
 
-        async function createSheetIfNotExists(sheetName, headers) {
-            try {
-                let sheetId = null;
-                
-                // First, try to get the sheet to see if it exists
-                try {
-                    const response = await gapi.client.sheets.spreadsheets.values.get({
-                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                        range: `${sheetName}!A1:Z1`,
-                    });
-                    
-                    // Check if headers exist, if not add them
-                    if (!response.result.values || response.result.values.length === 0) {
-                        console.log(`Sheet "${sheetName}" exists but has no headers, adding them...`);
-                        await addHeadersToSheet(sheetName, headers);
-                    } else {
-                        console.log(`Sheet "${sheetName}" already exists with headers`);
-                    }
-                    return;
-                } catch (error) {
-                    // Sheet doesn't exist, create it
-                    console.log(`Creating new sheet: "${sheetName}"`);
+        function initializeSampleData() {
+            fruits = [
+                {
+                    id: 'fruit_sample_1',
+                    name: 'Sarah Johnson',
+                    assignedTo: 'John D.',
+                    phone: '+1 (555) 123-4567',
+                    instagram: 'sarah_j_fitness',
+                    facebook: '',
+                    twitter: '',
+                    leadSource: 'Instagram Ads',
+                    campaign: 'Youth Campaign',
+                    status: 'BB Session Scheduled',
+                    notes: 'Very interested in faith discussions. Fitness enthusiast.',
+                    createdDate: new Date().toISOString(),
+                    lastModified: new Date().toISOString(),
+                    nextFollowup: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    priority: 'High'
+                },
+                {
+                    id: 'fruit_sample_2',
+                    name: 'Mike Chen',
+                    assignedTo: 'Mary S.',
+                    phone: '+1 (555) 987-6543',
+                    instagram: '',
+                    facebook: 'mike.chen.dev',
+                    twitter: '',
+                    leadSource: 'Referral',
+                    campaign: 'Church Member',
+                    status: 'Attending Class',
+                    notes: 'Software developer. Referred by church member.',
+                    createdDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+                    lastModified: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    nextFollowup: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                    priority: 'Medium'
+                },
+                {
+                    id: 'fruit_sample_3',
+                    name: 'Emma Wilson',
+                    assignedTo: 'David L.',
+                    phone: '+1 (555) 456-7890',
+                    instagram: 'emma_art_studio',
+                    facebook: '',
+                    twitter: 'emma_creates',
+                    leadSource: 'Facebook Ads',
+                    campaign: 'Creative Outreach',
+                    status: 'In BB Session',
+                    notes: 'Artist and designer. Very creative and thoughtful.',
+                    createdDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+                    lastModified: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+                    nextFollowup: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    priority: 'High'
                 }
-
-                // Create the sheet
-                const createResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    resource: {
-                        requests: [{
-                            addSheet: {
-                                properties: {
-                                    title: sheetName,
-                                    gridProperties: {
-                                        rowCount: 1000,
-                                        columnCount: headers[0].length
-                                    }
-                                }
-                            }
-                        }]
-                    }
-                });
-
-                // Get the sheet ID from the response
-                sheetId = createResponse.result.replies[0].addSheet.properties.sheetId;
-
-                // Add headers with formatting
-                await addHeadersToSheet(sheetName, headers, sheetId);
-
-                console.log(`Sheet "${sheetName}" created successfully with ID: ${sheetId}`);
-            } catch (error) {
-                console.error(`Error creating sheet "${sheetName}":`, error);
-                throw error;
-            }
+            ];
+            
+            activities = [];
+            saveLocalData();
         }
 
-        async function addHeadersToSheet(sheetName, headers, sheetId = null) {
-            try {
-                // Add header values
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    range: `${sheetName}!A1`,
-                    valueInputOption: 'RAW',
-                    resource: {
-                        values: headers
-                    }
-                });
 
-                // If we have sheetId, format the headers
-                if (sheetId !== null) {
-                    await gapi.client.sheets.spreadsheets.batchUpdate({
-                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                        resource: {
-                            requests: [
-                                {
-                                    repeatCell: {
-                                        range: {
-                                            sheetId: sheetId,
-                                            startRowIndex: 0,
-                                            endRowIndex: 1,
-                                            startColumnIndex: 0,
-                                            endColumnIndex: headers[0].length
-                                        },
-                                        cell: {
-                                            userEnteredFormat: {
-                                                backgroundColor: {
-                                                    red: 0.2,
-                                                    green: 0.4,
-                                                    blue: 0.8
-                                                },
-                                                textFormat: {
-                                                    foregroundColor: {
-                                                        red: 1.0,
-                                                        green: 1.0,
-                                                        blue: 1.0
-                                                    },
-                                                    fontSize: 11,
-                                                    bold: true
-                                                }
-                                            }
-                                        },
-                                        fields: "userEnteredFormat(backgroundColor,textFormat)"
-                                    }
-                                },
-                                {
-                                    autoResizeDimensions: {
-                                        dimensions: {
-                                            sheetId: sheetId,
-                                            dimension: "COLUMNS",
-                                            startIndex: 0,
-                                            endIndex: headers[0].length
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    });
-                }
-
-                console.log(`Headers added to sheet "${sheetName}"`);
-            } catch (error) {
-                console.error(`Error adding headers to sheet "${sheetName}":`, error);
-                throw error;
-            }
-        }
-
-        async function addSampleDataIfEmpty() {
-            try {
-                // Check if Fruits sheet has data (beyond headers)
-                const fruitsResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    range: `${SHEET_NAMES.FRUITS}!A2:A10`,
-                });
-
-                // If no data exists, add sample fruits
-                if (!fruitsResponse.result.values || fruitsResponse.result.values.length === 0) {
-                    console.log('Adding sample data to Fruits sheet...');
-                    
-                    const sampleFruits = [
-                        [
-                            'fruit_sample_1',
-                            'Sarah Johnson',
-                            'John D.',
-                            '+1 (555) 123-4567',
-                            'sarah_j_fitness',
-                            '',
-                            '',
-                            'Instagram Ads',
-                            'Youth Campaign',
-                            'BB Session Scheduled',
-                            'Very interested in faith discussions. Fitness enthusiast.',
-                            new Date().toISOString(),
-                            new Date().toISOString(),
-                            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                            'High'
-                        ],
-                        [
-                            'fruit_sample_2',
-                            'Mike Chen',
-                            'Mary S.',
-                            '+1 (555) 987-6543',
-                            '',
-                            'mike.chen.dev',
-                            '',
-                            'Referral',
-                            'Church Member',
-                            'Attending Class',
-                            'Software developer. Referred by church member.',
-                            new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-                            new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-                            new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-                            'Medium'
-                        ],
-                        [
-                            'fruit_sample_3',
-                            'Emma Wilson',
-                            'David L.',
-                            '+1 (555) 456-7890',
-                            'emma_art_studio',
-                            '',
-                            'emma_creates',
-                            'Facebook Ads',
-                            'Creative Outreach',
-                            'In BB Session',
-                            'Artist and designer. Very creative and thoughtful.',
-                            new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-                            new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-                            new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-                            'High'
-                        ]
-                    ];
-
-                    await gapi.client.sheets.spreadsheets.values.append({
-                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                        range: `${SHEET_NAMES.FRUITS}!A2`,
-                        valueInputOption: 'RAW',
-                        resource: {
-                            values: sampleFruits
-                        }
-                    });
-
-                    console.log('Sample fruits data added successfully');
-                }
-
-                // Check if Access sheet has data (beyond headers)
-                const accessResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    range: `${SHEET_NAMES.ACCESS}!A2:A10`,
-                });
-
-                // If no data exists, add current user
-                if (!accessResponse.result.values || accessResponse.result.values.length === 0) {
-                    console.log('Adding current user to Access sheet...');
-                    
-                    const userAccess = [
-                        [
-                            currentUser.name,
-                            currentUser.email,
-                            currentUser.googleId,
-                            'Admin',
-                            new Date().toISOString(),
-                            new Date().toISOString(),
-                            'Active'
-                        ]
-                    ];
-
-                    await gapi.client.sheets.spreadsheets.values.append({
-                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                        range: `${SHEET_NAMES.ACCESS}!A2`,
-                        valueInputOption: 'RAW',
-                        resource: {
-                            values: userAccess
-                        }
-                    });
-
-                    console.log('User access data added successfully');
-                }
-
-            } catch (error) {
-                console.error('Error adding sample data:', error);
-                // Don't throw error as this is optional
-            }
-        }
-
-        async function logUserAction(user, actionType, target, details) {
-            try {
-                const timestamp = new Date().toISOString();
-                const logEntry = [
-                    timestamp,
-                    user.name,
-                    user.email,
-                    user.location?.latitude || '',
-                    user.location?.longitude || '',
-                    user.ipAddress,
-                    actionType,
-                    target,
-                    details
-                ];
-
-                await gapi.client.sheets.spreadsheets.values.append({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    range: `${SHEET_NAMES.AUDIT}!A:I`,
-                    valueInputOption: 'RAW',
-                    resource: {
-                        values: [logEntry]
-                    }
-                });
-
-                console.log('Action logged:', actionType, target);
-            } catch (error) {
-                console.error('Error logging action:', error);
-            }
-        }
 
         function enterDemoMode() {
             console.log('Entering demo mode...');
@@ -1882,7 +1574,7 @@
             document.getElementById('dashboard').classList.add('hidden');
         }
 
-        async function showDashboard() {
+        function showDashboard() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
             
@@ -1890,17 +1582,9 @@
             document.getElementById('userName').textContent = currentUser.name;
             document.getElementById('userAvatar').src = currentUser.picture || 'https://via.placeholder.com/32';
             
-            // Load fruits data from sheets automatically
-            await loadFruitsFromSheets();
-            
-            // Update stats based on real data
+            // Update fruits grid and stats
+            updateFruitsGrid();
             updateStats();
-            
-            // Set up automatic sync every 30 seconds
-            setInterval(async () => {
-                await loadFruitsFromSheets();
-                updateStats();
-            }, 30000);
         }
 
         // Tab navigation
@@ -1943,63 +1627,44 @@
         }
 
         // Form handlers
-        async function addFruit(event) {
+        function addFruit(event) {
             event.preventDefault();
             
-            // Check permissions
-            if (currentUser.role === 'Viewer') {
-                showNotification('You do not have permission to add fruits.', 'error');
-                return;
-            }
-
             const formData = new FormData(event.target);
             const fruitId = generateFruitId();
             const timestamp = new Date().toISOString();
             
-            const fruitData = [
-                fruitId,
-                formData.get('name') || '',
-                formData.get('assignee') || '',
-                formData.get('phone') || '',
-                formData.get('instagram') || '',
-                formData.get('facebook') || '',
-                formData.get('twitter') || '',
-                formData.get('leadSource') || '',
-                formData.get('campaign') || '',
-                formData.get('status') || '',
-                formData.get('notes') || '',
-                timestamp,
-                timestamp,
-                '', // Next Follow-up (empty for now)
-                'Medium' // Default priority
-            ];
+            const newFruit = {
+                id: fruitId,
+                name: formData.get('name') || '',
+                assignedTo: formData.get('assignee') || '',
+                phone: formData.get('phone') || '',
+                instagram: formData.get('instagram') || '',
+                facebook: formData.get('facebook') || '',
+                twitter: formData.get('twitter') || '',
+                leadSource: formData.get('leadSource') || '',
+                campaign: formData.get('campaign') || '',
+                status: formData.get('status') || 'Initial Contact',
+                notes: formData.get('notes') || '',
+                createdDate: timestamp,
+                lastModified: timestamp,
+                nextFollowup: '',
+                priority: 'Medium'
+            };
 
-            try {
-                // Add to Google Sheets
-                await gapi.client.sheets.spreadsheets.values.append({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    range: `${SHEET_NAMES.FRUITS}!A:O`,
-                    valueInputOption: 'RAW',
-                    resource: {
-                        values: [fruitData]
-                    }
-                });
+            // Add to fruits array
+            fruits.push(newFruit);
+            
+            // Save to localStorage
+            saveLocalData();
 
-                // Log the action
-                await logUserAction(currentUser, 'add', 'Fruits Data Sheet', `Added fruit: ${formData.get('name')}`);
-
-                showNotification('New fruit added successfully!');
-                closeModal('addFruitModal');
-                event.target.reset();
-                
-                // Refresh fruits display
-                await loadFruitsFromSheets();
-                updateStats();
-
-            } catch (error) {
-                console.error('Error adding fruit:', error);
-                showNotification('Error adding fruit. Please try again.', 'error');
-            }
+            showNotification('New fruit added successfully!');
+            closeModal('addFruitModal');
+            event.target.reset();
+            
+            // Refresh display
+            updateFruitsGrid();
+            updateStats();
         }
 
         function generateFruitId() {
@@ -2052,145 +1717,72 @@
             showNotification(`Initiating call to ${phoneNumber}...`);
         }
 
-        // Google Sheets integration
-        async function syncWithGoogleSheets() {
+        // Local data export/import functions
+        function exportData() {
             try {
-                setSyncLoading(true);
-                showNotification('Syncing with Google Sheets...');
+                const exportData = {
+                    fruits: fruits,
+                    activities: activities,
+                    exportDate: new Date().toISOString(),
+                    exportedBy: currentUser.name
+                };
                 
-                // Hide sync options dropdown
-                document.getElementById('syncOptions').classList.add('hidden');
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
                 
-                // Initialize sheets first (creates them if they don't exist)
-                await initializeSheets();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `evangelism-crm-data-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
                 
-                // Reload fruits data from sheets
-                await loadFruitsFromSheets();
-                
-                // Update stats
-                updateStats();
-                
-                // Log the sync action
-                if (currentUser) {
-                    await logUserAction(currentUser, 'sync', 'Google Sheets', 'Manual sync performed');
-                }
-                
-                showNotification('Sync completed successfully!');
+                showNotification('Data exported successfully!');
             } catch (error) {
-                console.error('Sync error:', error);
-                showNotification('Sync failed. Please check your permissions and try again.', 'error');
-            } finally {
-                setSyncLoading(false);
+                console.error('Export error:', error);
+                showNotification('Export failed. Please try again.', 'error');
             }
         }
 
-        // Enhanced sync that also pushes local changes
-        async function fullSyncWithGoogleSheets() {
-            try {
-                setSyncLoading(true);
-                showNotification('Performing full sync with Google Sheets...');
-                
-                // Hide sync options dropdown
-                document.getElementById('syncOptions').classList.add('hidden');
-                
-                // Initialize sheets
-                await initializeSheets();
-                
-                // Push any local changes first (if any)
-                await pushLocalChangesToSheets();
-                
-                // Then pull latest data
-                await loadFruitsFromSheets();
-                
-                // Update stats and UI
-                updateStats();
-                updateFruitsGrid();
-                
-                // Log the sync action
-                if (currentUser) {
-                    await logUserAction(currentUser, 'full_sync', 'Google Sheets', 'Full bidirectional sync performed');
-                }
-                
-                showNotification('Full sync completed successfully!');
-            } catch (error) {
-                console.error('Full sync error:', error);
-                showNotification('Full sync failed. Please check your permissions.', 'error');
-            } finally {
-                setSyncLoading(false);
-            }
-        }
-
-        async function pushLocalChangesToSheets() {
-            try {
-                // This would push any local changes that haven't been synced yet
-                // For now, we'll just ensure the current user is in the access sheet
-                if (currentUser && currentUser.email !== 'demo@example.com') {
-                    await ensureUserInAccessSheet();
-                }
-                
-                console.log('Local changes pushed to sheets');
-            } catch (error) {
-                console.error('Error pushing local changes:', error);
-            }
-        }
-
-        async function ensureUserInAccessSheet() {
-            try {
-                // Check if current user exists in access sheet
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    range: `${SHEET_NAMES.ACCESS}!A:G`,
-                });
-
-                const rows = response.result.values || [];
-                let userExists = false;
-
-                // Check if user already exists
-                for (let i = 1; i < rows.length; i++) {
-                    if (rows[i][1] === currentUser.email) {
-                        userExists = true;
-                        // Update last login time
-                        await gapi.client.sheets.spreadsheets.values.update({
-                            spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                            range: `${SHEET_NAMES.ACCESS}!F${i + 1}`,
-                            valueInputOption: 'RAW',
-                            resource: {
-                                values: [[new Date().toISOString()]]
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const importedData = JSON.parse(e.target.result);
+                            
+                            if (importedData.fruits && Array.isArray(importedData.fruits)) {
+                                fruits = importedData.fruits;
                             }
-                        });
-                        break;
-                    }
-                }
-
-                // If user doesn't exist, add them
-                if (!userExists) {
-                    const userAccess = [
-                        [
-                            currentUser.name,
-                            currentUser.email,
-                            currentUser.googleId,
-                            currentUser.role || 'Admin',
-                            new Date().toISOString(),
-                            new Date().toISOString(),
-                            'Active'
-                        ]
-                    ];
-
-                    await gapi.client.sheets.spreadsheets.values.append({
-                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                        range: `${SHEET_NAMES.ACCESS}!A:G`,
-                        valueInputOption: 'RAW',
-                        resource: {
-                            values: userAccess
+                            
+                            if (importedData.activities && Array.isArray(importedData.activities)) {
+                                activities = importedData.activities;
+                            }
+                            
+                            saveLocalData();
+                            updateFruitsGrid();
+                            updateStats();
+                            
+                            showNotification('Data imported successfully!');
+                        } catch (error) {
+                            console.error('Import error:', error);
+                            showNotification('Import failed. Invalid file format.', 'error');
                         }
-                    });
-
-                    console.log('User added to access sheet');
+                    };
+                    reader.readAsText(file);
                 }
+            };
+            input.click();
+        }
 
-            } catch (error) {
-                console.error('Error ensuring user in access sheet:', error);
-            }
+        function refreshData() {
+            loadLocalData();
+            updateFruitsGrid();
+            updateStats();
+            showNotification('Data refreshed from local storage!');
         }
 
         // Report functions
@@ -2258,68 +1850,7 @@
             activitiesContainer.insertBefore(newActivity, activitiesContainer.firstChild);
         }
 
-        async function loadFruitsFromSheets() {
-            try {
-                // Check if spreadsheet ID is configured
-                if (GOOGLE_CONFIG.SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID') {
-                    console.log('Spreadsheet ID not configured yet');
-                    fruits = []; // Empty array for now
-                    updateFruitsGrid();
-                    return;
-                }
 
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    range: `${SHEET_NAMES.FRUITS}!A:O`,
-                });
-
-                const rows = response.result.values || [];
-                fruits = [];
-
-                // Skip header row and process data
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (row[0]) { // Only add if ID exists
-                        fruits.push({
-                            id: row[0] || '',
-                            name: row[1] || '',
-                            assignedTo: row[2] || '',
-                            phone: row[3] || '',
-                            instagram: row[4] || '',
-                            facebook: row[5] || '',
-                            twitter: row[6] || '',
-                            leadSource: row[7] || '',
-                            campaign: row[8] || '',
-                            status: row[9] || 'Initial Contact',
-                            notes: row[10] || '',
-                            createdDate: row[11] || new Date().toISOString(),
-                            lastModified: row[12] || new Date().toISOString(),
-                            nextFollowup: row[13] || '',
-                            priority: row[14] || 'Medium'
-                        });
-                    }
-                }
-
-                // Update the fruits grid display
-                updateFruitsGrid();
-                
-                // Log the view action only if we have a valid user
-                if (currentUser) {
-                    await logUserAction(currentUser, 'view', 'Fruits Data Sheet', `Loaded ${fruits.length} fruits`);
-                }
-
-                console.log(`Loaded ${fruits.length} fruits from Google Sheets`);
-
-            } catch (error) {
-                console.error('Error loading fruits:', error);
-                // Don't show error notification for initial load failures
-                if (GOOGLE_CONFIG.SPREADSHEET_ID !== 'YOUR_SPREADSHEET_ID') {
-                    showNotification('Error loading fruits data. Check sheet permissions.', 'error');
-                }
-                fruits = []; // Ensure fruits is always an array
-                updateFruitsGrid();
-            }
-        }
 
         function updateFruitsGrid() {
             const fruitsGrid = document.getElementById('fruitsGrid');
@@ -2652,27 +2183,13 @@
             element.parentElement.classList.add('hidden');
         }
 
-        // Sync options functionality
-        function showSyncOptions() {
+        // Data options functionality
+        function showDataOptions() {
             const syncOptions = document.getElementById('syncOptions');
             syncOptions.classList.toggle('hidden');
         }
 
-        // Visual feedback for sync operations
-        function setSyncLoading(isLoading) {
-            const syncButton = document.getElementById('syncButton');
-            const syncIcon = document.getElementById('syncIcon');
-            
-            if (isLoading) {
-                syncIcon.className = 'fas fa-spinner fa-spin';
-                syncButton.disabled = true;
-                syncButton.classList.add('opacity-75');
-            } else {
-                syncIcon.className = 'fas fa-sync-alt';
-                syncButton.disabled = false;
-                syncButton.classList.remove('opacity-75');
-            }
-        }
+
 
         // Close modals and dropdowns when clicking outside
         document.addEventListener('click', function(e) {
@@ -2707,5 +2224,5 @@
             });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a225e7d11ab4dc',t:'MTc1OTcyMjEzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a23b10e500b4dc',t:'MTc1OTcyMzAwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
