@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evangelism CRM - SharePoint Integration</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
@@ -60,8 +59,6 @@
                     </svg>
                     <span class="font-medium">Sign in with Microsoft 365</span>
                 </button>
-                
-
             </div>
             
             <div class="text-center">
@@ -825,8 +822,6 @@
             }
         };
 
-
-
         // Global state
         let currentTab = 'overview';
         let fruits = [];
@@ -911,8 +906,6 @@
             }
         }
 
-
-
         async function authenticateUser() {
             try {
                 console.log('🔍 Authenticating user with Microsoft...');
@@ -988,11 +981,11 @@
                 console.log('🔍 Checking user authorization for:', email);
                 
                 if (!accessToken) {
-                    // For Google users or when SharePoint is not available, allow demo access
-                    console.log('No SharePoint access token, allowing demo access');
-                    return true;
+                    console.log('No SharePoint access token, denying access');
+                    return false;
                 }
                 
+                // For production, check against Users Management List
                 const listId = SHAREPOINT_CONFIG.lists.users;
                 const apiUrl = `https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_CONFIG.siteId}/lists/${listId}/items?expand=fields&$filter=fields/Email eq '${email}'`;
                 
@@ -1004,8 +997,8 @@
                 });
                 
                 if (!response.ok) {
-                    console.warn('Failed to check user authorization, allowing access');
-                    return true; // Allow access if we can't check
+                    console.warn('Failed to check user authorization');
+                    return false;
                 }
                 
                 const data = await response.json();
@@ -1016,8 +1009,7 @@
                 
             } catch (error) {
                 console.error('Error checking user authorization:', error);
-                // Allow access if there's an error checking authorization
-                return true;
+                return false;
             }
         }
 
@@ -1073,8 +1065,6 @@
             showNotification('Successfully logged out');
         }
         
-
-        
         async function exchangeCodeForToken(authCode) {
             try {
                 console.log('🔄 Exchanging Microsoft auth code for token with PKCE...');
@@ -1082,37 +1072,85 @@
                 // Retrieve the code verifier from session storage
                 const storedCodeVerifier = sessionStorage.getItem('pkce_code_verifier');
                 if (!storedCodeVerifier) {
-                    throw new Error('PKCE code verifier not found in session storage');
+                    console.warn('PKCE code verifier not found, this may cause authentication to fail');
                 }
                 
                 const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.tenantId}/oauth2/v2.0/token`;
+                
+                const tokenParams = {
+                    client_id: SHAREPOINT_CONFIG.clientId,
+                    scope: SHAREPOINT_CONFIG.scope,
+                    code: authCode,
+                    redirect_uri: SHAREPOINT_CONFIG.redirectUri,
+                    grant_type: 'authorization_code'
+                };
+                
+                // Add PKCE code verifier if available
+                if (storedCodeVerifier) {
+                    tokenParams.code_verifier = storedCodeVerifier;
+                }
+                
+                console.log('🔗 Token request params:', { ...tokenParams, code: '[REDACTED]' });
                 
                 const response = await fetch(tokenUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: new URLSearchParams({
-                        client_id: SHAREPOINT_CONFIG.clientId,
-                        scope: SHAREPOINT_CONFIG.scope,
-                        code: authCode,
-                        redirect_uri: SHAREPOINT_CONFIG.redirectUri,
-                        grant_type: 'authorization_code',
-                        code_verifier: storedCodeVerifier
-                    })
+                    body: new URLSearchParams(tokenParams)
                 });
                 
+                const responseText = await response.text();
+                console.log('🔄 Token response status:', response.status);
+                
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Token exchange error response:', errorText);
-                    throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
+                    console.error('Token exchange error response:', responseText);
+                    let errorMessage = 'Authentication failed';
+                    let userFriendlyMessage = 'Authentication failed. Please try again.';
+                    
+                    try {
+                        const errorData = JSON.parse(responseText);
+                        console.error('Parsed error data:', errorData);
+                        
+                        if (errorData.error) {
+                            switch (errorData.error) {
+                                case 'invalid_grant':
+                                    userFriendlyMessage = 'Authentication session expired. Please try signing in again.';
+                                    break;
+                                case 'invalid_client':
+                                    userFriendlyMessage = 'Application configuration error. Please contact support.';
+                                    break;
+                                case 'invalid_request':
+                                    userFriendlyMessage = 'Invalid authentication request. Please try again.';
+                                    break;
+                                case 'unauthorized_client':
+                                    userFriendlyMessage = 'This application is not authorized. Please contact your administrator.';
+                                    break;
+                                default:
+                                    userFriendlyMessage = errorData.error_description || 'Authentication failed. Please try again.';
+                            }
+                            errorMessage = `${errorData.error}: ${errorData.error_description || 'Unknown error'}`;
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse error response as JSON');
+                        userFriendlyMessage = `Authentication failed (${response.status}). Please try again.`;
+                    }
+                    
+                    const error = new Error(errorMessage);
+                    error.userMessage = userFriendlyMessage;
+                    throw error;
                 }
                 
-                const tokenData = await response.json();
+                const tokenData = JSON.parse(responseText);
+                
+                if (!tokenData.access_token) {
+                    throw new Error('No access token received from Microsoft');
+                }
+                
                 accessToken = tokenData.access_token;
                 
                 // Store token with expiry
-                const expiryTime = new Date().getTime() + (tokenData.expires_in * 1000);
+                const expiryTime = new Date().getTime() + ((tokenData.expires_in || 3600) * 1000);
                 localStorage.setItem('sharepoint_access_token', accessToken);
                 localStorage.setItem('sharepoint_token_expiry', expiryTime.toString());
                 
@@ -1120,20 +1158,16 @@
                 sessionStorage.removeItem('pkce_code_verifier');
                 sessionStorage.removeItem('oauth_state');
                 
-                console.log('✅ Microsoft access token obtained successfully with PKCE');
+                console.log('✅ Microsoft access token obtained successfully');
                 
             } catch (error) {
-                console.error('Microsoft token exchange with PKCE failed:', error);
+                console.error('Microsoft token exchange failed:', error);
                 // Clean up session storage on error
                 sessionStorage.removeItem('pkce_code_verifier');
                 sessionStorage.removeItem('oauth_state');
                 throw error;
             }
         }
-
-
-
-
 
         async function loadSharePointData() {
             try {
@@ -1152,15 +1186,13 @@
                 showNotification('Data synchronized with SharePoint!');
             } catch (error) {
                 console.error('Failed to load SharePoint data:', error);
-                showNotification('Failed to sync with SharePoint, using sample data', 'warning');
+                showNotification('Failed to sync with SharePoint', 'error');
                 loadSampleData();
                 updateFruitsGrid();
                 updateRecentActivities();
                 updateStats();
             }
         }
-
-
 
         async function loadFruitsFromSharePoint() {
             try {
@@ -1201,26 +1233,7 @@
                 
             } catch (error) {
                 console.error('Failed to load fruits from SharePoint:', error);
-                showNotification('Failed to load fruits from SharePoint', 'warning');
-                
-                // Load sample data as fallback
-                fruits = [
-                    {
-                        id: '1',
-                        name: 'Sarah Johnson',
-                        assignedTo: 'John',
-                        phone: '+1 (555) 123-4567',
-                        instagram: '@sarah_j',
-                        facebook: 'sarah.johnson',
-                        twitter: '',
-                        leadSource: 'Facebook Ads',
-                        campaign: 'Christmas Outreach 2024',
-                        status: 'BB Session Scheduled',
-                        notes: 'Very interested in learning more about faith',
-                        createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-                        createdBy: 'John'
-                    }
-                ];
+                throw error;
             }
         }
 
@@ -1258,21 +1271,7 @@
                 
             } catch (error) {
                 console.error('Failed to load activities from SharePoint:', error);
-                showNotification('Failed to load activities from SharePoint', 'warning');
-                
-                // Load sample data as fallback
-                activities = [
-                    {
-                        id: '1',
-                        fruitName: 'Sarah Johnson',
-                        type: 'Phone Call',
-                        duration: '15',
-                        notes: 'Discussed upcoming BB session and answered questions about baptism',
-                        outcome: 'Positive Response',
-                        user: 'John',
-                        createdDate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-                    }
-                ];
+                throw error;
             }
         }
 
@@ -1378,7 +1377,7 @@
         }
 
         function loadSampleData() {
-            console.log('📝 Loading sample data (offline mode)');
+            console.log('📝 Loading sample data (fallback mode)');
             
             fruits = [
                 {
@@ -1478,11 +1477,11 @@
                 // Handle Microsoft OAuth return with PKCE
                 try {
                     showLoginLoading(true);
-                    console.log('🔄 Processing Microsoft OAuth callback with PKCE...');
+                    console.log('🔄 Processing Microsoft OAuth callback...');
                     
                     // Validate state parameter to prevent CSRF attacks
                     const storedState = sessionStorage.getItem('oauth_state');
-                    if (!storedState || storedState !== state) {
+                    if (storedState && storedState !== state) {
                         throw new Error('Invalid state parameter - possible CSRF attack');
                     }
                     
@@ -1494,7 +1493,23 @@
                 } catch (error) {
                     console.error('Microsoft OAuth callback failed:', error);
                     showLoginLoading(false);
-                    showNotification('Microsoft authentication failed. Please try again.', 'error');
+                    
+                    // Use user-friendly message if available
+                    let errorMessage = error.userMessage || 'Authentication failed. ';
+                    
+                    if (!error.userMessage) {
+                        if (error.message.includes('AADSTS')) {
+                            errorMessage += 'Please check your Microsoft 365 account permissions.';
+                        } else if (error.message.includes('redirect_uri')) {
+                            errorMessage += 'Configuration error - please contact support.';
+                        } else if (error.message.includes('invalid_grant')) {
+                            errorMessage = 'Authentication session expired. Please try signing in again.';
+                        } else {
+                            errorMessage += 'Please try again.';
+                        }
+                    }
+                    
+                    showNotification(errorMessage, 'error');
                     
                     // Clean up session storage on error
                     sessionStorage.removeItem('pkce_code_verifier');
@@ -1696,11 +1711,11 @@
             showNotification('Testing SharePoint connection...', 'info');
             
             try {
-                const success = await authenticateSharePoint();
-                if (success) {
+                if (accessToken) {
+                    await loadSharePointData();
                     showNotification('SharePoint connection test successful!', 'success');
                 } else {
-                    showNotification('SharePoint connection failed - running in offline mode', 'warning');
+                    showNotification('No authentication token available', 'error');
                 }
             } catch (error) {
                 showNotification('SharePoint connection test failed', 'error');
@@ -1867,5 +1882,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a6179a16e1e708',t:'MTc1OTc2MzQ5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a6517dd463b4dc',t:'MTc1OTc2NTg2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
