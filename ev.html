@@ -1129,27 +1129,31 @@
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 Initializing Evangelism CRM with PKCE authentication...');
-            console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
-            console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
-            
-            // Check for OAuth callback parameters first
-            const hasCallback = checkForOAuthCallback();
-            
-            // Only initialize auth UI if not processing callback
-            if (!hasCallback) {
-                // Initialize authentication UI immediately
-                initializeMicrosoftAuth();
-                
-                // Check for existing session
-                checkExistingSession();
-            }
-            
-            loadLocalData();
-            updateConnectionStatus();
-            populateDropdowns();
-            initializeEventListeners();
-        });
+    console.log('🔧 Initializing Evangelism CRM with PKCE authentication...');
+    console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
+    console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
+    
+    // First, check for OAuth callback parameters
+    const hasCallback = checkForOAuthCallback();
+    
+    // Only initialize auth UI if not processing callback
+    if (!hasCallback) {
+        console.log('🔧 No callback detected, initializing auth UI...');
+        // Initialize authentication UI immediately
+        initializeMicrosoftAuth();
+        
+        // Check for existing session
+        checkExistingSession();
+    }
+    
+    loadLocalData();
+    updateConnectionStatus();
+    populateDropdowns();
+    initializeEventListeners();
+    
+    // Add stuck loading handler
+    setTimeout(handleStuckLoading, 3000);
+});
 
         // Real-time sync functions
         function startRealTimeSync() {
@@ -1313,23 +1317,27 @@
             }
         }
 
-        function checkForOAuthCallback() {
+function checkForOAuthCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const returnedState = urlParams.get('state');
     const error = urlParams.get('error');
-    const authProvider = urlParams.get('auth_provider');
+    const errorDescription = urlParams.get('error_description');
     
     console.log('🔐 Checking for OAuth callback:', {
         hasCode: !!authCode,
+        codeLength: authCode ? authCode.length : 0,
         hasState: !!returnedState,
+        stateValue: returnedState,
         hasError: !!error,
-        authProvider: authProvider
+        error: error,
+        errorDescription: errorDescription,
+        fullURL: window.location.href
     });
     
     if (error) {
-        console.error('❌ OAuth error:', error);
-        showNotification('Authentication failed: ' + (urlParams.get('error_description') || error), 'error');
+        console.error('❌ OAuth error:', error, errorDescription);
+        showNotification('Authentication failed: ' + (errorDescription || error), 'error');
         // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
         return true;
@@ -1350,76 +1358,86 @@
         return true;
     }
     
+    console.log('🔐 No OAuth callback parameters found');
     return false;
 }
-        async function processOAuthCallback(authCode, returnedState) {
-            try {
-                // Validate state parameter
-                const storedState = sessionStorage.getItem('pkce_state');
-                if (returnedState && storedState && returnedState !== storedState) {
-                    throw new Error('Invalid state parameter - possible security issue');
-                }
-                
-                // Exchange code for token
-                const tokenData = await exchangeCodeForTokenPKCE(authCode);
-                
-                sharePointAccessToken = tokenData.access_token;
-                isSharePointMode = true;
-                
-                // Store token with expiration
-                sessionStorage.setItem('access_token', tokenData.access_token);
-                sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
-                
-                // Get basic user info from Microsoft
-                const basicUserInfo = await getUserInfo(tokenData.access_token);
-                
-                console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
-                
-                // Check if user exists in SharePoint Users list and get their role
-                const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
-                
-                if (!userInfo) {
-                    // Error message already shown in checkUserInSharePointList
-                    logout();
-                    return;
-                }
-                
-                // Set current user with SharePoint-defined permissions
-                currentUser = userInfo;
-                sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-                
-                // Clean up PKCE parameters
-                sessionStorage.removeItem('pkce_code_verifier');
-                sessionStorage.removeItem('pkce_state');
-                
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // Load data from SharePoint
-                await loadDataFromSharePoint();
-                
-                showDashboard();
-                
-                // Start real-time sync
-                startRealTimeSync();
-                
-                showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
-                
-            } catch (error) {
-                console.error('❌ OAuth callback processing failed:', error);
-                showNotification('Authentication failed: ' + error.message, 'error');
-                
-                // Clean up on failure
-                sessionStorage.removeItem('pkce_code_verifier');
-                sessionStorage.removeItem('pkce_state');
-                
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // Show login screen again
-                initializeMicrosoftAuth();
-            }
-        }  
+        
+async function processOAuthCallback(authCode, returnedState) {
+    try {
+        console.log('🔄 Processing Microsoft OAuth callback...');
+        
+        // Validate state parameter
+        const storedState = sessionStorage.getItem('pkce_state');
+        if (returnedState && storedState && returnedState !== storedState) {
+            throw new Error('Invalid state parameter - possible security issue');
+        }
+        
+        // Exchange code for token
+        console.log('🔄 Exchanging code for token...');
+        const tokenData = await exchangeCodeForTokenPKCE(authCode);
+        
+        sharePointAccessToken = tokenData.access_token;
+        isSharePointMode = true;
+        
+        // Store token with expiration
+        sessionStorage.setItem('access_token', tokenData.access_token);
+        sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
+        
+        // Get basic user info from Microsoft
+        console.log('🔄 Getting user info from Microsoft...');
+        const basicUserInfo = await getUserInfo(tokenData.access_token);
+        
+        console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
+        
+        // Check if user exists in SharePoint Users list and get their role
+        console.log('🔄 Checking user in SharePoint list...');
+        const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
+        
+        if (!userInfo) {
+            console.log('❌ User not authorized in SharePoint');
+            // Error message already shown in checkUserInSharePointList
+            logout();
+            return;
+        }
+        
+        // Set current user with SharePoint-defined permissions
+        currentUser = userInfo;
+        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+        
+        // Clean up PKCE parameters
+        sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('pkce_state');
+        
+        // Clean URL - IMPORTANT: Remove OAuth parameters from URL
+        console.log('🔄 Cleaning URL and showing dashboard...');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Load data from SharePoint
+        await loadDataFromSharePoint();
+        
+        showDashboard();
+        
+        // Start real-time sync
+        startRealTimeSync();
+        
+        showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
+        
+    } catch (error) {
+        console.error('❌ OAuth callback processing failed:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
+        
+        // Clean up on failure
+        sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('pkce_state');
+        
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show login screen again
+        initializeMicrosoftAuth();
+    }
+}
+        
         function checkExistingSession() {
             // Check for Microsoft session
             const msToken = sessionStorage.getItem('access_token');
@@ -1547,82 +1565,8 @@
             }, 1000);
         }
 
-        async function processGoogleOAuthCallback(authCode, returnedState) {
-    try {
-        // Validate state parameter
-        const storedState = sessionStorage.getItem('google_auth_state');
-        if (returnedState && storedState && returnedState !== storedState) {
-            throw new Error('Invalid state parameter - possible security issue');
-        }
         
-        // Exchange code for token
-        const tokenData = await exchangeGoogleCodeForToken(authCode);
         
-        // Get user info from Google
-        const googleUserInfo = await getGoogleUserInfo(tokenData.access_token);
-        
-        console.log('👤 Google user authenticated:', googleUserInfo.email);
-        
-        // Check if we have an existing SharePoint token from a previous Microsoft login
-        let existingSharePointToken = sessionStorage.getItem('access_token');
-        let existingTokenExpiry = sessionStorage.getItem('token_expiry');
-        
-        if (existingSharePointToken && existingTokenExpiry && Date.now() < parseInt(existingTokenExpiry)) {
-            // Use existing SharePoint token
-            sharePointAccessToken = existingSharePointToken;
-            isSharePointMode = true;
-            console.log('🔐 Using existing SharePoint token for validation');
-        } else {
-            // No valid SharePoint token - we need to get one
-            console.log('⚠️ No valid SharePoint token available');
-            showNotification('SharePoint connection required for user validation. Please sign in with Microsoft first to establish connection.', 'error');
-            sessionStorage.removeItem('google_auth_state');
-            return;
-        }
-        
-        // Check if user exists in SharePoint Users list
-        const authorizedUser = await checkUserInSharePointList(googleUserInfo.email, googleUserInfo.name, 'google');
-        
-        if (!authorizedUser) {
-            // Error message already shown in checkUserInSharePointList
-            sessionStorage.removeItem('google_auth_state');
-            return;
-        }
-        
-        // Set current user with SharePoint permissions
-        currentUser = authorizedUser;
-        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-        sessionStorage.setItem('google_access_token', tokenData.access_token);
-        
-        // Clean up OAuth parameters
-        sessionStorage.removeItem('google_auth_state');
-        
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Load data from SharePoint
-        await loadDataFromSharePoint();
-        startRealTimeSync();
-        
-        showDashboard();
-        
-        showNotification(`Welcome ${authorizedUser.name}! Signed in with Google. You have ${authorizedUser.role} access.`);
-        
-    } catch (error) {
-        console.error('❌ Google OAuth callback processing failed:', error);
-        showNotification('Google authentication failed: ' + error.message, 'error');
-        
-        // Clean up on failure
-        sessionStorage.removeItem('google_auth_state');
-        
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show login screen again
-        initializeMicrosoftAuth();
-    }
-}
-
 async function exchangeGoogleCodeForToken(authCode) {
     try {
         console.log('🔄 Google token exchange starting...');
@@ -2606,34 +2550,75 @@ async function exchangeGoogleCodeForToken(authCode) {
         }
 
         // Dashboard functions
-        function showDashboard() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('dashboard').classList.remove('hidden');
-            
-            // Update user display
-            const userAvatar = document.getElementById('userAvatar');
-            const userName = document.getElementById('userName');
-            
-            if (currentUser) {
-                userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
-                userName.textContent = currentUser.name;
-                
-                // Show admin tab if user is admin
-                if (userPermissions.isAdmin) {
-                    document.getElementById('adminTabBtn').classList.remove('hidden');
-                }
-            }
-            
-            updateConnectionStatus();
-            updateStats();
-            updateRecentActivities();
-            updateFruitsGrid();
-            populateDropdowns();
-            applyPermissionBasedUI();
-            
-            // Update admin stats
-            updateAdminStats();
+        
+function showDashboard() {
+    console.log('🔄 Showing dashboard...');
+    
+    // Hide login screen
+    const loginScreen = document.getElementById('loginScreen');
+    const dashboard = document.getElementById('dashboard');
+    
+    if (loginScreen) {
+        loginScreen.classList.add('hidden');
+        console.log('✅ Login screen hidden');
+    }
+    
+    if (dashboard) {
+        dashboard.classList.remove('hidden');
+        console.log('✅ Dashboard shown');
+    } else {
+        console.error('❌ Dashboard element not found');
+    }
+    
+    // Update user display
+    const userAvatar = document.getElementById('userAvatar');
+    const userName = document.getElementById('userName');
+    
+    if (currentUser) {
+        if (userAvatar) userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
+        if (userName) userName.textContent = currentUser.name;
+        
+        // Show admin tab if user is admin
+        const adminTabBtn = document.getElementById('adminTabBtn');
+        if (adminTabBtn && userPermissions.isAdmin) {
+            adminTabBtn.classList.remove('hidden');
         }
+    }
+    
+    updateConnectionStatus();
+    updateStats();
+    updateRecentActivities();
+    updateFruitsGrid();
+    populateDropdowns();
+    applyPermissionBasedUI();
+    
+    // Update admin stats
+    updateAdminStats();
+    
+    console.log('✅ Dashboard fully loaded');
+}
+
+
+function handleStuckLoading() {
+    // Check if we're stuck on login page after successful auth
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    
+    if (authCode && document.getElementById('loginScreen') && !document.getElementById('loginScreen').classList.contains('hidden')) {
+        console.log('⚠️ Detected stuck loading - forcing callback processing');
+        // Force process the callback
+        const returnedState = urlParams.get('state');
+        processOAuthCallback(authCode, returnedState).catch(error => {
+            console.error('❌ Forced callback processing failed:', error);
+            // If it still fails, clear the URL and show login
+            window.history.replaceState({}, document.title, window.location.pathname);
+            initializeMicrosoftAuth();
+        });
+    }
+}
+
+// Call this after a short delay
+setTimeout(handleStuckLoading, 3000);
 
         function applyPermissionBasedUI() {
             console.log('🔐 Applying permission-based UI restrictions...');
