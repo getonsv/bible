@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM - Track Your Ministry Impact</title>
+    <title>Evangelism CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -793,36 +793,8 @@
                     
                     console.log('🔍 Validation result:', validationResult);
                     
-                    // Check if validation failed or returned no-cors placeholder
-                    if (!validationResult || !validationResult.success || 
-                        validationResult.message === 'Request sent (no-cors mode)') {
-                        
-                        console.log('⚠️ Apps Script validation failed or unavailable, checking for demo mode...');
-                        console.log('📊 Validation result:', validationResult);
-                        
-                        // Allow demo mode for your email or any demo emails
-                        if (email === 'shillesbiz@gmail.com' || email.includes('demo')) {
-                            console.log('🎭 Enabling demo mode for:', email);
-                            showNotification('Connected in demo mode - Apps Script unavailable', 'warning');
-                            
-                            // Set up demo user
-                            currentUser = {
-                                googleId: payload.sub,
-                                name: payload.name,
-                                email: payload.email,
-                                picture: payload.picture,
-                                role: 'Admin',
-                                permissions: 'Full',
-                                demoMode: true
-                            };
-                            
-                            // Load demo data and show dashboard
-                            loadDemoData();
-                            showDashboard();
-                            showNotification(`Welcome ${currentUser.name}! (Demo Mode)`);
-                            return;
-                        }
-                        
+                    // Check if validation failed
+                    if (!validationResult || !validationResult.success) {
                         let errorMessage = 'Connection failed: ';
                         
                         if (validationResult && validationResult.message) {
@@ -831,6 +803,11 @@
                                 errorMessage += '1. Spreadsheet permissions\n';
                                 errorMessage += '2. Apps Script has access to Google Sheets\n';
                                 errorMessage += '3. Sheet name is correct: "User Access & Admin Config"';
+                            } else if (validationResult.message === 'Request sent (no-cors mode)') {
+                                errorMessage += 'Unable to connect to Apps Script. Please check:\n';
+                                errorMessage += '1. Apps Script is deployed as web app\n';
+                                errorMessage += '2. Web app permissions are set to "Anyone"\n';
+                                errorMessage += '3. Apps Script URL is correct';
                             } else {
                                 errorMessage += validationResult.message;
                             }
@@ -839,7 +816,7 @@
                         }
                         
                         showNotification(errorMessage, 'error');
-                        console.log('❌ Validation failed for user:', email);
+                        console.log('❌ Connection failed for user:', email);
                         return;
                     }
                     
@@ -885,34 +862,6 @@
                     
                 } catch (connectionError) {
                     console.error('❌ Connection error:', connectionError);
-                    
-                    // Offer demo mode as fallback
-                    if (email === 'shillesbiz@gmail.com') {
-                        console.log('🎭 Offering demo mode due to connection error');
-                        
-                        const useDemo = confirm(
-                            'Unable to connect to the server. Would you like to continue in demo mode?\n\n' +
-                            'Demo mode allows you to test the application with sample data, but changes won\'t be saved to Google Sheets.'
-                        );
-                        
-                        if (useDemo) {
-                            currentUser = {
-                                googleId: payload.sub,
-                                name: payload.name,
-                                email: payload.email,
-                                picture: payload.picture,
-                                role: 'Admin',
-                                permissions: 'Full',
-                                demoMode: true
-                            };
-                            
-                            loadDemoData();
-                            showDashboard();
-                            showNotification(`Welcome ${currentUser.name}! (Demo Mode)`, 'warning');
-                            return;
-                        }
-                    }
-                    
                     showNotification('Connection failed. Please check your internet connection and try again.', 'error');
                 }
                 
@@ -960,21 +909,21 @@
             const statusText = document.getElementById('statusText');
             
             if (navigator.onLine) {
-                // Quick connection test without detailed logging
+                // Quick connection test
                 quickConnectionTest().then(isConnected => {
                     if (isConnected) {
                         statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
-                        statusText.textContent = 'Online';
+                        statusText.textContent = 'Connected';
                         isOnlineMode = true;
                     } else {
-                        statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
-                        statusText.textContent = 'Limited';
+                        statusIndicator.className = 'w-2 h-2 bg-red-500 rounded-full';
+                        statusText.textContent = 'Server Error';
                         isOnlineMode = false;
                     }
                 });
             } else {
                 statusIndicator.className = 'w-2 h-2 bg-red-500 rounded-full';
-                statusText.textContent = 'Offline';
+                statusText.textContent = 'No Internet';
                 isOnlineMode = false;
             }
         }
@@ -1189,101 +1138,7 @@
             syncIcon.className = 'fas fa-refresh';
         }
 
-        // Demo data for testing
-        function loadDemoData() {
-            console.log('🎭 Loading demo data...');
-            
-            fruits = [
-                {
-                    id: 'demo_fruit_1',
-                    name: 'John Smith',
-                    assignedTo: 'Demo User',
-                    phone: '+1 (555) 123-4567',
-                    instagram: 'johnsmith123',
-                    facebook: 'john.smith',
-                    twitter: '',
-                    leadSource: 'Facebook Ads',
-                    campaign: 'Christmas Outreach 2024',
-                    status: 'BB Session Scheduled',
-                    notes: 'Very interested in learning more about faith. Has questions about baptism.',
-                    createdDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-                    createdBy: 'demo@example.com'
-                },
-                {
-                    id: 'demo_fruit_2',
-                    name: 'Maria Garcia',
-                    assignedTo: 'Demo User',
-                    phone: '+1 (555) 987-6543',
-                    instagram: 'maria_g',
-                    facebook: '',
-                    twitter: 'maria_garcia',
-                    leadSource: 'Instagram Ads',
-                    campaign: 'Youth Campaign',
-                    status: 'In BB Session',
-                    notes: 'Young professional, very engaged during conversations.',
-                    createdDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-                    createdBy: 'demo@example.com'
-                },
-                {
-                    id: 'demo_fruit_3',
-                    name: 'David Johnson',
-                    assignedTo: 'Demo User',
-                    phone: '+1 (555) 456-7890',
-                    instagram: '',
-                    facebook: 'david.johnson',
-                    twitter: '',
-                    leadSource: 'Referral',
-                    campaign: '',
-                    status: 'Attending Class',
-                    notes: 'Completed BB sessions, now attending weekly classes. Very committed.',
-                    createdDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    createdBy: 'demo@example.com'
-                }
-            ];
-            
-            activities = [
-                {
-                    id: 'demo_activity_1',
-                    fruitName: 'John Smith',
-                    type: 'Phone Call',
-                    duration: '25',
-                    notes: 'Discussed his questions about baptism and scheduled BB session for next week.',
-                    outcome: 'Scheduled Next Step',
-                    user: 'Demo User',
-                    createdDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-                },
-                {
-                    id: 'demo_activity_2',
-                    fruitName: 'Maria Garcia',
-                    type: 'WhatsApp Message',
-                    duration: '10',
-                    notes: 'Sent follow-up message with Bible study materials.',
-                    outcome: 'Positive Response',
-                    user: 'Demo User',
-                    createdDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-                },
-                {
-                    id: 'demo_activity_3',
-                    fruitName: 'David Johnson',
-                    type: 'BB Session',
-                    duration: '60',
-                    notes: 'Completed lesson 3 on salvation. He had great questions and understanding.',
-                    outcome: 'Positive Response',
-                    user: 'Demo User',
-                    createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-                }
-            ];
-            
-            // Save demo data locally
-            saveLocalData();
-            
-            // Update UI
-            updateFruitsGrid();
-            updateStats();
-            updateRecentActivities();
-            
-            console.log('🎭 Demo data loaded successfully');
-        }
+
 
         // Local data management
         function loadLocalData() {
@@ -1396,12 +1251,13 @@
             if (isOnlineMode) {
                 try {
                     await callAppsScript('addFruit', { fruit: newFruit });
-                    showNotification('Fruit added and synced!');
+                    showNotification('Fruit added and synced to Google Sheets!');
                 } catch (error) {
-                    showNotification('Fruit added locally. Sync failed.', 'warning');
+                    console.error('Sync error:', error);
+                    showNotification('Fruit added locally. Unable to sync to Google Sheets.', 'warning');
                 }
             } else {
-                showNotification('Fruit added locally.');
+                showNotification('Fruit added locally. Connect to internet to sync.', 'warning');
             }
 
             closeModal('addFruitModal');
@@ -1431,12 +1287,13 @@
             if (isOnlineMode) {
                 try {
                     await callAppsScript('addActivity', { activity: newActivity });
-                    showNotification('Activity logged and synced!');
+                    showNotification('Activity logged and synced to Google Sheets!');
                 } catch (error) {
-                    showNotification('Activity logged locally. Sync failed.', 'warning');
+                    console.error('Sync error:', error);
+                    showNotification('Activity logged locally. Unable to sync to Google Sheets.', 'warning');
                 }
             } else {
-                showNotification('Activity logged locally.');
+                showNotification('Activity logged locally. Connect to internet to sync.', 'warning');
             }
 
             closeModal('activityModal');
@@ -1783,5 +1640,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a36b9653e3b4dc',t:'MTc1OTczNTQ3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a372e7e482b4dc',t:'MTc1OTczNTc3OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
