@@ -645,6 +645,125 @@
         </div>
     </div>
 
+    <!-- Export Modal -->
+    <div id="exportModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Export Data</h3>
+                    <button onclick="closeModal('exportModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="text-center mb-6">
+                        <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-download text-blue-600 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-600">Choose what data to export as CSV files</p>
+                    </div>
+                    
+                    <button onclick="exportFruitsCSV(); closeModal('exportModal');" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                        <i class="fas fa-users"></i>
+                        <span>Export Fruits Data</span>
+                        <span class="bg-blue-500 px-2 py-1 rounded text-xs">${fruits.length} items</span>
+                    </button>
+                    
+                    <button onclick="exportActivitiesCSV(); closeModal('exportModal');" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                        <i class="fas fa-phone"></i>
+                        <span>Export Activities Data</span>
+                        <span class="bg-green-500 px-2 py-1 rounded text-xs">${activities.length} items</span>
+                    </button>
+                    
+                    <button onclick="exportAllDataCSV(); closeModal('exportModal');" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                        <i class="fas fa-database"></i>
+                        <span>Export All Data</span>
+                        <span class="bg-purple-500 px-2 py-1 rounded text-xs">Both files</span>
+                    </button>
+                    
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-start space-x-2">
+                            <i class="fas fa-info-circle text-blue-600 mt-1"></i>
+                            <div class="text-sm text-gray-700">
+                                <p class="font-medium mb-1">CSV Format Info:</p>
+                                <ul class="text-xs space-y-1">
+                                    <li>• Compatible with Excel, Google Sheets</li>
+                                    <li>• UTF-8 encoded for international characters</li>
+                                    <li>• Properly escaped quotes and commas</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Import Data</h3>
+                    <button onclick="closeModal('importModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="text-center mb-6">
+                        <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-upload text-purple-600 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-600">Upload CSV files to import data</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Import Fruits</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+                                <input type="file" id="fruitsCSVInput" accept=".csv" onchange="importFruitsFromCSV(event)" class="hidden">
+                                <button onclick="document.getElementById('fruitsCSVInput').click()" class="text-blue-600 hover:text-blue-700">
+                                    <i class="fas fa-users text-2xl mb-2"></i>
+                                    <p class="text-sm font-medium">Choose Fruits CSV File</p>
+                                    <p class="text-xs text-gray-500">Required: Name column</p>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Import Activities</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 transition-colors">
+                                <input type="file" id="activitiesCSVInput" accept=".csv" onchange="importActivitiesFromCSV(event)" class="hidden">
+                                <button onclick="document.getElementById('activitiesCSVInput').click()" class="text-green-600 hover:text-green-700">
+                                    <i class="fas fa-phone text-2xl mb-2"></i>
+                                    <p class="text-sm font-medium">Choose Activities CSV File</p>
+                                    <p class="text-xs text-gray-500">Required: Fruit Name, Activity Type</p>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                        <div class="flex items-start space-x-2">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
+                            <div class="text-sm text-yellow-800">
+                                <p class="font-medium mb-1">Import Guidelines:</p>
+                                <ul class="text-xs space-y-1">
+                                    <li>• First row must contain column headers</li>
+                                    <li>• Use exact column names from export</li>
+                                    <li>• Data will be added to existing records</li>
+                                    <li>• Invalid rows will be skipped</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="notification" class="hidden fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg notification z-50">
         <div class="flex items-center space-x-2">
@@ -2334,6 +2453,35 @@
             document.getElementById('scheduleModal').classList.remove('hidden');
         }
 
+        function showExportModal() {
+            // Update the item counts in the modal
+            const modal = document.getElementById('exportModal');
+            const fruitsButton = modal.querySelector('button[onclick*="exportFruitsCSV"]');
+            const activitiesButton = modal.querySelector('button[onclick*="exportActivitiesCSV"]');
+            
+            if (fruitsButton) {
+                fruitsButton.innerHTML = `
+                    <i class="fas fa-users"></i>
+                    <span>Export Fruits Data</span>
+                    <span class="bg-blue-500 px-2 py-1 rounded text-xs">${fruits.length} items</span>
+                `;
+            }
+            
+            if (activitiesButton) {
+                activitiesButton.innerHTML = `
+                    <i class="fas fa-phone"></i>
+                    <span>Export Activities Data</span>
+                    <span class="bg-green-500 px-2 py-1 rounded text-xs">${activities.length} items</span>
+                `;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function showImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+
         function closeModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
             
@@ -2760,29 +2908,336 @@
         }
 
         function importData() {
-            showNotification('Data import coming soon!', 'info');
+            showImportModal();
+        }
+
+        function importFruitsFromCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showNotification('Please select a CSV file', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    
+                    if (lines.length < 2) {
+                        throw new Error('CSV file must have at least a header row and one data row');
+                    }
+
+                    // Parse header
+                    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                    
+                    // Validate required columns
+                    const requiredColumns = ['Name'];
+                    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+                    if (missingColumns.length > 0) {
+                        throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+                    }
+
+                    const importedFruits = [];
+                    let successCount = 0;
+                    let errorCount = 0;
+
+                    // Parse data rows
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue; // Skip empty lines
+
+                        try {
+                            const values = parseCSVLine(line);
+                            if (values.length !== headers.length) {
+                                console.warn(`Row ${i + 1}: Column count mismatch, skipping`);
+                                errorCount++;
+                                continue;
+                            }
+
+                            const fruitData = {};
+                            headers.forEach((header, index) => {
+                                fruitData[header] = values[index] || '';
+                            });
+
+                            // Map CSV columns to our fruit object structure
+                            const newFruit = {
+                                id: 'imported_' + Date.now() + '_' + i,
+                                name: fruitData['Name'] || '',
+                                assignedTo: fruitData['Assigned To'] || currentUser.name,
+                                phone: fruitData['Phone'] || '',
+                                instagram: fruitData['Instagram'] || '',
+                                facebook: fruitData['Facebook'] || '',
+                                twitter: fruitData['Twitter'] || '',
+                                leadSource: fruitData['Lead Source'] || 'Other',
+                                campaign: fruitData['Campaign'] || '',
+                                status: fruitData['Status'] || 'Initial Contact',
+                                notes: fruitData['Notes'] || '',
+                                createdDate: fruitData['Created Date'] ? new Date(fruitData['Created Date']).toISOString() : new Date().toISOString(),
+                                createdBy: fruitData['Created By'] || currentUser.email
+                            };
+
+                            // Validate required fields
+                            if (!newFruit.name.trim()) {
+                                console.warn(`Row ${i + 1}: Missing name, skipping`);
+                                errorCount++;
+                                continue;
+                            }
+
+                            importedFruits.push(newFruit);
+                            successCount++;
+
+                        } catch (rowError) {
+                            console.error(`Error parsing row ${i + 1}:`, rowError);
+                            errorCount++;
+                        }
+                    }
+
+                    if (importedFruits.length === 0) {
+                        throw new Error('No valid data found in CSV file');
+                    }
+
+                    // Add imported fruits to the main array
+                    fruits.push(...importedFruits);
+                    saveLocalData();
+                    updateFruitsGrid();
+                    updateStats();
+                    populateFruitDropdowns();
+
+                    closeModal('importModal');
+                    showNotification(`Import completed! ${successCount} fruits imported successfully${errorCount > 0 ? `, ${errorCount} errors` : ''}`);
+
+                } catch (error) {
+                    console.error('CSV import error:', error);
+                    showNotification('Import failed: ' + error.message, 'error');
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        function importActivitiesFromCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showNotification('Please select a CSV file', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    
+                    if (lines.length < 2) {
+                        throw new Error('CSV file must have at least a header row and one data row');
+                    }
+
+                    // Parse header
+                    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                    
+                    // Validate required columns
+                    const requiredColumns = ['Fruit Name', 'Activity Type'];
+                    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+                    if (missingColumns.length > 0) {
+                        throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+                    }
+
+                    const importedActivities = [];
+                    let successCount = 0;
+                    let errorCount = 0;
+
+                    // Parse data rows
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue; // Skip empty lines
+
+                        try {
+                            const values = parseCSVLine(line);
+                            if (values.length !== headers.length) {
+                                console.warn(`Row ${i + 1}: Column count mismatch, skipping`);
+                                errorCount++;
+                                continue;
+                            }
+
+                            const activityData = {};
+                            headers.forEach((header, index) => {
+                                activityData[header] = values[index] || '';
+                            });
+
+                            // Map CSV columns to our activity object structure
+                            const newActivity = {
+                                id: 'imported_' + Date.now() + '_' + i,
+                                fruitName: activityData['Fruit Name'] || '',
+                                type: activityData['Activity Type'] || '',
+                                duration: activityData['Duration (minutes)'] || '0',
+                                notes: activityData['Notes'] || '',
+                                outcome: activityData['Outcome'] || '',
+                                user: activityData['User'] || currentUser.name,
+                                createdDate: activityData['Created Date'] ? new Date(activityData['Created Date']).toISOString() : new Date().toISOString()
+                            };
+
+                            // Validate required fields
+                            if (!newActivity.fruitName.trim() || !newActivity.type.trim()) {
+                                console.warn(`Row ${i + 1}: Missing required fields, skipping`);
+                                errorCount++;
+                                continue;
+                            }
+
+                            importedActivities.push(newActivity);
+                            successCount++;
+
+                        } catch (rowError) {
+                            console.error(`Error parsing row ${i + 1}:`, rowError);
+                            errorCount++;
+                        }
+                    }
+
+                    if (importedActivities.length === 0) {
+                        throw new Error('No valid data found in CSV file');
+                    }
+
+                    // Add imported activities to the main array
+                    activities.push(...importedActivities);
+                    saveLocalData();
+                    updateRecentActivities();
+                    updateStats();
+
+                    closeModal('importModal');
+                    showNotification(`Import completed! ${successCount} activities imported successfully${errorCount > 0 ? `, ${errorCount} errors` : ''}`);
+
+                } catch (error) {
+                    console.error('CSV import error:', error);
+                    showNotification('Import failed: ' + error.message, 'error');
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        function parseCSVLine(line) {
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const nextChar = line[i + 1];
+                
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        // Escaped quote
+                        current += '"';
+                        i++; // Skip next quote
+                    } else {
+                        // Toggle quote state
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    // End of field
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            // Add the last field
+            values.push(current.trim());
+            
+            return values;
         }
 
         function exportData() {
-            const data = {
-                fruits: fruits,
-                activities: activities,
-                exportDate: new Date().toISOString(),
-                exportedBy: currentUser.email,
-                source: 'sharepoint_crm'
-            };
+            // Show export options modal
+            showExportModal();
+        }
+
+        function exportFruitsCSV() {
+            if (fruits.length === 0) {
+                showNotification('No fruits data to export', 'warning');
+                return;
+            }
+
+            const headers = [
+                'Name', 'Assigned To', 'Phone', 'Instagram', 'Facebook', 'Twitter', 
+                'Lead Source', 'Campaign', 'Status', 'Notes', 'Created Date', 'Created By'
+            ];
             
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const csvContent = [
+                headers.join(','),
+                ...fruits.map(fruit => [
+                    `"${(fruit.name || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.assignedTo || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.phone || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.instagram || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.facebook || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.twitter || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.leadSource || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.campaign || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.status || '').replace(/"/g, '""')}"`,
+                    `"${(fruit.notes || '').replace(/"/g, '""')}"`,
+                    `"${formatDateForCSV(fruit.createdDate)}"`,
+                    `"${(fruit.createdBy || '').replace(/"/g, '""')}"`
+                ].join(','))
+            ].join('\n');
+            
+            downloadCSV(csvContent, `fruits-export-${new Date().toISOString().split('T')[0]}.csv`);
+            showNotification('Fruits data exported to CSV successfully!');
+        }
+
+        function exportActivitiesCSV() {
+            if (activities.length === 0) {
+                showNotification('No activities data to export', 'warning');
+                return;
+            }
+
+            const headers = [
+                'Fruit Name', 'Activity Type', 'Duration (minutes)', 'Notes', 'Outcome', 'User', 'Created Date'
+            ];
+            
+            const csvContent = [
+                headers.join(','),
+                ...activities.map(activity => [
+                    `"${(activity.fruitName || '').replace(/"/g, '""')}"`,
+                    `"${(activity.type || '').replace(/"/g, '""')}"`,
+                    `"${activity.duration || '0'}"`,
+                    `"${(activity.notes || '').replace(/"/g, '""')}"`,
+                    `"${(activity.outcome || '').replace(/"/g, '""')}"`,
+                    `"${(activity.user || '').replace(/"/g, '""')}"`,
+                    `"${formatDateForCSV(activity.createdDate)}"`
+                ].join(','))
+            ].join('\n');
+            
+            downloadCSV(csvContent, `activities-export-${new Date().toISOString().split('T')[0]}.csv`);
+            showNotification('Activities data exported to CSV successfully!');
+        }
+
+        function exportAllDataCSV() {
+            exportFruitsCSV();
+            setTimeout(() => exportActivitiesCSV(), 500); // Small delay to avoid browser blocking multiple downloads
+        }
+
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `evangelism-crm-export-${new Date().toISOString().split('T')[0]}.json`;
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
-            showNotification('Data exported successfully!');
+        }
+
+        function formatDateForCSV(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString();
         }
 
         // SharePoint-specific functions
@@ -2929,5 +3384,5 @@
             showNotification('Logged out successfully');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5409101fdb4dc',t:'MTc1OTc1NDY4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a543508523b4dc',t:'MTc1OTc1NDgwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
