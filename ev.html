@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(1) Evangelism FRM</title>
+    <title>Evangelism FRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1548,72 +1548,81 @@
         }
 
         async function processGoogleOAuthCallback(authCode, returnedState) {
-            try {
-                // Validate state parameter
-                const storedState = sessionStorage.getItem('google_auth_state');
-                if (returnedState && storedState && returnedState !== storedState) {
-                    throw new Error('Invalid state parameter - possible security issue');
-                }
-                
-                // Exchange code for token
-                const tokenData = await exchangeGoogleCodeForToken(authCode);
-                
-                // Get user info from Google
-                const userInfo = await getGoogleUserInfo(tokenData.access_token);
-                
-                console.log('👤 Google user info:', {
-                    email: userInfo.email,
-                    name: userInfo.name,
-                    picture: userInfo.picture
-                });
-                
-                // Check if user exists in SharePoint Users list
-                const authorizedUser = await checkUserInSharePointList(userInfo.email, userInfo.name, 'google');
-                
-                if (!authorizedUser) {
-                    showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
-                    return;
-                }
-                
-                // Set current user with SharePoint permissions
-                currentUser = authorizedUser;
-                sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-                sessionStorage.setItem('google_access_token', tokenData.access_token);
-                
-                // Clean up OAuth parameters
-                sessionStorage.removeItem('google_auth_state');
-                
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // Load data from SharePoint if we have access
-                if (sharePointAccessToken) {
-                    await loadDataFromSharePoint();
-                    startRealTimeSync();
-                } else {
-                    // Load local data as fallback
-                    loadLocalData();
-                }
-                
-                showDashboard();
-                
-                showNotification(`Welcome ${authorizedUser.name}! Signed in with Google.`);
-                
-            } catch (error) {
-                console.error('❌ Google OAuth callback processing failed:', error);
-                showNotification('Google authentication failed: ' + error.message, 'error');
-                
-                // Clean up on failure
-                sessionStorage.removeItem('google_auth_state');
-                
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // Show login screen again
-                initializeMicrosoftAuth();
-            }
+    try {
+        // Validate state parameter
+        const storedState = sessionStorage.getItem('google_auth_state');
+        if (returnedState && storedState && returnedState !== storedState) {
+            throw new Error('Invalid state parameter - possible security issue');
         }
         
+        // Exchange code for token
+        const tokenData = await exchangeGoogleCodeForToken(authCode);
+        
+        // Get user info from Google
+        const googleUserInfo = await getGoogleUserInfo(tokenData.access_token);
+        
+        console.log('👤 Google user authenticated:', googleUserInfo.email);
+        
+        // Check if we have an existing SharePoint token from a previous Microsoft login
+        let existingSharePointToken = sessionStorage.getItem('access_token');
+        let existingTokenExpiry = sessionStorage.getItem('token_expiry');
+        
+        if (existingSharePointToken && existingTokenExpiry && Date.now() < parseInt(existingTokenExpiry)) {
+            // Use existing SharePoint token
+            sharePointAccessToken = existingSharePointToken;
+            isSharePointMode = true;
+            console.log('🔐 Using existing SharePoint token for validation');
+        } else {
+            // No valid SharePoint token - we need to get one
+            console.log('⚠️ No valid SharePoint token available');
+            showNotification('SharePoint connection required for user validation. Please sign in with Microsoft first to establish connection.', 'error');
+            sessionStorage.removeItem('google_auth_state');
+            return;
+        }
+        
+        // Check if user exists in SharePoint Users list
+        const authorizedUser = await checkUserInSharePointList(googleUserInfo.email, googleUserInfo.name, 'google');
+        
+        if (!authorizedUser) {
+            // Error message already shown in checkUserInSharePointList
+            sessionStorage.removeItem('google_auth_state');
+            return;
+        }
+        
+        // Set current user with SharePoint permissions
+        currentUser = authorizedUser;
+        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+        sessionStorage.setItem('google_access_token', tokenData.access_token);
+        
+        // Clean up OAuth parameters
+        sessionStorage.removeItem('google_auth_state');
+        
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Load data from SharePoint
+        await loadDataFromSharePoint();
+        startRealTimeSync();
+        
+        showDashboard();
+        
+        showNotification(`Welcome ${authorizedUser.name}! Signed in with Google. You have ${authorizedUser.role} access.`);
+        
+    } catch (error) {
+        console.error('❌ Google OAuth callback processing failed:', error);
+        showNotification('Google authentication failed: ' + error.message, 'error');
+        
+        // Clean up on failure
+        sessionStorage.removeItem('google_auth_state');
+        
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show login screen again
+        initializeMicrosoftAuth();
+    }
+}
+
 async function exchangeGoogleCodeForToken(authCode) {
     try {
         console.log('🔄 Google token exchange starting...');
@@ -2160,90 +2169,97 @@ async function exchangeGoogleCodeForToken(authCode) {
                 throw error;
             }
         }
+        
         async function checkUserInSharePointList(email, name, authProvider) {
-            try {
-                console.log('🔐 Checking user authorization in SharePoint Users list:', email);
-                
-                if (!sharePointAccessToken) {
-                    console.log('⚠️ No SharePoint access token available');
-                    throw new Error('SharePoint connection not available');
-                }
-
-                // Properly encode the email for the filter
-                const encodedEmail = encodeURIComponent(`'${email}'`);
-                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Email eq ${encodedEmail}`;
-                
-                console.log('🔐 Querying SharePoint Users list:', url);
-                
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${sharePointAccessToken}`,
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ Failed to access SharePoint Users list:', response.status, response.statusText, errorText);
-                    throw new Error(`Cannot access Users list: ${response.status} ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                const userItems = data.value || [];
-                
-                console.log('🔐 SharePoint Users list response:', {
-                    totalItems: userItems.length,
-                    items: userItems
-                });
-                
-                if (userItems.length === 0) {
-                    console.log('❌ User not found in SharePoint Users list:', email);
-                    showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
-                    return null;
-                }
-                
-                const userRecord = userItems[0].fields;
-                console.log('🔐 User record found:', userRecord);
-                
-                // Check if user is active
-                if (userRecord.Status !== 'Active') {
-                    console.log('❌ User found but not active:', userRecord.Status);
-                    showNotification(`Access denied: Your account status is "${userRecord.Status}". Please contact your administrator.`, 'error');
-                    return null;
-                }
-                
-                // Validate required fields
-                if (!userRecord.Role) {
-                    console.log('❌ User record missing Role field');
-                    showNotification('Access denied: User role not defined. Please contact your administrator.', 'error');
-                    return null;
-                }
-                
-                // Map SharePoint role to permissions
-                const role = userRecord.Role;
-                const permissions = mapRoleToPermissions(role);
-                
-                console.log('✅ User authorized with role:', role);
-                
-                return {
-                    name: userRecord.DisplayName || name,
-                    email: email,
-                    id: userRecord.id || email,
-                    role: role,
-                    permissions: role,
-                    status: userRecord.Status,
-                    source: authProvider,
-                    department: userRecord.Department || '',
-                    lastLogin: new Date().toISOString()
-                };
-                
-            } catch (error) {
-                console.error('❌ Error checking user authorization:', error);
-                showNotification('Authentication failed: ' + error.message, 'error');
-                return null;
-            }
+    try {
+        console.log('🔐 Checking user authorization in SharePoint Users list:', email);
+        
+        if (!sharePointAccessToken) {
+            console.log('⚠️ No SharePoint access token available for Google user validation');
+            // For Google users, we need to get a SharePoint token first
+            throw new Error('SharePoint connection required for user validation');
         }
 
+        // Properly encode the email for the filter
+        const encodedEmail = encodeURIComponent(`'${email}'`);
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Email eq ${encodedEmail}`;
+        
+        console.log('🔐 Querying SharePoint Users list:', url);
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        console.log('🔐 SharePoint response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Failed to access SharePoint Users list:', response.status, response.statusText, errorText);
+            
+            if (response.status === 401 || response.status === 403) {
+                throw new Error('SharePoint access denied - token may be invalid');
+            }
+            throw new Error(`Cannot access Users list: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const userItems = data.value || [];
+        
+        console.log('🔐 SharePoint Users list response:', {
+            totalItems: userItems.length,
+            items: userItems
+        });
+        
+        if (userItems.length === 0) {
+            console.log('❌ User not found in SharePoint Users list:', email);
+            showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
+            return null;
+        }
+        
+        const userRecord = userItems[0].fields;
+        console.log('🔐 User record found:', userRecord);
+        
+        // Check if user is active
+        if (userRecord.Status !== 'Active') {
+            console.log('❌ User found but not active:', userRecord.Status);
+            showNotification(`Access denied: Your account status is "${userRecord.Status}". Please contact your administrator.`, 'error');
+            return null;
+        }
+        
+        // Validate required fields
+        if (!userRecord.Role) {
+            console.log('❌ User record missing Role field');
+            showNotification('Access denied: User role not defined. Please contact your administrator.', 'error');
+            return null;
+        }
+        
+        // Map SharePoint role to permissions
+        const role = userRecord.Role;
+        const permissions = mapRoleToPermissions(role);
+        
+        console.log('✅ User authorized with role:', role);
+        
+        return {
+            name: userRecord.DisplayName || name,
+            email: email,
+            id: userRecord.id || userItems[0].id || email,
+            role: role,
+            permissions: role,
+            status: userRecord.Status,
+            source: authProvider,
+            department: userRecord.Department || '',
+            lastLogin: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        console.error('❌ Error checking user authorization:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
+        return null;
+    }
+}
 
                 function mapRoleToPermissions(role) {
                     const rolePermissions = {
