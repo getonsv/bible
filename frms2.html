@@ -1390,7 +1390,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 console.log('👤 User email:', email);
                 
                 // Show loading message
-                showNotification('Validating access with Google Sheets...', 'info');
+                showNotification('Validating access and loading data from Google Sheets...', 'info');
                 
                 // Validate user against Google Sheets - PRIMARY VALIDATION
                 let validationResult = null;
@@ -1405,7 +1405,6 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 // If not in authorized list, deny access
                 if (!validationResult || !validationResult.hasAccess) {
                     console.log('❌ User not authorized:', email);
-                    console.log('❌ Available authorized emails:', CHAT_HISTORY_DATA.userAccess.map(u => u.email));
                     
                     showNotification('Access denied. Your email is not authorized for this system.', 'error');
                     
@@ -1453,10 +1452,11 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 // Update last login time
                 updateUserLastLogin(email);
                 
-                // Load local data and show dashboard
-                loadLocalData();
+                // Load real data from Google Sheets
+                await loadRealDataFromSheets();
+                
                 showDashboard();
-                showNotification(`Welcome ${currentUser.name}! Role: ${currentUser.role}`);
+                showNotification(`Welcome ${currentUser.name}! Loaded real data from Google Sheets.`);
                 
             } catch (connectionError) {
                 console.error('❌ Authentication error:', connectionError);
@@ -2002,7 +2002,147 @@ function validateSpreadsheetAccess(spreadsheetId) {
             syncIcon.className = 'fas fa-refresh';
         }
 
-        // Local data management with chat history integration
+        // Real data loading from Google Sheets
+        async function loadRealDataFromSheets() {
+            try {
+                console.log('📊 Loading real data from Google Sheets...');
+                
+                // Load fruits data from "Fruits" sheet
+                await loadFruitsFromSheets();
+                
+                // Load activities data from "Activities" sheet  
+                await loadActivitiesFromSheets();
+                
+                // Save loaded data locally as backup
+                saveLocalData();
+                
+                console.log('✅ Successfully loaded real data from Google Sheets');
+                console.log('📊 Loaded', fruits.length, 'fruits and', activities.length, 'activities');
+                
+            } catch (error) {
+                console.error('❌ Failed to load real data from Google Sheets:', error);
+                console.log('📱 Falling back to local/demo data...');
+                
+                // Fallback to local data if Sheets loading fails
+                loadLocalData();
+                showNotification('Using local data - Google Sheets connection failed', 'warning');
+            }
+        }
+
+        async function loadFruitsFromSheets() {
+            try {
+                const sheetRange = 'Fruits!A:M'; // Adjust range to match your sheet structure
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetRange)}?key=${GOOGLE_CONFIG.API_KEY}`;
+                
+                console.log('📊 Loading fruits from:', url);
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const rows = data.values || [];
+                
+                if (rows.length === 0) {
+                    console.log('📊 No fruits data found in Google Sheets');
+                    fruits = [];
+                    return;
+                }
+                
+                // Parse fruits data (assuming first row is headers)
+                const headers = rows[0].map(h => h.toLowerCase().trim());
+                fruits = [];
+                
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
+                    
+                    const fruit = {
+                        id: row[0] || `fruit_${Date.now()}_${i}`,
+                        name: row[1] || '',
+                        assignedTo: row[2] || '',
+                        phone: row[3] || '',
+                        instagram: row[4] || '',
+                        facebook: row[5] || '',
+                        twitter: row[6] || '',
+                        leadSource: row[7] || '',
+                        campaign: row[8] || '',
+                        status: row[9] || 'Initial Contact',
+                        notes: row[10] || '',
+                        createdDate: row[11] || new Date().toISOString(),
+                        createdBy: row[12] || 'Unknown'
+                    };
+                    
+                    // Only add if name exists
+                    if (fruit.name.trim()) {
+                        fruits.push(fruit);
+                    }
+                }
+                
+                console.log('📊 Loaded', fruits.length, 'fruits from Google Sheets');
+                
+            } catch (error) {
+                console.error('❌ Error loading fruits from Sheets:', error);
+                throw error;
+            }
+        }
+
+        async function loadActivitiesFromSheets() {
+            try {
+                const sheetRange = 'Activities!A:H'; // Adjust range to match your sheet structure
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetRange)}?key=${GOOGLE_CONFIG.API_KEY}`;
+                
+                console.log('📊 Loading activities from:', url);
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const rows = data.values || [];
+                
+                if (rows.length === 0) {
+                    console.log('📊 No activities data found in Google Sheets');
+                    activities = [];
+                    return;
+                }
+                
+                // Parse activities data (assuming first row is headers)
+                const headers = rows[0].map(h => h.toLowerCase().trim());
+                activities = [];
+                
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
+                    
+                    const activity = {
+                        id: row[0] || `activity_${Date.now()}_${i}`,
+                        fruitName: row[1] || '',
+                        type: row[2] || '',
+                        duration: row[3] || '0',
+                        notes: row[4] || '',
+                        outcome: row[5] || '',
+                        user: row[6] || 'Unknown',
+                        createdDate: row[7] || new Date().toISOString()
+                    };
+                    
+                    // Only add if fruit name exists
+                    if (activity.fruitName.trim()) {
+                        activities.push(activity);
+                    }
+                }
+                
+                console.log('📊 Loaded', activities.length, 'activities from Google Sheets');
+                
+            } catch (error) {
+                console.error('❌ Error loading activities from Sheets:', error);
+                throw error;
+            }
+        }
+
+        // Local data management with chat history integration (fallback)
         function saveLocalData() {
             localStorage.setItem('crm_fruits', JSON.stringify(fruits));
             localStorage.setItem('crm_activities', JSON.stringify(activities));
@@ -2690,13 +2830,29 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         // Utility functions
-        function refreshData() {
-            showSyncProgress('Refreshing data...');
-            setTimeout(() => {
+        async function refreshData() {
+            showSyncProgress('Refreshing data from Google Sheets...');
+            
+            try {
+                // Try to load fresh data from Google Sheets
+                await loadRealDataFromSheets();
+                
+                // Update all UI components
+                updateFruitsGrid();
+                updateStats();
+                updateRecentActivities();
+                
+                hideSyncProgress();
+                showNotification('Data refreshed successfully from Google Sheets!');
+                
+            } catch (error) {
+                console.error('❌ Refresh failed:', error);
+                
+                // Fallback to local data
                 loadLocalData();
                 hideSyncProgress();
-                showNotification('Data refreshed successfully!');
-            }, 1000);
+                showNotification('Refreshed with local data - Google Sheets unavailable', 'warning');
+            }
         }
 
         function showDataOptions() {
@@ -2944,5 +3100,5 @@ function validateSpreadsheetAccess(spreadsheetId) {
             showNotification('User list refreshed!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3ebe8f284b4dc',t:'MTc1OTc0MDczNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3f10d9070b4dc',t:'MTc1OTc0MDk0NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
