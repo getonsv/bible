@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM - SharePoint Integration</title>
+    <title>Evangelism CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -46,8 +46,8 @@
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-cross text-white text-2xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism CRM</h1>
-                <p class="text-gray-600">SharePoint-powered ministry tracking system</p>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism FRMS</h1>
+                <p class="text-gray-600">Fruit Relationship Management System</p>
             </div>
             
             <div id="googleSignInButton" class="w-full mb-4">
@@ -851,14 +851,17 @@
                     throw new Error('Failed to open popup window. Please allow popups for this site.');
                 }
                 
+                // Store popup reference globally for manual close functionality
+                window.currentAuthPopup = popup;
+                
                 console.log('🔐 Popup opened, waiting for authentication...');
                 
-                // Show manual extraction option after a delay
+                // Show manual extraction option after a delay (reduced from 10 seconds)
                 setTimeout(() => {
-                    if (!popup.closed) {
+                    if (!popup.closed && !hasResolved) {
                         showManualCodeExtractionHelper(popup);
                     }
-                }, 10000); // Show after 10 seconds
+                }, 5000); // Show after 5 seconds if automatic detection fails
                 
                 // Listen for the popup to close or send a message
                 const authResult = await waitForAuthResult(popup);
@@ -921,12 +924,22 @@
                     </div>
                     
                     <div class="space-y-4">
+                        <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
+                                <p class="text-sm font-medium text-yellow-800">Try This First!</p>
+                            </div>
+                            <p class="text-sm text-yellow-700 mb-2">
+                                <strong>Quick Fix:</strong> Simply close the popup window if it's stuck on a blank page. The system will automatically detect the authentication code!
+                            </p>
+                        </div>
+                        
                         <div class="bg-blue-50 p-4 rounded-lg">
                             <p class="text-sm text-blue-800 mb-2">
-                                <strong>Step 1:</strong> Look at the popup window URL
+                                <strong>Manual Option:</strong> If closing doesn't work
                             </p>
                             <p class="text-sm text-blue-700">
-                                If it shows a URL starting with "login.microsoftonline.com/common/oauth2/nativeclient?code=", copy the entire URL.
+                                Copy the entire URL from the popup window (it should start with "login.microsoftonline.com/common/oauth2/nativeclient?code=")
                             </p>
                         </div>
                         
@@ -937,11 +950,16 @@
                             <textarea id="manualAuthUrl" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Paste the full URL from the popup window here..."></textarea>
                         </div>
                         
-                        <div class="flex space-x-3">
-                            <button onclick="processManualAuth()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                                Complete Authentication
+                        <div class="flex space-x-2">
+                            <button onclick="tryClosePopupAuth()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-times-circle mr-1"></i>
+                                Close Popup & Auto-Detect
                             </button>
-                            <button onclick="closeAuthHelper()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors">
+                            <button onclick="processManualAuth()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-paste mr-1"></i>
+                                Manual URL
+                            </button>
+                            <button onclick="closeAuthHelper()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors">
                                 Cancel
                             </button>
                         </div>
@@ -1030,6 +1048,18 @@
             }
         }
 
+        function tryClosePopupAuth() {
+            // Find the popup window reference (we need to store it globally)
+            if (window.currentAuthPopup && !window.currentAuthPopup.closed) {
+                console.log('🔐 Manually closing popup to trigger auto-detection...');
+                showNotification('Closing popup to auto-detect authentication...', 'info');
+                window.currentAuthPopup.close();
+                closeAuthHelper();
+            } else {
+                showNotification('No popup window found to close', 'warning');
+            }
+        }
+
         function buildPKCEAuthUrl(codeChallenge, state) {
             const redirectUri = 'https://login.microsoftonline.com/common/oauth2/nativeclient';
             
@@ -1051,10 +1081,12 @@
         async function waitForAuthResult(popup) {
             return new Promise((resolve) => {
                 let hasResolved = false;
+                let lastKnownUrl = '';
                 
                 const cleanup = () => {
                     if (checkClosed) clearInterval(checkClosed);
                     if (urlCheckInterval) clearInterval(urlCheckInterval);
+                    if (titleCheckInterval) clearInterval(titleCheckInterval);
                     if (timeoutId) clearTimeout(timeoutId);
                     window.removeEventListener('message', messageHandler);
                 };
@@ -1091,54 +1123,16 @@
                 
                 window.addEventListener('message', messageHandler);
                 
-                const checkClosed = setInterval(() => {
-                    if (popup.closed) {
-                        console.log('🔍 Popup closed, checking for URL in current window...');
-                        
-                        // Check if we can extract the auth code from the URL that was shown
-                        // This is a fallback method when the popup closes
-                        const lastUrl = popup.location ? popup.location.href : '';
-                        if (lastUrl && lastUrl.includes('code=')) {
-                            console.log('🔍 Found auth code in closed popup URL');
-                            
-                            try {
-                                const urlParams = new URLSearchParams(lastUrl.split('?')[1]);
-                                const authCode = urlParams.get('code');
-                                const returnedState = urlParams.get('state');
-                                
-                                if (authCode) {
-                                    console.log('🔐 Extracted auth code from closed popup');
-                                    
-                                    // Validate state
-                                    const storedState = sessionStorage.getItem('pkce_state');
-                                    if (returnedState && storedState && returnedState !== storedState) {
-                                        resolveOnce({ success: false, error: 'Invalid state parameter' });
-                                        return;
-                                    }
-                                    
-                                    // Exchange code for token
-                                    exchangeCodeForTokenPKCE(authCode)
-                                        .then(tokenData => resolveOnce({ 
-                                            success: true, 
-                                            token: tokenData.access_token,
-                                            expiresIn: tokenData.expires_in || 3600
-                                        }))
-                                        .catch(err => resolveOnce({ success: false, error: err.message }));
-                                    return;
-                                }
-                            } catch (e) {
-                                console.log('🔍 Could not extract auth code from closed popup');
-                            }
-                        }
-                        
-                        resolveOnce({ success: false, error: 'Authentication cancelled by user' });
-                    }
-                }, 1000);
-
-                // Alternative: Try to detect URL changes in popup
+                // Enhanced URL detection with multiple methods
                 const urlCheckInterval = setInterval(() => {
                     try {
                         const url = popup.location.href;
+                        
+                        // Store the last known URL for fallback
+                        if (url && url !== lastKnownUrl) {
+                            lastKnownUrl = url;
+                            console.log('🔍 Popup URL changed to:', url.substring(0, 100) + '...');
+                        }
                         
                         // Check if we're on the redirect URI with parameters
                         if (url.includes('login.microsoftonline.com/common/oauth2/nativeclient')) {
@@ -1153,7 +1147,7 @@
                                 const error = urlParams.get('error');
                                 
                                 if (authCode) {
-                                    console.log('🔐 PKCE authorization code received');
+                                    console.log('🔐 PKCE authorization code received automatically');
                                     
                                     // Validate state parameter
                                     const storedState = sessionStorage.getItem('pkce_state');
@@ -1181,7 +1175,83 @@
                         }
                     } catch (e) {
                         // Cross-origin error - expected when popup is on different domain
-                        // This is normal behavior
+                        // This is normal behavior, continue checking
+                    }
+                }, 200); // Check more frequently for better responsiveness
+
+                // Check popup title for authentication completion
+                const titleCheckInterval = setInterval(() => {
+                    try {
+                        const title = popup.document.title;
+                        if (title && (title.includes('Success') || title.includes('Complete') || title.includes('Redirect'))) {
+                            console.log('🔍 Popup title suggests completion:', title);
+                            // Try to extract URL from the popup
+                            const url = popup.location.href;
+                            if (url && url.includes('code=')) {
+                                console.log('🔍 Found auth code via title check');
+                                // Process the URL
+                                const urlParams = new URLSearchParams(url.split('?')[1]);
+                                const authCode = urlParams.get('code');
+                                if (authCode) {
+                                    popup.close();
+                                    exchangeCodeForTokenPKCE(authCode)
+                                        .then(tokenData => resolveOnce({ 
+                                            success: true, 
+                                            token: tokenData.access_token,
+                                            expiresIn: tokenData.expires_in || 3600
+                                        }))
+                                        .catch(err => resolveOnce({ success: false, error: err.message }));
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Cross-origin error - expected
+                    }
+                }, 500);
+
+                // Check if popup is closed
+                const checkClosed = setInterval(() => {
+                    if (popup.closed) {
+                        console.log('🔍 Popup closed, checking last known URL...');
+                        
+                        // Try to extract auth code from the last known URL
+                        if (lastKnownUrl && lastKnownUrl.includes('code=')) {
+                            console.log('🔍 Found auth code in last known URL');
+                            
+                            try {
+                                const urlParts = lastKnownUrl.split('?');
+                                if (urlParts.length > 1) {
+                                    const urlParams = new URLSearchParams(urlParts[1].split('#')[0]);
+                                    const authCode = urlParams.get('code');
+                                    const returnedState = urlParams.get('state');
+                                    
+                                    if (authCode) {
+                                        console.log('🔐 Extracted auth code from closed popup');
+                                        
+                                        // Validate state
+                                        const storedState = sessionStorage.getItem('pkce_state');
+                                        if (returnedState && storedState && returnedState !== storedState) {
+                                            resolveOnce({ success: false, error: 'Invalid state parameter' });
+                                            return;
+                                        }
+                                        
+                                        // Exchange code for token
+                                        exchangeCodeForTokenPKCE(authCode)
+                                            .then(tokenData => resolveOnce({ 
+                                                success: true, 
+                                                token: tokenData.access_token,
+                                                expiresIn: tokenData.expires_in || 3600
+                                            }))
+                                            .catch(err => resolveOnce({ success: false, error: err.message }));
+                                        return;
+                                    }
+                                }
+                            } catch (e) {
+                                console.log('🔍 Could not extract auth code from last known URL');
+                            }
+                        }
+                        
+                        resolveOnce({ success: false, error: 'Authentication cancelled by user' });
                     }
                 }, 500);
 
@@ -2245,5 +2315,5 @@
             showNotification('Logged out successfully');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a5114c84f6b4dc',t:'MTc1OTc1Mjc1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a519fc75efb4dc',t:'MTc1OTc1MzEwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
