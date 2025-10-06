@@ -1054,27 +1054,29 @@
         };
         
         // Google OAuth configuration
-        
-        const GOOGLE_CONFIG = {
-            CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
-            CLIENT_SECRET: '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',
-            PROJECT_ID: 'hmbcfrm',
-            AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
-            TOKEN_URI: 'https://oauth2.googleapis.com/token',
-            SCOPES: 'openid email profile', // Remove spreadsheets scope if not needed
-            REDIRECT_URIS: [
-                'https://app.shill.es/auth/callback',
-                'https://app.geton.asia/auth/callback',
-                'https://geton.asia/auth/callback',
-                'https://shill.es/auth/callback'
-            ],
-            JAVASCRIPT_ORIGINS: [
-                'https://app.shill.es',
-                'https://app.geton.asia',
-                'https://geton.asia',
-                'https://shill.es'
-            ]
-        };
+ const GOOGLE_CONFIG = {
+    CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
+    CLIENT_SECRET: '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',
+    PROJECT_ID: 'hmbcfrm',
+    AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
+    TOKEN_URI: 'https://oauth2.googleapis.com/token',
+    SCOPES: 'openid email profile',
+    REDIRECT_URIS: [
+        'https://app.shill.es/ev',
+        'https://app.shill.es/',
+        'https://app.shill.es/FRMS.html',
+        'https://app.shill.es/index.html',
+        'https://app.geton.asia/',
+        'https://geton.asia/',
+        'https://shill.es/'
+    ],
+    JAVASCRIPT_ORIGINS: [
+        'https://app.shill.es',
+        'https://app.geton.asia',
+        'https://geton.asia',
+        'https://shill.es'
+    ]
+};
         // Global state
         let currentUser = null;
         let currentTab = 'overview';
@@ -1483,46 +1485,45 @@
         }
 
         async function authenticateWithGoogle() {
-            try {
-                console.log('🔐 Starting Google OAuth authentication...');
-                showNotification('Redirecting to Google...', 'info');
-                
-                // Generate state parameter for security
-                const state = 'google_auth_' + Date.now();
-                sessionStorage.setItem('google_auth_state', state);
-                
-                // Use the CURRENT PAGE as redirect URI (not /auth/callback)
-                const redirectUri = window.location.origin + window.location.pathname;
-                
-                console.log('🔐 Using current page as redirect URI:', redirectUri);
-                
-                // Use only essential scopes for authentication
-                const scopes = [
-                    'openid',
-                    'email',
-                    'profile'
-                ].join(' ');
-                
-                // Build OAuth URL
-                const authUrl = new URL(GOOGLE_CONFIG.AUTH_URI);
-                authUrl.searchParams.set('client_id', GOOGLE_CONFIG.CLIENT_ID);
-                authUrl.searchParams.set('redirect_uri', redirectUri);
-                authUrl.searchParams.set('response_type', 'code');
-                authUrl.searchParams.set('scope', scopes);
-                authUrl.searchParams.set('state', state);
-                authUrl.searchParams.set('access_type', 'online');
-                authUrl.searchParams.set('prompt', 'consent');
-                
-                console.log('🔗 Google OAuth URL:', authUrl.toString());
-                
-                // Redirect to Google OAuth
-                window.location.href = authUrl.toString();
-                
-            } catch (error) {
-                console.error('❌ Google OAuth authentication failed:', error);
-                showNotification('Google authentication failed: ' + error.message, 'error');
-            }
-        }
+    try {
+        console.log('🔐 Starting Google OAuth authentication...');
+        showNotification('Redirecting to Google...', 'info');
+        
+        // Generate state parameter for security
+        const state = 'google_auth_' + Date.now();
+        sessionStorage.setItem('google_auth_state', state);
+        
+        // Use a FIXED redirect URI that matches exactly what's in Google Console
+        const redirectUri = 'https://app.shill.es/ev';
+        
+        console.log('🔐 Using fixed redirect URI:', redirectUri);
+        
+        const scopes = [
+            'openid',
+            'email',
+            'profile'
+        ].join(' ');
+        
+        // Build OAuth URL
+        const authUrl = new URL(GOOGLE_CONFIG.AUTH_URI);
+        authUrl.searchParams.set('client_id', GOOGLE_CONFIG.CLIENT_ID);
+        authUrl.searchParams.set('redirect_uri', redirectUri);
+        authUrl.searchParams.set('response_type', 'code');
+        authUrl.searchParams.set('scope', scopes);
+        authUrl.searchParams.set('state', state);
+        authUrl.searchParams.set('access_type', 'online');
+        authUrl.searchParams.set('prompt', 'consent');
+        
+        console.log('🔗 Google OAuth URL:', authUrl.toString());
+        
+        // Redirect to Google OAuth
+        window.location.href = authUrl.toString();
+        
+    } catch (error) {
+        console.error('❌ Google OAuth authentication failed:', error);
+        showNotification('Google authentication failed: ' + error.message, 'error');
+    }
+}
 
         function showGoogleSignInPopup() {
             // Create a manual Google Sign-In popup
@@ -1612,48 +1613,46 @@
                 initializeMicrosoftAuth();
             }
         }
-
-        async function exchangeGoogleCodeForToken(authCode) {
-            try {
-                console.log('🔄 Google token exchange starting...');
-                
-                // Use the same redirect URI that was used in the auth request
-                const currentOrigin = window.location.origin;
-                const currentPath = window.location.pathname;
-                const redirectUri = currentOrigin + currentPath;
-                
-                console.log('🔄 Using redirect URI for token exchange:', redirectUri);
-                
-                const response = await fetch(GOOGLE_CONFIG.TOKEN_URI, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: new URLSearchParams({
-                        client_id: GOOGLE_CONFIG.CLIENT_ID,
-                        client_secret: GOOGLE_CONFIG.CLIENT_SECRET,
-                        code: authCode,
-                        grant_type: 'authorization_code',
-                        redirect_uri: redirectUri
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('❌ Google token exchange failed:', errorData);
-                    throw new Error(errorData.error_description || 'Google token exchange failed');
-                }
-                
-                const tokenData = await response.json();
-                console.log('✅ Google token exchange successful');
-                
-                return tokenData;
-                
-            } catch (error) {
-                console.error('❌ Google token exchange failed:', error);
-                throw error;
-            }
+        
+async function exchangeGoogleCodeForToken(authCode) {
+    try {
+        console.log('🔄 Google token exchange starting...');
+        
+        // Use the SAME redirect URI that was used in the auth request
+        const redirectUri = 'https://app.shill.es/ev';
+        
+        console.log('🔄 Using redirect URI for token exchange:', redirectUri);
+        
+        const response = await fetch(GOOGLE_CONFIG.TOKEN_URI, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                client_id: GOOGLE_CONFIG.CLIENT_ID,
+                client_secret: GOOGLE_CONFIG.CLIENT_SECRET,
+                code: authCode,
+                grant_type: 'authorization_code',
+                redirect_uri: redirectUri
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('❌ Google token exchange failed:', errorData);
+            throw new Error(errorData.error_description || 'Google token exchange failed');
         }
+        
+        const tokenData = await response.json();
+        console.log('✅ Google token exchange successful');
+        
+        return tokenData;
+        
+    } catch (error) {
+        console.error('❌ Google token exchange failed:', error);
+        throw error;
+    }
+}
 
         async function getGoogleUserInfo(accessToken) {
             try {
