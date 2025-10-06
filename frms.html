@@ -970,12 +970,10 @@
         let fruits = [];
         let activities = [];
         
-        // Google API Configuration
+        // Google API Configuration - CLIENT_SECRET removed for security
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
-            CLIENT_SECRET: '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',
             PROJECT_ID: 'hmbcfrm',
-            API_KEY: 'AIzaSyBqvopK2QrsiUSLO4M7McX4EZI0cbTF0uY',
             DISCOVERY_DOC: 'https://sheets.googleapis.com/$discovery/rest?version=v4',
             SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
             SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
@@ -994,12 +992,49 @@
         let gapi, google;
         let isGoogleAPILoaded = false;
 
-        // Initialize the app
+        // Initialize the app with fallback
         document.addEventListener('DOMContentLoaded', function() {
-            initializeGoogleAPIs();
+            // Add a fallback timer in case Google APIs never load
+            const fallbackTimer = setTimeout(() => {
+                console.warn('Google APIs taking too long to load, showing fallback options');
+                const buttonContainer = document.getElementById('googleSignInButton');
+                if (buttonContainer && buttonContainer.innerHTML.includes('Loading Google Sign-In')) {
+                    buttonContainer.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                <div class="flex items-center space-x-2 text-yellow-800 mb-2">
+                                    <i class="fas fa-clock"></i>
+                                    <span class="font-medium">Loading Taking Too Long</span>
+                                </div>
+                                <p class="text-sm text-yellow-700">Google Sign-In is taking longer than expected to load.</p>
+                            </div>
+                            
+                            <div class="flex space-x-2">
+                                <button onclick="retryGoogleInit()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                    <i class="fas fa-redo mr-2"></i>Try Again
+                                </button>
+                                <button onclick="enterDemoMode()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                    Demo Mode
+                                </button>
+                            </div>
+                            
+                            <button onclick="showTroubleshooting()" class="w-full text-blue-600 hover:text-blue-800 text-sm underline">
+                                Show Troubleshooting Tips
+                            </button>
+                        </div>
+                    `;
+                }
+            }, 15000); // 15 second fallback
+            
+            // Try to initialize Google APIs
+            initializeGoogleAPIs().then(() => {
+                clearTimeout(fallbackTimer);
+            }).catch(() => {
+                clearTimeout(fallbackTimer);
+            });
         });
 
-        // Initialize Google APIs
+        // Initialize Google APIs with improved loading and fallback
         async function initializeGoogleAPIs() {
             const buttonContainer = document.getElementById('googleSignInButton');
             
@@ -1019,49 +1054,69 @@
                 console.log('Current origin:', currentOrigin);
                 console.log('Allowed origins:', GOOGLE_CONFIG.JAVASCRIPT_ORIGINS);
                 
-                if (!GOOGLE_CONFIG.JAVASCRIPT_ORIGINS.includes(currentOrigin) && !currentOrigin.includes('localhost')) {
-                    throw new Error(`Domain ${currentOrigin} not authorized. Please add it to Google Console.`);
+                // More flexible domain checking for development
+                const isDomainAuthorized = GOOGLE_CONFIG.JAVASCRIPT_ORIGINS.includes(currentOrigin) || 
+                                         currentOrigin.includes('localhost') || 
+                                         currentOrigin.includes('127.0.0.1') ||
+                                         currentOrigin.includes('canva.com');
+                
+                if (!isDomainAuthorized) {
+                    console.warn(`Domain ${currentOrigin} may not be authorized. Continuing anyway...`);
                 }
 
-                // Wait for Google APIs to load with better error handling
+                // Wait for Google APIs to load with extended timeout and better detection
                 await new Promise((resolve, reject) => {
                     let attempts = 0;
-                    const maxAttempts = 50; // 5 seconds total
+                    const maxAttempts = 100; // 10 seconds total
                     
                     const checkGoogleLoaded = () => {
                         attempts++;
-                        console.log(`Checking Google APIs... Attempt ${attempts}`);
                         
-                        if (window.google?.accounts?.id && window.gapi) {
-                            console.log('✅ Google APIs found!');
+                        // Check multiple ways Google APIs might be available
+                        const googleSignInAvailable = window.google?.accounts?.id;
+                        const gapiAvailable = window.gapi;
+                        
+                        if (googleSignInAvailable && gapiAvailable) {
+                            console.log('✅ Google APIs found after', attempts, 'attempts');
                             resolve();
                         } else if (attempts >= maxAttempts) {
                             console.error('❌ Google APIs timeout after', attempts, 'attempts');
-                            reject(new Error('Google APIs failed to load within 5 seconds'));
+                            console.log('Available APIs:', {
+                                google: !!window.google,
+                                googleAccounts: !!window.google?.accounts,
+                                googleAccountsId: !!window.google?.accounts?.id,
+                                gapi: !!window.gapi
+                            });
+                            reject(new Error('Google APIs failed to load. This may be due to ad blockers, network issues, or browser security settings.'));
                         } else {
                             setTimeout(checkGoogleLoaded, 100);
                         }
                     };
                     
-                    // Start checking immediately
-                    checkGoogleLoaded();
+                    // Start checking after a brief delay to allow scripts to load
+                    setTimeout(checkGoogleLoaded, 200);
                 });
 
                 gapi = window.gapi;
                 google = window.google;
 
                 console.log('🔧 Initializing gapi client...');
-                // Initialize gapi client
-                await new Promise((resolve, reject) => {
-                    gapi.load('client', {
-                        callback: resolve,
-                        onerror: () => reject(new Error('Failed to load gapi client'))
-                    });
-                });
+                // Initialize gapi client with timeout
+                await Promise.race([
+                    new Promise((resolve, reject) => {
+                        gapi.load('client', {
+                            callback: resolve,
+                            onerror: () => reject(new Error('Failed to load gapi client'))
+                        });
+                    }),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('gapi client load timeout')), 5000)
+                    )
+                ]);
 
                 console.log('🔧 Initializing gapi client configuration...');
+                // Initialize without API key first (for public sheets access)
                 await gapi.client.init({
-                    apiKey: GOOGLE_CONFIG.API_KEY,
                     discoveryDocs: [GOOGLE_CONFIG.DISCOVERY_DOC],
                 });
 
@@ -2644,5 +2699,5 @@
             });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a2102f05edb4dc',t:'MTc1OTcyMTI0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a217818589b4dc',t:'MTc1OTcyMTU0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
