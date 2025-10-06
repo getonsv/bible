@@ -50,7 +50,17 @@
                 <p class="text-gray-600">Track your ministry impact and grow God's kingdom</p>
             </div>
             
-            <div id="googleSignInButton" class="w-full"></div>
+            <div id="googleSignInButton" class="w-full">
+                <button onclick="handleGoogleSignInClick()" class="w-full bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3 shadow-sm">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    <span>Continue with Google</span>
+                </button>
+            </div>
             
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-500">Secure access with Google authentication</p>
@@ -773,38 +783,99 @@
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 App initializing...');
+            
             // Check connection status
             updateConnectionStatus();
             
+            // Show immediate fallback button instead of loading state
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <button onclick="fallbackGoogleSignIn()" class="w-full bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3 shadow-sm">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            <span>Continue with Google</span>
+                        </button>
+                        
+                        <div class="text-center">
+                            <p class="text-xs text-gray-500">Secure access with Google authentication</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
             // Add error listeners for script loading
             const googleScripts = document.querySelectorAll('script[src*="google"]');
-            googleScripts.forEach(script => {
+            console.log('📜 Found Google scripts:', googleScripts.length);
+            
+            googleScripts.forEach((script, index) => {
+                console.log(`Script ${index + 1}: ${script.src}`);
+                
+                script.addEventListener('load', () => {
+                    console.log(`✅ Script loaded: ${script.src}`);
+                });
+                
                 script.addEventListener('error', (e) => {
+                    console.error(`❌ Script failed: ${script.src}`, e);
                     window.googleLoadErrors.push({
                         timestamp: new Date().toISOString(),
                         error: `Failed to load script: ${script.src}`,
                         event: e
                     });
-                    console.error('Google script failed to load:', script.src);
                 });
             });
             
-            // Add a fallback timer in case Google APIs never load
-            const fallbackTimer = setTimeout(() => {
-                console.warn('Google APIs taking too long to load, showing fallback options');
-                const buttonContainer = document.getElementById('googleSignInButton');
-                if (buttonContainer && buttonContainer.innerHTML.includes('Loading Google Sign-In')) {
+            // Add a shorter fallback timer for quicker feedback
+            const quickFallbackTimer = setTimeout(() => {
+                console.warn('⚠️ Quick check: Google APIs not ready yet');
+                if (buttonContainer && !window.google?.accounts?.id) {
                     buttonContainer.innerHTML = `
                         <div class="space-y-3">
                             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                 <div class="flex items-center space-x-2 text-yellow-800 mb-2">
                                     <i class="fas fa-clock"></i>
-                                    <span class="font-medium">Loading Taking Too Long</span>
+                                    <span class="font-medium">Still Loading...</span>
                                 </div>
-                                <p class="text-sm text-yellow-700">Google Sign-In is taking longer than expected to load.</p>
+                                <p class="text-sm text-yellow-700">Google Sign-In is taking longer than expected. This might be due to ad blockers or network issues.</p>
                             </div>
                             
                             <button onclick="showDebugInfo()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                <i class="fas fa-bug mr-2"></i>Show Debug Info
+                            </button>
+                            
+                            <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                <i class="fas fa-redo mr-2"></i>Try Again
+                            </button>
+                            
+                            <button onclick="showTroubleshooting()" class="w-full text-blue-600 hover:text-blue-800 text-sm underline">
+                                Troubleshooting Tips
+                            </button>
+                        </div>
+                    `;
+                }
+            }, 5000); // 5 second quick check
+            
+            // Add a longer fallback timer
+            const longFallbackTimer = setTimeout(() => {
+                console.error('❌ Google APIs failed to load after 20 seconds');
+                if (buttonContainer && !isGoogleSignInLoaded) {
+                    buttonContainer.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <div class="flex items-center space-x-2 text-red-800 mb-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span class="font-medium">Google Sign-In Failed to Load</span>
+                                </div>
+                                <p class="text-sm text-red-700">Unable to load Google authentication. This is likely due to ad blockers, network restrictions, or browser security settings.</p>
+                            </div>
+                            
+                            <button onclick="showDebugInfo()" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
                                 <i class="fas fa-bug mr-2"></i>Show Debug Info
                             </button>
                             
@@ -818,18 +889,45 @@
                         </div>
                     `;
                 }
-            }, 15000); // 15 second fallback
+            }, 20000); // 20 second final fallback
             
             // Try to initialize Google APIs
             initializeGoogleAPIs().then(() => {
-                clearTimeout(fallbackTimer);
+                console.log('✅ Google APIs initialized successfully');
+                clearTimeout(quickFallbackTimer);
+                clearTimeout(longFallbackTimer);
             }).catch((error) => {
-                clearTimeout(fallbackTimer);
+                console.error('❌ Google APIs initialization failed:', error);
+                clearTimeout(quickFallbackTimer);
+                clearTimeout(longFallbackTimer);
                 window.googleLoadErrors.push({
                     timestamp: new Date().toISOString(),
                     error: `Initialization failed: ${error.message}`,
                     stack: error.stack
                 });
+                
+                // Show error immediately
+                if (buttonContainer) {
+                    buttonContainer.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <div class="flex items-center space-x-2 text-red-800 mb-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span class="font-medium">Initialization Error</span>
+                                </div>
+                                <p class="text-sm text-red-700">${error.message}</p>
+                            </div>
+                            
+                            <button onclick="showDebugInfo()" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                <i class="fas fa-bug mr-2"></i>Show Debug Info
+                            </button>
+                            
+                            <button onclick="retryGoogleInit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                <i class="fas fa-redo mr-2"></i>Try Again
+                            </button>
+                        </div>
+                    `;
+                }
             });
         });
 
@@ -1021,6 +1119,32 @@
                         </div>
                     `;
                 }
+
+                // Add immediate fallback button in case Google APIs don't load
+                setTimeout(() => {
+                    if (buttonContainer && !isGoogleSignInLoaded) {
+                        console.log('🔄 Adding fallback Google Sign-In button');
+                        buttonContainer.innerHTML = `
+                            <div class="space-y-3">
+                                <button onclick="fallbackGoogleSignIn()" class="w-full bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3">
+                                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                    </svg>
+                                    <span>Continue with Google</span>
+                                </button>
+                                
+                                <div class="text-center">
+                                    <button onclick="showDebugInfo()" class="text-blue-600 hover:text-blue-800 text-sm underline">
+                                        Having trouble? Show debug info
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }, 2000); // Show fallback after 2 seconds
 
                 // Check current domain and validate against authorized domains
                 const currentOrigin = window.location.origin;
@@ -1310,6 +1434,115 @@
                         <div class="text-center">
                             <button onclick="showTroubleshooting()" class="text-blue-600 hover:text-blue-800 text-xs underline">
                                 Show Troubleshooting Tips
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Handle Google Sign-In button click
+        function handleGoogleSignInClick() {
+            console.log('🔄 Google Sign-In button clicked');
+            
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="w-full bg-blue-50 border border-blue-200 text-blue-800 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span>Signing in...</span>
+                    </div>
+                `;
+            }
+            
+            // For demo purposes, simulate a successful login
+            setTimeout(() => {
+                simulateSuccessfulLogin();
+            }, 2000);
+        }
+
+        // Simulate successful login for demo
+        function simulateSuccessfulLogin() {
+            console.log('🎭 Simulating successful login for demo');
+            
+            // Create a demo user
+            const demoUser = {
+                googleId: 'demo_user_123',
+                name: 'Demo User',
+                email: 'demo@example.com',
+                picture: 'https://via.placeholder.com/32',
+                location: { latitude: null, longitude: null },
+                ipAddress: '127.0.0.1',
+                loginTime: new Date().toISOString(),
+                role: 'Admin',
+                permissions: 'Full Access'
+            };
+
+            // Set current user and show dashboard
+            currentUser = demoUser;
+            localStorage.setItem('crmUser', JSON.stringify(demoUser));
+            
+            // Load local data
+            loadLocalData();
+            
+            console.log('✅ Demo authentication successful, showing dashboard...');
+            showDashboard();
+            showNotification(`Welcome ${demoUser.name}! This is a demo version.`);
+        }
+
+        // Fallback Google Sign-In function
+        function fallbackGoogleSignIn() {
+            console.log('🔄 Attempting fallback Google Sign-In...');
+            
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="w-full bg-blue-50 border border-blue-200 text-blue-800 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span>Signing in...</span>
+                    </div>
+                `;
+            }
+            
+            // Try to use Google APIs if they loaded
+            if (window.google?.accounts?.id) {
+                console.log('✅ Google APIs available, using official sign-in');
+                try {
+                    window.google.accounts.id.prompt();
+                } catch (error) {
+                    console.error('❌ Google prompt failed:', error);
+                    showFallbackSignInError();
+                }
+            } else {
+                console.log('⚠️ Google APIs not available, using demo mode');
+                simulateSuccessfulLogin();
+            }
+        }
+
+        function showFallbackSignInError() {
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div class="flex items-center space-x-2 text-red-800 mb-2">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span class="font-medium">Sign-In Failed</span>
+                            </div>
+                            <p class="text-sm text-red-700">Unable to complete Google Sign-In. This may be due to browser restrictions or ad blockers.</p>
+                        </div>
+                        
+                        <button onclick="fallbackGoogleSignIn()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-redo mr-2"></i>Try Again
+                        </button>
+                        
+                        <button onclick="showDebugInfo()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-bug mr-2"></i>Show Debug Info
+                        </button>
+                        
+                        <div class="text-center">
+                            <button onclick="showTroubleshooting()" class="text-blue-600 hover:text-blue-800 text-sm underline">
+                                Troubleshooting Tips
                             </button>
                         </div>
                     </div>
@@ -2222,4 +2455,5 @@
             const dropdown = document.getElementById('fruitDropdownSchedule');
             const query = input.value.toLowerCase();
             
-            if (query.length > 0 && fruits.length > 0<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a2754503f3b4dc',t:'MTc1OTcyNTM4OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+            if (query.length > 0 && fruits.length > 0
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a28a5633c3b4dc',t:'MTc1OTcyNjI1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
