@@ -970,15 +970,23 @@
         let fruits = [];
         let activities = [];
         
-        // Google API Configuration - CLIENT_SECRET removed for security
+        // Google OAuth 2.0 Configuration - Using Client ID only (secure for frontend)
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
             PROJECT_ID: 'hmbcfrm',
             DISCOVERY_DOC: 'https://sheets.googleapis.com/$discovery/rest?version=v4',
             SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
             SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
-            REDIRECT_URIS: ["http://localhost:3000/auth/callback"],
-            JAVASCRIPT_ORIGINS: ["http://localhost:3000","https://shill.es","https://app.shill.es","https://app.geton.asia","https://geton.asia"]
+            // Authorized domains for this OAuth client
+            AUTHORIZED_DOMAINS: [
+                'http://localhost:3000',
+                'http://127.0.0.1:3000', 
+                'https://shill.es',
+                'https://app.shill.es',
+                'https://app.geton.asia',
+                'https://geton.asia',
+                'https://canva.com'
+            ]
         };
         
         // Sheet names
@@ -1049,13 +1057,13 @@
                     `;
                 }
 
-                // Check current domain and validate against allowed origins
+                // Check current domain and validate against authorized domains
                 const currentOrigin = window.location.origin;
                 console.log('Current origin:', currentOrigin);
-                console.log('Allowed origins:', GOOGLE_CONFIG.JAVASCRIPT_ORIGINS);
+                console.log('Authorized domains:', GOOGLE_CONFIG.AUTHORIZED_DOMAINS);
                 
-                // More flexible domain checking for development
-                const isDomainAuthorized = GOOGLE_CONFIG.JAVASCRIPT_ORIGINS.includes(currentOrigin) || 
+                // Check if current domain is authorized for OAuth
+                const isDomainAuthorized = GOOGLE_CONFIG.AUTHORIZED_DOMAINS.includes(currentOrigin) || 
                                          currentOrigin.includes('localhost') || 
                                          currentOrigin.includes('127.0.0.1') ||
                                          currentOrigin.includes('canva.com');
@@ -1300,7 +1308,7 @@
                                 <div>
                                     <h5 class="font-medium text-green-800 mb-2">Authorized Domains:</h5>
                                     <div class="bg-white rounded border p-3">
-                                        ${GOOGLE_CONFIG.JAVASCRIPT_ORIGINS.map(origin => `
+                                        ${GOOGLE_CONFIG.AUTHORIZED_DOMAINS.map(origin => `
                                             <div class="flex items-center justify-between text-xs py-1">
                                                 <span class="font-mono text-gray-800">${origin}</span>
                                                 <span class="text-xs ${origin === window.location.origin ? 'text-green-600' : 'text-gray-500'}">
@@ -1314,10 +1322,10 @@
                                 <div class="bg-blue-50 border border-blue-200 rounded p-3">
                                     <p class="text-blue-800 text-xs">
                                         <i class="fas fa-lightbulb mr-1"></i>
-                                        <strong>Status:</strong> 
-                                        ${GOOGLE_CONFIG.JAVASCRIPT_ORIGINS.includes(window.location.origin) || window.location.origin.includes('localhost') 
-                                            ? '<span class="text-green-600">✓ Domain is authorized</span>' 
-                                            : '<span class="text-red-600">✗ Domain needs to be added to Google Console</span>'}
+                                        <strong>OAuth Status:</strong> 
+                                        ${GOOGLE_CONFIG.AUTHORIZED_DOMAINS.includes(window.location.origin) || window.location.origin.includes('localhost') 
+                                            ? '<span class="text-green-600">✓ Domain is authorized for OAuth</span>' 
+                                            : '<span class="text-red-600">✗ Domain needs OAuth authorization</span>'}
                                     </p>
                                 </div>
                             </div>
@@ -2699,5 +2707,5 @@
             });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a217818589b4dc',t:'MTc1OTcyMTU0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a225e7d11ab4dc',t:'MTc1OTcyMjEzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
