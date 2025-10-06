@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM</title>
+    <title>Evangelism CRM - SharePoint Integration</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -905,12 +905,11 @@
         function buildAuthUrl() {
             const params = new URLSearchParams({
                 client_id: SHAREPOINT_CONFIG.CLIENT_ID,
-                response_type: 'token',
-                redirect_uri: window.location.origin + '/auth-callback.html',
-                scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
-                response_mode: 'fragment',
-                state: 'auth_' + Date.now(),
-                nonce: 'nonce_' + Date.now()
+                response_type: 'code',
+                redirect_uri: window.location.origin,
+                scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read openid profile email',
+                response_mode: 'query',
+                state: 'auth_' + Date.now()
             });
             
             return `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/authorize?${params.toString()}`;
@@ -925,39 +924,28 @@
                     }
                 }, 1000);
 
-                // Listen for messages from the popup
-                const messageHandler = (event) => {
-                    if (event.origin !== window.location.origin) return;
-                    
-                    if (event.data.type === 'MICROSOFT_AUTH_SUCCESS') {
-                        clearInterval(checkClosed);
-                        window.removeEventListener('message', messageHandler);
-                        popup.close();
-                        resolve({ success: true, token: event.data.token });
-                    } else if (event.data.type === 'MICROSOFT_AUTH_ERROR') {
-                        clearInterval(checkClosed);
-                        window.removeEventListener('message', messageHandler);
-                        popup.close();
-                        resolve({ success: false, error: event.data.error });
-                    }
-                };
-
-                window.addEventListener('message', messageHandler);
-
-                // Fallback: try to detect successful authentication by checking popup URL
+                // Check for authorization code in URL
                 const urlCheckInterval = setInterval(() => {
                     try {
-                        if (popup.location && popup.location.hash) {
-                            const hash = popup.location.hash.substring(1);
-                            const params = new URLSearchParams(hash);
-                            const accessToken = params.get('access_token');
+                        if (popup.location && popup.location.search) {
+                            const urlParams = new URLSearchParams(popup.location.search);
+                            const authCode = urlParams.get('code');
+                            const error = urlParams.get('error');
                             
-                            if (accessToken) {
+                            if (authCode) {
                                 clearInterval(urlCheckInterval);
                                 clearInterval(checkClosed);
-                                window.removeEventListener('message', messageHandler);
                                 popup.close();
-                                resolve({ success: true, token: accessToken });
+                                
+                                // Exchange code for token
+                                exchangeCodeForToken(authCode)
+                                    .then(token => resolve({ success: true, token: token }))
+                                    .catch(err => resolve({ success: false, error: err.message }));
+                            } else if (error) {
+                                clearInterval(urlCheckInterval);
+                                clearInterval(checkClosed);
+                                popup.close();
+                                resolve({ success: false, error: urlParams.get('error_description') || error });
                             }
                         }
                     } catch (e) {
@@ -969,11 +957,51 @@
                 setTimeout(() => {
                     clearInterval(checkClosed);
                     clearInterval(urlCheckInterval);
-                    window.removeEventListener('message', messageHandler);
                     if (!popup.closed) popup.close();
                     resolve({ success: false, error: 'Authentication timeout' });
                 }, 300000);
             });
+        }
+
+        async function exchangeCodeForToken(authCode) {
+            try {
+                console.log('🔄 Exchanging authorization code for access token...');
+                
+                // Note: In a production environment, this should be done on the server side
+                // For this demo, we'll use a simplified approach
+                const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
+                
+                const body = new URLSearchParams({
+                    client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+                    scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
+                    code: authCode,
+                    redirect_uri: window.location.origin,
+                    grant_type: 'authorization_code',
+                    client_secret: SHAREPOINT_CONFIG.CLIENT_SECRET
+                });
+                
+                const response = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: body.toString()
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error_description || 'Token exchange failed');
+                }
+                
+                const tokenData = await response.json();
+                console.log('✅ Token exchange successful');
+                
+                return tokenData.access_token;
+                
+            } catch (error) {
+                console.error('❌ Token exchange failed:', error);
+                throw error;
+            }
         }
 
         async function getUserInfo(token) {
@@ -1980,5 +2008,5 @@
             showNotification('Logged out successfully');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a4e0a2769bb4dc',t:'MTc1OTc1MDc1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a4e3eb74ceb4dc',t:'MTc1OTc1MDg5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
