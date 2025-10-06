@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM (v2)</title>
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1060,44 +1060,11 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     user: 'David Kim',
                     createdDate: '2024-01-23T11:15:00Z'
                 }
-            ],
-
-            // User access data from previous system - ONLY THESE USERS ARE AUTHORIZED
-            userAccess: [
-                {
-                    email: 'john.smith@ministry.org',
-                    name: 'John Smith',
-                    role: 'Admin',
-                    permissions: 'Full Access',
-                    status: 'Active',
-                    lastLogin: '2024-01-23T08:00:00Z'
-                },
-                {
-                    email: 'mary.wilson@ministry.org',
-                    name: 'Mary Wilson',
-                    role: 'User',
-                    permissions: 'Read/Write',
-                    status: 'Active',
-                    lastLogin: '2024-01-22T14:30:00Z'
-                },
-                {
-                    email: 'david.kim@ministry.org',
-                    name: 'David Kim',
-                    role: 'User',
-                    permissions: 'Read/Write',
-                    status: 'Active',
-                    lastLogin: '2024-01-23T09:45:00Z'
-                },
-                {
-                    email: 'shillesbiz@gmail.com',
-                    name: 'System Administrator',
-                    role: 'Admin',
-                    permissions: 'Full Access',
-                    status: 'Active',
-                    lastLogin: '2024-01-24T10:00:00Z'
-                }
             ]
         };
+
+        // Global variable to store users loaded from Google Sheets
+        let authorizedUsers = [];
 
 
 
@@ -1276,13 +1243,19 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 const email = payload.email.toLowerCase();
                 
                 console.log('👤 User email:', email);
-                console.log('📋 Checking against authorized users:', CHAT_HISTORY_DATA.userAccess.map(u => u.email));
                 
                 // Show loading message
-                showNotification('Validating access...', 'info');
+                showNotification('Validating access with Google Sheets...', 'info');
                 
-                // Validate user against authorized list - STRICT VALIDATION
-                const validationResult = validateUserFromHistory(email);
+                // Validate user against Google Sheets - PRIMARY VALIDATION
+                let validationResult = null;
+                try {
+                    validationResult = await validateUserFromGoogleSheets(email);
+                } catch (sheetsError) {
+                    console.log('📊 Google Sheets validation failed, falling back to local list:', sheetsError.message);
+                    // Fallback to local validation only if Sheets fails
+                    validationResult = validateUserFromHistory(email);
+                }
                 
                 // If not in authorized list, deny access
                 if (!validationResult || !validationResult.hasAccess) {
@@ -1796,65 +1769,138 @@ function validateSpreadsheetAccess(spreadsheetId) {
         async function validateUserFromGoogleSheets(email) {
             try {
                 console.log('📊 Validating user against Google Sheets...');
+                console.log('📊 Spreadsheet ID:', GOOGLE_CONFIG.SPREADSHEET_ID);
+                console.log('📊 Sheet Name:', GOOGLE_CONFIG.SHEET_NAME);
                 
-                // Get OAuth token for Sheets access
-                if (!accessToken) {
-                    await getOAuthToken();
-                }
+                // Use public API access (no auth required for public sheets)
+                const sheetRange = `${GOOGLE_CONFIG.SHEET_NAME}!A:F`; // Adjust range as needed
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetRange)}?key=${GOOGLE_CONFIG.API_KEY}`;
                 
-                const response = await fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}/values/${GOOGLE_CONFIG.SHEET_NAME}?key=${GOOGLE_CONFIG.API_KEY}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`
-                        }
+                console.log('📊 Fetching from URL:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
                     }
-                );
+                });
                 
                 if (!response.ok) {
-                    throw new Error(`Sheets API error: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('📊 Sheets API error response:', errorText);
+                    throw new Error(`Sheets API error: ${response.status} - ${errorText}`);
                 }
                 
                 const data = await response.json();
                 const rows = data.values || [];
                 
                 console.log('📊 Retrieved', rows.length, 'rows from Google Sheets');
+                console.log('📊 First few rows:', rows.slice(0, 3));
                 
-                // Find header row and user data
-                const headerRow = rows[0] || [];
-                const emailIndex = headerRow.findIndex(h => h.toLowerCase().includes('email'));
-                const nameIndex = headerRow.findIndex(h => h.toLowerCase().includes('name'));
-                const roleIndex = headerRow.findIndex(h => h.toLowerCase().includes('role'));
-                const statusIndex = headerRow.findIndex(h => h.toLowerCase().includes('status'));
-                const permissionsIndex = headerRow.findIndex(h => h.toLowerCase().includes('permission'));
-                
-                if (emailIndex === -1) {
-                    throw new Error('Email column not found in spreadsheet');
+                if (rows.length === 0) {
+                    throw new Error('No data found in spreadsheet');
                 }
                 
-                // Search for user
-                for (let i = 1; i < rows.length; i++) {
+                // Find the "User Access" table within the sheet
+                let userTableStartRow = -1;
+                let headerRow = null;
+                
+                // Look for "User Access" table header
+                for (let i = 0; i < rows.length; i++) {
                     const row = rows[i];
-                    if (row[emailIndex] && row[emailIndex].toLowerCase() === email.toLowerCase()) {
+                    if (row.some(cell => cell && cell.toString().toLowerCase().includes('user access'))) {
+                        // Found the table header, next row should be column headers
+                        if (i + 1 < rows.length) {
+                            userTableStartRow = i + 1;
+                            headerRow = rows[i + 1];
+                            break;
+                        }
+                    }
+                }
+                
+                if (userTableStartRow === -1 || !headerRow) {
+                    console.log('📊 Looking for any row with email-like headers...');
+                    // Fallback: look for any row that looks like headers
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (row.some(cell => cell && cell.toString().toLowerCase().includes('email'))) {
+                            userTableStartRow = i;
+                            headerRow = row;
+                            break;
+                        }
+                    }
+                }
+                
+                if (userTableStartRow === -1 || !headerRow) {
+                    throw new Error('User Access table not found in spreadsheet');
+                }
+                
+                console.log('📊 Found User Access table at row:', userTableStartRow + 1);
+                console.log('📊 Headers:', headerRow);
+                
+                // Find column indices
+                const emailIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('email'));
+                const nameIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('name'));
+                const roleIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('role'));
+                const statusIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('status'));
+                const permissionsIndex = headerRow.findIndex(h => h && h.toString().toLowerCase().includes('permission'));
+                
+                console.log('📊 Column indices - Email:', emailIndex, 'Name:', nameIndex, 'Role:', roleIndex, 'Status:', statusIndex);
+                
+                if (emailIndex === -1) {
+                    throw new Error('Email column not found in User Access table');
+                }
+                
+                // Search for user in the data rows
+                for (let i = userTableStartRow + 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue; // Skip empty rows
+                    
+                    const userEmail = row[emailIndex];
+                    if (userEmail && userEmail.toString().toLowerCase().trim() === email.toLowerCase().trim()) {
                         const user = {
-                            email: row[emailIndex],
-                            name: row[nameIndex] || 'Unknown User',
-                            role: row[roleIndex] || 'User',
-                            status: row[statusIndex] || 'Active',
-                            permissions: row[permissionsIndex] || 'Read/Write',
+                            email: userEmail.toString(),
+                            name: (nameIndex >= 0 && row[nameIndex]) ? row[nameIndex].toString() : 'Unknown User',
+                            role: (roleIndex >= 0 && row[roleIndex]) ? row[roleIndex].toString() : 'User',
+                            status: (statusIndex >= 0 && row[statusIndex]) ? row[statusIndex].toString() : 'Active',
+                            permissions: (permissionsIndex >= 0 && row[permissionsIndex]) ? row[permissionsIndex].toString() : 'Read/Write',
                             lastLogin: new Date().toISOString()
                         };
                         
                         console.log('✅ User found in Google Sheets:', user);
+                        
+                        // Cache this user and all users for future use
+                        if (authorizedUsers.length === 0) {
+                            // Cache all users from this validation
+                            for (let j = userTableStartRow + 1; j < rows.length; j++) {
+                                const userRow = rows[j];
+                                if (!userRow || userRow.length === 0) continue;
+                                
+                                const cachedUser = {
+                                    email: (userRow[emailIndex] || '').toString(),
+                                    name: (nameIndex >= 0 && userRow[nameIndex]) ? userRow[nameIndex].toString() : 'Unknown User',
+                                    role: (roleIndex >= 0 && userRow[roleIndex]) ? userRow[roleIndex].toString() : 'User',
+                                    status: (statusIndex >= 0 && userRow[statusIndex]) ? userRow[statusIndex].toString() : 'Active',
+                                    permissions: (permissionsIndex >= 0 && userRow[permissionsIndex]) ? userRow[permissionsIndex].toString() : 'Read/Write',
+                                    lastLogin: new Date().toISOString()
+                                };
+                                
+                                if (cachedUser.email) {
+                                    authorizedUsers.push(cachedUser);
+                                }
+                            }
+                            console.log('📊 Cached', authorizedUsers.length, 'users from Google Sheets');
+                        }
+                        
                         return {
-                            hasAccess: user.status === 'Active',
+                            hasAccess: user.status.toLowerCase() === 'active',
                             user: user,
                             source: 'google_sheets'
                         };
                     }
                 }
                 
-                console.log('❌ User not found in Google Sheets');
+                console.log('❌ User not found in Google Sheets User Access table');
                 return null;
                 
             } catch (error) {
@@ -1864,41 +1910,41 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         function validateUserFromHistory(email) {
-            console.log('🔍 Validating email:', email);
-            console.log('🔍 Against authorized list:', CHAT_HISTORY_DATA.userAccess);
+            console.log('🔍 Validating email against cached user list:', email);
             
-            const user = CHAT_HISTORY_DATA.userAccess.find(u => {
-                const userEmail = u.email.toLowerCase().trim();
-                const checkEmail = email.toLowerCase().trim();
-                console.log('🔍 Comparing:', userEmail, 'vs', checkEmail);
-                return userEmail === checkEmail;
-            });
-            
-            if (user) {
-                console.log('✅ Found user in authorized list:', user);
-                const hasAccess = user.status === 'Active';
-                console.log('🔐 Access granted:', hasAccess, 'Status:', user.status);
+            // If we have cached users from Google Sheets, use those
+            if (authorizedUsers.length > 0) {
+                const user = authorizedUsers.find(u => {
+                    const userEmail = u.email.toLowerCase().trim();
+                    const checkEmail = email.toLowerCase().trim();
+                    return userEmail === checkEmail;
+                });
                 
-                return {
-                    hasAccess: hasAccess,
-                    user: user,
-                    source: 'authorized_users'
-                };
+                if (user) {
+                    console.log('✅ Found user in cached list from Google Sheets');
+                    const hasAccess = user.status === 'Active';
+                    
+                    return {
+                        hasAccess: hasAccess,
+                        user: user,
+                        source: 'cached_sheets_data'
+                    };
+                }
             }
             
-            console.log('❌ User not found in authorized list:', email);
-            console.log('❌ Available emails:', CHAT_HISTORY_DATA.userAccess.map(u => u.email));
+            console.log('❌ User not found in cached user list');
+            console.log('📊 Available cached users:', authorizedUsers.map(u => u.email));
             return null;
         }
 
         function updateUserLastLogin(email) {
-            // Update the user's last login time in the local data
-            const userIndex = CHAT_HISTORY_DATA.userAccess.findIndex(u => 
+            // Update the user's last login time in the cached data
+            const userIndex = authorizedUsers.findIndex(u => 
                 u.email.toLowerCase() === email.toLowerCase()
             );
             
             if (userIndex !== -1) {
-                CHAT_HISTORY_DATA.userAccess[userIndex].lastLogin = new Date().toISOString();
+                authorizedUsers[userIndex].lastLogin = new Date().toISOString();
                 console.log('📅 Updated last login for:', email);
             }
         }
@@ -2840,7 +2886,23 @@ function doGet(e) {
         function updateUserManagementTable() {
             const tableBody = document.getElementById('userManagementTable');
             
-            tableBody.innerHTML = CHAT_HISTORY_DATA.userAccess.map(user => {
+            // Use cached users from Google Sheets if available
+            const usersToDisplay = authorizedUsers.length > 0 ? authorizedUsers : [];
+            
+            if (usersToDisplay.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-users text-4xl mb-4"></i>
+                            <div>No users loaded from Google Sheets</div>
+                            <div class="text-sm mt-2">Check your Google Sheets connection and user access table</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tableBody.innerHTML = usersToDisplay.map(user => {
                 const statusColor = user.status === 'Active' ? 'text-green-600' : 'text-red-600';
                 const roleColor = user.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
                 
@@ -2875,9 +2937,12 @@ function doGet(e) {
         }
 
         function updateAdminStats() {
-            const totalUsers = CHAT_HISTORY_DATA.userAccess.length;
-            const activeUsers = CHAT_HISTORY_DATA.userAccess.filter(u => u.status === 'Active').length;
-            const adminUsers = CHAT_HISTORY_DATA.userAccess.filter(u => u.role === 'Admin').length;
+            // Use cached users from Google Sheets if available
+            const usersToCount = authorizedUsers.length > 0 ? authorizedUsers : [];
+            
+            const totalUsers = usersToCount.length;
+            const activeUsers = usersToCount.filter(u => u.status === 'Active').length;
+            const adminUsers = usersToCount.filter(u => u.role === 'Admin').length;
             
             document.getElementById('totalUsers').textContent = totalUsers;
             document.getElementById('activeUsers').textContent = activeUsers;
@@ -2972,5 +3037,5 @@ function doGet(e) {
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3bc5e9290b4dc',t:'MTc1OTczODc4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3c7bc1586b4dc',t:'MTc1OTczOTI1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
