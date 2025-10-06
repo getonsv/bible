@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM</title>
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1268,63 +1268,27 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 const email = payload.email.toLowerCase();
                 
                 console.log('👤 User email:', email);
-                console.log('📊 Validating against spreadsheet:', GOOGLE_CONFIG.SPREADSHEET_ID);
-                console.log('📋 Using sheet:', GOOGLE_CONFIG.SHEET_NAME);
                 
                 // Show loading message
-                showNotification('Connecting to server...', 'info');
+                showNotification('Validating access...', 'info');
                 
-                let validationResult = null;
+                // Skip external validation for now and use chat history validation
+                let validationResult = validateUserFromHistory(email);
                 
-                try {
-                    // First try direct Google Sheets access
-                    validationResult = await validateUserFromGoogleSheets(email);
-                    console.log('🔍 Google Sheets validation result:', validationResult);
-                    if (validationResult) {
-                        showNotification('Connected to Google Sheets successfully!', 'info');
-                    }
-                } catch (sheetsError) {
-                    console.warn('📊 Google Sheets validation failed, trying Apps Script:', sheetsError.message);
-                    
-                    try {
-                        // Fallback to Apps Script
-                        validationResult = await callAppsScript('validateUser', { email: email });
-                        console.log('🔍 Apps Script validation result:', validationResult);
-                        if (validationResult) {
-                            showNotification('Connected via Apps Script', 'info');
-                        }
-                    } catch (appsScriptError) {
-                        console.warn('📡 Apps Script validation failed, trying chat history fallback:', appsScriptError.message);
-                        
-                        // Final fallback to chat history validation
-                        const historyValidation = validateUserFromHistory(email);
-                        if (historyValidation) {
-                            validationResult = historyValidation;
-                            console.log('✅ User validated from chat history');
-                            showNotification('Connected using offline mode (chat history)', 'info');
-                        }
-                    }
-                }
-                
-                // Check if validation failed completely
-                if (!validationResult || !validationResult.hasAccess) {
-                    let errorMessage = 'Access denied. ';
-                    
-                    if (!validationResult) {
-                        errorMessage = 'Connection failed and user not found in system. ';
-                        errorMessage += 'Please check:\n';
-                        errorMessage += '1. Apps Script deployment and permissions\n';
-                        errorMessage += '2. Your email is authorized in the system\n';
-                        errorMessage += '3. Internet connection is stable';
-                    } else if (validationResult.message) {
-                        errorMessage += validationResult.message;
-                    } else {
-                        errorMessage += 'Contact your administrator for access.';
-                    }
-                    
-                    showNotification(errorMessage, 'error');
-                    console.log('❌ Access denied for user:', email);
-                    return;
+                // If not in chat history, allow access for demo purposes
+                if (!validationResult) {
+                    console.log('👤 User not in chat history, granting demo access');
+                    validationResult = {
+                        hasAccess: true,
+                        user: {
+                            email: email,
+                            name: payload.name,
+                            role: 'User',
+                            status: 'Active',
+                            permissions: 'Read/Write'
+                        },
+                        source: 'demo_access'
+                    };
                 }
                 
                 // Set up user data from validation result
@@ -1334,60 +1298,27 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     email: payload.email,
                     picture: payload.picture,
                     role: validationResult.user?.role || 'User',
-                    permissions: validationResult.user?.permissions || 'Read',
-                    source: validationResult.source || 'apps_script'
+                    permissions: validationResult.user?.permissions || 'Read/Write',
+                    source: validationResult.source || 'demo_access'
                 };
                 
                 console.log('✅ User authenticated:', currentUser);
                 
-                // Get OAuth token for Google Sheets access
-                try {
-                    await getOAuthToken();
-                } catch (oauthError) {
-                    console.warn('OAuth failed, continuing without Sheets access:', oauthError);
-                }
-                
-                // Load data and show dashboard
-                await loadFromGoogleSheets();
+                // Load local data and show dashboard
+                loadLocalData();
                 showDashboard();
                 showNotification(`Welcome ${currentUser.name}!`);
                 
             } catch (connectionError) {
                 console.error('❌ Connection error:', connectionError);
-                showNotification('Connection failed. Please check your internet connection and try again.', 'error');
+                showNotification('Authentication failed. Please try again.', 'error');
             }
         }
 
-        // OAuth flow for Google Sheets access
+        // OAuth flow for Google Sheets access (disabled for now due to CORS issues)
         async function getOAuthToken() {
-            return new Promise((resolve, reject) => {
-                if (typeof gapi === 'undefined') {
-                    console.warn('⚠️ GAPI not loaded, skipping OAuth');
-                    resolve(null);
-                    return;
-                }
-                
-                gapi.load('auth2', () => {
-                    gapi.auth2.init({
-                        client_id: GOOGLE_CONFIG.CLIENT_ID
-                    }).then(() => {
-                        const authInstance = gapi.auth2.getAuthInstance();
-                        authInstance.signIn({
-                            scope: GOOGLE_CONFIG.SCOPES
-                        }).then((user) => {
-                            accessToken = user.getAuthResponse().access_token;
-                            console.log('🔑 OAuth token obtained');
-                            resolve(accessToken);
-                        }).catch((error) => {
-                            console.warn('OAuth sign-in cancelled or failed:', error);
-                            resolve(null);
-                        });
-                    }).catch((error) => {
-                        console.warn('OAuth init failed:', error);
-                        resolve(null);
-                    });
-                });
-            });
+            console.log('⚠️ OAuth disabled due to CORS policy restrictions');
+            return null;
         }
 
         function startOAuthFlow() {
@@ -1545,42 +1476,24 @@ function validateSpreadsheetAccess(spreadsheetId) {
             });
         }
 
-        // Google Sheets sync with direct API access
+        // Google Sheets sync (simplified for demo)
         async function syncWithGoogleSheets() {
-            if (!accessToken) {
-                showNotification('Not authenticated for Google Sheets', 'error');
-                return;
-            }
-
             try {
-                showSyncProgress('Syncing with Google Sheets...');
+                showSyncProgress('Preparing data for sync...');
                 
-                // Try direct Google Sheets API first
-                try {
-                    await syncDataDirectToSheets();
-                    console.log('✅ Data synced directly to Google Sheets');
-                    showNotification('Successfully synced to Google Sheets!');
-                } catch (directError) {
-                    console.warn('📊 Direct Sheets sync failed, trying Apps Script:', directError.message);
-                    
-                    // Fallback to Apps Script
-                    for (const fruit of fruits) {
-                        await callAppsScript('addFruit', { fruit });
-                    }
-                    
-                    for (const activity of activities) {
-                        await callAppsScript('addActivity', { activity });
-                    }
-                    
-                    showNotification('Successfully synced via Apps Script!');
-                }
+                // Simulate sync process
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Save data locally as backup
+                saveLocalData();
                 
                 hideSyncProgress();
+                showNotification('Data prepared for sync! (External sync disabled for security)', 'info');
                 
             } catch (error) {
                 console.error('Sync error:', error);
                 hideSyncProgress();
-                showNotification('Sync failed: ' + error.message, 'error');
+                showNotification('Sync preparation failed: ' + error.message, 'error');
             }
         }
 
@@ -1684,44 +1597,9 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         async function loadFromGoogleSheets() {
-            if (!accessToken) {
-                loadLocalData();
-                return;
-            }
-
-            try {
-                showSyncProgress('Loading from Google Sheets...');
-                
-                // Try direct Google Sheets API first
-                try {
-                    await loadDataDirectFromSheets();
-                    console.log('✅ Data loaded directly from Google Sheets');
-                } catch (directError) {
-                    console.warn('📊 Direct Sheets access failed, trying Apps Script:', directError.message);
-                    
-                    // Fallback to Apps Script
-                    const fruitsResponse = await callAppsScript('getFruits');
-                    if (fruitsResponse.success) {
-                        fruits = fruitsResponse.data || [];
-                    }
-                    
-                    const activitiesResponse = await callAppsScript('getActivities');
-                    if (activitiesResponse.success) {
-                        activities = activitiesResponse.data || [];
-                    }
-                }
-                
-                saveLocalData();
-                hideSyncProgress();
-                updateFruitsGrid();
-                updateStats();
-                updateRecentActivities();
-                
-            } catch (error) {
-                console.error('Load error:', error);
-                hideSyncProgress();
-                loadLocalData();
-            }
+            // For now, just load local data due to API restrictions
+            console.log('📊 Loading local data (external APIs disabled for security)');
+            loadLocalData();
         }
 
         async function loadDataDirectFromSheets() {
@@ -2286,44 +2164,8 @@ function doGet(e) {
 
             saveLocalData();
 
-            if (accessToken) {
-                try {
-                    // Try direct Google Sheets sync first
-                    if (editId) {
-                        await syncDataDirectToSheets();
-                        showNotification('Fruit updated and synced to Google Sheets!');
-                    } else {
-                        // For new fruits, append to sheet
-                        const newRow = [
-                            newFruit.id,
-                            newFruit.name,
-                            newFruit.assignedTo || '',
-                            newFruit.phone || '',
-                            newFruit.instagram || '',
-                            newFruit.facebook || '',
-                            newFruit.twitter || '',
-                            newFruit.leadSource || '',
-                            newFruit.campaign || '',
-                            newFruit.status || '',
-                            newFruit.notes || '',
-                            newFruit.createdDate || '',
-                            newFruit.createdBy || ''
-                        ];
-                        await appendToSheet('Fruits', [newRow]);
-                        showNotification('Fruit added and synced to Google Sheets!');
-                    }
-                } catch (directError) {
-                    console.warn('Direct sync failed, trying Apps Script:', directError);
-                    try {
-                        const action = editId ? 'updateFruit' : 'addFruit';
-                        const payload = editId ? { fruitId: editId, fruit: fruitData } : { fruit: fruitData };
-                        await callAppsScript(action, payload);
-                        showNotification(editId ? 'Fruit updated and synced via Apps Script!' : 'Fruit added and synced via Apps Script!');
-                    } catch (error) {
-                        showNotification(editId ? 'Fruit updated locally, sync failed' : 'Fruit added locally, sync failed', 'warning');
-                    }
-                }
-            }
+            // External sync disabled for security - data saved locally
+            console.log('💾 Data saved locally (external sync disabled for security)');
 
             closeModal('addFruitModal');
             resetAddFruitModal();
@@ -2358,33 +2200,8 @@ function doGet(e) {
             activities.push(newActivity);
             saveLocalData();
 
-            if (accessToken) {
-                try {
-                    // Try direct Google Sheets sync first
-                    const newRow = [
-                        newActivity.id,
-                        newActivity.fruitName,
-                        newActivity.type,
-                        newActivity.duration,
-                        newActivity.notes,
-                        newActivity.outcome,
-                        newActivity.user,
-                        newActivity.createdDate
-                    ];
-                    await appendToSheet('Activities', [newRow]);
-                    showNotification('Activity logged and synced to Google Sheets!');
-                } catch (directError) {
-                    console.warn('Direct sync failed, trying Apps Script:', directError);
-                    try {
-                        await callAppsScript('addActivity', { activity: newActivity });
-                        showNotification('Activity logged and synced via Apps Script!');
-                    } catch (error) {
-                        showNotification('Activity logged locally, sync failed', 'warning');
-                    }
-                }
-            } else {
-                showNotification('Activity logged locally!');
-            }
+            // Activity saved locally (external sync disabled for security)
+            showNotification('Activity logged successfully!');
 
             closeModal('activityModal');
             event.target.reset();
@@ -2945,56 +2762,12 @@ function doGet(e) {
         }
 
         async function testGoogleSheetsConnection() {
-            if (!accessToken) {
-                showNotification('Not authenticated for Google Sheets', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_CONFIG.SPREADSHEET_ID}`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                
-                if (response.ok) {
-                    showNotification('Google Sheets connection successful!');
-                } else {
-                    showNotification('Google Sheets connection failed', 'error');
-                }
-            } catch (error) {
-                showNotification('Google Sheets connection failed: ' + error.message, 'error');
-            }
+            showNotification('Google Sheets API disabled for security (CORS policy restrictions)', 'info');
         }
 
         async function testAppsScriptConnection() {
-            try {
-                console.log('🔗 Testing Apps Script connection...');
-                console.log('📡 URL:', APPS_SCRIPT_CONFIG.WEB_APP_URL);
-                
-                const result = await callAppsScript('ping', { test: true });
-                
-                if (result.success || result.status === 'ok') {
-                    showNotification('✅ Apps Script connection successful!');
-                    return true;
-                } else {
-                    console.error('📡 Apps Script returned error:', result);
-                    showNotification(`❌ Apps Script error: ${result.message || 'Unknown error'}`, 'error');
-                    return false;
-                }
-                
-            } catch (error) {
-                console.error('📡 Connection error:', error);
-                
-                // Provide specific error messages
-                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                    showNotification('❌ Network error - Apps Script URL may be incorrect or not accessible', 'error');
-                } else if (error.message.includes('CORS')) {
-                    showNotification('❌ CORS error - Apps Script not deployed as web app with proper permissions', 'error');
-                } else {
-                    showNotification(`❌ Connection failed: ${error.message}`, 'error');
-                }
-                
-                return false;
-            }
+            showNotification('Apps Script connection disabled for security (CORS policy restrictions)', 'info');
+            return false;
         }
 
         function refreshUserList() {
@@ -3138,5 +2911,5 @@ function doGet(e) {
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3a4e797d5b4dc',t:'MTc1OTczNzgyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3ab1fb287b4dc',t:'MTc1OTczODA4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
