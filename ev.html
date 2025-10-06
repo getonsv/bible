@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evangelism CRM - SharePoint Integration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        .notification {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-cross text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism CRM</h1>
+                <p class="text-gray-600">SharePoint-powered ministry tracking system</p>
+            </div>
+            
+            <div id="googleSignInButton" class="w-full mb-4">
+                <div class="w-full bg-gray-100 text-gray-600 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span>Loading Microsoft Authentication...</span>
+                </div>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Secure access with Microsoft 365 authentication</p>
+                <p class="text-xs text-gray-400 mt-2">Data stored in SharePoint Lists</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-cross text-white"></i>
+                        </div>
+                        <h1 class="text-xl font-bold text-gray-800">Evangelism CRM</h1>
+                        <div class="flex items-center space-x-2">
+                            <div id="connectionStatus" class="flex items-center space-x-1">
+                                <div class="w-2 h-2 bg-gray-400 rounded-full" id="statusIndicator"></div>
+                                <span class="text-xs text-gray-500" id="statusText">Connecting...</span>
+                            </div>
+                            <div id="lastSyncTime" class="text-xs text-gray-400 hidden">
+                                Last sync: <span id="syncTimeText">Never</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <button onclick="refreshData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors" id="syncButton">
+                                <i class="fas fa-refresh" id="syncIcon"></i>
+                                <span class="hidden sm:inline">Sync</span>
+                            </button>
+                            <button onclick="showDataOptions()" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded-lg ml-1 transition-colors">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div id="syncOptions" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border z-10">
+                                <button onclick="enableSharePointMode()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2" id="enableSharePointBtn">
+                                    <i class="fas fa-cloud text-blue-600"></i>
+                                    <span>Enable SharePoint Sync</span>
+                                </button>
+                                <button onclick="testSharePointConnection()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-stethoscope text-purple-600"></i>
+                                    <span>Test SharePoint Connection</span>
+                                </button>
+                                <button onclick="syncToSharePoint()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-cloud-upload-alt text-blue-600"></i>
+                                    <span>Sync to SharePoint</span>
+                                </button>
+                                <button onclick="loadFromSharePoint()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-cloud-download-alt text-green-600"></i>
+                                    <span>Load from SharePoint</span>
+                                </button>
+                                <button onclick="migrateFromGoogleSheets()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-exchange-alt text-orange-600"></i>
+                                    <span>Migrate from Google Sheets</span>
+                                </button>
+                                <button onclick="exportData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                    <i class="fas fa-download text-blue-600"></i>
+                                    <span>Export Data</span>
+                                </button>
+                                <button onclick="importData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-lg flex items-center space-x-2">
+                                    <i class="fas fa-upload text-purple-600"></i>
+                                    <span>Import Data</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm" id="userAvatar">U</div>
+                            <span id="userName" class="text-gray-700 hidden sm:inline">User</span>
+                        </div>
+                        <button onclick="logout()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Tab Navigation -->
+        <div class="bg-white border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-8 overflow-x-auto">
+                    <button onclick="showTab('overview')" class="tab-btn py-4 px-2 border-b-2 border-blue-600 text-blue-600 font-medium whitespace-nowrap">
+                        <i class="fas fa-chart-line mr-2"></i>Overview
+                    </button>
+                    <button onclick="showTab('fruits')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-users mr-2"></i>Fruits
+                    </button>
+                    <button onclick="showTab('activities')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-phone mr-2"></i>Activities
+                    </button>
+                    <button onclick="showTab('reports')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-chart-bar mr-2"></i>Reports
+                    </button>
+                    <button id="adminTabBtn" onclick="showTab('admin')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap hidden">
+                        <i class="fas fa-cog mr-2"></i>Admin
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overviewTab" class="tab-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Fruits</p>
+                            <p class="text-3xl font-bold text-gray-900" id="totalFruits">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Active Sessions</p>
+                            <p class="text-3xl font-bold text-gray-900" id="activeSessions">0</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-calendar-check text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">This Week</p>
+                            <p class="text-3xl font-bold text-gray-900" id="weeklyContacts">0</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-phone text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Conversion Rate</p>
+                            <p class="text-3xl font-bold text-gray-900" id="conversionRate">0%</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-chart-line text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-user-plus text-2xl"></i>
+                        <span class="text-sm font-medium">Add Fruit</span>
+                    </button>
+                    <button onclick="showScheduleModal()" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-calendar-plus text-2xl"></i>
+                        <span class="text-sm font-medium">Schedule BB</span>
+                    </button>
+                    <button onclick="showActivityModal()" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-phone-alt text-2xl"></i>
+                        <span class="text-sm font-medium">Log Activity</span>
+                    </button>
+                    <button onclick="generateReport()" class="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                        <i class="fas fa-file-alt text-2xl"></i>
+                        <span class="text-sm font-medium">Generate Report</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activities</h3>
+                <div class="space-y-4" id="recentActivities">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>Loading activities from SharePoint...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fruits Tab -->
+        <div id="fruitsTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Fruits Management</h2>
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                    <input type="text" placeholder="Search fruits..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="fruitSearch" oninput="filterFruits()">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="statusFilter" onchange="filterFruits()">
+                        <option value="">All Statuses</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="sourceFilter" onchange="filterFruits()">
+                        <option value="">All Sources</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Fruit</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fruits Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="fruitsGrid">
+                <div class="text-center py-12 col-span-full">
+                    <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-users text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Loading fruits from SharePoint...</h3>
+                    <p class="text-gray-500 mb-4">Please wait while we connect to your SharePoint Lists.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activities Tab -->
+        <div id="activitiesTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Activity Log</h2>
+                <button onclick="showActivityModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                    <i class="fas fa-plus"></i>
+                    <span>Log Activity</span>
+                </button>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="space-y-6" id="activityTimeline">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>Loading activities from SharePoint...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reportsTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Reports & Analytics</h2>
+                <div class="flex space-x-4">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option>Last 30 Days</option>
+                        <option>Last 3 Months</option>
+                        <option>Last Year</option>
+                    </select>
+                    <button onclick="exportReport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-download"></i>
+                        <span>Export</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Evangelism Progress</h3>
+                    <div class="space-y-4" id="progressChart">
+                        <!-- Progress bars will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Lead Source Performance</h3>
+                    <div class="space-y-4" id="leadSourceChart">
+                        <!-- Lead source chart will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Tab -->
+        <div id="adminTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">System Administration</h2>
+                <button onclick="refreshUserList()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                    <i class="fas fa-refresh"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+
+            <!-- SharePoint Configuration -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">SharePoint Configuration</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-3">SharePoint Lists</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Site URL</label>
+                                <input type="text" id="sharePointSiteUrl" value="https://getonasia.sharepoint.com/sites/frms/" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Fruits List ID</label>
+                                <input type="text" id="fruitsListId" value="139125e5-1bd9-4172-a7d9-ddf3a1dd8586" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Activities List ID</label>
+                                <input type="text" id="activitiesListId" value="6dfb4043-9d8c-4d38-b2ce-7a2fb7ae4f79" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <button onclick="testSharePointConnection()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                                <i class="fas fa-plug mr-2"></i>Test Connection
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-3">Microsoft Graph API</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Tenant</label>
+                                <input type="text" id="tenantName" value="getonasia.onmicrosoft.com" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Client ID</label>
+                                <input type="text" id="clientId" value="abe0be20-9dc7-493f-a28a-cc3b013f7f98" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Site ID</label>
+                                <input type="text" id="siteId" value="getonasia.sharepoint.com,5790e3b0-0575-4dcb-a345-bef1af2d9a2b,756a3114-aab1-4d05-9c80-a4ce86bce4b7" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" readonly>
+                            </div>
+                            <button onclick="testGraphApiConnection()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                                <i class="fas fa-server mr-2"></i>Test Graph API
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Migration Status -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6">Data Migration Status</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" id="sharePointFruits">0</div>
+                        <div class="text-sm text-blue-700">SharePoint Fruits</div>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" id="sharePointActivities">0</div>
+                        <div class="text-sm text-green-700">SharePoint Activities</div>
+                    </div>
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600" id="lastSyncStatus">Never</div>
+                        <div class="text-sm text-purple-700">Last Sync</div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button onclick="migrateFromGoogleSheets()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded text-sm mr-2">
+                        <i class="fas fa-exchange-alt mr-2"></i>Migrate from Google Sheets
+                    </button>
+                    <button onclick="exportMigrationReport()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                        <i class="fas fa-download mr-2"></i>Export Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Fruit Modal -->
+    <div id="addFruitModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Add New Fruit</h3>
+                    <button onclick="closeModal('addFruitModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="addFruit(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+                        <select name="assignee" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="assigneeSelect">
+                            <option value="">Select team member...</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input type="tel" name="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Social Media Platforms</label>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-instagram text-pink-500 w-5"></i>
+                                <input type="text" name="instagram" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Instagram username">
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-facebook text-blue-600 w-5"></i>
+                                <input type="text" name="facebook" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Facebook username">
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fab fa-twitter text-blue-400 w-5"></i>
+                                <input type="text" name="twitter" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Twitter username">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lead Source</label>
+                        <select name="leadSource" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Facebook Ads</option>
+                            <option>Instagram Ads</option>
+                            <option>Google Ads</option>
+                            <option>YouTube Ads</option>
+                            <option>TikTok Ads</option>
+                            <option>Organic Social Media</option>
+                            <option>Referral</option>
+                            <option>Event/Outreach</option>
+                            <option>Website Contact Form</option>
+                            <option>Cold Outreach</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Campaign Name (Optional)</label>
+                        <input type="text" name="campaign" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Christmas Outreach 2024, Youth Campaign">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Initial Status</label>
+                        <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Initial Contact</option>
+                            <option>BB Session Scheduled</option>
+                            <option>In BB Session</option>
+                            <option>Attending Class</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="notes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Add any notes about this person..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('addFruitModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Add to SharePoint
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Modal -->
+    <div id="activityModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Log Activity</h3>
+                    <button onclick="closeModal('activityModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="logActivity(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+                        <select name="activityType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Phone Call</option>
+                            <option>WhatsApp Message</option>
+                            <option>WhatsApp Call</option>
+                            <option>Instagram DM</option>
+                            <option>Facebook Message</option>
+                            <option>Twitter DM</option>
+                            <option>In-Person Meeting</option>
+                            <option>BB Session</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fruit</label>
+                        <select name="fruitName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="activityFruitSelect">
+                            <option value="">Select fruit...</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
+                        <input type="number" name="duration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="15">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="activityNotes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="What was discussed or accomplished?"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Outcome</label>
+                        <select name="outcome" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>Positive Response</option>
+                            <option>Neutral Response</option>
+                            <option>Need Follow-up</option>
+                            <option>Not Interested</option>
+                            <option>Scheduled Next Step</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('activityModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Log to SharePoint
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div id="scheduleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Schedule BB Session</h3>
+                    <button onclick="closeModal('scheduleModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="scheduleBB(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fruit</label>
+                        <select name="fruitName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="scheduleFruitSelect">
+                            <option value="">Select fruit...</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                        <input type="date" name="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                        <input type="time" name="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
+                        <select name="sessionType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>First BB Session</option>
+                            <option>Follow-up BB Session</option>
+                            <option>Group BB Session</option>
+                            <option>Online BB Session</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Location/Platform</label>
+                        <input type="text" name="location" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Church, Zoom, Home">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="scheduleNotes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="2" placeholder="Any special notes for this session..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeModal('scheduleModal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            Schedule Session
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg notification z-50">
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-check-circle"></i>
+            <span id="notificationText">Success!</span>
+        </div>
+    </div>
+
+    <script>
+        // Configuration will be loaded from GitHub
+        let SHAREPOINT_CONFIG = {};
+        let GOOGLE_CONFIG = {};
+        
+        // Load configuration from GitHub
+        async function loadConfiguration() {
+            try {
+                console.log('🔧 Loading configuration from GitHub...');
+                
+                // Add timeout and better error handling
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch('https://raw.githubusercontent.com/getonsv/bible/refs/heads/main/spgcon.js', {
+                    signal: controller.signal,
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const configText = await response.text();
+                console.log('📄 Configuration file loaded, parsing...');
+                
+                // More robust parsing - handle different formats
+                try {
+                    // Method 1: Try to execute as JavaScript
+                    const configScript = new Function(`
+                        let SHAREPOINT_CONFIG, GOOGLE_CONFIG;
+                        ${configText}
+                        return { SHAREPOINT_CONFIG, GOOGLE_CONFIG };
+                    `);
+                    const configs = configScript();
+                    
+                    if (configs.SHAREPOINT_CONFIG && configs.GOOGLE_CONFIG) {
+                        SHAREPOINT_CONFIG = configs.SHAREPOINT_CONFIG;
+                        GOOGLE_CONFIG = configs.GOOGLE_CONFIG;
+                    } else {
+                        throw new Error('Configuration objects not found in file');
+                    }
+                } catch (parseError) {
+                    console.log('📄 JavaScript parsing failed, trying alternative methods...');
+                    
+                    // Method 2: Try to extract configuration using regex
+                    const sharePointMatch = configText.match(/const\s+SHAREPOINT_CONFIG\s*=\s*({[\s\S]*?});/);
+                    const googleMatch = configText.match(/const\s+GOOGLE_CONFIG\s*=\s*({[\s\S]*?});/);
+                    
+                    if (sharePointMatch && googleMatch) {
+                        SHAREPOINT_CONFIG = JSON.parse(sharePointMatch[1].replace(/'/g, '"'));
+                        GOOGLE_CONFIG = JSON.parse(googleMatch[1].replace(/'/g, '"'));
+                    } else {
+                        throw parseError;
+                    }
+                }
+                
+                // Validate configuration
+                if (!SHAREPOINT_CONFIG.CLIENT_ID || !SHAREPOINT_CONFIG.SITE_URL) {
+                    throw new Error('SharePoint configuration is incomplete');
+                }
+                
+                console.log('✅ Configuration loaded and validated successfully');
+                console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
+                console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Failed to load configuration from GitHub:', error);
+                
+                // Check if it's a network error
+                if (error.name === 'AbortError') {
+                    console.error('❌ Request timed out');
+                } else if (error.message.includes('Failed to fetch')) {
+                    console.error('❌ Network error - check internet connection');
+                }
+                
+                // Use hardcoded fallback configuration for testing
+                console.log('🔄 Using fallback configuration...');
+                SHAREPOINT_CONFIG = {
+                    CLIENT_ID: 'abe0be20-9dc7-493f-a28a-cc3b013f7f98',
+                    CLIENT_SECRET: 'eIk8Q~-VhmVfA0cWejTFsSWsn7QtAPspQ5GhBaNG',
+                    TENANT_ID: '46ba01de-8f81-4731-9062-36cc2dbf48bb',
+                    TENANT: 'getonasia.onmicrosoft.com',
+                    SITE_ID: 'getonasia.sharepoint.com,5790e3b0-0575-4dcb-a345-bef1af2d9a2b,756a3114-aab1-4d05-9c80-a4ce86bce4b7',
+                    SITE_URL: 'https://getonasia.sharepoint.com/sites/frms/',
+                    FRUITS_LIST_ID: '139125e5-1bd9-4172-a7d9-ddf3a1dd8586',
+                    ACTIVITIES_LIST_ID: '6dfb4043-9d8c-4d38-b2ce-7a2fb7ae4f79',
+                    GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
+                };
+                
+                GOOGLE_CONFIG = {
+                    CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
+                    CLIENT_SECRET: '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',
+                    API_KEY: 'AIzaSyBqvopK2QrsiUSLO4M7McX4EZI0cbTF0uY',
+                    SCOPES: 'openid profile email https://www.googleapis.com/auth/spreadsheets',
+                    SPREADSHEET_ID: '1lfHEnHqGqm3txz6addWBBtI8e9wVTdyARI6RLaVst1U',
+                    SHEET_NAME: 'User Access & Admin Config'
+                };
+                
+                console.log('✅ Fallback configuration loaded');
+                showNotification('Using fallback configuration (GitHub load failed)', 'warning');
+                return true; // Return true to continue with fallback config
+            }
+        }
+
+        // Global state
+        let currentUser = null;
+        let currentTab = 'overview';
+        let fruits = [];
+        let activities = [];
+        let isSharePointMode = false;
+        let sharePointAccessToken = null;
+        let authorizedUsers = [];
+
+        // Constants
+        const STATUS_PROGRESSION = [
+            'Initial Contact',
+            'First Response',
+            'Interest Shown',
+            'BB Session Scheduled',
+            'In BB Session',
+            'BB Session Completed',
+            'Attending Class',
+            'Baptism Candidate',
+            'Baptized',
+            'Active Member',
+            'Not Interested',
+            'Lost Contact'
+        ];
+
+        const LEAD_SOURCES = [
+            'Facebook Ads',
+            'Instagram Ads',
+            'Google Ads',
+            'YouTube Ads',
+            'TikTok Ads',
+            'Organic Social Media',
+            'Referral',
+            'Event/Outreach',
+            'Website Contact Form',
+            'Cold Outreach',
+            'Other'
+        ];
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Load configuration first
+            const configLoaded = await loadConfiguration();
+            
+            if (configLoaded) {
+                initializeMicrosoftAuth();
+                loadLocalData();
+                updateConnectionStatus();
+                populateDropdowns();
+                initializeEventListeners();
+            } else {
+                // Show error state
+                const buttonContainer = document.getElementById('googleSignInButton');
+                buttonContainer.innerHTML = `
+                    <div class="w-full bg-red-100 text-red-700 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Configuration Error - Please check connection</span>
+                    </div>
+                    <button onclick="location.reload()" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-refresh mr-2"></i>Retry
+                    </button>
+                `;
+            }
+        });
+
+        function initializeMicrosoftAuth() {
+            console.log('🔧 Initializing Microsoft Authentication...');
+            
+            // For now, we'll use a simple login button that triggers SharePoint authentication
+            const buttonContainer = document.getElementById('googleSignInButton');
+            buttonContainer.innerHTML = `
+                <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                    <i class="fab fa-microsoft text-xl"></i>
+                    <span>Sign in with Microsoft 365</span>
+                </button>
+            `;
+            
+            console.log('✅ Microsoft Authentication initialized');
+        }
+
+        async function authenticateWithMicrosoft() {
+            try {
+                console.log('🔐 Starting Microsoft authentication...');
+                showNotification('Connecting to Microsoft 365...', 'info');
+                
+                // Validate configuration first
+                if (!SHAREPOINT_CONFIG.CLIENT_ID || !SHAREPOINT_CONFIG.CLIENT_SECRET) {
+                    throw new Error('SharePoint configuration is incomplete. Please check the GitHub configuration file.');
+                }
+                
+                // Get SharePoint access token
+                const token = await getSharePointAccessToken();
+                
+                if (token) {
+                    sharePointAccessToken = token;
+                    isSharePointMode = true;
+                    
+                    // Set up a demo user for now (in production, this would come from Microsoft Graph)
+                    currentUser = {
+                        name: 'Ministry User',
+                        email: 'user@getonasia.onmicrosoft.com',
+                        role: 'Admin',
+                        permissions: 'Full',
+                        status: 'Active',
+                        source: 'microsoft_365'
+                    };
+                    
+                    console.log('✅ Microsoft authentication successful');
+                    
+                    // Load data from SharePoint
+                    await loadDataFromSharePoint();
+                    
+                    showDashboard();
+                    showNotification('Welcome! Connected to SharePoint Lists successfully.');
+                } else {
+                    throw new Error('Failed to get access token');
+                }
+                
+            } catch (error) {
+                console.error('❌ Microsoft authentication failed:', error);
+                showNotification('Authentication failed: ' + error.message, 'error');
+            }
+        }
+
+        async function getSharePointAccessToken() {
+            try {
+                console.log('🔐 Getting SharePoint access token...');
+                
+                const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
+                
+                const response = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+                        client_secret: SHAREPOINT_CONFIG.CLIENT_SECRET,
+                        scope: 'https://graph.microsoft.com/.default',
+                        grant_type: 'client_credentials'
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Token request failed:', errorText);
+                    throw new Error(`Token request failed: ${response.status} ${response.statusText}`);
+                }
+                
+                const tokenData = await response.json();
+                console.log('✅ Access token obtained successfully');
+                
+                return tokenData.access_token;
+                
+            } catch (error) {
+                console.error('❌ Failed to get access token:', error);
+                throw error;
+            }
+        }
+
+        async function loadDataFromSharePoint() {
+            try {
+                console.log('📊 Loading data from SharePoint Lists...');
+                showNotification('Loading data from SharePoint...', 'info');
+                
+                // Load fruits from SharePoint
+                await loadFruitsFromSharePoint();
+                
+                // Load activities from SharePoint
+                await loadActivitiesFromSharePoint();
+                
+                console.log('✅ Data loaded from SharePoint successfully');
+                console.log('📊 Loaded', fruits.length, 'fruits and', activities.length, 'activities');
+                
+                // Save locally as backup
+                saveLocalData();
+                
+            } catch (error) {
+                console.error('❌ Failed to load data from SharePoint:', error);
+                showNotification('Failed to load from SharePoint, using local data', 'warning');
+                
+                // Fallback to local data
+                loadLocalData();
+            }
+        }
+
+        async function loadFruitsFromSharePoint() {
+            try {
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items?expand=fields`;
+                
+                console.log('📊 Loading fruits from:', url);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const items = data.value || [];
+                
+                fruits = items.map(item => ({
+                    id: item.id.toString(),
+                    name: item.fields.Title || '',
+                    assignedTo: item.fields.AssignedTo || '',
+                    phone: item.fields.Phone || '',
+                    instagram: item.fields.Instagram || '',
+                    facebook: item.fields.Facebook || '',
+                    twitter: item.fields.Twitter || '',
+                    leadSource: item.fields.LeadSource || '',
+                    campaign: item.fields.Campaign || '',
+                    status: item.fields.Status || 'Initial Contact',
+                    notes: item.fields.Notes || '',
+                    createdDate: item.fields.Created || item.createdDateTime,
+                    createdBy: item.fields.CreatedByUser || 'Unknown'
+                }));
+                
+                console.log('📊 Loaded', fruits.length, 'fruits from SharePoint');
+                
+            } catch (error) {
+                console.error('❌ Error loading fruits from SharePoint:', error);
+                fruits = []; // Start with empty array if loading fails
+            }
+        }
+
+        async function loadActivitiesFromSharePoint() {
+            try {
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields`;
+                
+                console.log('📊 Loading activities from:', url);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const items = data.value || [];
+                
+                activities = items.map(item => ({
+                    id: item.id.toString(),
+                    fruitName: item.fields.FruitNameLookupValue || item.fields.Title || '',
+                    type: item.fields.ActivityType || '',
+                    duration: item.fields.Duration || '0',
+                    notes: item.fields.Notes || '',
+                    outcome: item.fields.Outcome || '',
+                    user: item.fields.User || 'Unknown',
+                    createdDate: item.fields.Created || item.createdDateTime
+                }));
+                
+                console.log('📊 Loaded', activities.length, 'activities from SharePoint');
+                
+            } catch (error) {
+                console.error('❌ Error loading activities from SharePoint:', error);
+                activities = []; // Start with empty array if loading fails
+            }
+        }
+
+        async function addFruitToSharePoint(fruitData) {
+            try {
+                console.log('📊 Adding fruit to SharePoint:', fruitData);
+                
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fields: {
+                            Title: fruitData.name,
+                            AssignedTo: fruitData.assignedTo,
+                            Phone: fruitData.phone,
+                            Instagram: fruitData.instagram,
+                            Facebook: fruitData.facebook,
+                            Twitter: fruitData.twitter,
+                            LeadSource: fruitData.leadSource,
+                            Campaign: fruitData.campaign,
+                            Status: fruitData.status,
+                            Notes: fruitData.notes,
+                            CreatedByUser: fruitData.createdBy
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Failed to add fruit to SharePoint:', errorText);
+                    throw new Error(`Failed to add fruit: ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ Fruit added to SharePoint successfully:', result);
+                
+                return result;
+                
+            } catch (error) {
+                console.error('❌ Error adding fruit to SharePoint:', error);
+                throw error;
+            }
+        }
+
+        async function addActivityToSharePoint(activityData) {
+            try {
+                console.log('📊 Adding activity to SharePoint:', activityData);
+                
+                // First, find the fruit ID for the lookup
+                const fruit = fruits.find(f => f.name === activityData.fruitName);
+                if (!fruit) {
+                    throw new Error(`Fruit "${activityData.fruitName}" not found`);
+                }
+                
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fields: {
+                            Title: `${activityData.type} with ${activityData.fruitName}`,
+                            FruitNameLookupId: parseInt(fruit.id),
+                            ActivityType: activityData.type,
+                            Duration: parseInt(activityData.duration) || 0,
+                            Notes: activityData.notes,
+                            Outcome: activityData.outcome,
+                            User: activityData.user
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Failed to add activity to SharePoint:', errorText);
+                    throw new Error(`Failed to add activity: ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ Activity added to SharePoint successfully:', result);
+                
+                return result;
+                
+            } catch (error) {
+                console.error('❌ Error adding activity to SharePoint:', error);
+                throw error;
+            }
+        }
+
+        // Dashboard functions
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            // Update user display
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+            
+            if (currentUser) {
+                userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
+                userName.textContent = currentUser.name;
+                
+                // Show admin tab if user is admin
+                if (currentUser.role === 'Admin') {
+                    document.getElementById('adminTabBtn').classList.remove('hidden');
+                }
+            }
+            
+            updateConnectionStatus();
+            updateStats();
+            updateRecentActivities();
+            updateFruitsGrid();
+            populateDropdowns();
+            
+            // Update admin stats
+            updateAdminStats();
+        }
+
+        function updateConnectionStatus() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            if (isSharePointMode && sharePointAccessToken) {
+                statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
+                statusText.textContent = 'SharePoint Connected';
+            } else if (currentUser) {
+                statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
+                statusText.textContent = 'Local Only';
+            } else {
+                statusIndicator.className = 'w-2 h-2 bg-gray-400 rounded-full';
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalFruits').textContent = fruits.length;
+            document.getElementById('activeSessions').textContent = fruits.filter(f => f.status === 'In BB Session').length;
+            document.getElementById('weeklyContacts').textContent = getWeeklyContacts();
+            document.getElementById('conversionRate').textContent = getConversionRate() + '%';
+        }
+
+        function getWeeklyContacts() {
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
+            return activities.filter(activity => {
+                const activityDate = new Date(activity.createdDate);
+                return activityDate >= oneWeekAgo;
+            }).length;
+        }
+
+        function getConversionRate() {
+            if (fruits.length === 0) return 0;
+            const converted = fruits.filter(f => 
+                ['Baptized', 'Active Member', 'Attending Class'].includes(f.status)
+            ).length;
+            return Math.round((converted / fruits.length) * 100);
+        }
+
+        function updateRecentActivities() {
+            const container = document.getElementById('recentActivities');
+            if (!container) return;
+            
+            const recentActivities = activities
+                .sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate))
+                .slice(0, 5);
+            
+            if (recentActivities.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                        <p>No activities found. Start by adding fruits and logging interactions!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = recentActivities.map(activity => `
+                <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="bg-blue-100 p-2 rounded-full">
+                        <i class="fas fa-phone text-blue-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900">${activity.fruitName}</div>
+                        <div class="text-sm text-gray-600">${activity.type} - ${activity.duration} minutes</div>
+                        <div class="text-xs text-gray-500">${formatDate(activity.createdDate)}</div>
+                    </div>
+                    <div class="text-sm text-gray-500">${activity.outcome}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateFruitsGrid() {
+            const container = document.getElementById('fruitsGrid');
+            if (!container) return;
+            
+            if (fruits.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 col-span-full">
+                        <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-users text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No fruits found</h3>
+                        <p class="text-gray-500 mb-4">Start building your ministry database by adding your first fruit.</p>
+                        <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add Your First Fruit
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = fruits.map(fruit => {
+                const progressData = getProgressData(fruit.status);
+                return `
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">${fruit.name}</h3>
+                            <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}">
+                            ${fruit.status}
+                        </span>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Evangelism Progress</span>
+                            <span class="text-sm text-gray-600">${progressData.percentage}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="progress-bar h-2.5 rounded-full ${progressData.color}" style="width: ${progressData.percentage}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-phone w-4 mr-2"></i>
+                            ${fruit.phone || 'No phone'}
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-bullhorn w-4 mr-2"></i>
+                            ${fruit.leadSource}
+                        </div>
+                        ${fruit.campaign ? `
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-tag w-4 mr-2"></i>
+                                ${fruit.campaign}
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="editFruit('${fruit.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                        <button onclick="logActivityForFruit('${fruit.name}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                            <i class="fas fa-phone mr-1"></i>Activity
+                        </button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'Initial Contact': 'bg-gray-100 text-gray-800',
+                'First Response': 'bg-blue-100 text-blue-800',
+                'Interest Shown': 'bg-yellow-100 text-yellow-800',
+                'BB Session Scheduled': 'bg-orange-100 text-orange-800',
+                'In BB Session': 'bg-purple-100 text-purple-800',
+                'BB Session Completed': 'bg-indigo-100 text-indigo-800',
+                'Attending Class': 'bg-green-100 text-green-800',
+                'Baptism Candidate': 'bg-emerald-100 text-emerald-800',
+                'Baptized': 'bg-teal-100 text-teal-800',
+                'Active Member': 'bg-cyan-100 text-cyan-800',
+                'Not Interested': 'bg-red-100 text-red-800',
+                'Lost Contact': 'bg-gray-100 text-gray-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getProgressData(status) {
+            const progressMap = {
+                'Initial Contact': { percentage: 8, color: 'bg-gray-400' },
+                'First Response': { percentage: 16, color: 'bg-blue-400' },
+                'Interest Shown': { percentage: 25, color: 'bg-yellow-400' },
+                'BB Session Scheduled': { percentage: 40, color: 'bg-orange-400' },
+                'In BB Session': { percentage: 55, color: 'bg-purple-400' },
+                'BB Session Completed': { percentage: 70, color: 'bg-indigo-400' },
+                'Attending Class': { percentage: 85, color: 'bg-green-400' },
+                'Baptism Candidate': { percentage: 92, color: 'bg-emerald-400' },
+                'Baptized': { percentage: 100, color: 'bg-teal-500' },
+                'Active Member': { percentage: 100, color: 'bg-cyan-500' },
+                'Not Interested': { percentage: 0, color: 'bg-red-300' },
+                'Lost Contact': { percentage: 0, color: 'bg-gray-300' }
+            };
+            
+            return progressMap[status] || { percentage: 0, color: 'bg-gray-300' };
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function populateDropdowns() {
+            // Populate status filter
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter) {
+                statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
+                    STATUS_PROGRESSION.map(status => 
+                        `<option value="${status}">${status}</option>`
+                    ).join('');
+            }
+
+            // Populate source filter
+            const sourceFilter = document.getElementById('sourceFilter');
+            if (sourceFilter) {
+                sourceFilter.innerHTML = '<option value="">All Sources</option>' + 
+                    LEAD_SOURCES.map(source => 
+                        `<option value="${source}">${source}</option>`
+                    ).join('');
+            }
+
+            // Populate fruit dropdowns in modals
+            populateFruitDropdowns();
+        }
+
+        function populateFruitDropdowns() {
+            const activityFruitSelect = document.getElementById('activityFruitSelect');
+            const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
+            
+            const fruitOptions = fruits.map(fruit => 
+                `<option value="${fruit.name}">${fruit.name}</option>`
+            ).join('');
+            
+            if (activityFruitSelect) {
+                activityFruitSelect.innerHTML = '<option value="">Select fruit...</option>' + fruitOptions;
+            }
+            
+            if (scheduleFruitSelect) {
+                scheduleFruitSelect.innerHTML = '<option value="">Select fruit...</option>' + fruitOptions;
+            }
+        }
+
+        function initializeEventListeners() {
+            // Fruit search functionality
+            const fruitSearch = document.getElementById('fruitSearch');
+            if (fruitSearch) {
+                fruitSearch.addEventListener('input', filterFruits);
+            }
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                const syncOptions = document.getElementById('syncOptions');
+                if (!event.target.closest('#syncButton') && !event.target.closest('#syncOptions')) {
+                    syncOptions.classList.add('hidden');
+                }
+            });
+        }
+
+        // Modal functions
+        function showAddFruitModal() {
+            document.getElementById('addFruitModal').classList.remove('hidden');
+        }
+
+        function showActivityModal() {
+            populateFruitDropdowns(); // Refresh fruit list
+            document.getElementById('activityModal').classList.remove('hidden');
+        }
+
+        function showScheduleModal() {
+            populateFruitDropdowns(); // Refresh fruit list
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            
+            // Set color based on type
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50 ${
+                type === 'error' ? 'bg-red-600 text-white' :
+                type === 'warning' ? 'bg-yellow-600 text-white' :
+                type === 'info' ? 'bg-blue-600 text-white' :
+                'bg-green-600 text-white'
+            }`;
+            
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Add fruit function
+        async function addFruit(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const newFruit = {
+                name: formData.get('name'),
+                assignedTo: formData.get('assignee') || currentUser.name,
+                phone: formData.get('phone') || '',
+                instagram: formData.get('instagram') || '',
+                facebook: formData.get('facebook') || '',
+                twitter: formData.get('twitter') || '',
+                leadSource: formData.get('leadSource'),
+                campaign: formData.get('campaign') || '',
+                status: formData.get('status'),
+                notes: formData.get('notes') || '',
+                createdDate: new Date().toISOString(),
+                createdBy: currentUser.email
+            };
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Add to SharePoint first
+                    const result = await addFruitToSharePoint(newFruit);
+                    
+                    // Add the SharePoint ID to our local object
+                    newFruit.id = result.id.toString();
+                    
+                    showNotification(`${newFruit.name} added to SharePoint successfully!`);
+                } else {
+                    // Add locally only
+                    newFruit.id = 'fruit_' + Date.now();
+                    showNotification(`${newFruit.name} added locally (SharePoint not connected)`);
+                }
+                
+                // Add to local array
+                fruits.push(newFruit);
+                saveLocalData();
+                updateFruitsGrid();
+                updateStats();
+                populateFruitDropdowns();
+                
+                closeModal('addFruitModal');
+                event.target.reset();
+                
+            } catch (error) {
+                console.error('❌ Failed to add fruit:', error);
+                showNotification('Failed to add fruit: ' + error.message, 'error');
+            }
+        }
+
+        // Log activity function
+        async function logActivity(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const newActivity = {
+                fruitName: formData.get('fruitName'),
+                type: formData.get('activityType'),
+                duration: formData.get('duration'),
+                notes: formData.get('activityNotes'),
+                outcome: formData.get('outcome'),
+                user: currentUser.name,
+                createdDate: new Date().toISOString()
+            };
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Add to SharePoint first
+                    const result = await addActivityToSharePoint(newActivity);
+                    
+                    // Add the SharePoint ID to our local object
+                    newActivity.id = result.id.toString();
+                    
+                    showNotification('Activity logged to SharePoint successfully!');
+                } else {
+                    // Add locally only
+                    newActivity.id = 'activity_' + Date.now();
+                    showNotification('Activity logged locally (SharePoint not connected)');
+                }
+                
+                // Add to local array
+                activities.push(newActivity);
+                saveLocalData();
+                updateRecentActivities();
+                updateStats();
+                
+                closeModal('activityModal');
+                event.target.reset();
+                
+            } catch (error) {
+                console.error('❌ Failed to log activity:', error);
+                showNotification('Failed to log activity: ' + error.message, 'error');
+            }
+        }
+
+        // Schedule BB function
+        async function scheduleBB(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const fruitName = formData.get('fruitName');
+            
+            // Update fruit status
+            const fruit = fruits.find(f => f.name === fruitName);
+            if (fruit) {
+                fruit.status = 'BB Session Scheduled';
+                fruit.lastUpdated = new Date().toISOString();
+                fruit.updatedBy = currentUser.email;
+                
+                saveLocalData();
+                updateFruitsGrid();
+            }
+            
+            // Log the scheduling activity
+            const scheduleActivity = {
+                fruitName: fruitName,
+                type: 'BB Session',
+                duration: '0',
+                notes: `Scheduled ${formData.get('sessionType')} for ${formData.get('date')} at ${formData.get('time')}. Location: ${formData.get('location')}. ${formData.get('scheduleNotes')}`,
+                outcome: 'Scheduled Next Step',
+                user: currentUser.name,
+                createdDate: new Date().toISOString()
+            };
+            
+            try {
+                if (isSharePointMode && sharePointAccessToken) {
+                    // Add to SharePoint
+                    const result = await addActivityToSharePoint(scheduleActivity);
+                    scheduleActivity.id = result.id.toString();
+                    showNotification('BB Session scheduled in SharePoint!');
+                } else {
+                    scheduleActivity.id = 'activity_' + Date.now();
+                    showNotification('BB Session scheduled locally');
+                }
+                
+                activities.push(scheduleActivity);
+                saveLocalData();
+                updateRecentActivities();
+                updateStats();
+                
+                closeModal('scheduleModal');
+                event.target.reset();
+                
+            } catch (error) {
+                console.error('❌ Failed to schedule BB session:', error);
+                showNotification('Failed to schedule BB session: ' + error.message, 'error');
+            }
+        }
+
+        // Tab functions
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active state from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            
+            // Add active state to selected tab button
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-600', 'text-blue-600');
+            
+            currentTab = tabName;
+        }
+
+        // Utility functions
+        function filterFruits() {
+            updateFruitsGrid();
+        }
+
+        function logActivityForFruit(fruitName) {
+            showActivityModal();
+            // Pre-fill the fruit name
+            setTimeout(() => {
+                const fruitSelect = document.getElementById('activityFruitSelect');
+                if (fruitSelect) {
+                    fruitSelect.value = fruitName;
+                }
+            }, 100);
+        }
+
+        function editFruit(fruitId) {
+            showNotification('Edit functionality coming soon!', 'info');
+        }
+
+        function generateReport() {
+            showNotification('Report generation coming soon!', 'info');
+        }
+
+        function exportReport() {
+            showNotification('Report export coming soon!', 'info');
+        }
+
+        function importData() {
+            showNotification('Data import coming soon!', 'info');
+        }
+
+        function exportData() {
+            const data = {
+                fruits: fruits,
+                activities: activities,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentUser.email,
+                source: 'sharepoint_crm'
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `evangelism-crm-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Data exported successfully!');
+        }
+
+        // SharePoint-specific functions
+        async function enableSharePointMode() {
+            try {
+                if (!sharePointAccessToken) {
+                    await authenticateWithMicrosoft();
+                } else {
+                    isSharePointMode = true;
+                    updateConnectionStatus();
+                    showNotification('SharePoint mode enabled!');
+                }
+            } catch (error) {
+                showNotification('Failed to enable SharePoint mode: ' + error.message, 'error');
+            }
+        }
+
+        async function testSharePointConnection() {
+            try {
+                showNotification('Testing SharePoint connection...', 'info');
+                
+                if (!sharePointAccessToken) {
+                    throw new Error('No access token. Please authenticate first.');
+                }
+                
+                // Test by getting site information
+                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${sharePointAccessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const siteInfo = await response.json();
+                console.log('✅ SharePoint connection test successful:', siteInfo);
+                
+                showNotification('✅ SharePoint connection test successful!');
+                
+            } catch (error) {
+                console.error('❌ SharePoint connection test failed:', error);
+                showNotification('❌ SharePoint connection test failed: ' + error.message, 'error');
+            }
+        }
+
+        async function testGraphApiConnection() {
+            return testSharePointConnection(); // Same test
+        }
+
+        async function syncToSharePoint() {
+            try {
+                showNotification('Syncing data to SharePoint...', 'info');
+                
+                if (!sharePointAccessToken) {
+                    throw new Error('Not authenticated with SharePoint');
+                }
+                
+                // Sync fruits that don't have SharePoint IDs
+                for (const fruit of fruits) {
+                    if (!fruit.id || fruit.id.startsWith('fruit_')) {
+                        try {
+                            const result = await addFruitToSharePoint(fruit);
+                            fruit.id = result.id.toString();
+                            console.log('✅ Synced fruit to SharePoint:', fruit.name);
+                        } catch (error) {
+                            console.error('❌ Failed to sync fruit:', fruit.name, error);
+                        }
+                    }
+                }
+                
+                // Sync activities that don't have SharePoint IDs
+                for (const activity of activities) {
+                    if (!activity.id || activity.id.startsWith('activity_')) {
+                        try {
+                            const result = await addActivityToSharePoint(activity);
+                            activity.id = result.id.toString();
+                            console.log('✅ Synced activity to SharePoint:', activity.type);
+                        } catch (error) {
+                            console.error('❌ Failed to sync activity:', activity.type, error);
+                        }
+                    }
+                }
+                
+                saveLocalData();
+                showNotification('✅ Data synced to SharePoint successfully!');
+                
+            } catch (error) {
+                console.error('❌ Sync to SharePoint failed:', error);
+                showNotification('❌ Sync failed: ' + error.message, 'error');
+            }
+        }
+
+        async function loadFromSharePoint() {
+            try {
+                await loadDataFromSharePoint();
+                updateFruitsGrid();
+                updateStats();
+                updateRecentActivities();
+                populateFruitDropdowns();
+                showNotification('✅ Data loaded from SharePoint successfully!');
+            } catch (error) {
+                showNotification('❌ Failed to load from SharePoint: ' + error.message, 'error');
+            }
+        }
+
+        async function refreshData() {
+            if (isSharePointMode && sharePointAccessToken) {
+                await loadFromSharePoint();
+            } else {
+                loadLocalData();
+                showNotification('Data refreshed from local storage');
+            }
+        }
+
+        function showDataOptions() {
+            const syncOptions = document.getElementById('syncOptions');
+            syncOptions.classList.toggle('hidden');
+        }
+
+        // Migration function
+        async function migrateFromGoogleSheets() {
+            showNotification('Google Sheets migration coming soon!', 'info');
+        }
+
+        // Admin functions
+        function updateAdminStats() {
+            document.getElementById('sharePointFruits').textContent = fruits.length;
+            document.getElementById('sharePointActivities').textContent = activities.length;
+            document.getElementById('lastSyncStatus').textContent = isSharePointMode ? 'Connected' : 'Not Connected';
+        }
+
+        function refreshUserList() {
+            updateAdminStats();
+            showNotification('Admin data refreshed!');
+        }
+
+        function exportMigrationReport() {
+            const report = {
+                migrationDate: new Date().toISOString(),
+                sharePointConnected: isSharePointMode,
+                totalFruits: fruits.length,
+                totalActivities: activities.length,
+                configuration: {
+                    siteUrl: SHAREPOINT_CONFIG.SITE_URL,
+                    fruitsListId: SHAREPOINT_CONFIG.FRUITS_LIST_ID,
+                    activitiesListId: SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID
+                },
+                fruits: fruits,
+                activities: activities
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sharepoint-migration-report-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Migration report exported successfully!');
+        }
+
+        // Local data management (fallback)
+        function saveLocalData() {
+            localStorage.setItem('crm_fruits', JSON.stringify(fruits));
+            localStorage.setItem('crm_activities', JSON.stringify(activities));
+            localStorage.setItem('crm_sharepoint_mode', isSharePointMode.toString());
+        }
+
+        function loadLocalData() {
+            const savedFruits = localStorage.getItem('crm_fruits');
+            const savedActivities = localStorage.getItem('crm_activities');
+            const savedSharePointMode = localStorage.getItem('crm_sharepoint_mode');
+            
+            if (savedFruits) {
+                fruits = JSON.parse(savedFruits);
+            }
+            
+            if (savedActivities) {
+                activities = JSON.parse(savedActivities);
+            }
+            
+            if (savedSharePointMode) {
+                isSharePointMode = savedSharePointMode === 'true';
+            }
+            
+            updateFruitsGrid();
+            updateStats();
+            updateRecentActivities();
+            populateFruitDropdowns();
+        }
+
+        function logout() {
+            currentUser = null;
+            sharePointAccessToken = null;
+            isSharePointMode = false;
+            
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('adminTabBtn').classList.add('hidden');
+            
+            updateConnectionStatus();
+            showNotification('Logged out successfully');
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a4d036c13db4dc',t:'MTc1OTc1MDA4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
