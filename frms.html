@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism CRM</title>
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -793,14 +793,17 @@
                     
                     console.log('🔍 Validation result:', validationResult);
                     
-                    // Check if validation failed
-                    if (!validationResult || !validationResult.success) {
-                        // If Apps Script is not working, allow demo mode for testing
-                        console.log('⚠️ Apps Script validation failed, checking for demo mode...');
+                    // Check if validation failed or returned no-cors placeholder
+                    if (!validationResult || !validationResult.success || 
+                        validationResult.message === 'Request sent (no-cors mode)') {
                         
+                        console.log('⚠️ Apps Script validation failed or unavailable, checking for demo mode...');
+                        console.log('📊 Validation result:', validationResult);
+                        
+                        // Allow demo mode for your email or any demo emails
                         if (email === 'shillesbiz@gmail.com' || email.includes('demo')) {
                             console.log('🎭 Enabling demo mode for:', email);
-                            showNotification('Connected in demo mode (Apps Script unavailable)', 'warning');
+                            showNotification('Connected in demo mode - Apps Script unavailable', 'warning');
                             
                             // Set up demo user
                             currentUser = {
@@ -1780,5 +1783,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a365873193b4dc',t:'MTc1OTczNTIzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a36b9653e3b4dc',t:'MTc1OTczNTQ3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
