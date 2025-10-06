@@ -1410,51 +1410,67 @@
                 console.log('🔗 Testing Apps Script connection...');
                 console.log('📡 URL:', APPS_SCRIPT_CONFIG.WEB_APP_URL);
                 
-                // First try a simple GET request
-                const getResponse = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL + '?action=ping', {
+                // Test with proper parameter structure for Apps Script
+                const testUrl = `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?action=ping&test=true`;
+                console.log('📡 Test URL:', testUrl);
+                
+                const response = await fetch(testUrl, {
                     method: 'GET',
-                    mode: 'cors'
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
-                console.log('📡 GET Response status:', getResponse.status);
-                console.log('📡 GET Response headers:', [...getResponse.headers.entries()]);
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response ok:', response.ok);
+                console.log('📡 Response headers:', [...response.headers.entries()]);
                 
-                if (getResponse.ok) {
-                    const getResult = await getResponse.text();
-                    console.log('📡 GET Response body:', getResult);
-                    
-                    // Try to parse as JSON
+                const responseText = await response.text();
+                console.log('📡 Raw response:', responseText);
+                
+                if (response.ok) {
                     try {
-                        const jsonResult = JSON.parse(getResult);
-                        if (jsonResult.success) {
-                            showNotification('Apps Script connection successful!');
+                        const result = JSON.parse(responseText);
+                        console.log('📡 Parsed response:', result);
+                        
+                        if (result.success || result.status === 'ok') {
+                            showNotification('✅ Apps Script connection successful!');
                             return true;
+                        } else {
+                            console.error('📡 Apps Script returned error:', result);
+                            showNotification(`❌ Apps Script error: ${result.error || 'Unknown error'}`, 'error');
+                            return false;
                         }
                     } catch (parseError) {
-                        console.log('📡 Response is not JSON, trying POST method...');
+                        console.error('📡 JSON parse error:', parseError);
+                        console.log('📡 Response was not JSON. Raw response:', responseText);
+                        
+                        // Check if it's an HTML error page
+                        if (responseText.includes('<html') || responseText.includes('<!DOCTYPE')) {
+                            showNotification('❌ Apps Script returned HTML instead of JSON - Check deployment settings', 'error');
+                        } else {
+                            showNotification('❌ Apps Script returned invalid response format', 'error');
+                        }
+                        return false;
                     }
-                }
-                
-                // If GET fails, try POST
-                const postResponse = await callAppsScript('ping');
-                if (postResponse && postResponse.success) {
-                    showNotification('Apps Script connection successful!');
-                    return true;
                 } else {
-                    console.error('📡 POST Response:', postResponse);
-                    showNotification('Apps Script connection failed - Invalid response', 'error');
+                    console.error('📡 HTTP Error:', response.status, response.statusText);
+                    showNotification(`❌ HTTP Error: ${response.status} ${response.statusText}`, 'error');
                     return false;
                 }
                 
             } catch (error) {
-                console.error('📡 Apps Script connection error:', error);
-                showNotification(`Apps Script connection failed: ${error.message}`, 'error');
+                console.error('📡 Connection error:', error);
                 
-                // Show detailed error information
-                if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                    showNotification('Network error - Check if Apps Script URL is correct and deployed', 'error');
+                // Provide specific error messages
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    showNotification('❌ Network error - Apps Script URL may be incorrect or not accessible', 'error');
                 } else if (error.message.includes('CORS')) {
-                    showNotification('CORS error - Apps Script may not be deployed as web app', 'error');
+                    showNotification('❌ CORS error - Apps Script not deployed as web app with proper permissions', 'error');
+                } else {
+                    showNotification(`❌ Connection failed: ${error.message}`, 'error');
                 }
                 
                 return false;
@@ -1507,5 +1523,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a30b7a3404b4dc',t:'MTc1OTczMTU0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a3110171cab4dc',t:'MTc1OTczMTc2OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
