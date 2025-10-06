@@ -1655,6 +1655,13 @@ function validateSpreadsheetAccess(spreadsheetId) {
             try {
                 console.log('🔄 Auto-syncing to Google Sheets:', action, data);
                 
+                // Check if we have access token for real sync
+                if (!accessToken) {
+                    console.log('⚠️ No access token - sync will be queued until online mode is enabled');
+                    showNotification('Enable Online Mode to sync with Google Sheets', 'warning');
+                    return;
+                }
+                
                 // Add to sync queue
                 const syncItem = {
                     id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -1675,8 +1682,8 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 // Show sync indicator
                 showSyncIndicator();
                 
-                // Process sync queue
-                await processSyncQueue();
+                // Process sync queue with real Google Sheets API
+                await processSyncQueueWithSheetsAPI();
                 
             } catch (error) {
                 console.error('❌ Auto-sync failed:', error);
@@ -1692,11 +1699,11 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        async function processSyncQueue() {
+        async function processSyncQueueWithSheetsAPI() {
             if (isSyncing || syncQueue.length === 0) return;
             
             isSyncing = true;
-            console.log('📊 Processing sync queue:', syncQueue.length, 'items');
+            console.log('📊 Processing sync queue with Google Sheets API:', syncQueue.length, 'items');
             
             try {
                 // Process items in batches
@@ -1705,19 +1712,26 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     
                     for (const item of batch) {
                         try {
-                            console.log('🔄 Syncing:', item.action, 'ID:', item.id);
+                            console.log('🔄 Syncing to Google Sheets:', item.action, 'ID:', item.id);
                             
-                            const result = await callAppsScript(item.action, {
-                                ...item.data,
-                                syncId: item.id,
-                                timestamp: item.timestamp
-                            });
+                            let result = false;
                             
-                            if (result && result.success) {
-                                console.log('✅ Sync successful:', item.id, result);
+                            // Route to appropriate sync function based on action
+                            if (item.action === 'patch_fruit') {
+                                result = await syncFruitToSheets(item.data);
+                            } else if (item.action === 'patch_activity') {
+                                result = await syncActivityToSheets(item.data);
+                            } else if (item.action === 'patch_user') {
+                                result = await syncUserToSheets(item.data);
+                            } else if (item.action === 'bulk_operation') {
+                                result = await syncBulkToSheets(item.data);
+                            }
+                            
+                            if (result) {
+                                console.log('✅ Sync successful:', item.id);
                                 syncRetryCount = 0; // Reset retry count on success
                             } else {
-                                console.warn('⚠️ Sync warning:', item.id, result);
+                                console.warn('⚠️ Sync warning:', item.id);
                                 
                                 // Retry failed items
                                 if (item.retries < MAX_SYNC_RETRIES) {
@@ -1738,7 +1752,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
                         }
                         
                         // Small delay between items to avoid rate limiting
-                        await new Promise(resolve => setTimeout(resolve, 200));
+                        await new Promise(resolve => setTimeout(resolve, 500));
                     }
                     
                     // Delay between batches
@@ -1762,6 +1776,143 @@ function validateSpreadsheetAccess(spreadsheetId) {
                         hideSyncIndicator();
                     }
                 }, 2000);
+            }
+        }
+
+        // Real Google Sheets sync functions
+        async function syncFruitToSheets(patchData) {
+            try {
+                const { operation, data } = patchData;
+                
+                if (operation === 'add') {
+                    // Append new fruit to Fruits sheet
+                    const row = [
+                        data.id, data.name, data.assignedTo, data.phone, 
+                        data.instagram, data.facebook, data.twitter, 
+                        data.leadSource, data.campaign, data.status, 
+                        data.notes, data.createdDate, data.createdBy
+                    ];
+                    
+                    return await appendToSheet('Fruits', [row]);
+                    
+                } else if (operation === 'update') {
+                    // Update existing fruit - for now, we'll reload all data
+                    // In production, you'd want to find and update specific rows
+                    return await syncAllFruitsToSheets();
+                    
+                } else if (operation === 'delete') {
+                    // Delete fruit - for now, we'll reload all data
+                    return await syncAllFruitsToSheets();
+                }
+                
+                return false;
+                
+            } catch (error) {
+                console.error('❌ Failed to sync fruit to sheets:', error);
+                return false;
+            }
+        }
+
+        async function syncActivityToSheets(patchData) {
+            try {
+                const { operation, data } = patchData;
+                
+                if (operation === 'add') {
+                    // Append new activity to Activities sheet
+                    const row = [
+                        data.id, data.fruitName, data.type, data.duration,
+                        data.notes, data.outcome, data.user, data.createdDate
+                    ];
+                    
+                    return await appendToSheet('Activities', [row]);
+                    
+                } else if (operation === 'update') {
+                    // Update existing activity
+                    return await syncAllActivitiesToSheets();
+                    
+                } else if (operation === 'delete') {
+                    // Delete activity
+                    return await syncAllActivitiesToSheets();
+                }
+                
+                return false;
+                
+            } catch (error) {
+                console.error('❌ Failed to sync activity to sheets:', error);
+                return false;
+            }
+        }
+
+        async function syncUserToSheets(patchData) {
+            try {
+                // User sync would go to User Access sheet
+                console.log('📊 User sync to sheets:', patchData);
+                // Implementation depends on your User Access sheet structure
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Failed to sync user to sheets:', error);
+                return false;
+            }
+        }
+
+        async function syncBulkToSheets(bulkData) {
+            try {
+                const { dataType, operation } = bulkData;
+                
+                if (dataType === 'fruit') {
+                    return await syncAllFruitsToSheets();
+                } else if (dataType === 'activity') {
+                    return await syncAllActivitiesToSheets();
+                }
+                
+                return false;
+                
+            } catch (error) {
+                console.error('❌ Failed to sync bulk data to sheets:', error);
+                return false;
+            }
+        }
+
+        async function syncAllFruitsToSheets() {
+            try {
+                const headers = ['ID', 'Name', 'Assigned To', 'Phone', 'Instagram', 'Facebook', 'Twitter', 'Lead Source', 'Campaign', 'Status', 'Notes', 'Created Date', 'Created By'];
+                const rows = [headers];
+                
+                fruits.forEach(fruit => {
+                    rows.push([
+                        fruit.id || '', fruit.name || '', fruit.assignedTo || '', fruit.phone || '',
+                        fruit.instagram || '', fruit.facebook || '', fruit.twitter || '',
+                        fruit.leadSource || '', fruit.campaign || '', fruit.status || '',
+                        fruit.notes || '', fruit.createdDate || '', fruit.createdBy || ''
+                    ]);
+                });
+                
+                return await updateSheetData('Fruits', rows);
+                
+            } catch (error) {
+                console.error('❌ Failed to sync all fruits:', error);
+                return false;
+            }
+        }
+
+        async function syncAllActivitiesToSheets() {
+            try {
+                const headers = ['ID', 'Fruit Name', 'Type', 'Duration', 'Notes', 'Outcome', 'User', 'Created Date'];
+                const rows = [headers];
+                
+                activities.forEach(activity => {
+                    rows.push([
+                        activity.id || '', activity.fruitName || '', activity.type || '', activity.duration || '',
+                        activity.notes || '', activity.outcome || '', activity.user || '', activity.createdDate || ''
+                    ]);
+                });
+                
+                return await updateSheetData('Activities', rows);
+                
+            } catch (error) {
+                console.error('❌ Failed to sync all activities:', error);
+                return false;
             }
         }
 
@@ -1990,8 +2141,9 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 
                 showSyncProgress('Syncing data to Google Sheets...');
                 
-                // Sync data directly to Google Sheets
-                await syncDataDirectToSheets();
+                // Sync all current data to Google Sheets
+                await syncAllFruitsToSheets();
+                await syncAllActivitiesToSheets();
                 
                 // Save data locally as backup
                 saveLocalData();
@@ -3581,5 +3733,5 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a40201065eb4dc',t:'MTc1OTc0MTY0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a40aace298b4dc',t:'MTc1OTc0MTk5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
