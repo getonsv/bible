@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test</title>
+    <title>Evangelism CRM - Track Your Ministry Impact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1500,21 +1500,15 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 // Update last login time
                 updateUserLastLogin(email);
                 
-                // CRITICAL: Get OAuth token for Google Sheets write access
-                try {
-                    console.log('🔐 Requesting OAuth token for Google Sheets write access...');
-                    await getOAuthToken();
-                    console.log('✅ OAuth token obtained successfully');
-                } catch (oauthError) {
-                    console.error('❌ OAuth failed:', oauthError);
-                    showNotification('Google Sheets access required for sync functionality', 'warning');
-                }
+                // Note: Using Apps Script for sync - no OAuth required
+                console.log('📊 Using Apps Script Web App for Google Sheets sync (no OAuth required)');
+                isOnlineMode = true; // Enable sync mode immediately
                 
                 // Load real data from Google Sheets
                 await loadRealDataFromSheets();
                 
                 showDashboard();
-                showNotification(`Welcome ${currentUser.name}! Real-time sync is ${accessToken ? 'enabled' : 'disabled'}.`);
+                showNotification(`Welcome ${currentUser.name}! Apps Script sync is ${isOnlineMode ? 'enabled' : 'available'}.`);
                 
             } catch (connectionError) {
                 console.error('❌ Authentication error:', connectionError);
@@ -1555,23 +1549,23 @@ function validateSpreadsheetAccess(spreadsheetId) {
             updateFruitsGrid();
             populateTeamMemberDropdown();
             
-            // Update the enable button based on OAuth status
+            // Update the enable button for Apps Script sync
             const enableBtn = document.getElementById('enableOnlineBtn');
             if (enableBtn) {
-                if (accessToken) {
+                if (isOnlineMode) {
                     enableBtn.innerHTML = `
                         <i class="fas fa-check-circle text-green-600"></i>
-                        <span>Real-Time Sync Active</span>
+                        <span>Apps Script Sync Active</span>
                     `;
                     enableBtn.disabled = true;
                     enableBtn.classList.add('bg-green-50');
                     
-                    // Start real-time sync if we have token
+                    // Start real-time sync
                     startRealTimeSync();
                 } else {
                     enableBtn.innerHTML = `
-                        <i class="fas fa-key text-orange-600"></i>
-                        <span>Enable Online Mode</span>
+                        <i class="fas fa-cloud text-blue-600"></i>
+                        <span>Enable Apps Script Sync</span>
                     `;
                     enableBtn.disabled = false;
                     enableBtn.classList.remove('bg-green-50');
@@ -1698,7 +1692,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
             
             if (isOnlineMode) {
                 statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full';
-                statusText.textContent = 'Real-Time Sync';
+                statusText.textContent = 'Apps Script Sync';
             } else if (currentUser) {
                 statusIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full';
                 statusText.textContent = 'Local Only';
@@ -1708,7 +1702,7 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        // Enhanced Auto-sync system for real-time Google Sheets updates
+        // Enhanced Auto-sync system using Apps Script (no OAuth required)
         let syncQueue = [];
         let isSyncing = false;
         let syncRetryCount = 0;
@@ -1721,11 +1715,10 @@ function validateSpreadsheetAccess(spreadsheetId) {
 
         async function autoSyncToSheets(action, data, priority = 'normal') {
             try {
-                console.log('🔄 Auto-syncing to Google Sheets:', action, data);
+                console.log('🔄 Auto-syncing via Apps Script (no OAuth required):', action, data);
                 
-                // Since you've granted edit access, we can sync directly using the API key
-                // No OAuth token required for public sheets with edit access
-                console.log('📊 Using direct API access with granted edit permissions');
+                // Use Apps Script Web App for all sync operations
+                console.log('📊 Using Apps Script Web App for sync operations');
                 
                 // Add to sync queue
                 const syncItem = {
@@ -1747,8 +1740,8 @@ function validateSpreadsheetAccess(spreadsheetId) {
                 // Show sync indicator
                 showSyncIndicator();
                 
-                // Process sync queue with direct API access
-                await processSyncQueueDirectAPI();
+                // Process sync queue with Apps Script
+                await processSyncQueueAppsScript();
                 
             } catch (error) {
                 console.error('❌ Auto-sync failed:', error);
@@ -1764,11 +1757,11 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        async function processSyncQueueDirectAPI() {
+        async function processSyncQueueAppsScript() {
             if (isSyncing || syncQueue.length === 0) return;
             
             isSyncing = true;
-            console.log('📊 Processing sync queue with direct API access:', syncQueue.length, 'items');
+            console.log('📊 Processing sync queue with Apps Script:', syncQueue.length, 'items');
             
             try {
                 // Process items in batches
@@ -1777,19 +1770,19 @@ function validateSpreadsheetAccess(spreadsheetId) {
                     
                     for (const item of batch) {
                         try {
-                            console.log('🔄 Syncing to Google Sheets:', item.action, 'ID:', item.id);
+                            console.log('🔄 Syncing via Apps Script:', item.action, 'ID:', item.id);
                             
                             let result = false;
                             
                             // Route to appropriate sync function based on action
                             if (item.action === 'patch_fruit') {
-                                result = await syncFruitToSheetsDirectAPI(item.data);
+                                result = await syncFruitToSheetsAppsScript(item.data);
                             } else if (item.action === 'patch_activity') {
-                                result = await syncActivityToSheetsDirectAPI(item.data);
+                                result = await syncActivityToSheetsAppsScript(item.data);
                             } else if (item.action === 'patch_user') {
-                                result = await syncUserToSheetsDirectAPI(item.data);
+                                result = await syncUserToSheetsAppsScript(item.data);
                             } else if (item.action === 'bulk_operation') {
-                                result = await syncBulkToSheetsDirectAPI(item.data);
+                                result = await syncBulkToSheetsAppsScript(item.data);
                             }
                             
                             if (result) {
@@ -1845,43 +1838,64 @@ function validateSpreadsheetAccess(spreadsheetId) {
         }
 
         // Legacy function for backward compatibility
+        async function processSyncQueueDirectAPI() {
+            return await processSyncQueueAppsScript();
+        }
+
+        // Legacy function for backward compatibility
         async function processSyncQueueWithSheetsAPI() {
             return await processSyncQueueDirectAPI();
         }
 
-        // Direct API sync functions (no OAuth required for public sheets with edit access)
-        async function syncFruitToSheetsDirectAPI(patchData) {
+        // Apps Script sync functions (no OAuth required)
+        async function syncFruitToSheetsAppsScript(patchData) {
             try {
-                console.log('🔄 Syncing fruit to Google Sheets with direct API:', patchData);
+                console.log('🔄 Syncing fruit via Apps Script:', patchData);
                 
                 const { operation, data } = patchData;
                 
                 if (operation === 'add') {
-                    // Append new fruit to Fruits sheet
-                    const row = [
-                        data.id, data.name, data.assignedTo, data.phone, 
-                        data.instagram, data.facebook, data.twitter, 
-                        data.leadSource, data.campaign, data.status, 
-                        data.notes, data.createdDate, data.createdBy
-                    ];
+                    // Add new fruit via Apps Script
+                    const result = await callAppsScript('addFruit', {
+                        fruitData: data,
+                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                    });
                     
-                    console.log('📊 Appending fruit row to Fruits sheet:', row);
-                    const result = await appendToSheetDirectAPI('Fruits', [row]);
-                    console.log('✅ Fruit append result:', result);
-                    return true;
+                    console.log('✅ Fruit add result:', result);
+                    return result.success || true;
                     
-                } else if (operation === 'update' || operation === 'delete') {
-                    // For updates and deletes, sync all fruits data
-                    console.log('📊 Syncing all fruits due to update/delete operation');
-                    return await syncAllFruitsToSheetsDirectAPI();
+                } else if (operation === 'update') {
+                    // Update fruit via Apps Script
+                    const result = await callAppsScript('updateFruit', {
+                        fruitData: data,
+                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                    });
+                    
+                    console.log('✅ Fruit update result:', result);
+                    return result.success || true;
+                    
+                } else if (operation === 'delete') {
+                    // Delete fruit via Apps Script
+                    const result = await callAppsScript('deleteFruit', {
+                        fruitId: data.id,
+                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                    });
+                    
+                    console.log('✅ Fruit delete result:', result);
+                    return result.success || true;
                 }
                 
                 return false;
                 
             } catch (error) {
-                console.error('❌ Failed to sync fruit to sheets:', error);
-                throw error; // Re-throw to trigger retry logic
+                console.error('❌ Failed to sync fruit via Apps Script:', error);
+                return false; // Don't throw - let retry logic handle it
             }
+        }
+
+        // Legacy function for backward compatibility
+        async function syncFruitToSheetsDirectAPI(patchData) {
+            return await syncFruitToSheetsAppsScript(patchData);
         }
 
         // Legacy function for backward compatibility
@@ -1889,74 +1903,104 @@ function validateSpreadsheetAccess(spreadsheetId) {
             return await syncFruitToSheetsDirectAPI(patchData);
         }
 
-        async function syncActivityToSheetsDirectAPI(patchData) {
+        async function syncActivityToSheetsAppsScript(patchData) {
             try {
-                console.log('🔄 Syncing activity to Google Sheets with direct API:', patchData);
+                console.log('🔄 Syncing activity via Apps Script:', patchData);
                 
                 const { operation, data } = patchData;
                 
                 if (operation === 'add') {
-                    // Append new activity to Activities sheet
-                    const row = [
-                        data.id, data.fruitName, data.type, data.duration,
-                        data.notes, data.outcome, data.user, data.createdDate
-                    ];
+                    // Add new activity via Apps Script
+                    const result = await callAppsScript('addActivity', {
+                        activityData: data,
+                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                    });
                     
-                    console.log('📊 Appending activity row to Activities sheet:', row);
-                    const result = await appendToSheetDirectAPI('Activities', [row]);
-                    console.log('✅ Activity append result:', result);
-                    return true;
+                    console.log('✅ Activity add result:', result);
+                    return result.success || true;
                     
-                } else if (operation === 'update' || operation === 'delete') {
-                    // For updates and deletes, sync all activities data
-                    console.log('📊 Syncing all activities due to update/delete operation');
-                    return await syncAllActivitiesToSheetsDirectAPI();
+                } else if (operation === 'update') {
+                    // Update activity via Apps Script
+                    const result = await callAppsScript('updateActivity', {
+                        activityData: data,
+                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                    });
+                    
+                    console.log('✅ Activity update result:', result);
+                    return result.success || true;
+                    
+                } else if (operation === 'delete') {
+                    // Delete activity via Apps Script
+                    const result = await callAppsScript('deleteActivity', {
+                        activityId: data.id,
+                        spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                    });
+                    
+                    console.log('✅ Activity delete result:', result);
+                    return result.success || true;
                 }
                 
                 return false;
                 
             } catch (error) {
-                console.error('❌ Failed to sync activity to sheets:', error);
-                throw error; // Re-throw to trigger retry logic
+                console.error('❌ Failed to sync activity via Apps Script:', error);
+                return false; // Don't throw - let retry logic handle it
             }
         }
 
-        async function syncUserToSheetsDirectAPI(patchData) {
+        // Legacy function for backward compatibility
+        async function syncActivityToSheetsDirectAPI(patchData) {
+            return await syncActivityToSheetsAppsScript(patchData);
+        }
+
+        async function syncUserToSheetsAppsScript(patchData) {
             try {
-                // User sync would go to User Access sheet
-                console.log('📊 User sync to sheets with direct API:', patchData);
+                console.log('🔄 Syncing user via Apps Script:', patchData);
                 
-                // Use Apps Script to update user data
                 const result = await callAppsScript('updateUserData', {
                     userData: patchData.data,
                     operation: patchData.operation,
                     spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
                 });
                 
+                console.log('✅ User sync result:', result);
                 return result.success || true;
                 
             } catch (error) {
-                console.error('❌ Failed to sync user to sheets:', error);
+                console.error('❌ Failed to sync user via Apps Script:', error);
                 return false;
             }
         }
 
-        async function syncBulkToSheetsDirectAPI(bulkData) {
+        async function syncBulkToSheetsAppsScript(bulkData) {
             try {
-                const { dataType, operation } = bulkData;
+                console.log('🔄 Syncing bulk data via Apps Script:', bulkData);
                 
-                if (dataType === 'fruit') {
-                    return await syncAllFruitsToSheetsDirectAPI();
-                } else if (dataType === 'activity') {
-                    return await syncAllActivitiesToSheetsDirectAPI();
-                }
+                const { dataType, operation, items } = bulkData;
                 
-                return false;
+                const result = await callAppsScript('bulkOperation', {
+                    dataType: dataType,
+                    operation: operation,
+                    items: items,
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                });
+                
+                console.log('✅ Bulk sync result:', result);
+                return result.success || true;
                 
             } catch (error) {
-                console.error('❌ Failed to sync bulk data to sheets:', error);
+                console.error('❌ Failed to sync bulk data via Apps Script:', error);
                 return false;
             }
+        }
+
+        // Legacy functions for backward compatibility
+        async function syncUserToSheetsDirectAPI(patchData) {
+            return await syncUserToSheetsAppsScript(patchData);
+        }
+
+        async function syncBulkToSheetsDirectAPI(bulkData) {
+            return await syncBulkToSheetsAppsScript(bulkData);
         }
 
         // Legacy functions for backward compatibility
@@ -4280,39 +4324,90 @@ function validateSpreadsheetAccess(spreadsheetId) {
             }
         }
 
-        // Enable online mode with OAuth
+        // Enable online mode with Apps Script (no OAuth required)
         async function enableOnlineMode() {
             try {
-                showNotification('Requesting Google Sheets access...', 'info');
+                showNotification('Enabling Apps Script sync...', 'info');
                 
-                await getOAuthToken();
+                // Test Apps Script connection first
+                const testResult = await callAppsScript('test', {});
+                console.log('📊 Apps Script test result:', testResult);
+                
+                // Enable online mode
+                isOnlineMode = true;
+                updateConnectionStatus();
                 
                 // Update UI to show online status
                 const enableBtn = document.getElementById('enableOnlineBtn');
                 if (enableBtn) {
                     enableBtn.innerHTML = `
                         <i class="fas fa-check-circle text-green-600"></i>
-                        <span>Real-Time Sync Active</span>
+                        <span>Apps Script Sync Active</span>
                     `;
                     enableBtn.disabled = true;
                     enableBtn.classList.add('bg-green-50');
                 }
                 
-                showNotification('✅ Real-time sync enabled! Changes will sync automatically every 30 seconds.');
+                showNotification('✅ Apps Script sync enabled! Changes will sync automatically every 30 seconds.');
                 
                 // Start real-time sync
                 startRealTimeSync();
                 
                 // Automatically try to load fresh data
                 setTimeout(() => {
-                    loadFromGoogleSheets();
+                    loadFromAppsScript();
                 }, 1000);
                 
             } catch (error) {
-                console.error('❌ Failed to enable online mode:', error);
-                showNotification('Failed to enable online mode: ' + error.message, 'error');
+                console.error('❌ Failed to enable Apps Script sync:', error);
+                showNotification('Failed to enable sync: ' + error.message, 'error');
+            }
+        }
+
+        // Load data from Apps Script
+        async function loadFromAppsScript() {
+            try {
+                console.log('📊 Loading data from Apps Script...');
+                showNotification('Loading data from Google Sheets via Apps Script...', 'info');
+                
+                // Load fruits data
+                const fruitsResult = await callAppsScript('getFruits', {
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                });
+                
+                if (fruitsResult.success && fruitsResult.data) {
+                    fruits = fruitsResult.data;
+                    console.log('📊 Loaded', fruits.length, 'fruits from Apps Script');
+                }
+                
+                // Load activities data
+                const activitiesResult = await callAppsScript('getActivities', {
+                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID
+                });
+                
+                if (activitiesResult.success && activitiesResult.data) {
+                    activities = activitiesResult.data;
+                    console.log('📊 Loaded', activities.length, 'activities from Apps Script');
+                }
+                
+                // Update UI
+                updateFruitsGrid();
+                updateStats();
+                updateRecentActivities();
+                
+                // Save locally as backup
+                saveLocalData();
+                
+                showNotification('✅ Data loaded successfully from Google Sheets!');
+                
+            } catch (error) {
+                console.error('❌ Failed to load from Apps Script:', error);
+                showNotification('Failed to load data: ' + error.message, 'warning');
+                
+                // Fallback to local data
+                loadLocalData();
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a44755133bb4dc',t:'MTc1OTc0NDQ4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a44f426423b4dc',t:'MTc1OTc0NDgwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
