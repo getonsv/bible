@@ -784,23 +784,22 @@
                 console.log('📊 Validating against spreadsheet:', GOOGLE_CONFIG.SPREADSHEET_ID);
                 console.log('📋 Using sheet:', GOOGLE_CONFIG.SHEET_NAME);
                 
-                // Validate user access via Apps Script with detailed logging
-                const validationPayload = {
+                // Validate user access via Apps Script using GET with URL parameters to avoid CORS preflight
+                const validationParams = new URLSearchParams({
                     action: 'validateUser',
                     email: email,
                     spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
                     sheetName: GOOGLE_CONFIG.SHEET_NAME
-                };
+                });
                 
-                console.log('🔗 Validation payload:', validationPayload);
-                console.log('📡 Apps Script URL:', APPS_SCRIPT_CONFIG.WEB_APP_URL);
+                const validationUrl = `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?${validationParams.toString()}`;
                 
-                const validationResponse = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(validationPayload)
+                console.log('🔗 Validation URL:', validationUrl);
+                console.log('📡 Using GET request to avoid CORS preflight');
+                
+                const validationResponse = await fetch(validationUrl, {
+                    method: 'GET',
+                    mode: 'cors'
                 });
                 
                 const responseText = await validationResponse.text();
@@ -945,22 +944,30 @@
             }
         }
 
-        // Apps Script API calls
+        // Apps Script API calls - Using GET to avoid CORS preflight issues
         async function callAppsScript(action, data = {}) {
             try {
-                const payload = { 
+                const params = new URLSearchParams({ 
                     action, 
                     spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    sheetName: GOOGLE_CONFIG.SHEET_NAME,
-                    ...data 
-                };
+                    sheetName: GOOGLE_CONFIG.SHEET_NAME
+                });
                 
-                console.log('📡 Calling Apps Script:', action, payload);
+                // Add data parameters
+                Object.entries(data).forEach(([key, value]) => {
+                    if (typeof value === 'object') {
+                        params.append(key, JSON.stringify(value));
+                    } else {
+                        params.append(key, value);
+                    }
+                });
                 
-                const response = await fetch(APPS_SCRIPT_CONFIG.WEB_APP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                const url = `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?${params.toString()}`;
+                console.log('📡 Calling Apps Script:', action, url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors'
                 });
                 
                 const result = await response.json();
@@ -1573,5 +1580,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a31ed515eeb4dc',t:'MTc1OTczMjMzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a323dc851fb4dc',t:'MTc1OTczMjU0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
