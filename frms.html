@@ -784,12 +784,10 @@
                 console.log('📊 Validating against spreadsheet:', GOOGLE_CONFIG.SPREADSHEET_ID);
                 console.log('📋 Using sheet:', GOOGLE_CONFIG.SHEET_NAME);
                 
-                // Validate user access via Apps Script using GET with URL parameters to avoid CORS preflight
+                // Validate user access via Apps Script - simplified parameters
                 const validationParams = new URLSearchParams({
                     action: 'validateUser',
-                    email: email,
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    sheetName: GOOGLE_CONFIG.SHEET_NAME
+                    email: email
                 });
                 
                 const validationUrl = `${APPS_SCRIPT_CONFIG.WEB_APP_URL}?${validationParams.toString()}`;
@@ -826,10 +824,34 @@
                 
                 // Show detailed validation info
                 console.log('🔍 Validation Details:');
+                console.log('  - Success:', validation.success);
                 console.log('  - Has Access:', validation.hasAccess);
                 console.log('  - User Found:', validation.user);
                 console.log('  - Error:', validation.error);
                 console.log('  - Debug Info:', validation.debug);
+                
+                // Check if validation failed due to Apps Script error
+                if (!validation.success) {
+                    let errorMessage = 'Validation failed: ';
+                    
+                    if (validation.error) {
+                        if (validation.error.includes('Cannot read properties of undefined')) {
+                            errorMessage += 'Apps Script cannot access the spreadsheet. Please check:\n';
+                            errorMessage += '1. Spreadsheet permissions\n';
+                            errorMessage += '2. Apps Script has access to Google Sheets\n';
+                            errorMessage += '3. Sheet name is correct: "User Access & Admin Config"';
+                        } else {
+                            errorMessage += validation.error;
+                        }
+                    } else {
+                        errorMessage += 'Unknown error occurred';
+                    }
+                    
+                    showNotification(errorMessage, 'error');
+                    console.log('❌ Validation failed for user:', email);
+                    console.log('❌ Validation details:', validation);
+                    return;
+                }
                 
                 if (!validation.hasAccess) {
                     let errorMessage = 'Access denied. ';
@@ -947,13 +969,9 @@
         // Apps Script API calls - Using GET to avoid CORS preflight issues
         async function callAppsScript(action, data = {}) {
             try {
-                const params = new URLSearchParams({ 
-                    action, 
-                    spreadsheetId: GOOGLE_CONFIG.SPREADSHEET_ID,
-                    sheetName: GOOGLE_CONFIG.SHEET_NAME
-                });
+                const params = new URLSearchParams({ action });
                 
-                // Add data parameters
+                // Add data parameters (simplified - no spreadsheet/sheet params)
                 Object.entries(data).forEach(([key, value]) => {
                     if (typeof value === 'object') {
                         params.append(key, JSON.stringify(value));
@@ -1580,5 +1598,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a323dc851fb4dc',t:'MTc1OTczMjU0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a329f2b688b4dc',t:'MTc1OTczMjc5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
