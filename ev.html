@@ -3126,49 +3126,112 @@ async function loadActivitiesFromSharePoint() {
 
 async function updateFruitInSharePoint(fruitId, fruitData) {
     try {
-        console.log('📊 Updating fruit in SharePoint:', fruitId, fruitData);
+        console.log('📊 Getting current fruit data first...');
         
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}/fields`;
+        // First, get the current item to see the field structure
+        const getUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}?expand=fields`;
         
-        // Map the fields to your SharePoint column names
-        const updateData = {
-            Title: fruitData.name || '',
-            AssignedTo: fruitData.assignedTo || '',
-            Phone: fruitData.phone || '',
-            Instagram: fruitData.instagram || '',
-            Facebook: fruitData.facebook || '',
-            Twitter: fruitData.twitter || '',
-            LeadSource: fruitData.leadSource || '',
-            Campaign: fruitData.campaign || '',
-            Status: fruitData.status || 'Initial Contact',
-            Notes: fruitData.notes || ''
-        };
-        
-        console.log('🔄 Sending update data:', updateData);
-        
-        const response = await fetch(url, {
-            method: 'PATCH',
+        const getResponse = await fetch(getUrl, {
             headers: {
                 'Authorization': `Bearer ${sharePointAccessToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(updateData)
+                'Accept': 'application/json'
+            }
         });
         
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Failed to update fruit in SharePoint:', errorText);
-            throw new Error(`Failed to update fruit: ${response.status} ${response.statusText}`);
+        if (getResponse.ok) {
+            const currentData = await getResponse.json();
+            console.log('📋 Current fruit data structure:', currentData.fields);
+            
+            // Now update using the same field names we found
+            const updateUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}/fields`;
+            
+            const updateData = {
+                Title: fruitData.name || currentData.fields.Title,
+                Status: fruitData.status || currentData.fields.Status
+            };
+            
+            // Only include fields that exist in the current data
+            if (currentData.fields.AssignedTo !== undefined) updateData.AssignedTo = fruitData.assignedTo || currentData.fields.AssignedTo;
+            if (currentData.fields.Phone !== undefined) updateData.Phone = fruitData.phone || currentData.fields.Phone;
+            if (currentData.fields.Instagram !== undefined) updateData.Instagram = fruitData.instagram || currentData.fields.Instagram;
+            if (currentData.fields.Facebook !== undefined) updateData.Facebook = fruitData.facebook || currentData.fields.Facebook;
+            if (currentData.fields.Twitter !== undefined) updateData.Twitter = fruitData.twitter || currentData.fields.Twitter;
+            if (currentData.fields.LeadSource !== undefined) updateData.LeadSource = fruitData.leadSource || currentData.fields.LeadSource;
+            if (currentData.fields.Campaign !== undefined) updateData.Campaign = fruitData.campaign || currentData.fields.Campaign;
+            if (currentData.fields.Notes !== undefined) updateData.Notes = fruitData.notes || currentData.fields.Notes;
+            
+            console.log('🔄 Update data based on current structure:', updateData);
+            
+            const updateResponse = await fetch(updateUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${sharePointAccessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            });
+            
+            if (!updateResponse.ok) {
+                const errorText = await updateResponse.text();
+                throw new Error(`Failed to update fruit: ${updateResponse.status} ${updateResponse.statusText} - ${errorText}`);
+            }
+            
+            const result = await updateResponse.json();
+            console.log('✅ Fruit updated successfully');
+            return result;
+            
+        } else {
+            throw new Error(`Failed to get current fruit data: ${getResponse.status}`);
         }
-        
-        const result = await response.json();
-        console.log('✅ Fruit updated in SharePoint successfully:', result);
-        
-        return result;
         
     } catch (error) {
         console.error('❌ Error updating fruit in SharePoint:', error);
         throw error;
+    }
+}
+
+
+
+// Helper function to update additional fields
+async function updateAdditionalFruitFields(fruitId, fruitData) {
+    try {
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}/fields`;
+        
+        // Build update data for additional fields
+        const additionalData = {};
+        
+        // Only include fields that have values and are likely to exist
+        if (fruitData.assignedTo) additionalData.AssignedTo = fruitData.assignedTo;
+        if (fruitData.phone) additionalData.Phone = fruitData.phone;
+        if (fruitData.instagram) additionalData.Instagram = fruitData.instagram;
+        if (fruitData.facebook) additionalData.Facebook = fruitData.facebook;
+        if (fruitData.twitter) additionalData.Twitter = fruitData.twitter;
+        if (fruitData.leadSource) additionalData.LeadSource = fruitData.leadSource;
+        if (fruitData.campaign) additionalData.Campaign = fruitData.campaign;
+        if (fruitData.notes) additionalData.Notes = fruitData.notes;
+        
+        if (Object.keys(additionalData).length > 0) {
+            console.log('🔄 Updating additional fields:', additionalData);
+            
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${sharePointAccessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(additionalData)
+            });
+            
+            if (response.ok) {
+                console.log('✅ Additional fields updated successfully');
+            } else {
+                console.warn('⚠️ Some additional fields failed to update, but core update succeeded');
+            }
+        }
+        
+    } catch (error) {
+        console.warn('⚠️ Failed to update some additional fields, but core update succeeded:', error);
+        // Don't throw error here - the main update already succeeded
     }
 }
 
@@ -5723,6 +5786,37 @@ async function callSharePointAPI(url, options = {}) {
     showNotification('Logged out successfully');
 }
 
+async function debugSharePointFields() {
+    try {
+        console.log('🔍 Debugging SharePoint list fields...');
+        
+        // Get the list schema to see available fields
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/columns`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('📋 Available fields in Fruits list:');
+            data.value.forEach(field => {
+                console.log(`- ${field.name} (${field.displayName}): ${field.type}`);
+            });
+        } else {
+            console.error('❌ Failed to get field list:', response.status);
+        }
+    } catch (error) {
+        console.error('❌ Error debugging fields:', error);
+    }
+}
+
+// Call this when you need to debug
+// debugSharePointFields();
+
 
 // Enhanced page reload detection
 (function() {
@@ -5759,7 +5853,7 @@ async function callSharePointAPI(url, options = {}) {
 
 <!-- Version Display -->
 <div id="versionInfo" class="fixed bottom-4 right-4 text-xs text-gray-400 bg-white bg-opacity-80 px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
-    v1.0.0
+    v1.0.1
 </div>
 
 
