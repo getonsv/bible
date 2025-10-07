@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism System</title>
+    <title>EV System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1132,6 +1132,13 @@
         };
         
 
+        // Azure Function Configuration - Magic Link
+            const AZURE_FUNCTION_CONFIG = {
+                BASE_URL: 'https://evangelism-crm-magiclink-g5a3dfg0cteagkav.canadacentral-01.azurewebsites.net/api',
+                REQUEST_MAGIC_LINK: '/RequestMagicLink',
+                VERIFY_TOKEN: '/VerifyMagicLinkToken'
+            };
+
         // Global state
         let currentUser = null;
         let currentTab = 'overview';
@@ -1354,17 +1361,6 @@
         }
 
 
-// Magic Link Configuration with your actual list IDs
-const MAGIC_LINK_CONFIG = {
-    REQUESTS_LIST_ID: 'ede76111-9eaf-48b0-8315-3d5c3e6ad6e8',
-    RESPONSES_LIST_ID: 'e685fef4-f5b8-4b10-a840-d9cf773c83b9',
-    VERIFICATIONS_LIST_ID: '40d0a813-79b5-4bf7-a9ac-f9cc17616860',
-    VERIFICATION_RESPONSES_LIST_ID: 'a505541a-c56e-4720-b5db-1ec20cdaf2a2',
-    POLLING_INTERVAL: 2000, // 2 seconds
-    MAX_POLLING_ATTEMPTS: 15 // 30 seconds total
-};
-
-
 // Magic Link Functions
 function showMagicLinkModal() {
     document.getElementById('magicLinkModal').classList.remove('hidden');
@@ -1437,53 +1433,40 @@ async function resendMagicLink() {
     }
 }
 
-// Send magic link request
+// Send magic link via Azure Function
 async function sendMagicLinkToBackend(email) {
     try {
-        console.log('📧 Sending magic link request for:', email);
+        console.log('📧 Sending magic link request via Azure Function...');
         
-        if (!sharePointAccessToken) {
-            throw new Error('SharePoint access required. Please sign in with Microsoft first.');
-        }
-
-        // Create request in SharePoint list
-        const requestUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${MAGIC_LINK_CONFIG.REQUESTS_LIST_ID}/items`;
-        
-        const response = await fetch(requestUrl, {
+        const response = await fetch(AZURE_FUNCTION_CONFIG.BASE_URL + AZURE_FUNCTION_CONFIG.REQUEST_MAGIC_LINK, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
                 'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
             },
             body: JSON.stringify({
-                fields: {
-                    Title: `Magic Link Request - ${email}`,
-                    Email: email,
-                    RedirectUrl: window.location.href,
-                    Status: 'Pending',
-                    RequestDate: new Date().toISOString()
-                }
+                email: email,
+                redirect_url: window.location.href
             })
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ SharePoint error:', errorText);
-            throw new Error(`Failed to create magic link request: ${response.status}`);
+            throw new Error(`Failed to send magic link: ${response.status}`);
         }
 
-        const requestData = await response.json();
-        console.log('✅ Magic link request created:', requestData);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to send magic link');
+        }
 
-        // Poll for response
-        return await waitForMagicLinkResponse(email);
+        return result;
         
     } catch (error) {
         console.error('❌ Magic link request failed:', error);
         throw error;
     }
 }
+
 
 // Wait for magic link response
 async function waitForMagicLinkResponse(email) {
@@ -1541,52 +1524,39 @@ async function waitForMagicLinkResponse(email) {
     throw new Error('Timeout waiting for magic link response. Please try again.');
 }
 
-// Verify magic link token
+// Verify token via Azure Function
 async function verifyMagicLinkToken(token) {
     try {
-        console.log('🔐 Verifying magic link token:', token);
+        console.log('🔐 Verifying magic link token via Azure Function...');
         
-        if (!sharePointAccessToken) {
-            throw new Error('SharePoint access required for token verification.');
-        }
-
-        // Create verification request in SharePoint list
-        const verificationUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${MAGIC_LINK_CONFIG.VERIFICATIONS_LIST_ID}/items`;
-        
-        const response = await fetch(verificationUrl, {
+        const response = await fetch(AZURE_FUNCTION_CONFIG.BASE_URL + AZURE_FUNCTION_CONFIG.VERIFY_TOKEN, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
                 'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
             },
             body: JSON.stringify({
-                fields: {
-                    Title: `Token Verification - ${token.substring(0, 10)}...`,
-                    Token: token,
-                    Status: 'Pending',
-                    VerificationDate: new Date().toISOString()
-                }
+                token: token
             })
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ SharePoint error:', errorText);
-            throw new Error(`Failed to create verification request: ${response.status}`);
+            throw new Error(`Token verification failed: ${response.status}`);
         }
 
-        const verificationData = await response.json();
-        console.log('✅ Verification request created:', verificationData);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Token verification failed');
+        }
 
-        // Poll for verification response
-        return await waitForVerificationResponse(token);
+        return result;
         
     } catch (error) {
         console.error('❌ Token verification failed:', error);
         throw error;
     }
 }
+
 
 // Wait for verification response
 async function waitForVerificationResponse(token) {
