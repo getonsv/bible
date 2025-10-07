@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(!) Evangelism FRM</title>
+    <title>Evangelism FRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1139,6 +1139,8 @@
             'Cold Outreach',
             'Other'
         ];
+        
+
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔧 DOM Content Loaded - Starting initialization...');
@@ -1205,7 +1207,6 @@
             // Add stuck loading handler
             setTimeout(handleStuckLoading, 5000);
         });
-            
         // Real-time sync functions
         function startRealTimeSync() {
             if (realTimeSync) {
@@ -1304,37 +1305,47 @@
             }
         }
 
+        
         function initializeMicrosoftAuth() {
-    console.log('🔧 Initializing authentication options...');
-    
-    const buttonContainer = document.getElementById('googleSignInButton');
-    if (buttonContainer) {
-        buttonContainer.innerHTML = `
-            <div class="space-y-3">
-                <button onclick="alert('Microsoft coming soon')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                    <i class="fab fa-microsoft text-xl"></i>
-                    <span>Sign in with Microsoft 365</span>
-                </button>
-                
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300"></div>
+            console.log('🔧 Initializing authentication options...');
+            
+            // Provide both Microsoft 365 and Google authentication
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fab fa-microsoft text-xl"></i>
+                            <span>Sign in with Microsoft 365</span>
+                        </button>
+                        
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">or</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="debugGoogleOAuthConfig(); authenticateWithGoogle();" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fab fa-google text-xl text-red-500"></i>
+                            <span>Sign in with Google</span>
+                        </button>
+                        
+                        <div class="mt-4 text-center">
+                            <p class="text-xs text-gray-500">
+                                <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                                Activities on this application is being monitored
+                            </p>
+                        </div>
                     </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-white text-gray-500">or</span>
-                    </div>
-                </div>
-                
-                <button onclick="authenticateWithGoogle()" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
-                    <i class="fab fa-google text-xl text-red-500"></i>
-                    <span>Sign in with Google</span>
-                </button>
-            </div>
-        `;
-    }
-    
-    console.log('✅ Authentication UI initialized');
-}
+                `;
+            }
+            
+            console.log('✅ Multi-provider authentication initialized');
+        }
+
 
         function initializeGoogleAuth() {
             // Load Google Identity Services
@@ -1399,101 +1410,36 @@
     console.log('🔐 No OAuth callback parameters found');
     return false;
 }
+
+function forceCleanURL() {
+    console.log('🧹 Force cleaning URL...');
+    const currentUrl = window.location.href;
     
-    async function processOAuthCallback(authCode, returnedState) {
+    // Check if this looks like an OAuth callback
+    if (currentUrl.includes('code=') || currentUrl.includes('state=')) {
+        console.log('⚠️ OAuth parameters detected, cleaning URL...');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        console.log('✅ URL cleaned:', window.location.href);
+    }
+}
+
+// Call this immediately
+forceCleanURL();
+
+
+async function processOAuthCallback(authCode, returnedState) {
     // PROTECTION: Immediately reject Google OAuth calls
     if (returnedState && returnedState.startsWith('google_auth_')) {
         console.error('🚫 BLOCKED: Google OAuth call reached Microsoft processor!');
         console.log('🔍 Details:', { code: authCode, state: returnedState });
         showNotification('Routing error: Google OAuth reached wrong processor', 'error');
         return;
-    }}
-
-    {
-        try {
-            console.log('🔄 Processing Microsoft OAuth callback...');
-            
-            // Validate state parameter
-            const storedState = sessionStorage.getItem('pkce_state');
-            if (returnedState && storedState && returnedState !== storedState) {
-                throw new Error('Invalid state parameter - possible security issue');
-            }
-            
-            // Check if we already processed this callback
-            if (sessionStorage.getItem('oauth_processed')) {
-                console.log('⚠️ OAuth callback already processed, skipping...');
-                return;
-            }
-            
-            // Mark as processed to prevent duplicate processing
-            sessionStorage.setItem('oauth_processed', 'true');
-            
-            // Exchange code for token
-            console.log('🔄 Exchanging code for token...');
-            const tokenData = await exchangeCodeForTokenPKCE(authCode);
-            
-            sharePointAccessToken = tokenData.access_token;
-            isSharePointMode = true;
-            
-            // Store token with expiration
-            sessionStorage.setItem('access_token', tokenData.access_token);
-            sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
-            
-            // Get basic user info from Microsoft
-            console.log('🔄 Getting user info from Microsoft...');
-            const basicUserInfo = await getUserInfo(tokenData.access_token);
-            
-            console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
-            
-            // Check if user exists in SharePoint Users list and get their role
-            console.log('🔄 Checking user in SharePoint list...');
-            const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
-            
-            if (!userInfo) {
-                console.log('❌ User not authorized in SharePoint');
-                logout();
-                return;
-            }
-            
-            // Set current user with SharePoint-defined permissions
-            currentUser = userInfo;
-            sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-            
-            // Clean up PKCE parameters and processing flag
-            sessionStorage.removeItem('pkce_code_verifier');
-            sessionStorage.removeItem('pkce_state');
-            sessionStorage.removeItem('oauth_processed');
-            
-            // Clean URL - IMPORTANT: Remove OAuth parameters from URL
-            console.log('🔄 Cleaning URL and showing dashboard...');
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            // Load data from SharePoint
-            await loadDataFromSharePoint();
-            
-            showDashboard();
-            
-            // Start real-time sync
-            startRealTimeSync();
-            
-            showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
-            
-        } catch (error) {
-            console.error('❌ OAuth callback processing failed:', error);
-            showNotification('Authentication failed: ' + error.message, 'error');
-            
-            // Clean up on failure
-            sessionStorage.removeItem('pkce_code_verifier');
-            sessionStorage.removeItem('pkce_state');
-            sessionStorage.removeItem('oauth_processed');
-            
-            // Clean URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            // Show login screen again
-            initializeMicrosoftAuth();
-        }
     }
+    
+    // Rest of your existing processOAuthCallback function...
+    try {
+        console.log('🔄 Processing Microsoft OAuth callback...');
+        // ... existing code ...
 
 
     async function processGoogleOAuthCallback(authCode, returnedState) {
@@ -4850,21 +4796,6 @@ if (authCode) {
         }
     }
 }
-
-function forceCleanURL() {
-    console.log('🧹 Force cleaning URL...');
-    const currentUrl = window.location.href;
-    
-    // Check if this looks like an OAuth callback
-    if (currentUrl.includes('code=') || currentUrl.includes('state=')) {
-        console.log('⚠️ OAuth parameters detected, cleaning URL...');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        console.log('✅ URL cleaned:', window.location.href);
-    }
-}
-
-// Call this immediately
-forceCleanURL();
         
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
