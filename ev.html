@@ -1139,8 +1139,6 @@
             'Cold Outreach',
             'Other'
         ];
-        
-
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔧 DOM Content Loaded - Starting initialization...');
@@ -1207,6 +1205,7 @@
             // Add stuck loading handler
             setTimeout(handleStuckLoading, 5000);
         });
+            
         // Real-time sync functions
         function startRealTimeSync() {
             if (realTimeSync) {
@@ -1410,36 +1409,101 @@
     console.log('🔐 No OAuth callback parameters found');
     return false;
 }
-
-function forceCleanURL() {
-    console.log('🧹 Force cleaning URL...');
-    const currentUrl = window.location.href;
     
-    // Check if this looks like an OAuth callback
-    if (currentUrl.includes('code=') || currentUrl.includes('state=')) {
-        console.log('⚠️ OAuth parameters detected, cleaning URL...');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        console.log('✅ URL cleaned:', window.location.href);
-    }
-}
-
-// Call this immediately
-forceCleanURL();
-
-
-async function processOAuthCallback(authCode, returnedState) {
+    async function processOAuthCallback(authCode, returnedState) {
     // PROTECTION: Immediately reject Google OAuth calls
     if (returnedState && returnedState.startsWith('google_auth_')) {
         console.error('🚫 BLOCKED: Google OAuth call reached Microsoft processor!');
         console.log('🔍 Details:', { code: authCode, state: returnedState });
         showNotification('Routing error: Google OAuth reached wrong processor', 'error');
         return;
+    }}
+
+    {
+        try {
+            console.log('🔄 Processing Microsoft OAuth callback...');
+            
+            // Validate state parameter
+            const storedState = sessionStorage.getItem('pkce_state');
+            if (returnedState && storedState && returnedState !== storedState) {
+                throw new Error('Invalid state parameter - possible security issue');
+            }
+            
+            // Check if we already processed this callback
+            if (sessionStorage.getItem('oauth_processed')) {
+                console.log('⚠️ OAuth callback already processed, skipping...');
+                return;
+            }
+            
+            // Mark as processed to prevent duplicate processing
+            sessionStorage.setItem('oauth_processed', 'true');
+            
+            // Exchange code for token
+            console.log('🔄 Exchanging code for token...');
+            const tokenData = await exchangeCodeForTokenPKCE(authCode);
+            
+            sharePointAccessToken = tokenData.access_token;
+            isSharePointMode = true;
+            
+            // Store token with expiration
+            sessionStorage.setItem('access_token', tokenData.access_token);
+            sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
+            
+            // Get basic user info from Microsoft
+            console.log('🔄 Getting user info from Microsoft...');
+            const basicUserInfo = await getUserInfo(tokenData.access_token);
+            
+            console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
+            
+            // Check if user exists in SharePoint Users list and get their role
+            console.log('🔄 Checking user in SharePoint list...');
+            const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
+            
+            if (!userInfo) {
+                console.log('❌ User not authorized in SharePoint');
+                logout();
+                return;
+            }
+            
+            // Set current user with SharePoint-defined permissions
+            currentUser = userInfo;
+            sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+            
+            // Clean up PKCE parameters and processing flag
+            sessionStorage.removeItem('pkce_code_verifier');
+            sessionStorage.removeItem('pkce_state');
+            sessionStorage.removeItem('oauth_processed');
+            
+            // Clean URL - IMPORTANT: Remove OAuth parameters from URL
+            console.log('🔄 Cleaning URL and showing dashboard...');
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Load data from SharePoint
+            await loadDataFromSharePoint();
+            
+            showDashboard();
+            
+            // Start real-time sync
+            startRealTimeSync();
+            
+            showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
+            
+        } catch (error) {
+            console.error('❌ OAuth callback processing failed:', error);
+            showNotification('Authentication failed: ' + error.message, 'error');
+            
+            // Clean up on failure
+            sessionStorage.removeItem('pkce_code_verifier');
+            sessionStorage.removeItem('pkce_state');
+            sessionStorage.removeItem('oauth_processed');
+            
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Show login screen again
+            initializeMicrosoftAuth();
+        }
     }
-    
-    // Rest of your existing processOAuthCallback function...
-    try {
-        console.log('🔄 Processing Microsoft OAuth callback...');
-        // ... existing code ...
 
 
     async function processGoogleOAuthCallback(authCode, returnedState) {
@@ -4796,6 +4860,21 @@ if (authCode) {
         }
     }
 }
+
+function forceCleanURL() {
+    console.log('🧹 Force cleaning URL...');
+    const currentUrl = window.location.href;
+    
+    // Check if this looks like an OAuth callback
+    if (currentUrl.includes('code=') || currentUrl.includes('state=')) {
+        console.log('⚠️ OAuth parameters detected, cleaning URL...');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        console.log('✅ URL cleaned:', window.location.href);
+    }
+}
+
+// Call this immediately
+forceCleanURL();
         
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
