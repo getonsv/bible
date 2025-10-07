@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism FRMS</title>
+    <title>Evengelism Tool - FRMS</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1058,8 +1059,6 @@
         };
         
         // Google OAuth configuration
-
-        // Google OAuth configuration
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
             CLIENT_SECRET: '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',
@@ -1067,7 +1066,7 @@
             AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
             TOKEN_URI: 'https://oauth2.googleapis.com/token',
             SCOPES: 'openid email profile',
-            REDIRECT_URI: 'https://app.shill.es/ev' // Make sure this EXACTLY matches your Google Console
+            REDIRECT_URI: window.location.origin + window.location.pathname // Use current URL dynamically
         };
 
 
@@ -1262,11 +1261,9 @@
             }
         }
 
-        
         function initializeMicrosoftAuth() {
     console.log('🔧 Initializing authentication options...');
     
-    // Provide both Microsoft 365 and Google authentication
     const buttonContainer = document.getElementById('googleSignInButton');
     if (buttonContainer) {
         buttonContainer.innerHTML = `
@@ -1289,13 +1286,6 @@
                     <i class="fab fa-google text-xl text-red-500"></i>
                     <span>Sign in with Google</span>
                 </button>
-                
-                <div class="mt-4 text-center">
-                    <p class="text-xs text-gray-500">
-                        <i class="fas fa-info-circle text-blue-500 mr-1"></i>
-                        Google users will also need Microsoft 365 authentication for SharePoint access
-                    </p>
-                </div>
                 
                 <div class="mt-4 text-center">
                     <p class="text-xs text-gray-500">
@@ -1474,77 +1464,241 @@
 }
 
 
-        async function processGoogleOAuthCallback(authCode, returnedState) {
-            try {
-                console.log('🔄 Processing Google OAuth callback...');
-                
-                // Validate state parameter
-                const storedState = sessionStorage.getItem('google_auth_state');
-                if (returnedState && storedState && returnedState !== storedState) {
-                    throw new Error('Invalid state parameter - possible security issue');
-                }
-                
-                // Check if we already processed this callback
-                if (sessionStorage.getItem('google_oauth_processed')) {
-                    console.log('⚠️ Google OAuth callback already processed, skipping...');
-                    return;
-                }
-                
-                // Mark as processed to prevent duplicate processing
-                sessionStorage.setItem('google_oauth_processed', 'true');
-                
-                // Exchange code for token
-                console.log('🔄 Exchanging Google code for token...');
-                const tokenData = await exchangeGoogleCodeForToken(authCode);
-                
-                console.log('✅ Google token exchange successful');
-                
-                // Get user info from Google
-                console.log('🔄 Getting user info from Google...');
-                const userInfo = await getGoogleUserInfo(tokenData.access_token);
-                
-                console.log('👤 Google user authenticated:', userInfo.email);
-                
-                // Store Google token for future use
-                sessionStorage.setItem('google_access_token', tokenData.access_token);
-                
-                // For Google users, we need Microsoft authentication to access SharePoint
-                if (!sharePointAccessToken) {
-                    console.log('🔐 Google user needs Microsoft authentication for SharePoint access');
-                    
-                    // Store Google user info temporarily
-                    sessionStorage.setItem('pending_google_user', JSON.stringify(userInfo));
-                    
-                    // Show message and initiate Microsoft authentication
-                    showNotification('Google authentication successful! Now connecting to SharePoint...', 'info');
-                    
-                    // Automatically start Microsoft authentication
-                    setTimeout(() => {
-                        authenticateWithMicrosoft();
-                    }, 1000);
-                    
-                    return;
-                }
-                
-                // If we already have SharePoint access, validate the user immediately
-                await validateGoogleUserWithSharePoint(userInfo);
-                
-            } catch (error) {
-                console.error('❌ Google OAuth callback processing failed:', error);
-                showNotification('Google authentication failed: ' + error.message, 'error');
-                
-                // Clean up on failure
-                sessionStorage.removeItem('google_auth_state');
-                sessionStorage.removeItem('google_oauth_processed');
-                sessionStorage.removeItem('pending_google_user');
-                
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // Show login screen again
-                initializeMicrosoftAuth();
-            }
+async function loadDataWithGoogleAuth() {
+    try {
+        console.log('📊 Loading data with Google authentication...');
+        showNotification('Loading data from SharePoint...', 'info');
+        
+        // Load fruits from SharePoint using Google auth
+        await loadFruitsWithGoogleAuth();
+        
+        // Load activities from SharePoint using Google auth
+        await loadActivitiesWithGoogleAuth();
+        
+        console.log('✅ Data loaded successfully with Google authentication');
+        console.log('📊 Loaded', fruits.length, 'fruits and', activities.length, 'activities');
+        
+        // Save locally as backup
+        saveLocalData();
+        
+    } catch (error) {
+        console.error('❌ Failed to load data with Google authentication:', error);
+        showNotification('Failed to load from SharePoint, using local data', 'warning');
+        
+        // Fallback to local data
+        loadLocalData();
+    }
+}
+
+async function loadFruitsWithGoogleAuth() {
+    try {
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items?expand=fields`;
+        
+        console.log('📊 Loading fruits via Google auth API...');
+        
+        // Use the API call function that handles both direct and proxy calls
+        const response = await callSharePointAPI(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        
+        const data = await response.json();
+        const items = data.value || [];
+        
+        fruits = items.map(item => ({
+            id: item.id.toString(),
+            name: item.fields.Title || '',
+            assignedTo: item.fields.AssignedTo || '',
+            phone: item.fields.Phone || '',
+            instagram: item.fields.Instagram || '',
+            facebook: item.fields.Facebook || '',
+            twitter: item.fields.Twitter || '',
+            leadSource: item.fields.LeadSource || '',
+            campaign: item.fields.Campaign || '',
+            status: item.fields.Status || 'Initial Contact',
+            notes: item.fields.Notes || '',
+            createdDate: item.fields.Created || item.createdDateTime,
+            createdBy: item.fields.CreatedByUser || 'Unknown'
+        }));
+        
+        console.log('📊 Loaded', fruits.length, 'fruits via Google auth');
+        
+    } catch (error) {
+        console.error('❌ Error loading fruits via Google auth:', error);
+        fruits = [];
+    }
+}
+
+// Similar function for loadActivitiesWithGoogleAuth...
+async function loadActivitiesWithGoogleAuth() {
+    try {
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields`;
+        
+        console.log('📊 Loading activities via Google auth API...');
+        
+        const response = await callSharePointAPI(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const items = data.value || [];
+        
+        activities = items.map(item => ({
+            id: item.id.toString(),
+            fruitName: item.fields.FruitNameLookupValue || item.fields.Title || '',
+            type: item.fields.ActivityType || '',
+            duration: item.fields.Duration || '0',
+            notes: item.fields.Notes || '',
+            outcome: item.fields.Outcome || '',
+            user: item.fields.User || 'Unknown',
+            createdDate: item.fields.Created || item.createdDateTime
+        }));
+        
+        console.log('📊 Loaded', activities.length, 'activities via Google auth');
+        
+    } catch (error) {
+        console.error('❌ Error loading activities via Google auth:', error);
+        activities = [];
+    }
+}
+
+
+        async function processGoogleOAuthCallback(authCode, returnedState) {
+    try {
+        console.log('🔄 Processing Google OAuth callback...');
+        
+        // Validate state parameter
+        const storedState = sessionStorage.getItem('google_auth_state');
+        if (returnedState && storedState && returnedState !== storedState) {
+            throw new Error('Invalid state parameter - possible security issue');
+        }
+        
+        // Check if we already processed this callback
+        if (sessionStorage.getItem('google_oauth_processed')) {
+            console.log('⚠️ Google OAuth callback already processed, skipping...');
+            return;
+        }
+        
+        // Mark as processed to prevent duplicate processing
+        sessionStorage.setItem('google_oauth_processed', 'true');
+        
+        // Exchange code for token
+        console.log('🔄 Exchanging Google code for token...');
+        const tokenData = await exchangeGoogleCodeForToken(authCode);
+        
+        console.log('✅ Google token exchange successful');
+        
+        // Get user info from Google
+        console.log('🔄 Getting user info from Google...');
+        const userInfo = await getGoogleUserInfo(tokenData.access_token);
+        
+        console.log('👤 Google user authenticated:', userInfo.email);
+        
+        // Store Google token
+        sessionStorage.setItem('google_access_token', tokenData.access_token);
+        
+        // Validate user against SharePoint using server-side API
+        console.log('🔐 Validating Google user with SharePoint...');
+        const sharePointUserInfo = await validateGoogleUserWithSharePointAPI(userInfo);
+        
+        if (!sharePointUserInfo) {
+            console.log('❌ User not authorized in SharePoint');
+            logout();
+            return;
+        }
+        
+        // Set current user with SharePoint-defined permissions
+        currentUser = sharePointUserInfo;
+        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+        
+        // Clean up Google OAuth parameters
+        sessionStorage.removeItem('google_auth_state');
+        sessionStorage.removeItem('google_oauth_processed');
+        
+        // Clean URL
+        console.log('🔄 Cleaning URL and showing dashboard...');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Load data from SharePoint using Google authentication
+        await loadDataWithGoogleAuth();
+        
+        showDashboard();
+        showNotification(`Welcome ${sharePointUserInfo.name}! Google authentication successful.`);
+        
+    } catch (error) {
+        console.error('❌ Google OAuth callback processing failed:', error);
+        showNotification('Google authentication failed: ' + error.message, 'error');
+        
+        // Clean up on failure
+        sessionStorage.removeItem('google_auth_state');
+        sessionStorage.removeItem('google_oauth_processed');
+        
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show login screen again
+        initializeMicrosoftAuth();
+    }
+}
+
+        async function validateGoogleUserWithSharePointAPI(googleUserInfo) {
+    try {
+        console.log('🔐 Validating Google user with SharePoint API:', googleUserInfo.email);
+        
+        const googleToken = sessionStorage.getItem('google_access_token');
+        if (!googleToken) {
+            throw new Error('Google authentication required');
+        }
+
+        // Call your server API to validate the user against SharePoint
+        // You'll need to implement this endpoint on your server
+        const response = await fetch('/api/validate-user', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${googleToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: googleUserInfo.email,
+                name: googleUserInfo.name
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('User validation failed');
+        }
+
+        const userData = await response.json();
+        
+        if (!userData.authorized) {
+            console.log('❌ User not authorized in SharePoint:', googleUserInfo.email);
+            showNotification('Access denied: Your email is not authorized in SharePoint. Please contact your administrator.', 'error');
+            return null;
+        }
+
+        console.log('✅ User authorized with role:', userData.role);
+        
+        return {
+            name: userData.displayName || googleUserInfo.name,
+            email: googleUserInfo.email,
+            id: googleUserInfo.email, // Use email as ID for Google users
+            role: userData.role,
+            permissions: userData.role,
+            status: userData.status,
+            source: 'google',
+            department: userData.department || '',
+            lastLogin: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        console.error('❌ Google user validation failed:', error);
+        showNotification('User validation failed: ' + error.message, 'error');
+        throw error;
+    }
+}
 
         async function validateGoogleUserWithSharePoint(googleUserInfo) {
     try {
@@ -1638,6 +1792,81 @@ function checkExistingSession() {
     }
 }
 
+async function loadFruitsWithGoogleAuth() {
+    try {
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items?expand=fields`;
+        
+        console.log('📊 Loading fruits via Google auth API...');
+        
+        // Use the API call function that handles both direct and proxy calls
+        const response = await callSharePointAPI(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const items = data.value || [];
+        
+        fruits = items.map(item => ({
+            id: item.id.toString(),
+            name: item.fields.Title || '',
+            assignedTo: item.fields.AssignedTo || '',
+            phone: item.fields.Phone || '',
+            instagram: item.fields.Instagram || '',
+            facebook: item.fields.Facebook || '',
+            twitter: item.fields.Twitter || '',
+            leadSource: item.fields.LeadSource || '',
+            campaign: item.fields.Campaign || '',
+            status: item.fields.Status || 'Initial Contact',
+            notes: item.fields.Notes || '',
+            createdDate: item.fields.Created || item.createdDateTime,
+            createdBy: item.fields.CreatedByUser || 'Unknown'
+        }));
+        
+        console.log('📊 Loaded', fruits.length, 'fruits via Google auth');
+        
+    } catch (error) {
+        console.error('❌ Error loading fruits via Google auth:', error);
+        fruits = [];
+    }
+}
+
+// Similar function for loadActivitiesWithGoogleAuth...
+async function loadActivitiesWithGoogleAuth() {
+    try {
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields`;
+        
+        console.log('📊 Loading activities via Google auth API...');
+        
+        const response = await callSharePointAPI(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const items = data.value || [];
+        
+        activities = items.map(item => ({
+            id: item.id.toString(),
+            fruitName: item.fields.FruitNameLookupValue || item.fields.Title || '',
+            type: item.fields.ActivityType || '',
+            duration: item.fields.Duration || '0',
+            notes: item.fields.Notes || '',
+            outcome: item.fields.Outcome || '',
+            user: item.fields.User || 'Unknown',
+            createdDate: item.fields.Created || item.createdDateTime
+        }));
+        
+        console.log('📊 Loaded', activities.length, 'activities via Google auth');
+        
+    } catch (error) {
+        console.error('❌ Error loading activities via Google auth:', error);
+        activities = [];
+    }
+}
+
         // PKCE Helper Functions
         function base64URLEncode(array) {
             return btoa(String.fromCharCode.apply(null, array))
@@ -1659,61 +1888,48 @@ function checkExistingSession() {
             return base64URLEncode(new Uint8Array(hash));
         }
 
+        
         async function authenticateWithGoogle() {
-            try {
-                console.log('🔐 Starting Google OAuth authentication...');
-                showNotification('Redirecting to Google...', 'info');
-                
-                // Generate state parameter for security
-                const state = 'google_auth_' + Date.now();
-                sessionStorage.setItem('google_auth_state', state);
-                
-                // Use the exact redirect URI from config - FIXED
-                const redirectUri = GOOGLE_CONFIG.REDIRECT_URI;
-                
-                console.log('🔐 Using redirect URI:', redirectUri);
-                
-                if (!redirectUri) {
-                    throw new Error('Redirect URI is not configured');
-                }
-                
-                const scopes = [
-                    'openid',
-                    'email',
-                    'profile'
-                ].join(' ');
-                
-                // Build OAuth URL with PROPER parameters - FIXED
-                const authUrl = new URL(GOOGLE_CONFIG.AUTH_URI);
-                const params = new URLSearchParams({
-                    client_id: GOOGLE_CONFIG.CLIENT_ID,
-                    redirect_uri: redirectUri,
-                    response_type: 'code',
-                    scope: scopes,
-                    state: state,
-                    access_type: 'online',
-                    prompt: 'consent'
-                });
-                
-                authUrl.search = params.toString();
-                
-                console.log('🔗 Full Google OAuth URL:', authUrl.toString());
-                console.log('📋 OAuth Parameters:', {
-                    client_id: GOOGLE_CONFIG.CLIENT_ID,
-                    redirect_uri: redirectUri,
-                    response_type: 'code',
-                    scope: scopes,
-                    state: state
-                });
-                
-                // Redirect to Google OAuth
-                window.location.href = authUrl.toString();
-                
-            } catch (error) {
-                console.error('❌ Google OAuth authentication failed:', error);
-                showNotification('Google authentication failed: ' + error.message, 'error');
-            }
+    try {
+        console.log('🔐 Starting Google OAuth authentication...');
+        
+        // Generate state parameter for security
+        const state = 'google_auth_' + Date.now();
+        sessionStorage.setItem('google_auth_state', state);
+        
+        // Use current URL as redirect URI
+        const redirectUri = window.location.origin + window.location.pathname;
+        
+        console.log('🔐 Using redirect URI:', redirectUri);
+        
+        if (!GOOGLE_CONFIG.CLIENT_ID) {
+            throw new Error('Google Client ID is not configured');
         }
+        
+        const scopes = [
+            'openid',
+            'email',
+            'profile'
+        ].join(' ');
+        
+        // Build OAuth URL
+        const authUrl = new URL(GOOGLE_CONFIG.AUTH_URI);
+        authUrl.searchParams.set('client_id', GOOGLE_CONFIG.CLIENT_ID);
+        authUrl.searchParams.set('redirect_uri', redirectUri);
+        authUrl.searchParams.set('response_type', 'code');
+        authUrl.searchParams.set('scope', scopes);
+        authUrl.searchParams.set('state', state);
+        authUrl.searchParams.set('access_type', 'online');
+        authUrl.searchParams.set('prompt', 'consent');
+        
+        console.log('🔗 Redirecting to Google OAuth...');
+        window.location.href = authUrl.toString();
+        
+    } catch (error) {
+        console.error('❌ Google OAuth authentication failed:', error);
+        showNotification('Google authentication failed: ' + error.message, 'error');
+    }
+}
 
 
         function showGoogleSignInPopup() {
@@ -1738,38 +1954,55 @@ function checkExistingSession() {
             }, 1000);
         }
 
-        
-    async function exchangeGoogleCodeForToken(authCode) {
+        async function exchangeGoogleCodeForToken(authCode) {
     try {
         console.log('🔄 Google token exchange starting...');
         
         // Use the same redirect URI that was used in the auth request
-        const redirectUri = GOOGLE_CONFIG.REDIRECT_URI;
+        const redirectUri = window.location.origin + window.location.pathname;
         
         console.log('🔄 Using redirect URI for token exchange:', redirectUri);
+        console.log('🔄 Client ID:', GOOGLE_CONFIG.CLIENT_ID.substring(0, 10) + '...');
+        console.log('🔄 Auth code length:', authCode.length);
+        
+        const requestBody = new URLSearchParams({
+            client_id: GOOGLE_CONFIG.CLIENT_ID,
+            client_secret: GOOGLE_CONFIG.CLIENT_SECRET,
+            code: authCode,
+            grant_type: 'authorization_code',
+            redirect_uri: redirectUri
+        });
+
+        console.log('🔄 Request body prepared (excluding client_secret for security)');
         
         const response = await fetch(GOOGLE_CONFIG.TOKEN_URI, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: new URLSearchParams({
-                client_id: GOOGLE_CONFIG.CLIENT_ID,
-                client_secret: GOOGLE_CONFIG.CLIENT_SECRET,
-                code: authCode,
-                grant_type: 'authorization_code',
-                redirect_uri: redirectUri
-            })
+            body: requestBody
         });
         
+        const responseText = await response.text();
+        console.log('🔄 Response status:', response.status);
+        console.log('🔄 Response headers:', response.headers);
+        
         if (!response.ok) {
-            const errorData = await response.json();
+            let errorData;
+            try {
+                errorData = JSON.parse(responseText);
+            } catch (e) {
+                errorData = { error: 'parse_error', error_description: responseText };
+            }
             console.error('❌ Google token exchange failed:', errorData);
-            throw new Error(errorData.error_description || 'Google token exchange failed');
+            throw new Error(errorData.error_description || errorData.error || 'Google token exchange failed');
         }
         
-        const tokenData = await response.json();
+        const tokenData = JSON.parse(responseText);
         console.log('✅ Google token exchange successful');
+        console.log('🔄 Token type:', tokenData.token_type);
+        console.log('🔄 Access token length:', tokenData.access_token ? tokenData.access_token.length : 'none');
+        console.log('🔄 Scope:', tokenData.scope);
         
         return tokenData;
         
@@ -1777,25 +2010,33 @@ function checkExistingSession() {
         console.error('❌ Google token exchange failed:', error);
         throw error;
     }
-}    
-
-function debugGoogleOAuthConfig() {
-    console.log('🔧 Debugging Google OAuth Configuration:');
-    console.log('Client ID:', GOOGLE_CONFIG.CLIENT_ID ? '✓ Set' : '✗ Missing');
-    console.log('Redirect URI:', GOOGLE_CONFIG.REDIRECT_URI ? GOOGLE_CONFIG.REDIRECT_URI : '✗ Missing');
-    console.log('Auth URI:', GOOGLE_CONFIG.AUTH_URI);
-    console.log('Token URI:', GOOGLE_CONFIG.TOKEN_URI);
-    
-    // Verify redirect URI format
-    if (GOOGLE_CONFIG.REDIRECT_URI) {
-        try {
-            new URL(GOOGLE_CONFIG.REDIRECT_URI);
-            console.log('✓ Redirect URI is valid URL');
-        } catch (e) {
-            console.error('✗ Redirect URI is invalid:', e.message);
-        }
-    }
 }
+        
+
+        function debugGoogleOAuthConfig() {
+            console.log('🔧 Debugging Google OAuth Configuration:');
+            console.log('Client ID:', GOOGLE_CONFIG.CLIENT_ID ? '✓ Set' : '✗ Missing');
+            console.log('Client Secret:', GOOGLE_CONFIG.CLIENT_SECRET ? '✓ Set' : '✗ Missing');
+            console.log('Redirect URI:', GOOGLE_CONFIG.REDIRECT_URI ? GOOGLE_CONFIG.REDIRECT_URI : '✗ Missing');
+            console.log('Auth URI:', GOOGLE_CONFIG.AUTH_URI);
+            console.log('Token URI:', GOOGLE_CONFIG.TOKEN_URI);
+            
+            // Verify redirect URI format
+            if (GOOGLE_CONFIG.REDIRECT_URI) {
+                try {
+                    new URL(GOOGLE_CONFIG.REDIRECT_URI);
+                    console.log('✓ Redirect URI is valid URL');
+                } catch (e) {
+                    console.error('✗ Redirect URI is invalid:', e.message);
+                }
+            }
+            
+            // Check if current URL matches redirect URI
+            const currentUrl = window.location.origin + window.location.pathname;
+            console.log('Current URL:', currentUrl);
+            console.log('Redirect URI Match:', currentUrl === GOOGLE_CONFIG.REDIRECT_URI ? '✓ Match' : '✗ Mismatch');
+        }
+
 
         async function getGoogleUserInfo(accessToken) {
             try {
@@ -4375,6 +4616,53 @@ setTimeout(handleStuckLoading, 3000);
             return testSharePointConnection(); // Same test
         }
 
+
+
+async function callSharePointAPI(url, options = {}) {
+    try {
+        // If we have SharePoint access token (Microsoft auth), use it directly
+        if (sharePointAccessToken) {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${sharePointAccessToken}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response;
+        }
+        
+        // If we have Google authentication but no SharePoint token, use server-side proxy
+        // You'll need to set up a server endpoint that handles SharePoint operations
+        const googleToken = sessionStorage.getItem('google_access_token');
+        if (googleToken) {
+            // This would call your server API that handles SharePoint operations
+            // You'll need to implement this server endpoint
+            const proxyUrl = '/api/sharepoint-proxy'; // Your server endpoint
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${googleToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sharepointUrl: url,
+                    method: options.method || 'GET',
+                    body: options.body
+                })
+            });
+            return response;
+        }
+        
+        throw new Error('No authentication available for SharePoint access');
+        
+    } catch (error) {
+        console.error('❌ SharePoint API call failed:', error);
+        throw error;
+    }
+}
 
 
         function showDataOptions() {
