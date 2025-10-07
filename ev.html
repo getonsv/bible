@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism System</title>
+    <title>ERMS</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -2702,8 +2702,8 @@ async function loadActivitiesWithGoogleAuth() {
                     }
                 }
 
-             
-                async function loadActivitiesFromSharePoint() {
+            
+        async function loadActivitiesFromSharePoint() {
     try {
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields`;
         
@@ -2721,16 +2721,33 @@ async function loadActivitiesWithGoogleAuth() {
         const data = await response.json();
         const items = data.value || [];
         
-        activities = items.map(item => ({
-            id: item.id.toString(),
-            fruitName: item.fields.FruitNameLookupValue || item.fields.Title || '',
-            type: item.fields.ActivityType || '',
-            duration: item.fields.Duration || '0',
-            notes: item.fields.Notes || '',
-            outcome: item.fields.Outcome || '',
-            user: item.fields.User || 'Unknown',
-            createdDate: item.fields.Created || item.createdDateTime
-        }));
+        activities = items.map(item => {
+            // Get the fruit name from the lookup field or title
+            let fruitName = '';
+            
+            // Try to get from lookup field first (most common)
+            if (item.fields.FruitNameLookup) {
+                fruitName = item.fields.FruitNameLookup;
+            } else if (item.fields.FruitName) {
+                fruitName = item.fields.FruitName;
+            } else if (item.fields.Title) {
+                // If title contains the fruit name, extract it
+                fruitName = item.fields.Title;
+            }
+            
+            return {
+                id: item.id.toString(),
+                fruitName: fruitName,
+                type: item.fields.ActivityType || item.fields.Type || 'Activity',
+                duration: item.fields.Duration || item.fields.DurationMinutes || '0',
+                notes: item.fields.Notes || item.fields.Description || '',
+                outcome: item.fields.Outcome || item.fields.Result || '',
+                user: item.fields.User || item.fields.CreatedBy || item.fields.Author || 'Unknown',
+                createdDate: item.fields.Created || item.fields.CreatedDateTime || item.createdDateTime
+            };
+        });
+        
+        console.log('Loaded activities:', activities); // Remove this line after testing if desired
         
     } catch (error) {
         console.error('Error loading activities from SharePoint:', error);
@@ -2785,53 +2802,50 @@ async function loadActivitiesWithGoogleAuth() {
             }
         }
 
+        
         async function addActivityToSharePoint(activityData) {
-            try {
-                console.log('📊 Adding activity to SharePoint:', activityData);
-                
-                // First, find the fruit ID for the lookup
-                const fruit = fruits.find(f => f.name === activityData.fruitName);
-                if (!fruit) {
-                    throw new Error(`Fruit "${activityData.fruitName}" not found`);
-                }
-                
-                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items`;
-                
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${sharePointAccessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        fields: {
-                            Title: `${activityData.type} with ${activityData.fruitName}`,
-                            FruitNameLookupId: parseInt(fruit.id),
-                            ActivityType: activityData.type,
-                            Duration: parseInt(activityData.duration) || 0,
-                            Notes: activityData.notes,
-                            Outcome: activityData.outcome,
-                            User: activityData.user
-                        }
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ Failed to add activity to SharePoint:', errorText);
-                    throw new Error(`Failed to add activity: ${response.status} ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                console.log('✅ Activity added to SharePoint successfully:', result);
-                
-                return result;
-                
-            } catch (error) {
-                console.error('❌ Error adding activity to SharePoint:', error);
-                throw error;
-            }
+    try {
+        // Find the fruit to get its ID for the lookup
+        const fruit = fruits.find(f => f.name === activityData.fruitName);
+        if (!fruit) {
+            throw new Error(`Fruit "${activityData.fruitName}" not found`);
         }
+        
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                fields: {
+                    Title: `${activityData.type} with ${activityData.fruitName}`,
+                    FruitNameLookupId: parseInt(fruit.id),
+                    ActivityType: activityData.type,
+                    Duration: parseInt(activityData.duration) || 0,
+                    Notes: activityData.notes,
+                    Outcome: activityData.outcome,
+                    User: activityData.user
+                }
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to add activity: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        return result;
+        
+    } catch (error) {
+        console.error('Error adding activity to SharePoint:', error);
+        throw error;
+    }
+}
+
 
         async function updateFruitInSharePoint(fruitId, fruitData) {
             try {
@@ -3808,16 +3822,23 @@ function debugFruitActivities(fruitName) {
         
         
     function loadFruitActivities(fruitName) {
-    // Filter activities for this fruit with robust matching
+    if (!fruitName) {
+        console.log('No fruit name provided');
+        return;
+    }
+    
+    // More flexible matching to handle different data formats
     const fruitActivities = activities.filter(activity => {
         if (!activity.fruitName) return false;
         
-        // Try multiple matching strategies for better reliability
-        const exactMatch = activity.fruitName === fruitName;
-        const caseInsensitiveMatch = activity.fruitName.toLowerCase() === fruitName.toLowerCase();
-        const trimmedMatch = activity.fruitName.trim() === fruitName.trim();
+        const activityFruit = activity.fruitName.toString().trim();
+        const targetFruit = fruitName.toString().trim();
         
-        return exactMatch || caseInsensitiveMatch || trimmedMatch;
+        // Multiple matching strategies
+        return activityFruit === targetFruit || 
+               activityFruit.toLowerCase() === targetFruit.toLowerCase() ||
+               activityFruit.includes(targetFruit) ||
+               targetFruit.includes(activityFruit);
     }).sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
     
     // Update activity stats
@@ -3840,8 +3861,8 @@ function debugFruitActivities(fruitName) {
         activitiesList.innerHTML = `
             <div class="text-center py-8 text-gray-500">
                 <i class="fas fa-clipboard-list text-4xl mb-4"></i>
-                <p class="text-lg font-medium mb-2">No activities yet</p>
-                <p class="text-sm">Start by logging your first interaction with ${fruitName}</p>
+                <p class="text-lg font-medium mb-2">No activities found</p>
+                <p class="text-sm">No activities recorded for "${fruitName}"</p>
                 <button onclick="logActivityForCurrentFruit()" class="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-plus mr-2"></i>Log First Activity
                 </button>
@@ -3897,6 +3918,25 @@ function debugFruitActivities(fruitName) {
     }).join('');
 }
 
+// Temporary function to check data - REMOVE AFTER FIXING
+function checkActivityData() {
+    console.log('=== ACTIVITY DATA CHECK ===');
+    console.log('Total activities:', activities.length);
+    
+    if (activities.length > 0) {
+        console.log('First activity sample:', activities[0]);
+        console.log('All fruit names in activities:', activities.map(a => a.fruitName));
+        console.log('All activity types:', [...new Set(activities.map(a => a.type))]);
+    }
+    
+    if (fruits.length > 0) {
+        console.log('First fruit sample:', fruits[0]);
+        console.log('All fruit names:', fruits.map(f => f.name));
+    }
+}
+
+// Call this once after loading data - REMOVE AFTER FIXING
+setTimeout(checkActivityData, 3000);
 
         function validateActivityData() {
     console.log('🔍 VALIDATING ACTIVITY DATA STRUCTURE');
