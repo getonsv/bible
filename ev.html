@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Evengelism System</title>
+    <title>Evengelism System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1131,13 +1131,6 @@
             GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
         };
         
-        // Azure Function Configuration
-            const AZURE_FUNCTION_CONFIG = {
-                BASE_URL: 'https://evangelism-crm-magiclink-g5a3dfg0cteagkav.canadacentral-01.azurewebsites.net/api',
-                REQUEST_MAGIC_LINK: '/RequestMagicLink',
-                VERIFY_TOKEN: '/VerifyMagicLinkToken'
-            };
-
         // Global state
         let currentUser = null;
         let currentTab = 'overview';
@@ -1321,44 +1314,46 @@
         }
 
         function initializeMicrosoftAuth() {
-            console.log('🔧 Initializing authentication options...');
-            
-            const buttonContainer = document.getElementById('googleSignInButton');
-            if (buttonContainer) {
-                buttonContainer.innerHTML = `
-                    <div class="space-y-3">
-                        <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                            <i class="fab fa-microsoft text-xl"></i>
-                            <span>Sign in with Microsoft 365</span>
-                        </button>
-                        
-                        <div class="relative">
-                            <div class="absolute inset-0 flex items-center">
-                                <div class="w-full border-t border-gray-300"></div>
-                            </div>
-                            <div class="relative flex justify-center text-sm">
-                                <span class="px-2 bg-white text-gray-500">or</span>
-                            </div>
-                        </div>
-                        
-                        <button onclick="showMagicLinkModal()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                            <i class="fas fa-envelope text-xl"></i>
-                            <span>Sign in with Magic Link</span>
-                        </button>
-                        
-                        <div class="mt-4 text-center">
-                            <p class="text-xs text-gray-500">
-                                <i class="fas fa-shield-alt text-green-500 mr-1"></i>
-                                Activities on this application is being monitored
-                            </p>
-                        </div>
+    console.log('🔧 Initializing authentication options...');
+    
+    const buttonContainer = document.getElementById('googleSignInButton');
+    if (buttonContainer) {
+        buttonContainer.innerHTML = `
+            <div class="space-y-3">
+                <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                    <i class="fab fa-microsoft text-xl"></i>
+                    <span>Sign in with Microsoft 365</span>
+                </button>
+                
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
                     </div>
-                `;
-            }
-            
-            console.log('✅ Multi-provider authentication initialized');
-        }
-
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">or</span>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 mb-3">
+                        Magic links require Microsoft 365 sign-in first
+                    </p>
+                    <button onclick="showMagicLinkModal()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                        <i class="fas fa-envelope text-xl"></i>
+                        <span>Sign in with Magic Link</span>
+                    </button>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-gray-500">
+                        <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                        Activities on this application is being monitored
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+}
 
 // Magic Link Functions
 function showMagicLinkModal() {
@@ -1384,11 +1379,16 @@ async function sendMagicLink(event) {
     try {
         showNotification('Sending magic link...', 'info');
         
-        // Disable the button to prevent multiple requests
+        // Disable the button
         const submitButton = event.target.querySelector('button[type="submit"]');
         const originalText = submitButton.innerHTML;
         submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
         submitButton.disabled = true;
+        
+        // Check if user has SharePoint access
+        if (!sharePointAccessToken) {
+            throw new Error('Please sign in with Microsoft 365 first to use magic links');
+        }
         
         const result = await sendMagicLinkToBackend(email);
         
@@ -1404,7 +1404,12 @@ async function sendMagicLink(event) {
         
     } catch (error) {
         console.error('❌ Failed to send magic link:', error);
-        showNotification('Failed to send magic link: ' + error.message, 'error');
+        
+        if (error.message.includes('sign in with Microsoft')) {
+            showNotification('Please sign in with Microsoft 365 first to use magic links', 'error');
+        } else {
+            showNotification('Failed to send magic link: ' + error.message, 'error');
+        }
         
         // Re-enable the button
         const submitButton = event.target.querySelector('button[type="submit"]');
@@ -1412,6 +1417,7 @@ async function sendMagicLink(event) {
         submitButton.disabled = false;
     }
 }
+
 
 // Resend magic link
 async function resendMagicLink() {
@@ -1432,33 +1438,47 @@ async function resendMagicLink() {
     }
 }
 
-// Send magic link via Azure Function
+
+
 async function sendMagicLinkToBackend(email) {
     try {
-        console.log('📧 Sending magic link request via Azure Function...');
+        console.log('📧 Creating magic link request in SharePoint...');
         
-        const response = await fetch(AZURE_FUNCTION_CONFIG.BASE_URL + AZURE_FUNCTION_CONFIG.REQUEST_MAGIC_LINK, {
+        // Use the EXACT SAME method as your fruit/activity creation
+        const siteId = SHAREPOINT_CONFIG.SITE_ID;
+        const requestsListId = 'ede76111-9eaf-48b0-8315-3d5c3e6ad6e8'; // Your MagicLinkRequests list
+        
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${siteId}/lists/${requestsListId}/items`;
+        
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
                 'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
             },
             body: JSON.stringify({
-                email: email,
-                redirect_url: window.location.href
+                fields: {
+                    Title: `Magic Link Request - ${email}`,
+                    Email: email,
+                    RedirectUrl: window.location.href,
+                    Status: 'Pending',
+                    RequestDate: new Date().toISOString()
+                }
             })
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to send magic link: ${response.status}`);
+            throw new Error(`Failed to create magic link request: ${response.status}`);
         }
 
         const result = await response.json();
+        console.log('✅ Magic link request created in SharePoint:', result.id);
         
-        if (!result.success) {
-            throw new Error(result.error || 'Failed to send magic link');
-        }
-
-        return result;
+        return { 
+            success: true, 
+            message: 'Magic link request submitted successfully' 
+        };
         
     } catch (error) {
         console.error('❌ Magic link request failed:', error);
