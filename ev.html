@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Evengelism System</title>
+    <title>Evengelism System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1131,12 +1131,12 @@
             GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
         };
         
-        const AZURE_FUNCTION_CONFIG = {
-            BASE_URL: 'https://evangelism-crm-magiclink-g5a3dfg0cteagkav.canadacentral-01.azurewebsites.net/api',
-            REQUEST_MAGIC_LINK: '/RequestMagicLink',
-            VERIFY_TOKEN: '/VerifyMagicLinkToken'
-        };
-        
+        // Azure Function Configuration
+            const AZURE_FUNCTION_CONFIG = {
+                BASE_URL: 'https://evangelism-crm-magiclink-g5a3dfg0cteagkav.canadacentral-01.azurewebsites.net/api',
+                REQUEST_MAGIC_LINK: '/RequestMagicLink',
+                VERIFY_TOKEN: '/VerifyMagicLinkToken'
+            };
 
         // Global state
         let currentUser = null;
@@ -1660,30 +1660,33 @@ async function processMagicLinkToken(token) {
         const userInfo = result.user;
         console.log('✅ Magic link user authenticated:', userInfo.email);
         
-        // Check if user exists in SharePoint Users list and get their role
-        console.log('🔄 Checking user in SharePoint list...');
-        const sharePointUserInfo = await checkUserInSharePointList(userInfo.email, userInfo.name, 'magic_link');
+        // Set current user
+        currentUser = {
+            name: userInfo.name,
+            email: userInfo.email,
+            role: userInfo.role,
+            permissions: userInfo.role,
+            status: userInfo.status,
+            source: 'magic_link'
+        };
         
-        if (!sharePointUserInfo) {
-            console.log('❌ User not authorized in SharePoint:', userInfo.email);
-            showNotification('Access denied: Your email is not authorized in SharePoint. Please contact your administrator.', 'error');
-            return;
-        }
-        
-        // Set current user with SharePoint-defined permissions
-        currentUser = sharePointUserInfo;
         sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+        
+        // Set permissions based on role
+        mapRoleToPermissions(userInfo.role);
         
         // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
         
-        // Load data from SharePoint
-        await loadDataFromSharePoint();
-        
         showDashboard();
-        startRealTimeSync();
         
-        showNotification(`Welcome ${sharePointUserInfo.name}! Magic link authentication successful.`);
+        // Show appropriate message
+        if (sharePointAccessToken) {
+            showNotification(`Welcome ${userInfo.name}! Full access granted.`);
+            startRealTimeSync();
+        } else {
+            showNotification(`Welcome ${userInfo.name}! Magic link authentication successful.`, 'success');
+        }
         
     } catch (error) {
         console.error('❌ Magic link authentication failed:', error);
@@ -1693,6 +1696,7 @@ async function processMagicLinkToken(token) {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
+
 
 // Check for magic link token on page load
 function checkForMagicLinkToken() {
