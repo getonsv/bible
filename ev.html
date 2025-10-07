@@ -1182,8 +1182,12 @@
         ];
 
 
-        document.addEventListener('DOMContentLoaded', function() {
+        
+    document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
+    
+    // Force logout on every page load
+    logout();
     
     // Then check for OAuth callback parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -1196,18 +1200,13 @@
     } else {
         console.log('🔧 No callback detected, initializing auth UI...');
         initializeMicrosoftAuth();
-        checkExistingSession();
     }
     
     loadLocalData();
     updateConnectionStatus();
     populateDropdowns();
     initializeEventListeners();
-    
-    setTimeout(handleStuckLoading, 5000);
 });
-
-
 
 
         // Real-time sync functions
@@ -1448,84 +1447,22 @@ function validateEmailDomain(email) {
 }
 
 
-    async function processOAuthCallback(authCode, returnedState) {
+async function processOAuthCallback(authCode, returnedState) {
     try {
         console.log('🔄 Processing Microsoft OAuth callback...');
         
+        // Clear any existing session first
+        logout();
+        
+        // ... rest of your existing processOAuthCallback code ...
         // Validate state parameter
         const storedState = sessionStorage.getItem('pkce_state');
         if (returnedState && storedState && returnedState !== storedState) {
             throw new Error('Invalid state parameter - possible security issue');
         }
         
-        // Check if we already processed this callback
-        if (sessionStorage.getItem('oauth_processed')) {
-            console.log('⚠️ OAuth callback already processed, skipping...');
-            return;
-        }
-        
-        // Mark as processed to prevent duplicate processing
-        sessionStorage.setItem('oauth_processed', 'true');
-        
-        // Exchange code for token
-        console.log('🔄 Exchanging code for token...');
-        const tokenData = await exchangeCodeForTokenPKCE(authCode);
-        
-        sharePointAccessToken = tokenData.access_token;
-        isSharePointMode = true;
-        
-        // Store token with expiration
-        sessionStorage.setItem('access_token', tokenData.access_token);
-        sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
-        
-        // Check if there's a pending Google user waiting for SharePoint access
-        const pendingGoogleUser = sessionStorage.getItem('pending_google_user');
-        
-        if (pendingGoogleUser) {
-            console.log('🔐 Found pending Google user, validating with SharePoint...');
-            const googleUserInfo = JSON.parse(pendingGoogleUser);
-            
-            // Validate the Google user with SharePoint
-            await validateGoogleUserWithSharePoint(googleUserInfo);
-            
-        } else {
-            // Regular Microsoft user flow
-            console.log('🔄 Getting user info from Microsoft...');
-            const basicUserInfo = await getUserInfo(tokenData.access_token);
-            
-            console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
-            
-            // Check if user exists in SharePoint Users list and get their role
-            console.log('🔄 Checking user in SharePoint list...');
-            const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
-            
-            if (!userInfo) {
-                console.log('❌ User not authorized in SharePoint');
-                logout();
-                return;
-            }
-            
-            // Set current user with SharePoint-defined permissions
-            currentUser = userInfo;
-            sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-            
-            // Clean up PKCE parameters and processing flag
-            sessionStorage.removeItem('pkce_code_verifier');
-            sessionStorage.removeItem('pkce_state');
-            sessionStorage.removeItem('oauth_processed');
-            
-            // Clean URL - IMPORTANT: Remove OAuth parameters from URL
-            console.log('🔄 Cleaning URL and showing dashboard...');
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            // Load data from SharePoint
-            await loadDataFromSharePoint();
-            
-            showDashboard();
-            startRealTimeSync();
-            
-            showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
-        }
+        // Continue with normal OAuth processing...
+        // ... rest of your existing code ...
         
     } catch (error) {
         console.error('❌ OAuth callback processing failed:', error);
@@ -1544,7 +1481,6 @@ function validateEmailDomain(email) {
         initializeMicrosoftAuth();
     }
 }
-
 
 async function loadDataWithGoogleAuth() {
     try {
@@ -1753,48 +1689,15 @@ async function loadActivitiesWithGoogleAuth() {
 
 
 function checkExistingSession() {
-    // Check for Microsoft session
-    const msToken = sessionStorage.getItem('access_token');
-    const msExpiry = sessionStorage.getItem('token_expiry');
+    // Clear any existing session on page load/refresh
+    logout();
     
-    // Check for saved user (could be from magic link or Microsoft)
-    const savedUser = sessionStorage.getItem('current_user');
+    // Don't auto-restore sessions on refresh
+    console.log('Session cleared on page refresh - please sign in again');
     
-    if (msToken && msExpiry && Date.now() < parseInt(msExpiry)) {
-        console.log('🔐 Valid Microsoft session found, restoring...');
-        sharePointAccessToken = msToken;
-        isSharePointMode = true;
-        
-        // Restore user info
-        if (savedUser) {
-            currentUser = JSON.parse(savedUser);
-        }
-        
-        loadDataFromSharePoint().then(() => {
-            showDashboard();
-            startRealTimeSync();
-            showNotification('Session restored with real-time sync!');
-        });
-    } else if (savedUser) {
-        console.log('🔐 Valid user session found, restoring...');
-        currentUser = JSON.parse(savedUser);
-        
-        // For magic link users, we still need SharePoint access
-        if (sharePointAccessToken) {
-            loadDataFromSharePoint().then(() => {
-                showDashboard();
-                startRealTimeSync();
-                showNotification('Session restored with real-time sync!');
-            });
-        } else {
-            // User without SharePoint access - show dashboard with limited functionality
-            showDashboard();
-            showNotification('Session restored. SharePoint features require Microsoft sign-in.', 'info');
-        }
-    }
+    // Initialize auth UI
+    initializeMicrosoftAuth();
 }
-
-
 
 
 async function loadFruitsWithGoogleAuth() {
@@ -1871,6 +1774,32 @@ async function loadActivitiesWithGoogleAuth() {
         activities = [];
     }
 }
+
+
+
+// Add this to your existing JavaScript code
+let pageJustLoaded = true;
+
+// Detect page refresh
+window.addEventListener('beforeunload', function() {
+    // Set a flag that we're about to refresh
+    sessionStorage.setItem('page_refreshing', 'true');
+});
+
+// Check if page was refreshed when it loads
+window.addEventListener('load', function() {
+    const wasRefreshed = sessionStorage.getItem('page_refreshing');
+    
+    if (wasRefreshed) {
+        // Clear the flag
+        sessionStorage.removeItem('page_refreshing');
+        
+        // Force logout on refresh
+        console.log('Page was refreshed - forcing logout');
+        logout();
+    }
+});
+
 
         // PKCE Helper Functions
         function base64URLEncode(array) {
@@ -2881,50 +2810,50 @@ async function loadActivitiesWithGoogleAuth() {
 }
 
 
-
-        async function updateFruitInSharePoint(fruitId, fruitData) {
-            try {
-                console.log('📊 Updating fruit in SharePoint:', fruitId, fruitData);
-                
-                const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}/fields`;
-                
-                const response = await fetch(url, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${sharePointAccessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        Title: fruitData.name,
-                        AssignedTo: fruitData.assignedTo,
-                        Phone: fruitData.phone,
-                        Instagram: fruitData.instagram,
-                        Facebook: fruitData.facebook,
-                        Twitter: fruitData.twitter,
-                        LeadSource: fruitData.leadSource,
-                        Campaign: fruitData.campaign,
-                        Status: fruitData.status,
-                        Notes: fruitData.notes,
-                        UpdatedByUser: fruitData.updatedBy
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ Failed to update fruit in SharePoint:', errorText);
-                    throw new Error(`Failed to update fruit: ${response.status} ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                console.log('✅ Fruit updated in SharePoint successfully:', result);
-                
-                return result;
-                
-            } catch (error) {
-                console.error('❌ Error updating fruit in SharePoint:', error);
-                throw error;
-            }
+async function updateFruitInSharePoint(fruitId, fruitData) {
+    try {
+        console.log('📊 Updating fruit in SharePoint:', fruitId, fruitData);
+        
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}/fields`;
+        
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                Title: fruitData.name,
+                AssignedTo: fruitData.assignedTo,
+                Phone: fruitData.phone,
+                Instagram: fruitData.instagram,
+                Facebook: fruitData.facebook,
+                Twitter: fruitData.twitter,
+                LeadSource: fruitData.leadSource,
+                Campaign: fruitData.campaign,
+                Status: fruitData.status,
+                Notes: fruitData.notes
+                // Note: UpdatedByUser field might not exist in your list
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Failed to update fruit in SharePoint:', errorText);
+            throw new Error(`Failed to update fruit: ${response.status} ${response.statusText}`);
         }
+        
+        const result = await response.json();
+        console.log('✅ Fruit updated in SharePoint successfully:', result);
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Error updating fruit in SharePoint:', error);
+        throw error;
+    }
+}
+
 
         async function deleteFruitFromSharePoint(fruitId) {
             try {
@@ -3447,22 +3376,45 @@ setTimeout(handleStuckLoading, 3000);
             }
         }
 
-        function initializeEventListeners() {
-            // Fruit search functionality
-            const fruitSearch = document.getElementById('fruitSearch');
-            if (fruitSearch) {
-                fruitSearch.addEventListener('input', filterFruits);
+    
+// Add this to your initializeEventListeners function
+function initializeEventListeners() {
+    // Fruit search functionality
+    const fruitSearch = document.getElementById('fruitSearch');
+    if (fruitSearch) {
+        fruitSearch.addEventListener('input', filterFruits);
+    }
+
+    // Handle fruit form submission
+    const fruitForm = document.getElementById('addFruitForm');
+    if (fruitForm) {
+        fruitForm.addEventListener('submit', function(event) {
+            const isEditing = this.getAttribute('data-editing-id');
+            if (isEditing) {
+                updateFruit(event);
+            } else {
+                addFruit(event);
             }
+        });
+    }
 
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', function(event) {
-                const syncOptions = document.getElementById('syncOptions');
-                if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
-                    syncOptions.classList.add('hidden');
-                }
-            });
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        const syncOptions = document.getElementById('syncOptions');
+        if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
+            syncOptions.classList.add('hidden');
         }
+    });
+}
 
+
+// Temporary debug function - remove after fixing
+function debugEditFruit(fruitId) {
+    console.log('🔧 DEBUG editFruit called with ID:', fruitId);
+    const fruit = fruits.find(f => f.id === fruitId);
+    console.log('🔧 Found fruit:', fruit);
+    console.log('🔧 All fruit IDs:', fruits.map(f => f.id));
+}
         // Modal functions
         function showAddFruitModal() {
             document.getElementById('addFruitModal').classList.remove('hidden');
@@ -4003,116 +3955,130 @@ setTimeout(validateActivityData, 2000);
             }, 100);
         }
 
-        async function editFruit(fruitId) {
-            // Check permissions first
-            if (!userPermissions.canEdit) {
-                showPermissionMessage('edit');
-                return;
+        
+async function editFruit(fruitId) {
+    debugEditFruit(fruitId); // Remove this after fixing
+    // Check permissions first
+    if (!userPermissions.canEdit) {
+        showPermissionMessage('edit');
+        return;
+    }
+    
+    const fruit = fruits.find(f => f.id === fruitId);
+    if (!fruit) {
+        showNotification('Fruit not found', 'error');
+        return;
+    }
+    
+    // Pre-fill the add fruit modal with existing data for editing
+    showAddFruitModal();
+    
+    // Wait for modal to be visible, then populate fields
+    setTimeout(() => {
+        const form = document.querySelector('#addFruitModal form');
+        if (form) {
+            form.querySelector('[name="name"]').value = fruit.name || '';
+            form.querySelector('[name="assignee"]').value = fruit.assignedTo || '';
+            form.querySelector('[name="phone"]').value = fruit.phone || '';
+            form.querySelector('[name="instagram"]').value = fruit.instagram || '';
+            form.querySelector('[name="facebook"]').value = fruit.facebook || '';
+            form.querySelector('[name="twitter"]').value = fruit.twitter || '';
+            form.querySelector('[name="leadSource"]').value = fruit.leadSource || '';
+            form.querySelector('[name="campaign"]').value = fruit.campaign || '';
+            form.querySelector('[name="status"]').value = fruit.status || '';
+            form.querySelector('[name="notes"]').value = fruit.notes || '';
+            
+            // Change form title and button text
+            document.querySelector('#addFruitModal h3').textContent = 'Edit Fruit';
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.textContent = 'Update Fruit';
+                submitButton.innerHTML = '<i class="fas fa-save mr-2"></i>Update Fruit';
             }
             
-            const fruit = fruits.find(f => f.id === fruitId);
-            if (!fruit) {
-                showNotification('Fruit not found', 'error');
-                return;
-            }
+            // Store the fruit ID for updating
+            form.setAttribute('data-editing-id', fruitId);
             
-            // Pre-fill the add fruit modal with existing data for editing
-            showAddFruitModal();
-            
-            // Wait for modal to be visible, then populate fields
-            setTimeout(() => {
-                const form = document.querySelector('#addFruitModal form');
-                if (form) {
-                    form.querySelector('[name="name"]').value = fruit.name || '';
-                    form.querySelector('[name="assignee"]').value = fruit.assignedTo || '';
-                    form.querySelector('[name="phone"]').value = fruit.phone || '';
-                    form.querySelector('[name="instagram"]').value = fruit.instagram || '';
-                    form.querySelector('[name="facebook"]').value = fruit.facebook || '';
-                    form.querySelector('[name="twitter"]').value = fruit.twitter || '';
-                    form.querySelector('[name="leadSource"]').value = fruit.leadSource || '';
-                    form.querySelector('[name="campaign"]').value = fruit.campaign || '';
-                    form.querySelector('[name="status"]').value = fruit.status || '';
-                    form.querySelector('[name="notes"]').value = fruit.notes || '';
-                    
-                    // Change form title and button text
-                    document.querySelector('#addFruitModal h3').textContent = 'Edit Fruit';
-                    document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Update in SharePoint';
-                    
-                    // Store the fruit ID for updating
-                    form.setAttribute('data-editing-id', fruitId);
-                    
-                    // Change form handler
-                    form.setAttribute('onsubmit', 'updateFruit(event)');
-                }
-            }, 100);
+            // Change form handler
+            form.onsubmit = updateFruit;
         }
+    }, 100);
+}
 
-        async function updateFruit(event) {
-            event.preventDefault();
-            
-            // Check permissions first
-            if (!userPermissions.canEdit) {
-                showPermissionMessage('edit');
-                return;
-            }
-            
-            const form = event.target;
-            const fruitId = form.getAttribute('data-editing-id');
-            const fruitIndex = fruits.findIndex(f => f.id === fruitId);
-            
-            if (fruitIndex === -1) {
-                showNotification('Fruit not found', 'error');
-                return;
-            }
-            
-            const formData = new FormData(event.target);
-            const updatedFruit = {
-                ...fruits[fruitIndex], // Keep existing data
-                name: formData.get('name'),
-                assignedTo: formData.get('assignee') || currentUser.name,
-                phone: formData.get('phone') || '',
-                instagram: formData.get('instagram') || '',
-                facebook: formData.get('facebook') || '',
-                twitter: formData.get('twitter') || '',
-                leadSource: formData.get('leadSource'),
-                campaign: formData.get('campaign') || '',
-                status: formData.get('status'),
-                notes: formData.get('notes') || '',
-                lastUpdated: new Date().toISOString(),
-                updatedBy: currentUser.email
-            };
-            
-            try {
-                if (isSharePointMode && sharePointAccessToken) {
-                    // Update in SharePoint first
-                    await updateFruitInSharePoint(fruitId, updatedFruit);
-                    showNotification(`${updatedFruit.name} updated in SharePoint successfully!`);
-                } else {
-                    showNotification(`${updatedFruit.name} updated locally (SharePoint not connected)`);
-                }
-                
-                // Update local array
-                fruits[fruitIndex] = updatedFruit;
-                saveLocalData();
-                updateFruitsGrid();
-                updateStats();
-                populateFruitDropdowns();
-                
-                // Reset modal
-                closeModal('addFruitModal');
-                resetAddFruitModal();
-                
-            } catch (error) {
-                console.error('❌ Failed to update fruit:', error);
-                
-                // Check if it's a permission error
-                if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Access denied')) {
-                    showNotification('Access denied: You do not have permission to edit items in SharePoint.', 'error');
-                } else {
-                    showNotification('Failed to update fruit: ' + error.message, 'error');
-                }
-            }
+
+async function updateFruit(event) {
+    event.preventDefault();
+    
+    // Check permissions first
+    if (!userPermissions.canEdit) {
+        showPermissionMessage('edit');
+        return;
+    }
+    
+    const form = event.target;
+    const fruitId = form.getAttribute('data-editing-id');
+    const fruitIndex = fruits.findIndex(f => f.id === fruitId);
+    
+    if (fruitIndex === -1) {
+        showNotification('Fruit not found', 'error');
+        return;
+    }
+    
+    const formData = new FormData(event.target);
+    const updatedFruit = {
+        ...fruits[fruitIndex], // Keep existing data
+        name: formData.get('name') || '',
+        assignedTo: formData.get('assignee') || currentUser.name,
+        phone: formData.get('phone') || '',
+        instagram: formData.get('instagram') || '',
+        facebook: formData.get('facebook') || '',
+        twitter: formData.get('twitter') || '',
+        leadSource: formData.get('leadSource') || '',
+        campaign: formData.get('campaign') || '',
+        status: formData.get('status') || 'Initial Contact',
+        notes: formData.get('notes') || '',
+        lastUpdated: new Date().toISOString(),
+        updatedBy: currentUser.email
+    };
+    
+    try {
+        if (isSharePointMode && sharePointAccessToken) {
+            // Update in SharePoint first
+            await updateFruitInSharePoint(fruitId, updatedFruit);
+            showNotification(`${updatedFruit.name} updated in SharePoint successfully!`);
+        } else {
+            showNotification(`${updatedFruit.name} updated locally (SharePoint not connected)`);
         }
+        
+        // Update local array
+        fruits[fruitIndex] = updatedFruit;
+        saveLocalData();
+        updateFruitsGrid();
+        updateStats();
+        populateFruitDropdowns();
+        
+        // If we're currently viewing this fruit's details, update the view
+        if (currentViewingFruit && currentViewingFruit.id === fruitId) {
+            currentViewingFruit = updatedFruit;
+            populateFruitDetails(updatedFruit);
+        }
+        
+        // Reset modal
+        closeModal('addFruitModal');
+        resetAddFruitModal();
+        
+    } catch (error) {
+        console.error('❌ Failed to update fruit:', error);
+        
+        // Check if it's a permission error
+        if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Access denied')) {
+            showNotification('Access denied: You do not have permission to edit items in SharePoint.', 'error');
+        } else {
+            showNotification('Failed to update fruit: ' + error.message, 'error');
+        }
+    }
+}
+
 
         async function deleteFruit(fruitId) {
             // Check permissions first
@@ -4164,18 +4130,33 @@ setTimeout(validateActivityData, 2000);
             }
         }
 
-        function resetAddFruitModal() {
-            // Reset modal to add mode
-            document.querySelector('#addFruitModal h3').textContent = 'Add New Fruit';
-            document.querySelector('#addFruitModal button[type="submit"]').textContent = 'Add to SharePoint';
-            
-            const form = document.querySelector('#addFruitModal form');
-            if (form) {
-                form.removeAttribute('data-editing-id');
-                form.setAttribute('onsubmit', 'addFruit(event)');
-                form.reset();
-            }
-        }
+        
+function resetAddFruitModal() {
+    const modal = document.getElementById('addFruitModal');
+    const form = modal.querySelector('form');
+    
+    if (form) {
+        // Reset form fields
+        form.reset();
+        
+        // Remove editing ID
+        form.removeAttribute('data-editing-id');
+        
+        // Reset form handler
+        form.onsubmit = addFruit;
+    }
+    
+    // Reset modal title and button
+    const title = modal.querySelector('h3');
+    const submitButton = modal.querySelector('button[type="submit"]');
+    
+    if (title) title.textContent = 'Add New Fruit';
+    if (submitButton) {
+        submitButton.textContent = 'Add to SharePoint';
+        submitButton.innerHTML = '<i class="fas fa-plus mr-2"></i>Add to SharePoint';
+    }
+}
+        
 
         function generateReport() {
             showNotification('Report generation coming soon!', 'info');
@@ -4982,31 +4963,43 @@ async function callSharePointAPI(url, options = {}) {
             populateFruitDropdowns();
         }
 
-        function logout() {
+        
+function logout() {
     // Stop real-time sync
     stopRealTimeSync();
     
+    // Clear all user data
     currentUser = null;
     sharePointAccessToken = null;
     isSharePointMode = false;
     
-    // Clear all session data (both Microsoft and Google)
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('token_expiry');
-    sessionStorage.removeItem('google_access_token');
-    sessionStorage.removeItem('current_user');
-    sessionStorage.removeItem('pkce_code_verifier');
-    sessionStorage.removeItem('pkce_state');
-    sessionStorage.removeItem('google_auth_state');
-    sessionStorage.removeItem('oauth_processed');
-    sessionStorage.removeItem('google_oauth_processed');
+    // Clear ALL session storage
+    sessionStorage.clear();
     
+    // Clear ALL local storage (optional - uncomment if you want to clear local data too)
+    // localStorage.clear();
+    
+    // Alternatively, if you want to keep local data but clear auth, use:
+    // sessionStorage.removeItem('access_token');
+    // sessionStorage.removeItem('token_expiry');
+    // sessionStorage.removeItem('google_access_token');
+    // sessionStorage.removeItem('current_user');
+    // sessionStorage.removeItem('pkce_code_verifier');
+    // sessionStorage.removeItem('pkce_state');
+    // sessionStorage.removeItem('google_auth_state');
+    // sessionStorage.removeItem('oauth_processed');
+    // sessionStorage.removeItem('google_oauth_processed');
+    
+    // Hide dashboard, show login
     document.getElementById('dashboard').classList.add('hidden');
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('adminTabBtn').classList.add('hidden');
     
+    // Reset connection status
     updateConnectionStatus();
-    showNotification('Logged out successfully');
+    
+    // Show logout message
+    showNotification('Please sign in to continue');
 }
 
         // Check current state
