@@ -3027,14 +3027,12 @@ async function loadFruitsFromSharePoint() {
 }
 
 
-
-
 async function loadActivitiesFromSharePoint() {
     try {
-        // Get all activities with proper field selection
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields&$top=5000`;
+        // Get activities with specific field selection for User
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?$select=id,createdDateTime,fields&$expand=fields($select=Title,ActivityType,Duration,Notes,Outcome,FruitNameLookup,User,Created,CreatedBy)&$top=5000`;
         
-        console.log('📊 Loading activities from SharePoint...');
+        console.log('📊 Loading activities with explicit field selection...');
         
         const response = await fetch(url, {
             headers: {
@@ -3050,61 +3048,147 @@ async function loadActivitiesFromSharePoint() {
         const data = await response.json();
         const items = data.value || [];
         
+        console.log('📦 Activities with User field:', items);
+        
         activities = items.map(item => {
-            // Extract fruit name from different possible fields
+            // Extract fruit name
             let fruitName = '';
             if (item.fields.FruitNameLookup) {
                 fruitName = item.fields.FruitNameLookup;
-            } else if (item.fields.FruitName) {
-                fruitName = item.fields.FruitName;
             } else if (item.fields.Title) {
-                // Try to extract from title "Activity with FruitName"
                 const titleMatch = item.fields.Title.match(/with\s+(.+)$/);
                 fruitName = titleMatch ? titleMatch[1] : item.fields.Title;
             }
             
-            // Extract user from different possible fields
-            let user = 'Unknown';
-            if (item.fields.User) {
-                if (typeof item.fields.User === 'object') {
-                    user = item.fields.User.displayName || 
-                           item.fields.User.title || 
-                           item.fields.User.email || 
-                           'Unknown User';
-                } else {
-                    user = item.fields.User;
-                }
-            } else if (item.fields.CreatedBy) {
-                user = item.fields.CreatedBy.displayName || 'Unknown';
-            }
+            // Extract user with multiple fallback methods
+            let user = extractUserName(item.fields);
             
             const activity = {
                 id: item.id.toString(),
                 fruitName: fruitName.trim(),
                 type: item.fields.ActivityType || 'Activity',
-                duration: item.fields.Duration || item.fields.DurationMinutes || '0',
+                duration: item.fields.Duration || '0',
                 notes: item.fields.Notes || '',
                 outcome: item.fields.Outcome || '',
                 user: user,
-                createdDate: item.fields.Created || item.fields.CreatedDateTime || item.createdDateTime
+                createdDate: item.fields.Created || item.createdDateTime
             };
             
             return activity;
         });
         
-        console.log('📊 Total activities loaded:', activities.length);
-        
-        // Refresh Activities tab if it's currently active
-        if (currentTab === 'activities') {
-            updateActivityTimeline();
-        }
+        console.log('📊 Activities loaded with users:', activities);
         
     } catch (error) {
-        console.error('❌ Error loading activities from SharePoint:', error);
+        console.error('❌ Error loading activities:', error);
         activities = [];
     }
 }
 
+// Helper function to extract user name from Person field
+function extractUserName(fields) {
+    console.log('🔍 Extracting user from fields:', fields);
+    
+    // Method 1: User field (Person field)
+    if (fields.User) {
+        console.log('👤 User field found:', fields.User);
+        
+        if (typeof fields.User === 'object') {
+            // Try all possible properties for display name
+            const possibleProperties = [
+                'displayName', 'title', 'name', 'givenName', 
+                'surname', 'userPrincipalName', 'email', 'mail'
+            ];
+            
+            for (const prop of possibleProperties) {
+                if (fields.User[prop]) {
+                    console.log(`✅ Found user name in ${prop}:`, fields.User[prop]);
+                    return formatUserName(fields.User[prop]);
+                }
+            }
+        } else if (typeof fields.User === 'string') {
+            return formatUserName(fields.User);
+        }
+    }
+    
+    // Method 2: CreatedBy field
+    if (fields.CreatedBy) {
+        console.log('👤 CreatedBy field found:', fields.CreatedBy);
+        
+        if (typeof fields.CreatedBy === 'object') {
+            if (fields.CreatedBy.displayName) {
+                return formatUserName(fields.CreatedBy.displayName);
+            } else if (fields.CreatedBy.title) {
+                return formatUserName(fields.CreatedBy.title);
+            } else if (fields.CreatedBy.email) {
+                return formatUserName(fields.CreatedBy.email);
+            }
+        } else if (typeof fields.CreatedBy === 'string') {
+            return formatUserName(fields.CreatedBy);
+        }
+    }
+    
+    // Method 3: Check if there's a user email field
+    if (fields.UserEmail) {
+        return formatUserName(fields.UserEmail);
+    }
+    
+    console.log('❌ No user name found in fields');
+    return 'Unknown User';
+}
+
+// Format user name - clean up email addresses, etc.
+function formatUserName(userString) {
+    if (!userString) return 'Unknown User';
+    
+    // If it's an email, extract the username part
+    if (userString.includes('@')) {
+        return userString.split('@')[0];
+    }
+    
+    // Capitalize first letter of each word
+    return userString.split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+}
+
+
+// Debug function to check User field structure
+async function debugUserFieldStructure() {
+    try {
+        console.log('🔍 Debugging User field structure...');
+        
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?$top=1&$expand=fields,fields/User`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.value && data.value.length > 0) {
+                const sampleActivity = data.value[0];
+                console.log('📋 Sample activity User field:', sampleActivity.fields.User);
+                console.log('📋 Full activity fields:', sampleActivity.fields);
+                
+                // Check all properties of the User object
+                if (sampleActivity.fields.User && typeof sampleActivity.fields.User === 'object') {
+                    console.log('🔍 User object properties:');
+                    Object.keys(sampleActivity.fields.User).forEach(key => {
+                        console.log(`  - ${key}:`, sampleActivity.fields.User[key]);
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error debugging user field:', error);
+    }
+}
+
+// Call this in console: debugUserFieldStructure()
 
         async function addFruitToSharePoint(fruitData) {
             try {
@@ -3153,7 +3237,7 @@ async function loadActivitiesFromSharePoint() {
         }
 
      
-    async function addActivityToSharePoint(activityData) {
+async function addActivityToSharePoint(activityData) {
     try {
         // Find the fruit to get its ID for the lookup
         const fruit = fruits.find(f => f.name === activityData.fruitName);
@@ -3169,21 +3253,12 @@ async function loadActivitiesFromSharePoint() {
                 ActivityType: activityData.type,
                 Duration: parseInt(activityData.duration) || 0,
                 Notes: activityData.notes,
-                Outcome: activityData.outcome
+                Outcome: activityData.outcome,
+                FruitNameLookupId: parseInt(fruit.id)
             }
         };
         
-        // Add FruitNameLookupId if we have the fruit ID
-        if (fruit.id) {
-            requestBody.fields.FruitNameLookupId = parseInt(fruit.id);
-        }
-        
-        // Add User field - this should map to your Person field
-        if (activityData.user) {
-            requestBody.fields.User = activityData.user;
-        }
-        
-        console.log('Creating activity with data:', requestBody);
+        console.log('🔄 Creating activity with data:', requestBody);
         
         const response = await fetch(url, {
             method: 'POST',
@@ -3201,14 +3276,15 @@ async function loadActivitiesFromSharePoint() {
         }
         
         const result = await response.json();
-        console.log('Activity created successfully:', result);
+        console.log('✅ Activity created successfully:', result);
         return result;
         
     } catch (error) {
-        console.error('Error adding activity to SharePoint:', error);
+        console.error('❌ Error adding activity to SharePoint:', error);
         throw error;
     }
 }
+
 
 
 async function updateFruitInSharePoint(fruitId, fruitData) {
@@ -6191,7 +6267,7 @@ async function debugSharePointFields() {
 
 <!-- Simple Version Tag -->
 <div class="fixed bottom-4 right-4 text-xs text-gray-500 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm z-40">
-    FRMS v1.0.0
+    FRMS v1.0.5
 </div>
 
 </body>
