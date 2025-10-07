@@ -1036,6 +1036,79 @@
         </div>
     </div>
 
+
+
+    <!-- Magic Link Modal -->
+<div id="magicLinkModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800">Sign in with Magic Link</h3>
+                <button onclick="closeModal('magicLinkModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="magicLinkForm">
+                <div class="text-center mb-6">
+                    <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-envelope text-purple-600 text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Get Your Magic Link</h4>
+                    <p class="text-gray-600">Enter your email address and we'll send you a secure sign-in link</p>
+                </div>
+                
+                <form onsubmit="sendMagicLink(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                        <input type="email" id="magicLinkEmail" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                               placeholder="your.email@example.com">
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Send Magic Link</span>
+                    </button>
+                </form>
+                
+                <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-info-circle text-blue-600 mt-1"></i>
+                        <div class="text-sm text-blue-700">
+                            <p class="font-medium">How it works:</p>
+                            <ul class="mt-1 space-y-1">
+                                <li>• Enter your authorized email address</li>
+                                <li>• Check your inbox for the magic link</li>
+                                <li>• Click the link to sign in automatically</li>
+                                <li>• No password required!</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="magicLinkSent" class="hidden text-center">
+                <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check text-green-600 text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-800 mb-2">Check Your Email!</h4>
+                <p class="text-gray-600 mb-4">We've sent a magic link to <span id="sentEmail" class="font-medium"></span></p>
+                <p class="text-sm text-gray-500">Click the link in the email to sign in automatically.</p>
+                
+                <div class="mt-6 space-y-3">
+                    <button onclick="resendMagicLink()" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-redo mr-2"></i>Resend Link
+                    </button>
+                    <button onclick="closeModal('magicLinkModal')" class="w-full border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
     <!-- Notification Toast -->
     <div id="notification" class="hidden fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg notification z-50">
         <div class="flex items-center space-x-2">
@@ -1058,17 +1131,6 @@
             GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
         };
         
-        // Google OAuth configuration
-        const GOOGLE_CONFIG = {
-            CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
-            CLIENT_SECRET: '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',
-            PROJECT_ID: 'hmbcfrm',
-            AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
-            TOKEN_URI: 'https://oauth2.googleapis.com/token',
-            SCOPES: 'openid email profile',
-            REDIRECT_URI: 'https://app.shill.es/ev' // This must match exactly
-        };
-
 
         // Global state
         let currentUser = null;
@@ -1120,48 +1182,39 @@
             'Other'
         ];
 
+
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 Initializing Evangelism CRM with PKCE authentication...');
-            console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
-            console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
-            
-            // Clear any previous processing flags
-            sessionStorage.removeItem('oauth_processed');
-            sessionStorage.removeItem('google_oauth_processed');
-            
-            // First, check for OAuth callback parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const authCode = urlParams.get('code');
-            const returnedState = urlParams.get('state');
-            
-            if (authCode) {
-                console.log('🔐 OAuth callback detected, checking provider...');
-                
-                // Determine if this is Google or Microsoft OAuth based on state
-                if (returnedState && returnedState.startsWith('google_auth_')) {
-                    console.log('🔐 Processing Google OAuth callback');
-                    processGoogleOAuthCallback(authCode, returnedState);
-                } else {
-                    console.log('🔐 Processing Microsoft OAuth callback');
-                    processOAuthCallback(authCode, returnedState);
-                }
-            } else {
-                console.log('🔧 No callback detected, initializing auth UI...');
-                // Initialize authentication UI
-                initializeMicrosoftAuth();
-                
-                // Check for existing session
-                checkExistingSession();
-            }
-            
-            loadLocalData();
-            updateConnectionStatus();
-            populateDropdowns();
-            initializeEventListeners();
-            
-            // Add stuck loading handler with longer delay
-            setTimeout(handleStuckLoading, 5000);
-        });
+    console.log('🔧 Initializing Evangelism CRM...');
+    
+    // First, check for magic link token
+    if (checkForMagicLinkToken()) {
+        return;
+    }
+    
+    // Then check for OAuth callback parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    const returnedState = urlParams.get('state');
+    
+    if (authCode) {
+        console.log('🔐 OAuth callback detected');
+        processOAuthCallback(authCode, returnedState);
+    } else {
+        console.log('🔧 No callback detected, initializing auth UI...');
+        initializeMicrosoftAuth();
+        checkExistingSession();
+    }
+    
+    loadLocalData();
+    updateConnectionStatus();
+    populateDropdowns();
+    initializeEventListeners();
+    
+    setTimeout(handleStuckLoading, 5000);
+});
+
+
+
 
         // Real-time sync functions
         function startRealTimeSync() {
@@ -1261,66 +1314,468 @@
             }
         }
 
-        
-            function initializeMicrosoftAuth() {
-    console.log('🔧 Initializing authentication options...');
+        function initializeMicrosoftAuth() {
+            console.log('🔧 Initializing authentication options...');
+            
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fab fa-microsoft text-xl"></i>
+                            <span>Sign in with Microsoft 365</span>
+                        </button>
+                        
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">or</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="showMagicLinkModal()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fas fa-envelope text-xl"></i>
+                            <span>Sign in with Magic Link</span>
+                        </button>
+                        
+                        <div class="mt-4 text-center">
+                            <p class="text-xs text-gray-500">
+                                <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                                Activities on this application is being monitored
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            console.log('✅ Multi-provider authentication initialized');
+        }
+
+
+// Magic Link Configuration with your actual list IDs
+const MAGIC_LINK_CONFIG = {
+    REQUESTS_LIST_ID: 'ede76111-9eaf-48b0-8315-3d5c3e6ad6e8',
+    RESPONSES_LIST_ID: 'e685fef4-f5b8-4b10-a840-d9cf773c83b9',
+    VERIFICATIONS_LIST_ID: '40d0a813-79b5-4bf7-a9ac-f9cc17616860',
+    VERIFICATION_RESPONSES_LIST_ID: 'a505541a-c56e-4720-b5db-1ec20cdaf2a2',
+    POLLING_INTERVAL: 2000, // 2 seconds
+    MAX_POLLING_ATTEMPTS: 15 // 30 seconds total
+};
+
+
+// Magic Link Functions
+function showMagicLinkModal() {
+    document.getElementById('magicLinkModal').classList.remove('hidden');
+    document.getElementById('magicLinkForm').classList.remove('hidden');
+    document.getElementById('magicLinkSent').classList.add('hidden');
+    document.getElementById('magicLinkEmail').value = '';
+}
+
+
+// Process magic link form submission
+async function sendMagicLink(event) {
+    event.preventDefault();
     
-    const buttonContainer = document.getElementById('googleSignInButton');
-    if (buttonContainer) {
-        buttonContainer.innerHTML = `
-            <div class="space-y-3">
-                <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                    <i class="fab fa-microsoft text-xl"></i>
-                    <span>Sign in with Microsoft 365</span>
-                </button>
-                
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-white text-gray-500">or</span>
-                    </div>
-                </div>
-                
-                <button onclick="debugGoogleOAuthConfig(); authenticateWithGoogle();" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
-                    <i class="fab fa-google text-xl text-red-500"></i>
-                    <span>Sign in with Google</span>
-                </button>
-                
-                <div class="mt-4 text-center">
-                    <p class="text-xs text-gray-500">
-                        <i class="fas fa-shield-alt text-green-500 mr-1"></i>
-                        Activities on this application is being monitored
-                    </p>
-                </div>
-            </div>
-        `;
+    const emailInput = document.getElementById('magicLinkEmail');
+    const email = emailInput.value.trim();
+    
+    if (!email) {
+        showNotification('Please enter your email address', 'error');
+        return;
     }
     
-    console.log('✅ Multi-provider authentication initialized');
+    try {
+        showNotification('Sending magic link...', 'info');
+        
+        // Disable the button to prevent multiple requests
+        const submitButton = event.target.querySelector('button[type="submit"]');
+        const originalText = submitButton.innerHTML;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        submitButton.disabled = true;
+        
+        const result = await sendMagicLinkToBackend(email);
+        
+        // Show success state
+        document.getElementById('magicLinkForm').classList.add('hidden');
+        document.getElementById('magicLinkSent').classList.remove('hidden');
+        document.getElementById('sentEmail').textContent = email;
+        
+        // Store email for potential resend
+        sessionStorage.setItem('pending_magic_link_email', email);
+        
+        showNotification('Magic link sent! Check your email.');
+        
+    } catch (error) {
+        console.error('❌ Failed to send magic link:', error);
+        showNotification('Failed to send magic link: ' + error.message, 'error');
+        
+        // Re-enable the button
+        const submitButton = event.target.querySelector('button[type="submit"]');
+        submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Send Magic Link';
+        submitButton.disabled = false;
+    }
+}
+
+// Resend magic link
+async function resendMagicLink() {
+    const email = sessionStorage.getItem('pending_magic_link_email');
+    
+    if (!email) {
+        showNotification('No email found to resend', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Resending magic link...', 'info');
+        await sendMagicLinkToBackend(email);
+        showNotification('Magic link resent! Check your email again.');
+    } catch (error) {
+        console.error('❌ Failed to resend magic link:', error);
+        showNotification('Failed to resend magic link: ' + error.message, 'error');
+    }
+}
+
+// Send magic link request
+async function sendMagicLinkToBackend(email) {
+    try {
+        console.log('📧 Sending magic link request for:', email);
+        
+        if (!sharePointAccessToken) {
+            throw new Error('SharePoint access required. Please sign in with Microsoft first.');
+        }
+
+        // Create request in SharePoint list
+        const requestUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${MAGIC_LINK_CONFIG.REQUESTS_LIST_ID}/items`;
+        
+        const response = await fetch(requestUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+                fields: {
+                    Title: `Magic Link Request - ${email}`,
+                    Email: email,
+                    RedirectUrl: window.location.href,
+                    Status: 'Pending',
+                    RequestDate: new Date().toISOString()
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ SharePoint error:', errorText);
+            throw new Error(`Failed to create magic link request: ${response.status}`);
+        }
+
+        const requestData = await response.json();
+        console.log('✅ Magic link request created:', requestData);
+
+        // Poll for response
+        return await waitForMagicLinkResponse(email);
+        
+    } catch (error) {
+        console.error('❌ Magic link request failed:', error);
+        throw error;
+    }
+}
+
+// Wait for magic link response
+async function waitForMagicLinkResponse(email) {
+    console.log('⏳ Waiting for magic link response...');
+    
+    for (let attempt = 0; attempt < MAGIC_LINK_CONFIG.MAX_POLLING_ATTEMPTS; attempt++) {
+        console.log(`📡 Polling attempt ${attempt + 1}/${MAGIC_LINK_CONFIG.MAX_POLLING_ATTEMPTS}`);
+        
+        await new Promise(resolve => setTimeout(resolve, MAGIC_LINK_CONFIG.POLLING_INTERVAL));
+        
+        try {
+            // URL encode the email for the filter
+            const encodedEmail = encodeURIComponent(email);
+            const responseUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${MAGIC_LINK_CONFIG.RESPONSES_LIST_ID}/items?$expand=fields&$filter=fields/Email eq '${encodedEmail}'&$orderby=fields/ResponseDate desc&$top=1`;
+            
+            const response = await fetch(responseUrl, {
+                headers: {
+                    'Authorization': `Bearer ${sharePointAccessToken}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📨 Response data:', data);
+                
+                if (data.value && data.value.length > 0) {
+                    const latestResponse = data.value[0];
+                    const status = latestResponse.fields.Status;
+                    console.log('📊 Response status:', status);
+                    
+                    if (status === 'Success') {
+                        return { 
+                            success: true, 
+                            message: 'Magic link sent successfully' 
+                        };
+                    } else if (status === 'Error') {
+                        const errorMessage = latestResponse.fields.Message || 'Failed to send magic link';
+                        throw new Error(errorMessage);
+                    }
+                    // If status is still pending, continue polling
+                }
+            } else {
+                console.log('⚠️ No response yet, continuing to poll...');
+            }
+        } catch (error) {
+            console.log(`Attempt ${attempt + 1}: Error -`, error.message);
+            // Continue polling unless it's a final error
+            if (error.message.includes('Failed to send magic link') || error.message.includes('User not found')) {
+                throw error;
+            }
+        }
+    }
+    
+    throw new Error('Timeout waiting for magic link response. Please try again.');
+}
+
+// Verify magic link token
+async function verifyMagicLinkToken(token) {
+    try {
+        console.log('🔐 Verifying magic link token:', token);
+        
+        if (!sharePointAccessToken) {
+            throw new Error('SharePoint access required for token verification.');
+        }
+
+        // Create verification request in SharePoint list
+        const verificationUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${MAGIC_LINK_CONFIG.VERIFICATIONS_LIST_ID}/items`;
+        
+        const response = await fetch(verificationUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+                fields: {
+                    Title: `Token Verification - ${token.substring(0, 10)}...`,
+                    Token: token,
+                    Status: 'Pending',
+                    VerificationDate: new Date().toISOString()
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ SharePoint error:', errorText);
+            throw new Error(`Failed to create verification request: ${response.status}`);
+        }
+
+        const verificationData = await response.json();
+        console.log('✅ Verification request created:', verificationData);
+
+        // Poll for verification response
+        return await waitForVerificationResponse(token);
+        
+    } catch (error) {
+        console.error('❌ Token verification failed:', error);
+        throw error;
+    }
+}
+
+// Wait for verification response
+async function waitForVerificationResponse(token) {
+    console.log('⏳ Waiting for token verification...');
+    
+    for (let attempt = 0; attempt < MAGIC_LINK_CONFIG.MAX_POLLING_ATTEMPTS; attempt++) {
+        console.log(`📡 Verification polling attempt ${attempt + 1}/${MAGIC_LINK_CONFIG.MAX_POLLING_ATTEMPTS}`);
+        
+        await new Promise(resolve => setTimeout(resolve, MAGIC_LINK_CONFIG.POLLING_INTERVAL));
+        
+        try {
+            const encodedToken = encodeURIComponent(token);
+            const responseUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${MAGIC_LINK_CONFIG.VERIFICATION_RESPONSES_LIST_ID}/items?$expand=fields&$filter=fields/Token eq '${encodedToken}'&$orderby=fields/ResponseDate desc&$top=1`;
+            
+            const response = await fetch(responseUrl, {
+                headers: {
+                    'Authorization': `Bearer ${sharePointAccessToken}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('🔑 Verification response data:', data);
+                
+                if (data.value && data.value.length > 0) {
+                    const latestResponse = data.value[0];
+                    const status = latestResponse.fields.Status;
+                    console.log('📊 Verification status:', status);
+                    
+                    if (status === 'Success') {
+                        // Parse user data from JSON string
+                        try {
+                            const userData = JSON.parse(latestResponse.fields.UserData || '{}');
+                            console.log('✅ User data retrieved:', userData);
+                            return { 
+                                success: true, 
+                                user: userData 
+                            };
+                        } catch (parseError) {
+                            console.error('❌ Error parsing user data:', parseError);
+                            throw new Error('Invalid user data format');
+                        }
+                    } else if (status === 'Error') {
+                        const errorMessage = latestResponse.fields.ErrorMessage || 'Token verification failed';
+                        throw new Error(errorMessage);
+                    }
+                    // If status is still pending, continue polling
+                }
+            } else {
+                console.log('⚠️ No verification response yet, continuing to poll...');
+            }
+        } catch (error) {
+            console.log(`Attempt ${attempt + 1}: Error -`, error.message);
+            // Continue polling unless it's a final error
+            if (error.message.includes('Token verification failed') || error.message.includes('Invalid or expired')) {
+                throw error;
+            }
+        }
+    }
+    
+    throw new Error('Timeout waiting for token verification. Please try again.');
+}
+
+function validateEmailDomain(email) {
+    // Optional: Validate against allowed domains
+    const domain = email.split('@')[1];
+    return MAGIC_LINK_CONFIG.ALLOWED_DOMAINS.some(allowed => domain.endsWith(allowed));
+}
+
+async function resendMagicLink() {
+    const email = sessionStorage.getItem('pending_magic_link_email');
+    
+    if (!email) {
+        showNotification('No email found to resend', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Resending magic link...', 'info');
+        await sendMagicLinkToBackend(email);
+        showNotification('Magic link resent!');
+    } catch (error) {
+        console.error('❌ Failed to resend magic link:', error);
+        showNotification('Failed to resend magic link: ' + error.message, 'error');
+    }
+}
+
+
+// Process magic link token from URL
+async function processMagicLinkToken(token) {
+    try {
+        console.log('🔐 Processing magic link token...');
+        showNotification('Verifying magic link...', 'info');
+        
+        const result = await verifyMagicLinkToken(token);
+        
+        if (!result.success || !result.user) {
+            throw new Error('Invalid user data received');
+        }
+        
+        const userInfo = result.user;
+        console.log('✅ Magic link user authenticated:', userInfo.email);
+        
+        // Check if user exists in SharePoint Users list and get their role
+        console.log('🔄 Checking user in SharePoint list...');
+        const sharePointUserInfo = await checkUserInSharePointList(userInfo.email, userInfo.name, 'magic_link');
+        
+        if (!sharePointUserInfo) {
+            console.log('❌ User not authorized in SharePoint:', userInfo.email);
+            showNotification('Access denied: Your email is not authorized in SharePoint. Please contact your administrator.', 'error');
+            return;
+        }
+        
+        // Set current user with SharePoint-defined permissions
+        currentUser = sharePointUserInfo;
+        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+        
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Load data from SharePoint
+        await loadDataFromSharePoint();
+        
+        showDashboard();
+        startRealTimeSync();
+        
+        showNotification(`Welcome ${sharePointUserInfo.name}! Magic link authentication successful.`);
+        
+    } catch (error) {
+        console.error('❌ Magic link authentication failed:', error);
+        showNotification('Magic link authentication failed: ' + error.message, 'error');
+        
+        // Clean URL on failure
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+// Check for magic link token on page load
+function checkForMagicLinkToken() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const magicToken = urlParams.get('magic_token');
+    
+    if (magicToken) {
+        console.log('🔐 Magic link token detected in URL');
+        processMagicLinkToken(magicToken);
+        return true;
+    }
+    
+    return false;
+}
+
+
+// Verify magic link token with backend
+async function verifyMagicLinkToken(token) {
+    // This would call your backend to verify the token
+    const response = await fetch(`${MAGIC_LINK_CONFIG.API_URL}/verify`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: token })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Invalid magic link token');
+    }
+    
+    const data = await response.json();
+    return data.user;
+}
+
+// Check for magic link token on page load
+function checkForMagicLinkToken() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const magicToken = urlParams.get('magic_token');
+    
+    if (magicToken) {
+        console.log('🔐 Magic link token detected');
+        processMagicLinkToken(magicToken);
+        return true;
+    }
+    
+    return false;
 }
 
 
 
-        function initializeGoogleAuth() {
-            // Load Google Identity Services
-            if (typeof google !== 'undefined' && google.accounts) {
-                console.log('🔧 Initializing Google Sign-In...');
-                
-                google.accounts.id.initialize({
-                    client_id: GOOGLE_CONFIG.CLIENT_ID,
-                    callback: handleGoogleSignIn,
-                    auto_select: false,
-                    cancel_on_tap_outside: true
-                });
-                
-                console.log('✅ Google Sign-In initialized');
-            } else {
-                console.log('⏳ Waiting for Google Identity Services to load...');
-                setTimeout(initializeGoogleAuth, 500);
-            }
-        }
+
 
         function checkForOAuthCallback() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -1567,85 +2022,6 @@ async function loadActivitiesWithGoogleAuth() {
     }
 }
 
-
-        async function processGoogleOAuthCallback(authCode, returnedState) {
-    try {
-        console.log('🔄 Processing Google OAuth callback...');
-        
-        // Validate state parameter
-        const storedState = sessionStorage.getItem('google_auth_state');
-        if (returnedState && storedState && returnedState !== storedState) {
-            throw new Error('Invalid state parameter - possible security issue');
-        }
-        
-        // Check if we already processed this callback
-        if (sessionStorage.getItem('google_oauth_processed')) {
-            console.log('⚠️ Google OAuth callback already processed, skipping...');
-            return;
-        }
-        
-        // Mark as processed to prevent duplicate processing
-        sessionStorage.setItem('google_oauth_processed', 'true');
-        
-        // Exchange code for token
-        console.log('🔄 Exchanging Google code for token...');
-        const tokenData = await exchangeGoogleCodeForToken(authCode);
-        
-        console.log('✅ Google token exchange successful');
-        
-        // Get user info from Google
-        console.log('🔄 Getting user info from Google...');
-        const userInfo = await getGoogleUserInfo(tokenData.access_token);
-        
-        console.log('👤 Google user authenticated:', userInfo.email);
-        
-        // Store Google token
-        sessionStorage.setItem('google_access_token', tokenData.access_token);
-        
-        // Validate user against SharePoint using server-side API
-        console.log('🔐 Validating Google user with SharePoint...');
-        const sharePointUserInfo = await validateGoogleUserWithSharePointAPI(userInfo);
-        
-        if (!sharePointUserInfo) {
-            console.log('❌ User not authorized in SharePoint');
-            logout();
-            return;
-        }
-        
-        // Set current user with SharePoint-defined permissions
-        currentUser = sharePointUserInfo;
-        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-        
-        // Clean up Google OAuth parameters
-        sessionStorage.removeItem('google_auth_state');
-        sessionStorage.removeItem('google_oauth_processed');
-        
-        // Clean URL
-        console.log('🔄 Cleaning URL and showing dashboard...');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Load data from SharePoint using Google authentication
-        await loadDataWithGoogleAuth();
-        
-        showDashboard();
-        showNotification(`Welcome ${sharePointUserInfo.name}! Google authentication successful.`);
-        
-    } catch (error) {
-        console.error('❌ Google OAuth callback processing failed:', error);
-        showNotification('Google authentication failed: ' + error.message, 'error');
-        
-        // Clean up on failure
-        sessionStorage.removeItem('google_auth_state');
-        sessionStorage.removeItem('google_oauth_processed');
-        
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show login screen again
-        initializeMicrosoftAuth();
-    }
-}
-
         async function validateGoogleUserWithSharePointAPI(googleUserInfo) {
     try {
         console.log('🔐 Validating Google user with SharePoint API:', googleUserInfo.email);
@@ -1756,8 +2132,7 @@ function checkExistingSession() {
     const msToken = sessionStorage.getItem('access_token');
     const msExpiry = sessionStorage.getItem('token_expiry');
     
-    // Check for Google session
-    const googleToken = sessionStorage.getItem('google_access_token');
+    // Check for saved user (could be from magic link or Microsoft)
     const savedUser = sessionStorage.getItem('current_user');
     
     if (msToken && msExpiry && Date.now() < parseInt(msExpiry)) {
@@ -1775,11 +2150,11 @@ function checkExistingSession() {
             startRealTimeSync();
             showNotification('Session restored with real-time sync!');
         });
-    } else if (googleToken && savedUser) {
-        console.log('🔐 Valid Google session found, restoring...');
+    } else if (savedUser) {
+        console.log('🔐 Valid user session found, restoring...');
         currentUser = JSON.parse(savedUser);
         
-        // Load data from SharePoint if we have access
+        // For magic link users, we still need SharePoint access
         if (sharePointAccessToken) {
             loadDataFromSharePoint().then(() => {
                 showDashboard();
@@ -1787,12 +2162,15 @@ function checkExistingSession() {
                 showNotification('Session restored with real-time sync!');
             });
         } else {
-            // Google user without SharePoint access - show dashboard with limited functionality
+            // User without SharePoint access - show dashboard with limited functionality
             showDashboard();
-            showNotification('Google session restored. SharePoint features require Microsoft sign-in.', 'info');
+            showNotification('Session restored. SharePoint features require Microsoft sign-in.', 'info');
         }
     }
 }
+
+
+
 
 async function loadFruitsWithGoogleAuth() {
     try {
@@ -1973,121 +2351,6 @@ async function loadActivitiesWithGoogleAuth() {
         }
 
         
-async function exchangeGoogleCodeForToken(authCode) {
-    try {
-        console.log('🔄 Google token exchange starting...');
-        
-        // Use the exact redirect URI from config
-        const redirectUri = GOOGLE_CONFIG.REDIRECT_URI;
-        
-        console.log('🔄 Using redirect URI:', redirectUri);
-        console.log('🔄 Client ID:', GOOGLE_CONFIG.CLIENT_ID.substring(0, 15) + '...');
-        console.log('🔄 Auth code length:', authCode.length);
-        
-        const requestBody = new URLSearchParams({
-            client_id: GOOGLE_CONFIG.CLIENT_ID,
-            client_secret: GOOGLE_CONFIG.CLIENT_SECRET,
-            code: authCode,
-            grant_type: 'authorization_code',
-            redirect_uri: redirectUri
-        });
-
-        console.log('🔄 Making token request to:', GOOGLE_CONFIG.TOKEN_URI);
-        
-        const response = await fetch(GOOGLE_CONFIG.TOKEN_URI, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: requestBody
-        });
-        
-        const responseText = await response.text();
-        console.log('🔄 Response status:', response.status);
-        console.log('🔄 Response text:', responseText);
-        
-        if (!response.ok) {
-            let errorData;
-            try {
-                errorData = JSON.parse(responseText);
-            } catch (e) {
-                errorData = { error: 'parse_error', error_description: 'Could not parse error response: ' + responseText };
-            }
-            
-            console.error('❌ Google token exchange failed:', errorData);
-            
-            // Provide more specific error messages
-            if (errorData.error === 'invalid_client') {
-                throw new Error('Invalid client configuration. Check Client ID and Client Secret.');
-            } else if (errorData.error === 'invalid_grant') {
-                throw new Error('Invalid authorization code. The code may have expired.');
-            } else if (errorData.error === 'redirect_uri_mismatch') {
-                throw new Error('Redirect URI mismatch. Check authorized redirect URIs in Google Cloud Console.');
-            } else {
-                throw new Error(errorData.error_description || errorData.error || 'Google token exchange failed');
-            }
-        }
-        
-        const tokenData = JSON.parse(responseText);
-        console.log('✅ Google token exchange successful');
-        console.log('🔄 Token type:', tokenData.token_type);
-        console.log('🔄 Access token received:', !!tokenData.access_token);
-        console.log('🔄 Scope:', tokenData.scope);
-        
-        return tokenData;
-        
-    } catch (error) {
-        console.error('❌ Google token exchange failed:', error);
-        throw error;
-    }
-}
-
-
-function debugGoogleOAuthConfig() {
-    console.log('🔧 Comprehensive Google OAuth Debug:');
-    console.log('✓ Client ID:', GOOGLE_CONFIG.CLIENT_ID);
-    console.log('✓ Client Secret:', GOOGLE_CONFIG.CLIENT_SECRET ? '✓ Set (first 10 chars): ' + GOOGLE_CONFIG.CLIENT_SECRET.substring(0, 10) + '...' : '✗ Missing');
-    console.log('✓ Redirect URI:', GOOGLE_CONFIG.REDIRECT_URI);
-    console.log('✓ Current URL:', window.location.href);
-    console.log('✓ Pathname:', window.location.pathname);
-    console.log('✓ Origin:', window.location.origin);
-    
-    // Check if redirect URI matches current URL pattern
-    const currentBaseUrl = window.location.origin + window.location.pathname;
-    console.log('✓ Redirect URI Match:', currentBaseUrl === GOOGLE_CONFIG.REDIRECT_URI ? '✓ Exact Match' : '✗ Mismatch');
-    
-    // Check if we're in a callback
-    const urlParams = new URLSearchParams(window.location.search);
-    const authCode = urlParams.get('code');
-    console.log('✓ Has auth code:', !!authCode);
-    console.log('✓ Auth code length:', authCode ? authCode.length : 'none');
-}
-
-// Run this immediately to check configuration
-debugGoogleOAuthConfig();
-
-
-
-        async function getGoogleUserInfo(accessToken) {
-            try {
-                const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Accept': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to get Google user info');
-                }
-
-                return await response.json();
-                
-            } catch (error) {
-                console.error('❌ Failed to get Google user info:', error);
-                throw error;
-            }
-        }
 
         async function authenticateWithMicrosoft() {
             try {
@@ -3088,12 +3351,6 @@ function handleStuckLoading() {
             const googleProcessed = sessionStorage.getItem('google_oauth_processed');
             if (!googleProcessed) {
                 console.log('🔄 Stuck loading detected with Google OAuth, processing callback...');
-                processGoogleOAuthCallback(authCode, returnedState).catch(error => {
-                    console.error('❌ Forced Google callback processing failed:', error);
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    sessionStorage.removeItem('google_oauth_processed');
-                    initializeMicrosoftAuth();
-                });
                 return;
             }
         } else {
@@ -3120,20 +3377,6 @@ function handleStuckLoading() {
     }
 }
 
-function handleGoogleSignIn(response) {
-    console.log('🔐 Google Sign-In response received');
-    
-    if (response.credential) {
-        // This is a successful sign-in
-        const idToken = response.credential;
-        
-        // Verify the token and get user info
-        verifyGoogleToken(idToken);
-    } else {
-        console.error('❌ Google Sign-In failed:', response);
-        showNotification('Google Sign-In failed', 'error');
-    }
-}
 
 async function verifyGoogleToken(idToken) {
     try {
@@ -5107,16 +5350,6 @@ async function callSharePointAPI(url, options = {}) {
         const urlParams = new URLSearchParams(window.location.search);
         const authCode = urlParams.get('code');
         const returnedState = urlParams.get('state');
-
-        if (authCode) {
-            if (returnedState && returnedState.startsWith('google_auth_')) {
-                console.log('🔄 Manual Google OAuth callback processing');
-                processGoogleOAuthCallback(authCode, returnedState);
-            } else {
-                console.log('🔄 Manual Microsoft OAuth callback processing');
-                processOAuthCallback(authCode, returnedState);
-            }
-        }
         
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
