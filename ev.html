@@ -2794,7 +2794,7 @@ window.addEventListener('load', function() {
                     }
                 }
 
-       
+    
 async function loadActivitiesFromSharePoint() {
     try {
         // Get all activities with proper field selection
@@ -2816,12 +2816,7 @@ async function loadActivitiesFromSharePoint() {
         const data = await response.json();
         const items = data.value || [];
         
-        console.log('📦 Raw activities from SharePoint:', items);
-        
         activities = items.map(item => {
-            // Debug the raw item structure
-            console.log('🔍 Raw activity item:', item);
-            
             // Extract fruit name from different possible fields
             let fruitName = '';
             if (item.fields.FruitNameLookup) {
@@ -2860,19 +2855,21 @@ async function loadActivitiesFromSharePoint() {
                 createdDate: item.fields.Created || item.fields.CreatedDateTime || item.createdDateTime
             };
             
-            console.log('✅ Processed activity:', activity);
             return activity;
         });
         
         console.log('📊 Total activities loaded:', activities.length);
-        console.log('📋 All activity fruit names:', [...new Set(activities.map(a => a.fruitName))]);
+        
+        // Refresh Activities tab if it's currently active
+        if (currentTab === 'activities') {
+            updateActivityTimeline();
+        }
         
     } catch (error) {
         console.error('❌ Error loading activities from SharePoint:', error);
         activities = [];
     }
-}                
-
+}
 
 
         async function addFruitToSharePoint(fruitData) {
@@ -3135,42 +3132,7 @@ async function editFruit(fruitId) {
 function showDashboard() {
     console.log('🔄 Showing dashboard...');
     
-    // Hide login screen
-    const loginScreen = document.getElementById('loginScreen');
-    const dashboard = document.getElementById('dashboard');
-    
-    if (loginScreen) {
-        loginScreen.classList.add('hidden');
-        console.log('✅ Login screen hidden');
-    }
-    
-    if (dashboard) {
-        dashboard.classList.remove('hidden');
-        console.log('✅ Dashboard shown');
-    } else {
-        console.error('❌ Dashboard element not found');
-    }
-    
-    // Only update user display if we have a current user
-    const userAvatar = document.getElementById('userAvatar');
-    const userName = document.getElementById('userName');
-    
-    if (currentUser) {
-        console.log('👤 Setting user display for:', currentUser.name);
-        if (userAvatar) userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
-        if (userName) userName.textContent = currentUser.name;
-        
-        // Show admin tab if user is admin
-        const adminTabBtn = document.getElementById('adminTabBtn');
-        if (adminTabBtn && userPermissions.isAdmin) {
-            adminTabBtn.classList.remove('hidden');
-        }
-    } else {
-        console.log('⚠️ No current user - resetting display');
-        // Reset to default if no user
-        if (userAvatar) userAvatar.textContent = 'U';
-        if (userName) userName.textContent = 'User';
-    }
+    // ... existing code ...
     
     updateConnectionStatus();
     updateStats();
@@ -3179,11 +3141,17 @@ function showDashboard() {
     populateDropdowns();
     applyPermissionBasedUI();
     
+    // Initialize Activities tab if needed
+    if (currentTab === 'activities') {
+        updateActivityTimeline();
+    }
+    
     // Update admin stats
     updateAdminStats();
     
     console.log('✅ Dashboard fully loaded');
-}      
+}
+
 
 
 function handleStuckLoading() {
@@ -3962,7 +3930,7 @@ async function logActivity(event) {
         duration: formData.get('duration'),
         notes: formData.get('activityNotes'),
         outcome: formData.get('outcome'),
-        user: currentUser.name, // This will be recorded in the "User" field
+        user: currentUser.name,
         createdDate: new Date().toISOString()
     };
     
@@ -3984,6 +3952,11 @@ async function logActivity(event) {
         updateRecentActivities();
         updateStats();
         
+        // Refresh Activities tab if we're on it
+        if (currentTab === 'activities') {
+            updateActivityTimeline();
+        }
+        
         // If we're currently viewing a fruit's details, refresh the activities
         if (currentViewingFruit && currentViewingFruit.name === newActivity.fruitName) {
             loadFruitActivities(currentViewingFruit.name);
@@ -3997,7 +3970,68 @@ async function logActivity(event) {
         showNotification('Failed to log activity: ' + error.message, 'error');
     }
 }
+
+async function scheduleBB(event) {
+    event.preventDefault();
     
+    if (!userPermissions.canAdd) {
+        showPermissionMessage('add');
+        return;
+    }
+    
+    const formData = new FormData(event.target);
+    const fruitName = formData.get('fruitName');
+    const sessionDate = formData.get('date');
+    const sessionTime = formData.get('time');
+    const sessionType = formData.get('sessionType');
+    const location = formData.get('location');
+    const scheduleNotes = formData.get('scheduleNotes');
+    
+    // Create detailed notes for the BB session activity
+    const activityNotes = `Scheduled ${sessionType} for ${sessionDate} at ${sessionTime}. Location: ${location}. ${scheduleNotes}`;
+    
+    // Log as a BB Session activity
+    const scheduleActivity = {
+        fruitName: fruitName,
+        type: 'BB Session Scheduled',
+        duration: '0',
+        notes: activityNotes,
+        outcome: 'Scheduled Next Step',
+        user: currentUser.name,
+        createdDate: new Date().toISOString()
+    };
+    
+    try {
+        if (isSharePointMode && sharePointAccessToken) {
+            const result = await addActivityToSharePoint(scheduleActivity);
+            scheduleActivity.id = result.id.toString();
+            showNotification('BB Session scheduled in SharePoint!');
+            
+            // Reload activities to ensure consistency
+            await loadActivitiesFromSharePoint();
+        } else {
+            scheduleActivity.id = 'activity_' + Date.now();
+            showNotification('BB Session scheduled locally');
+        }
+        
+        activities.push(scheduleActivity);
+        saveLocalData();
+        updateRecentActivities();
+        updateStats();
+        
+        // Refresh Activities tab if we're on it
+        if (currentTab === 'activities') {
+            updateActivityTimeline();
+        }
+        
+        closeModal('scheduleModal');
+        event.target.reset();
+        
+    } catch (error) {
+        console.error('Failed to schedule BB session:', error);
+        showNotification('Failed to schedule BB session: ' + error.message, 'error');
+    }
+}
 
 async function scheduleBB(event) {
     event.preventDefault();
@@ -4073,30 +4107,47 @@ function debugFruitActivities(fruitName) {
 }
 
 
-
-
-        // Tab functions
-        function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.add('hidden');
-            });
-            
-            // Remove active state from all tab buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('border-blue-600', 'text-blue-600');
-                btn.classList.add('border-transparent', 'text-gray-500');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName + 'Tab').classList.remove('hidden');
-            
-            // Add active state to selected tab button
-            event.target.classList.remove('border-transparent', 'text-gray-500');
-            event.target.classList.add('border-blue-600', 'text-blue-600');
-            
-            currentTab = tabName;
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active state from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-blue-600', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabName + 'Tab');
+    if (selectedTab) {
+        selectedTab.classList.remove('hidden');
+        
+        // Refresh data for specific tabs
+        if (tabName === 'activities') {
+            console.log('🔍 Switching to Activities tab - refreshing timeline');
+            updateActivityTimeline();
+        } else if (tabName === 'fruits') {
+            updateFruitsGrid();
+        } else if (tabName === 'overview') {
+            updateStats();
+            updateRecentActivities();
+        } else if (tabName === 'reports') {
+            // Refresh reports if needed
+        } else if (tabName === 'admin') {
+            updateAdminStats();
         }
+    }
+    
+    // Add active state to selected tab button
+    event.target.classList.remove('border-transparent', 'text-gray-500');
+    event.target.classList.add('border-blue-600', 'text-blue-600');
+    
+    currentTab = tabName;
+}
+
+      
 
         // Utility functions
         function filterFruits() {
@@ -4486,6 +4537,95 @@ async function updateFruit(event) {
     }
 }
 
+
+function updateActivityTimeline() {
+    const activityTimeline = document.getElementById('activityTimeline');
+    if (!activityTimeline) return;
+    
+    console.log('📊 Updating Activities tab with', activities.length, 'activities');
+    
+    // Sort activities by date (newest first)
+    const sortedActivities = [...activities].sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+    
+    if (sortedActivities.length === 0) {
+        activityTimeline.innerHTML = `
+            <div class="text-center py-12 text-gray-500">
+                <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                <p class="text-lg font-medium mb-2">No activities found</p>
+                <p class="text-sm mb-4">Start by logging your first activity to see the timeline here.</p>
+                <button onclick="showActivityModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Log First Activity
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    activityTimeline.innerHTML = sortedActivities.map((activity, index) => {
+        const isFirst = index === 0;
+        const isLast = index === sortedActivities.length - 1;
+        
+        return `
+            <div class="relative flex">
+                <!-- Timeline line and dot -->
+                <div class="flex flex-col items-center mr-4">
+                    <div class="w-3 h-3 rounded-full ${isFirst ? 'bg-green-500' : 'bg-blue-500'} z-10"></div>
+                    ${!isLast ? '<div class="w-0.5 h-full bg-gray-300 mt-1"></div>' : ''}
+                </div>
+                
+                <!-- Activity card -->
+                <div class="flex-1 mb-6 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="p-4">
+                        <!-- Header with type, fruit name, and date -->
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full ${isFirst ? 'bg-green-100' : 'bg-blue-100'} flex items-center justify-center">
+                                    <i class="fas ${getActivityIcon(activity.type)} ${isFirst ? 'text-green-600' : 'text-blue-600'}"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">${activity.type}</h4>
+                                    <p class="text-sm text-gray-600">with ${activity.fruitName || 'Unknown Fruit'}</p>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-500 text-right">
+                                <div>${formatDate(activity.createdDate)}</div>
+                                <div class="text-xs text-gray-400">${formatRelativeDate(activity.createdDate)}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Duration, user, and outcome -->
+                        <div class="flex items-center justify-between mb-3 text-sm text-gray-600">
+                            <div class="flex items-center space-x-4">
+                                ${activity.duration && parseInt(activity.duration) > 0 ? `
+                                    <span class="flex items-center">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        ${activity.duration} min
+                                    </span>
+                                ` : ''}
+                                <span class="flex items-center">
+                                    <i class="fas fa-user mr-1"></i>
+                                    by ${activity.user || 'Unknown User'}
+                                </span>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getOutcomeBadgeColor(activity.outcome)}">
+                                ${activity.outcome || 'No outcome'}
+                            </span>
+                        </div>
+                        
+                        <!-- Notes -->
+                        ${activity.notes ? `
+                            <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                                <p class="text-sm text-gray-700">${activity.notes}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    console.log('✅ Activities tab updated with', sortedActivities.length, 'activities');
+}
 
         async function deleteFruit(fruitId) {
             // Check permissions first
