@@ -1181,8 +1181,10 @@
             'Other'
         ];
 
+        
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
+    console.log('🔍 Initial URL:', window.location.href);
     
     // First, check if this is an OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
@@ -1192,14 +1194,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (authCode) {
         console.log('🔐 OAuth callback detected - processing authentication');
-        // Process OAuth without logging out
         processOAuthCallback(authCode, returnedState);
     } else if (error) {
         console.error('❌ OAuth error:', error);
         showNotification('Authentication failed: ' + error, 'error');
-        // Clean URL and show login
         window.history.replaceState({}, document.title, window.location.pathname);
-        initializeMicrosoftAuth();
+        showLoginScreen();
     } else {
         console.log('🔧 No OAuth callback - checking session state');
         
@@ -1217,6 +1217,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize UI components
     initializeUI();
+    
+    // Initial dashboard state check
+    setTimeout(checkAndFixDashboard, 500);
 });
 
 // Add this function to show login screen properly
@@ -1606,6 +1609,7 @@ function checkForOAuthCallback() {
 async function processOAuthCallback(authCode, returnedState) {
     try {
         console.log('🔄 Processing Microsoft OAuth callback...');
+        console.log('🔍 Current URL:', window.location.href);
         
         // Show loading state
         showNotification('Completing authentication...', 'info');
@@ -1618,9 +1622,9 @@ async function processOAuthCallback(authCode, returnedState) {
         
         // Check if we already processed this callback
         if (sessionStorage.getItem('oauth_processed')) {
-            console.log('⚠️ OAuth callback already processed, redirecting...');
+            console.log('⚠️ OAuth callback already processed, redirecting to dashboard...');
             window.history.replaceState({}, document.title, window.location.pathname);
-            restoreSession();
+            showDashboard(); // Force show dashboard
             return;
         }
         
@@ -1668,14 +1672,28 @@ async function processOAuthCallback(authCode, returnedState) {
         // Clean URL - IMPORTANT: Remove OAuth parameters from URL
         console.log('🔄 Cleaning URL and showing dashboard...');
         window.history.replaceState({}, document.title, window.location.pathname);
+        console.log('🔍 URL after cleanup:', window.location.href);
         
         // Load data from SharePoint
+        console.log('🔄 Loading data from SharePoint...');
         await loadDataFromSharePoint();
         
+        // FORCE SHOW DASHBOARD
+        console.log('🎯 FORCING DASHBOARD DISPLAY');
         showDashboard();
         startRealTimeSync();
         
         showNotification(`Welcome ${userInfo.name}! Authentication successful.`);
+        
+        // Double-check dashboard is visible
+        setTimeout(() => {
+            const dashboard = document.getElementById('dashboard');
+            const loginScreen = document.getElementById('loginScreen');
+            console.log('🔍 Final state check:');
+            console.log(' - Dashboard hidden:', dashboard?.classList.contains('hidden'));
+            console.log(' - Login screen hidden:', loginScreen?.classList.contains('hidden'));
+            console.log(' - Current user:', currentUser);
+        }, 1000);
         
     } catch (error) {
         console.error('❌ OAuth callback processing failed:', error);
@@ -1695,6 +1713,36 @@ async function processOAuthCallback(authCode, returnedState) {
     }
 }
 
+
+function checkAndFixDashboard() {
+    console.log('🔧 Checking dashboard state...');
+    
+    const loginScreen = document.getElementById('loginScreen');
+    const dashboard = document.getElementById('dashboard');
+    const hasValidSession = checkForValidSession();
+    
+    console.log('🔍 Current state:', {
+        hasValidSession: hasValidSession,
+        loginScreenHidden: loginScreen?.classList.contains('hidden'),
+        dashboardHidden: dashboard?.classList.contains('hidden'),
+        currentUser: currentUser
+    });
+    
+    // If we have a valid session but login screen is showing, fix it
+    if (hasValidSession && loginScreen && !loginScreen.classList.contains('hidden')) {
+        console.log('⚠️ Dashboard should be showing but login screen is visible - fixing...');
+        showDashboard();
+    }
+    
+    // If we don't have a valid session but dashboard is showing, fix it
+    if (!hasValidSession && dashboard && !dashboard.classList.contains('hidden')) {
+        console.log('⚠️ Login screen should be showing but dashboard is visible - fixing...');
+        showLoginScreen();
+    }
+}
+
+// Call this periodically to catch any state issues
+setInterval(checkAndFixDashboard, 2000);
 
 async function loadDataWithGoogleAuth() {
     try {
@@ -3227,31 +3275,75 @@ async function editFruit(fruitId) {
 
         // Dashboard functions
         
- 
 function showDashboard() {
     console.log('🔄 Showing dashboard...');
     
-    // ... existing code ...
+    // Get elements
+    const loginScreen = document.getElementById('loginScreen');
+    const dashboard = document.getElementById('dashboard');
     
+    // Hide login screen
+    if (loginScreen) {
+        loginScreen.classList.add('hidden');
+        console.log('✅ Login screen hidden');
+    } else {
+        console.error('❌ Login screen element not found');
+    }
+    
+    // Show dashboard
+    if (dashboard) {
+        dashboard.classList.remove('hidden');
+        console.log('✅ Dashboard shown');
+    } else {
+        console.error('❌ Dashboard element not found');
+    }
+    
+    // Update user display
+    updateUserDisplay();
+    
+    // Update all UI components
+    updateUIComponents();
+    
+    console.log('✅ Dashboard fully loaded');
+}
+
+function updateUserDisplay() {
+    const userAvatar = document.getElementById('userAvatar');
+    const userName = document.getElementById('userName');
+    
+    if (currentUser) {
+        console.log('👤 Setting user display for:', currentUser.name);
+        if (userAvatar) {
+            userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
+            console.log('✅ User avatar updated');
+        }
+        if (userName) {
+            userName.textContent = currentUser.name;
+            console.log('✅ User name updated');
+        }
+        
+        // Show admin tab if user is admin
+        const adminTabBtn = document.getElementById('adminTabBtn');
+        if (adminTabBtn && userPermissions.isAdmin) {
+            adminTabBtn.classList.remove('hidden');
+            console.log('✅ Admin tab shown');
+        }
+    } else {
+        console.log('⚠️ No current user - cannot update display');
+    }
+}
+
+function updateUIComponents() {
     updateConnectionStatus();
     updateStats();
     updateRecentActivities();
     updateFruitsGrid();
     populateDropdowns();
     applyPermissionBasedUI();
-    
-    // Initialize Activities tab if needed
-    if (currentTab === 'activities') {
-        updateActivityTimeline();
-    }
-    
-    // Update admin stats
     updateAdminStats();
     
-    console.log('✅ Dashboard fully loaded');
+    console.log('✅ All UI components updated');
 }
-
-
 
 function handleStuckLoading() {
     // Check if we're stuck on login page after successful auth
@@ -5663,5 +5755,13 @@ async function callSharePointAPI(url, options = {}) {
         const returnedState = urlParams.get('state');
         
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+
+<!-- Version Display -->
+<div id="versionInfo" class="fixed bottom-4 right-4 text-xs text-gray-400 bg-white bg-opacity-80 px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
+    v1.0.0
+</div>
+
+
+</body>
 </html>
