@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism FRM</title>
+    <title>Evangelism FRM (MSFT)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1128,7 +1128,8 @@
         ];
 
         // Initialize the app
-        document.addEventListener('DOMContentLoaded', function() {
+        
+document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM with PKCE authentication...');
     console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
     console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
@@ -1154,6 +1155,7 @@
     // Add stuck loading handler
     setTimeout(handleStuckLoading, 3000);
 });
+
 
         // Real-time sync functions
         function startRealTimeSync() {
@@ -1317,7 +1319,7 @@
             }
         }
 
-function checkForOAuthCallback() {
+        function checkForOAuthCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const returnedState = urlParams.get('state');
@@ -1361,7 +1363,8 @@ function checkForOAuthCallback() {
     console.log('🔐 No OAuth callback parameters found');
     return false;
 }
-        
+
+
 async function processOAuthCallback(authCode, returnedState) {
     try {
         console.log('🔄 Processing Microsoft OAuth callback...');
@@ -1437,7 +1440,9 @@ async function processOAuthCallback(authCode, returnedState) {
         initializeMicrosoftAuth();
     }
 }
-        
+
+
+
         function checkExistingSession() {
             // Check for Microsoft session
             const msToken = sessionStorage.getItem('access_token');
@@ -2551,6 +2556,7 @@ async function exchangeGoogleCodeForToken(authCode) {
 
         // Dashboard functions
         
+        
 function showDashboard() {
     console.log('🔄 Showing dashboard...');
     
@@ -2599,6 +2605,7 @@ function showDashboard() {
 }
 
 
+
 function handleStuckLoading() {
     // Check if we're stuck on login page after successful auth
     const urlParams = new URLSearchParams(window.location.search);
@@ -2616,6 +2623,11 @@ function handleStuckLoading() {
         });
     }
 }
+
+// Call this after a short delay
+setTimeout(handleStuckLoading, 3000);
+
+
 
 // Call this after a short delay
 setTimeout(handleStuckLoading, 3000);
