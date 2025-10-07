@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>We Are One - FRMS</title>
+    <title>Evengelism Tool - FRMS</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1264,44 +1264,51 @@
 
         
         function initializeMicrosoftAuth() {
-            console.log('🔧 Initializing authentication options...');
-            
-            // Provide both Microsoft 365 and Google authentication
-            const buttonContainer = document.getElementById('googleSignInButton');
-            if (buttonContainer) {
-                buttonContainer.innerHTML = `
-                    <div class="space-y-3">
-                        <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                            <i class="fab fa-microsoft text-xl"></i>
-                            <span>Sign in with Microsoft 365</span>
-                        </button>
-                        
-                        <div class="relative">
-                            <div class="absolute inset-0 flex items-center">
-                                <div class="w-full border-t border-gray-300"></div>
-                            </div>
-                            <div class="relative flex justify-center text-sm">
-                                <span class="px-2 bg-white text-gray-500">or</span>
-                            </div>
-                        </div>
-                        
-                        <button onclick="debugGoogleOAuthConfig(); authenticateWithGoogle();" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
-                            <i class="fab fa-google text-xl text-red-500"></i>
-                            <span>Sign in with Google</span>
-                        </button>
-                        
-                        <div class="mt-4 text-center">
-                            <p class="text-xs text-gray-500">
-                                <i class="fas fa-shield-alt text-green-500 mr-1"></i>
-                                Activities on this application is being monitored
-                            </p>
-                        </div>
+    console.log('🔧 Initializing authentication options...');
+    
+    // Provide both Microsoft 365 and Google authentication
+    const buttonContainer = document.getElementById('googleSignInButton');
+    if (buttonContainer) {
+        buttonContainer.innerHTML = `
+            <div class="space-y-3">
+                <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                    <i class="fab fa-microsoft text-xl"></i>
+                    <span>Sign in with Microsoft 365</span>
+                </button>
+                
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
                     </div>
-                `;
-            }
-            
-            console.log('✅ Multi-provider authentication initialized');
-        }
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">or</span>
+                    </div>
+                </div>
+                
+                <button onclick="debugGoogleOAuthConfig(); authenticateWithGoogle();" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
+                    <i class="fab fa-google text-xl text-red-500"></i>
+                    <span>Sign in with Google</span>
+                </button>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-gray-500">
+                        <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                        Google users will also need Microsoft 365 authentication for SharePoint access
+                    </p>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-gray-500">
+                        <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                        Activities on this application is being monitored
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+    
+    console.log('✅ Multi-provider authentication initialized');
+}
 
 
         function initializeGoogleAuth() {
@@ -1370,36 +1377,47 @@
 
 
     async function processOAuthCallback(authCode, returnedState) {
-        try {
-            console.log('🔄 Processing Microsoft OAuth callback...');
+    try {
+        console.log('🔄 Processing Microsoft OAuth callback...');
+        
+        // Validate state parameter
+        const storedState = sessionStorage.getItem('pkce_state');
+        if (returnedState && storedState && returnedState !== storedState) {
+            throw new Error('Invalid state parameter - possible security issue');
+        }
+        
+        // Check if we already processed this callback
+        if (sessionStorage.getItem('oauth_processed')) {
+            console.log('⚠️ OAuth callback already processed, skipping...');
+            return;
+        }
+        
+        // Mark as processed to prevent duplicate processing
+        sessionStorage.setItem('oauth_processed', 'true');
+        
+        // Exchange code for token
+        console.log('🔄 Exchanging code for token...');
+        const tokenData = await exchangeCodeForTokenPKCE(authCode);
+        
+        sharePointAccessToken = tokenData.access_token;
+        isSharePointMode = true;
+        
+        // Store token with expiration
+        sessionStorage.setItem('access_token', tokenData.access_token);
+        sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
+        
+        // Check if there's a pending Google user waiting for SharePoint access
+        const pendingGoogleUser = sessionStorage.getItem('pending_google_user');
+        
+        if (pendingGoogleUser) {
+            console.log('🔐 Found pending Google user, validating with SharePoint...');
+            const googleUserInfo = JSON.parse(pendingGoogleUser);
             
-            // Validate state parameter
-            const storedState = sessionStorage.getItem('pkce_state');
-            if (returnedState && storedState && returnedState !== storedState) {
-                throw new Error('Invalid state parameter - possible security issue');
-            }
+            // Validate the Google user with SharePoint
+            await validateGoogleUserWithSharePoint(googleUserInfo);
             
-            // Check if we already processed this callback
-            if (sessionStorage.getItem('oauth_processed')) {
-                console.log('⚠️ OAuth callback already processed, skipping...');
-                return;
-            }
-            
-            // Mark as processed to prevent duplicate processing
-            sessionStorage.setItem('oauth_processed', 'true');
-            
-            // Exchange code for token
-            console.log('🔄 Exchanging code for token...');
-            const tokenData = await exchangeCodeForTokenPKCE(authCode);
-            
-            sharePointAccessToken = tokenData.access_token;
-            isSharePointMode = true;
-            
-            // Store token with expiration
-            sessionStorage.setItem('access_token', tokenData.access_token);
-            sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
-            
-            // Get basic user info from Microsoft
+        } else {
+            // Regular Microsoft user flow
             console.log('🔄 Getting user info from Microsoft...');
             const basicUserInfo = await getUserInfo(tokenData.access_token);
             
@@ -1432,108 +1450,147 @@
             await loadDataFromSharePoint();
             
             showDashboard();
-            
-            // Start real-time sync
             startRealTimeSync();
             
             showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
-            
-        } catch (error) {
-            console.error('❌ OAuth callback processing failed:', error);
-            showNotification('Authentication failed: ' + error.message, 'error');
-            
-            // Clean up on failure
-            sessionStorage.removeItem('pkce_code_verifier');
-            sessionStorage.removeItem('pkce_state');
-            sessionStorage.removeItem('oauth_processed');
-            
-            // Clean URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            // Show login screen again
-            initializeMicrosoftAuth();
-        }
-    }
-
-
-    async function processGoogleOAuthCallback(authCode, returnedState) {
-    try {
-        console.log('🔄 Processing Google OAuth callback...');
-        
-        // Validate state parameter
-        const storedState = sessionStorage.getItem('google_auth_state');
-        if (returnedState && storedState && returnedState !== storedState) {
-            throw new Error('Invalid state parameter - possible security issue');
-        }
-        
-        // Check if we already processed this callback
-        if (sessionStorage.getItem('google_oauth_processed')) {
-            console.log('⚠️ Google OAuth callback already processed, skipping...');
-            return;
-        }
-        
-        // Mark as processed to prevent duplicate processing
-        sessionStorage.setItem('google_oauth_processed', 'true');
-        
-        // Exchange code for token
-        console.log('🔄 Exchanging Google code for token...');
-        const tokenData = await exchangeGoogleCodeForToken(authCode);
-        
-        console.log('✅ Google token exchange successful');
-        
-        // Get user info from Google
-        console.log('🔄 Getting user info from Google...');
-        const userInfo = await getGoogleUserInfo(tokenData.access_token);
-        
-        console.log('👤 Google user authenticated:', userInfo.email);
-        
-        // For Google users, we need to check SharePoint authorization
-        console.log('🔄 Checking user in SharePoint list...');
-        const sharePointUserInfo = await checkUserInSharePointList(userInfo.email, userInfo.name, 'google');
-        
-        if (!sharePointUserInfo) {
-            console.log('❌ User not authorized in SharePoint');
-            logout();
-            return;
-        }
-        
-        // Set current user with SharePoint-defined permissions
-        currentUser = sharePointUserInfo;
-        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-        sessionStorage.setItem('google_access_token', tokenData.access_token);
-        
-        // Clean up Google OAuth parameters and processing flag
-        sessionStorage.removeItem('google_auth_state');
-        sessionStorage.removeItem('google_oauth_processed');
-        
-        // Clean URL - IMPORTANT: Remove OAuth parameters from URL
-        console.log('🔄 Cleaning URL and showing dashboard...');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // For Google users, we still need SharePoint access token for data operations
-        // Show a message that SharePoint features require Microsoft login
-        showDashboard();
-        
-        showNotification(`Welcome ${userInfo.name}! Google authentication successful.`);
-        
-        // Note: Google users can view data but need Microsoft login for SharePoint operations
-        if (!sharePointAccessToken) {
-            showNotification('Note: SharePoint operations require Microsoft 365 sign-in', 'info');
         }
         
     } catch (error) {
-        console.error('❌ Google OAuth callback processing failed:', error);
-        showNotification('Google authentication failed: ' + error.message, 'error');
+        console.error('❌ OAuth callback processing failed:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
         
         // Clean up on failure
-        sessionStorage.removeItem('google_auth_state');
-        sessionStorage.removeItem('google_oauth_processed');
+        sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('pkce_state');
+        sessionStorage.removeItem('oauth_processed');
+        sessionStorage.removeItem('pending_google_user');
         
         // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
         
         // Show login screen again
         initializeMicrosoftAuth();
+    }
+}
+
+
+        async function processGoogleOAuthCallback(authCode, returnedState) {
+            try {
+                console.log('🔄 Processing Google OAuth callback...');
+                
+                // Validate state parameter
+                const storedState = sessionStorage.getItem('google_auth_state');
+                if (returnedState && storedState && returnedState !== storedState) {
+                    throw new Error('Invalid state parameter - possible security issue');
+                }
+                
+                // Check if we already processed this callback
+                if (sessionStorage.getItem('google_oauth_processed')) {
+                    console.log('⚠️ Google OAuth callback already processed, skipping...');
+                    return;
+                }
+                
+                // Mark as processed to prevent duplicate processing
+                sessionStorage.setItem('google_oauth_processed', 'true');
+                
+                // Exchange code for token
+                console.log('🔄 Exchanging Google code for token...');
+                const tokenData = await exchangeGoogleCodeForToken(authCode);
+                
+                console.log('✅ Google token exchange successful');
+                
+                // Get user info from Google
+                console.log('🔄 Getting user info from Google...');
+                const userInfo = await getGoogleUserInfo(tokenData.access_token);
+                
+                console.log('👤 Google user authenticated:', userInfo.email);
+                
+                // Store Google token for future use
+                sessionStorage.setItem('google_access_token', tokenData.access_token);
+                
+                // For Google users, we need Microsoft authentication to access SharePoint
+                if (!sharePointAccessToken) {
+                    console.log('🔐 Google user needs Microsoft authentication for SharePoint access');
+                    
+                    // Store Google user info temporarily
+                    sessionStorage.setItem('pending_google_user', JSON.stringify(userInfo));
+                    
+                    // Show message and initiate Microsoft authentication
+                    showNotification('Google authentication successful! Now connecting to SharePoint...', 'info');
+                    
+                    // Automatically start Microsoft authentication
+                    setTimeout(() => {
+                        authenticateWithMicrosoft();
+                    }, 1000);
+                    
+                    return;
+                }
+                
+                // If we already have SharePoint access, validate the user immediately
+                await validateGoogleUserWithSharePoint(userInfo);
+                
+            } catch (error) {
+                console.error('❌ Google OAuth callback processing failed:', error);
+                showNotification('Google authentication failed: ' + error.message, 'error');
+                
+                // Clean up on failure
+                sessionStorage.removeItem('google_auth_state');
+                sessionStorage.removeItem('google_oauth_processed');
+                sessionStorage.removeItem('pending_google_user');
+                
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Show login screen again
+                initializeMicrosoftAuth();
+            }
+        }
+
+        async function validateGoogleUserWithSharePoint(googleUserInfo) {
+    try {
+        console.log('🔐 Validating Google user with SharePoint:', googleUserInfo.email);
+        
+        if (!sharePointAccessToken) {
+            throw new Error('SharePoint access required for user validation');
+        }
+
+        // Check if user exists in SharePoint Users list
+        const sharePointUserInfo = await checkUserInSharePointList(googleUserInfo.email, googleUserInfo.name, 'google');
+        
+        if (!sharePointUserInfo) {
+            console.log('❌ User not authorized in SharePoint:', googleUserInfo.email);
+            showNotification('Access denied: Your email is not authorized in SharePoint. Please contact your administrator.', 'error');
+            logout();
+            return null;
+        }
+
+        // Set current user with SharePoint-defined permissions
+        currentUser = sharePointUserInfo;
+        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+
+        // Clean up Google OAuth parameters and processing flag
+        sessionStorage.removeItem('google_auth_state');
+        sessionStorage.removeItem('google_oauth_processed');
+        sessionStorage.removeItem('pending_google_user');
+
+        // Clean URL
+        console.log('🔄 Cleaning URL and showing dashboard...');
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        // Load data from SharePoint
+        await loadDataFromSharePoint();
+
+        showDashboard();
+        startRealTimeSync();
+        
+        showNotification(`Welcome ${sharePointUserInfo.name}! Google authentication successful.`);
+
+        return sharePointUserInfo;
+        
+    } catch (error) {
+        console.error('❌ Google user validation failed:', error);
+        showNotification('User validation failed: ' + error.message, 'error');
+        throw error;
     }
 }
 
