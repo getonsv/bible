@@ -1128,19 +1128,25 @@
         ];
 
         // Initialize the app
-        
-document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM with PKCE authentication...');
     console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
     console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
     
-    // First, check for OAuth callback parameters
-    const hasCallback = checkForOAuthCallback();
+    // Clear any previous processing flags
+    sessionStorage.removeItem('oauth_processed');
     
-    // Only initialize auth UI if not processing callback
-    if (!hasCallback) {
+    // First, check for OAuth callback parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    
+    if (authCode) {
+        console.log('🔐 OAuth callback detected, processing immediately...');
+        const returnedState = urlParams.get('state');
+        processOAuthCallback(authCode, returnedState);
+    } else {
         console.log('🔧 No callback detected, initializing auth UI...');
-        // Initialize authentication UI immediately
+        // Initialize authentication UI
         initializeMicrosoftAuth();
         
         // Check for existing session
@@ -1152,10 +1158,10 @@ document.addEventListener('DOMContentLoaded', function() {
     populateDropdowns();
     initializeEventListeners();
     
-    // Add stuck loading handler
-    setTimeout(handleStuckLoading, 3000);
+    // Add stuck loading handler with longer delay
+    setTimeout(handleStuckLoading, 5000);
 });
-
+        
 
         // Real-time sync functions
         function startRealTimeSync() {
@@ -1365,82 +1371,91 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 
-async function processOAuthCallback(authCode, returnedState) {
-    try {
-        console.log('🔄 Processing Microsoft OAuth callback...');
-        
-        // Validate state parameter
-        const storedState = sessionStorage.getItem('pkce_state');
-        if (returnedState && storedState && returnedState !== storedState) {
-            throw new Error('Invalid state parameter - possible security issue');
+    async function processOAuthCallback(authCode, returnedState) {
+        try {
+            console.log('🔄 Processing Microsoft OAuth callback...');
+            
+            // Validate state parameter
+            const storedState = sessionStorage.getItem('pkce_state');
+            if (returnedState && storedState && returnedState !== storedState) {
+                throw new Error('Invalid state parameter - possible security issue');
+            }
+            
+            // Check if we already processed this callback
+            if (sessionStorage.getItem('oauth_processed')) {
+                console.log('⚠️ OAuth callback already processed, skipping...');
+                return;
+            }
+            
+            // Mark as processed to prevent duplicate processing
+            sessionStorage.setItem('oauth_processed', 'true');
+            
+            // Exchange code for token
+            console.log('🔄 Exchanging code for token...');
+            const tokenData = await exchangeCodeForTokenPKCE(authCode);
+            
+            sharePointAccessToken = tokenData.access_token;
+            isSharePointMode = true;
+            
+            // Store token with expiration
+            sessionStorage.setItem('access_token', tokenData.access_token);
+            sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
+            
+            // Get basic user info from Microsoft
+            console.log('🔄 Getting user info from Microsoft...');
+            const basicUserInfo = await getUserInfo(tokenData.access_token);
+            
+            console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
+            
+            // Check if user exists in SharePoint Users list and get their role
+            console.log('🔄 Checking user in SharePoint list...');
+            const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
+            
+            if (!userInfo) {
+                console.log('❌ User not authorized in SharePoint');
+                logout();
+                return;
+            }
+            
+            // Set current user with SharePoint-defined permissions
+            currentUser = userInfo;
+            sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+            
+            // Clean up PKCE parameters and processing flag
+            sessionStorage.removeItem('pkce_code_verifier');
+            sessionStorage.removeItem('pkce_state');
+            sessionStorage.removeItem('oauth_processed');
+            
+            // Clean URL - IMPORTANT: Remove OAuth parameters from URL
+            console.log('🔄 Cleaning URL and showing dashboard...');
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Load data from SharePoint
+            await loadDataFromSharePoint();
+            
+            showDashboard();
+            
+            // Start real-time sync
+            startRealTimeSync();
+            
+            showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
+            
+        } catch (error) {
+            console.error('❌ OAuth callback processing failed:', error);
+            showNotification('Authentication failed: ' + error.message, 'error');
+            
+            // Clean up on failure
+            sessionStorage.removeItem('pkce_code_verifier');
+            sessionStorage.removeItem('pkce_state');
+            sessionStorage.removeItem('oauth_processed');
+            
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Show login screen again
+            initializeMicrosoftAuth();
         }
-        
-        // Exchange code for token
-        console.log('🔄 Exchanging code for token...');
-        const tokenData = await exchangeCodeForTokenPKCE(authCode);
-        
-        sharePointAccessToken = tokenData.access_token;
-        isSharePointMode = true;
-        
-        // Store token with expiration
-        sessionStorage.setItem('access_token', tokenData.access_token);
-        sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
-        
-        // Get basic user info from Microsoft
-        console.log('🔄 Getting user info from Microsoft...');
-        const basicUserInfo = await getUserInfo(tokenData.access_token);
-        
-        console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
-        
-        // Check if user exists in SharePoint Users list and get their role
-        console.log('🔄 Checking user in SharePoint list...');
-        const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
-        
-        if (!userInfo) {
-            console.log('❌ User not authorized in SharePoint');
-            // Error message already shown in checkUserInSharePointList
-            logout();
-            return;
-        }
-        
-        // Set current user with SharePoint-defined permissions
-        currentUser = userInfo;
-        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-        
-        // Clean up PKCE parameters
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
-        
-        // Clean URL - IMPORTANT: Remove OAuth parameters from URL
-        console.log('🔄 Cleaning URL and showing dashboard...');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Load data from SharePoint
-        await loadDataFromSharePoint();
-        
-        showDashboard();
-        
-        // Start real-time sync
-        startRealTimeSync();
-        
-        showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
-        
-    } catch (error) {
-        console.error('❌ OAuth callback processing failed:', error);
-        showNotification('Authentication failed: ' + error.message, 'error');
-        
-        // Clean up on failure
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
-        
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show login screen again
-        initializeMicrosoftAuth();
     }
-}
-
 
 
         function checkExistingSession() {
@@ -2119,96 +2134,106 @@ async function exchangeGoogleCodeForToken(authCode) {
             }
         }
         
-        async function checkUserInSharePointList(email, name, authProvider) {
-    try {
-        console.log('🔐 Checking user authorization in SharePoint Users list:', email);
-        
-        if (!sharePointAccessToken) {
-            console.log('⚠️ No SharePoint access token available for Google user validation');
-            // For Google users, we need to get a SharePoint token first
-            throw new Error('SharePoint connection required for user validation');
-        }
+            async function checkUserInSharePointList(email, name, authProvider) {
+                try {
+                    console.log('🔐 Checking user authorization in SharePoint Users list:', email);
+                    
+                    if (!sharePointAccessToken) {
+                        console.log('⚠️ No SharePoint access token available for user validation');
+                        throw new Error('SharePoint connection required for user validation');
+                    }
 
-        // Properly encode the email for the filter
-        const encodedEmail = encodeURIComponent(`'${email}'`);
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Email eq ${encodedEmail}`;
-        
-        console.log('🔐 Querying SharePoint Users list:', url);
-        
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
-                'Accept': 'application/json'
+                    // Get ALL users and filter client-side (since Email field is not indexed)
+                    const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$top=500`;
+                    
+                    console.log('🔐 Querying SharePoint Users list for all users');
+                    
+                    const response = await fetch(url, {
+                        headers: {
+                            'Authorization': `Bearer ${sharePointAccessToken}`,
+                            'Accept': 'application/json',
+                            'Prefer': 'HonorNonIndexedQueriesWarningMayFailRandomly' // Allow non-indexed queries
+                        }
+                    });
+                    
+                    console.log('🔐 SharePoint response status:', response.status, response.statusText);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('❌ Failed to access SharePoint Users list:', response.status, response.statusText, errorText);
+                        
+                        if (response.status === 401 || response.status === 403) {
+                            throw new Error('SharePoint access denied - token may be invalid');
+                        }
+                        throw new Error(`Cannot access Users list: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    const userItems = data.value || [];
+                    
+                    console.log('🔐 SharePoint Users list response:', {
+                        totalItems: userItems.length,
+                        items: userItems.map(item => ({
+                            id: item.id,
+                            email: item.fields.Email,
+                            name: item.fields.DisplayName,
+                            status: item.fields.Status
+                        }))
+                    });
+                    
+                    // Filter users client-side by email
+                    const userRecord = userItems.find(item => 
+                        item.fields.Email && item.fields.Email.toLowerCase() === email.toLowerCase()
+                    );
+                    
+                    if (!userRecord) {
+                        console.log('❌ User not found in SharePoint Users list:', email);
+                        showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
+                        return null;
+                    }
+                    
+                    const userFields = userRecord.fields;
+                    console.log('🔐 User record found:', userFields);
+                    
+                    // Check if user is active
+                    if (userFields.Status !== 'Active') {
+                        console.log('❌ User found but not active:', userFields.Status);
+                        showNotification(`Access denied: Your account status is "${userFields.Status}". Please contact your administrator.`, 'error');
+                        return null;
+                    }
+                    
+                    // Validate required fields
+                    if (!userFields.Role) {
+                        console.log('❌ User record missing Role field');
+                        showNotification('Access denied: User role not defined. Please contact your administrator.', 'error');
+                        return null;
+                    }
+                    
+                    // Map SharePoint role to permissions
+                    const role = userFields.Role;
+                    const permissions = mapRoleToPermissions(role);
+                    
+                    console.log('✅ User authorized with role:', role);
+                    
+                    return {
+                        name: userFields.DisplayName || name,
+                        email: email,
+                        id: userRecord.id || email,
+                        role: role,
+                        permissions: role,
+                        status: userFields.Status,
+                        source: authProvider,
+                        department: userFields.Department || '',
+                        lastLogin: new Date().toISOString()
+                    };
+                    
+                } catch (error) {
+                    console.error('❌ Error checking user authorization:', error);
+                    showNotification('Authentication failed: ' + error.message, 'error');
+                    return null;
+                }
             }
-        });
-        
-        console.log('🔐 SharePoint response status:', response.status, response.statusText);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Failed to access SharePoint Users list:', response.status, response.statusText, errorText);
-            
-            if (response.status === 401 || response.status === 403) {
-                throw new Error('SharePoint access denied - token may be invalid');
-            }
-            throw new Error(`Cannot access Users list: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        const userItems = data.value || [];
-        
-        console.log('🔐 SharePoint Users list response:', {
-            totalItems: userItems.length,
-            items: userItems
-        });
-        
-        if (userItems.length === 0) {
-            console.log('❌ User not found in SharePoint Users list:', email);
-            showNotification('Access denied: Your email is not authorized. Please contact your administrator.', 'error');
-            return null;
-        }
-        
-        const userRecord = userItems[0].fields;
-        console.log('🔐 User record found:', userRecord);
-        
-        // Check if user is active
-        if (userRecord.Status !== 'Active') {
-            console.log('❌ User found but not active:', userRecord.Status);
-            showNotification(`Access denied: Your account status is "${userRecord.Status}". Please contact your administrator.`, 'error');
-            return null;
-        }
-        
-        // Validate required fields
-        if (!userRecord.Role) {
-            console.log('❌ User record missing Role field');
-            showNotification('Access denied: User role not defined. Please contact your administrator.', 'error');
-            return null;
-        }
-        
-        // Map SharePoint role to permissions
-        const role = userRecord.Role;
-        const permissions = mapRoleToPermissions(role);
-        
-        console.log('✅ User authorized with role:', role);
-        
-        return {
-            name: userRecord.DisplayName || name,
-            email: email,
-            id: userRecord.id || userItems[0].id || email,
-            role: role,
-            permissions: role,
-            status: userRecord.Status,
-            source: authProvider,
-            department: userRecord.Department || '',
-            lastLogin: new Date().toISOString()
-        };
-        
-    } catch (error) {
-        console.error('❌ Error checking user authorization:', error);
-        showNotification('Authentication failed: ' + error.message, 'error');
-        return null;
-    }
-}
+
 
                 function mapRoleToPermissions(role) {
                     const rolePermissions = {
@@ -2605,22 +2630,88 @@ function showDashboard() {
 }
 
 
-
 function handleStuckLoading() {
     // Check if we're stuck on login page after successful auth
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     
-    if (authCode && document.getElementById('loginScreen') && !document.getElementById('loginScreen').classList.contains('hidden')) {
-        console.log('⚠️ Detected stuck loading - forcing callback processing');
-        // Force process the callback
-        const returnedState = urlParams.get('state');
-        processOAuthCallback(authCode, returnedState).catch(error => {
-            console.error('❌ Forced callback processing failed:', error);
-            // If it still fails, clear the URL and show login
+    // Only process if we have a code AND we're not already processing
+    if (authCode && 
+        document.getElementById('loginScreen') && 
+        !document.getElementById('loginScreen').classList.contains('hidden') &&
+        !sessionStorage.getItem('oauth_processed')) {
+        
+        console.log('⚠️ Detected stuck loading - checking if we should process callback');
+        
+        // Only process if we have PKCE parameters
+        const hasPkceParams = sessionStorage.getItem('pkce_code_verifier') && 
+                             sessionStorage.getItem('pkce_state');
+        
+        if (hasPkceParams) {
+            console.log('🔄 Stuck loading detected with PKCE params, processing callback...');
+            const returnedState = urlParams.get('state');
+            processOAuthCallback(authCode, returnedState).catch(error => {
+                console.error('❌ Forced callback processing failed:', error);
+                // Clear the URL and reset
+                window.history.replaceState({}, document.title, window.location.pathname);
+                sessionStorage.removeItem('oauth_processed');
+                initializeMicrosoftAuth();
+            });
+        } else {
+            console.log('⚠️ Stuck loading but no PKCE params, clearing URL');
             window.history.replaceState({}, document.title, window.location.pathname);
             initializeMicrosoftAuth();
-        });
+        }
+    }
+}
+
+
+
+function handleGoogleSignIn(response) {
+    console.log('🔐 Google Sign-In response received');
+    
+    if (response.credential) {
+        // This is a successful sign-in
+        const idToken = response.credential;
+        
+        // Verify the token and get user info
+        verifyGoogleToken(idToken);
+    } else {
+        console.error('❌ Google Sign-In failed:', response);
+        showNotification('Google Sign-In failed', 'error');
+    }
+}
+
+async function verifyGoogleToken(idToken) {
+    try {
+        // For now, we'll just decode the JWT to get basic user info
+        const payload = JSON.parse(atob(idToken.split('.')[1]));
+        
+        const userInfo = {
+            name: payload.name,
+            email: payload.email,
+            id: payload.sub,
+            role: 'User', // Default role for Google users
+            permissions: 'Limited',
+            status: 'Active',
+            source: 'google'
+        };
+        
+        console.log('👤 Google user authenticated:', userInfo.email);
+        
+        // For Google users, we need to get SharePoint access separately
+        showNotification(`Welcome ${userInfo.name}! Please sign in with Microsoft 365 for SharePoint access.`, 'info');
+        
+        // Store user info but note that SharePoint access is not available
+        currentUser = userInfo;
+        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+        sessionStorage.setItem('google_id_token', idToken);
+        
+        showDashboard();
+        
+    } catch (error) {
+        console.error('❌ Google token verification failed:', error);
+        showNotification('Google authentication failed', 'error');
     }
 }
 
