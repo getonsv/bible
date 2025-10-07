@@ -2702,10 +2702,11 @@ async function loadActivitiesWithGoogleAuth() {
                     }
                 }
 
-           
+       
         async function loadActivitiesFromSharePoint() {
     try {
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields`;
+        // Include the User field expansion to get Person field details
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields(select=Title,ActivityType,Duration,Notes,Outcome,User,Created,FruitNameLookup)&$top=5000`;
         
         const response = await fetch(url, {
             headers: {
@@ -2721,46 +2722,59 @@ async function loadActivitiesWithGoogleAuth() {
         const data = await response.json();
         const items = data.value || [];
         
+        console.log('Raw SharePoint activities:', items); // This will help us see the actual data structure
+        
         activities = items.map(item => {
-            // Get the fruit name from the lookup field or title
+            // Get the fruit name - try multiple field names
             let fruitName = '';
-            
             if (item.fields.FruitNameLookup) {
                 fruitName = item.fields.FruitNameLookup;
-            } else if (item.fields.FruitName) {
-                fruitName = item.fields.FruitName;
             } else if (item.fields.Title) {
-                fruitName = item.fields.Title;
+                // Extract fruit name from title if it follows pattern "Activity with FruitName"
+                const title = item.fields.Title;
+                if (title.includes(' with ')) {
+                    fruitName = title.split(' with ')[1];
+                } else {
+                    fruitName = title;
+                }
             }
             
-            // Get user from Person field - handle different possible field structures
+            // Get user from Person field - handle different structures
             let user = 'Unknown';
             if (item.fields.User) {
-                // If User is a Person field, it might be an object with displayName
-                user = item.fields.User.displayName || item.fields.User.email || item.fields.User || 'Unknown';
-            } else if (item.fields.CreatedBy) {
-                user = item.fields.CreatedBy.user.displayName || 'Unknown';
+                // Person field can be an object with displayName, email, etc.
+                if (typeof item.fields.User === 'object') {
+                    user = item.fields.User.displayName || 
+                           item.fields.User.title || 
+                           item.fields.User.email || 
+                           'Unknown User';
+                } else if (typeof item.fields.User === 'string') {
+                    user = item.fields.User;
+                }
             }
             
-            return {
+            const activity = {
                 id: item.id.toString(),
-                fruitName: fruitName,
-                type: item.fields.ActivityType || item.fields.Type || 'Activity',
-                duration: item.fields.Duration || item.fields.DurationMinutes || '0',
-                notes: item.fields.Notes || item.fields.Description || '',
-                outcome: item.fields.Outcome || item.fields.Result || '',
-                user: user, // This now properly handles the Person field
-                createdDate: item.fields.Created || item.fields.CreatedDateTime || item.createdDateTime
+                fruitName: fruitName.trim(),
+                type: item.fields.ActivityType || 'Activity',
+                duration: item.fields.Duration || '0',
+                notes: item.fields.Notes || '',
+                outcome: item.fields.Outcome || '',
+                user: user,
+                createdDate: item.fields.Created || item.createdDateTime
             };
+            
+            console.log('Processed activity:', activity); // See the final structure
+            return activity;
         });
+        
+        console.log('Total activities loaded:', activities.length);
         
     } catch (error) {
         console.error('Error loading activities from SharePoint:', error);
         activities = [];
     }
 }
-
-        
 
         async function addFruitToSharePoint(fruitData) {
             try {
@@ -2808,8 +2822,8 @@ async function loadActivitiesWithGoogleAuth() {
             }
         }
 
-        
-        async function addActivityToSharePoint(activityData) {
+     
+    async function addActivityToSharePoint(activityData) {
     try {
         // Find the fruit to get its ID for the lookup
         const fruit = fruits.find(f => f.name === activityData.fruitName);
@@ -2819,31 +2833,45 @@ async function loadActivitiesWithGoogleAuth() {
         
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items`;
         
+        const requestBody = {
+            fields: {
+                Title: `${activityData.type} with ${activityData.fruitName}`,
+                ActivityType: activityData.type,
+                Duration: parseInt(activityData.duration) || 0,
+                Notes: activityData.notes,
+                Outcome: activityData.outcome
+            }
+        };
+        
+        // Add FruitNameLookupId if we have the fruit ID
+        if (fruit.id) {
+            requestBody.fields.FruitNameLookupId = parseInt(fruit.id);
+        }
+        
+        // Add User field - this should map to your Person field
+        if (activityData.user) {
+            requestBody.fields.User = activityData.user;
+        }
+        
+        console.log('Creating activity with data:', requestBody);
+        
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${sharePointAccessToken}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                fields: {
-                    Title: `${activityData.type} with ${activityData.fruitName}`,
-                    FruitNameLookupId: parseInt(fruit.id),
-                    ActivityType: activityData.type,
-                    Duration: parseInt(activityData.duration) || 0,
-                    Notes: activityData.notes,
-                    Outcome: activityData.outcome,
-                    User: activityData.user // This maps to your "User" Person field
-                }
-            })
+            body: JSON.stringify(requestBody)
         });
         
         if (!response.ok) {
             const errorText = await response.text();
+            console.error('SharePoint error response:', errorText);
             throw new Error(`Failed to add activity: ${response.status} ${response.statusText}`);
         }
         
         const result = await response.json();
+        console.log('Activity created successfully:', result);
         return result;
         
     } catch (error) {
@@ -2851,6 +2879,8 @@ async function loadActivitiesWithGoogleAuth() {
         throw error;
     }
 }
+
+
 
         async function updateFruitInSharePoint(fruitId, fruitData) {
             try {
@@ -3825,102 +3855,7 @@ function debugFruitActivities(fruitName) {
 
         
         
-    function loadFruitActivities(fruitName) {
-    if (!fruitName) {
-        console.log('No fruit name provided');
-        return;
-    }
-    
-    // More flexible matching to handle different data formats
-    const fruitActivities = activities.filter(activity => {
-        if (!activity.fruitName) return false;
         
-        const activityFruit = activity.fruitName.toString().trim();
-        const targetFruit = fruitName.toString().trim();
-        
-        // Multiple matching strategies
-        return activityFruit === targetFruit || 
-               activityFruit.toLowerCase() === targetFruit.toLowerCase() ||
-               activityFruit.includes(targetFruit) ||
-               targetFruit.includes(activityFruit);
-    }).sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
-    
-    // Update activity stats
-    document.getElementById('activityCount').textContent = `${fruitActivities.length} activities`;
-    document.getElementById('totalActivities').textContent = fruitActivities.length;
-    
-    const totalMinutes = fruitActivities.reduce((sum, activity) => 
-        sum + (parseInt(activity.duration) || 0), 0
-    );
-    document.getElementById('totalMinutes').textContent = totalMinutes;
-    
-    const lastActivityDate = fruitActivities.length > 0 ? 
-        formatRelativeDate(fruitActivities[0].createdDate) : 'Never';
-    document.getElementById('lastActivity').textContent = lastActivityDate;
-    
-    // Populate activities list
-    const activitiesList = document.getElementById('fruitActivitiesList');
-    
-    if (fruitActivities.length === 0) {
-        activitiesList.innerHTML = `
-            <div class="text-center py-8 text-gray-500">
-                <i class="fas fa-clipboard-list text-4xl mb-4"></i>
-                <p class="text-lg font-medium mb-2">No activities found</p>
-                <p class="text-sm">No activities recorded for "${fruitName}"</p>
-                <button onclick="logActivityForCurrentFruit()" class="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Log First Activity
-                </button>
-            </div>
-        `;
-        return;
-    }
-    
-    activitiesList.innerHTML = fruitActivities.map((activity, index) => {
-        const isFirst = index === 0;
-        const isLast = index === fruitActivities.length - 1;
-        
-        return `
-            <div class="relative">
-                ${!isLast ? '<div class="absolute left-6 top-12 w-0.5 h-full bg-gray-200"></div>' : ''}
-                
-                <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div class="flex-shrink-0 w-12 h-12 ${isFirst ? 'bg-green-500' : 'bg-blue-500'} rounded-full flex items-center justify-center">
-                        <i class="fas ${getActivityIcon(activity.type)} text-white"></i>
-                    </div>
-                    
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between mb-2">
-                            <h5 class="text-sm font-semibold text-gray-900">${activity.type}</h5>
-                            <div class="flex items-center space-x-2">
-                                ${activity.duration && parseInt(activity.duration) > 0 ? 
-                                    `<span class="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                                        <i class="fas fa-clock mr-1"></i>${activity.duration} min
-                                    </span>` : ''
-                                }
-                                <span class="text-xs text-gray-500">${formatRelativeDate(activity.createdDate)}</span>
-                            </div>
-                        </div>
-                        
-                        ${activity.notes ? `
-                            <p class="text-sm text-gray-700 mb-2">${activity.notes}</p>
-                        ` : ''}
-                        
-                        <div class="flex items-center justify-between">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getOutcomeBadgeColor(activity.outcome)}">
-                                ${activity.outcome || 'No outcome recorded'}
-                            </span>
-                            <span class="text-xs text-gray-500">by ${activity.user || 'Unknown User'}</span>
-                        </div>
-                        
-                        <div class="text-xs text-gray-400 mt-1">
-                            ${formatDate(activity.createdDate)}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
 
 // Temporary function to check data - REMOVE AFTER FIXING
 function checkActivityData() {
