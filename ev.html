@@ -41,6 +41,38 @@
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
         }
+
+        /* Enhanced dropdown styles */
+        #assigneeSuggestions {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f7fafc;
+        }
+
+        #assigneeSuggestions::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #assigneeSuggestions::-webkit-scrollbar-track {
+            background: #f7fafc;
+            border-radius: 0 0 8px 8px;
+        }
+
+        #assigneeSuggestions::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        #assigneeSuggestions::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Loading state for dropdown */
+        .loading-assignees {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' stroke='%23cbd5e0' stroke-width='4'%3E%3C/circle%3E%3Cpath fill='%233b82f6' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px 16px;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -497,13 +529,26 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
-                        <select name="assignee" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="assigneeSelect">
-                            <option value="">Select team member...</option>
+                        <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            name="assignee" 
+                            list="assigneeOptions"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                            placeholder="Type to search users..."
+                            autocomplete="off"
+                            id="assigneeInput"
+                        >
+                        <datalist id="assigneeOptions">
                             <!-- Options will be populated by JavaScript -->
-                        </select>
+                        </datalist>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400"></i>
+                        </div>
                     </div>
-                    
+                </div>              
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                         <input type="tel" name="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
@@ -1314,6 +1359,38 @@ function checkForValidSession() {
     
     return false;
 }
+
+// Show loading state while fetching users
+function showAssigneeLoading() {
+    const assigneeInput = document.getElementById('assigneeInput');
+    if (assigneeInput) {
+        assigneeInput.classList.add('loading-assignees');
+        assigneeInput.placeholder = 'Loading users...';
+    }
+}
+
+// Hide loading state
+function hideAssigneeLoading() {
+    const assigneeInput = document.getElementById('assigneeInput');
+    if (assigneeInput) {
+        assigneeInput.classList.remove('loading-assignees');
+        assigneeInput.placeholder = 'Type to search users...';
+    }
+}
+
+// Update populateAssigneeDropdown to show loading
+async function populateAssigneeDropdown() {
+    showAssigneeLoading();
+    
+    try {
+        // ... existing code ...
+    } catch (error) {
+        // ... existing error handling ...
+    } finally {
+        hideAssigneeLoading();
+    }
+}
+
 
 function restoreSession() {
     const msToken = sessionStorage.getItem('access_token');
@@ -3259,15 +3336,13 @@ function debugEditFlow(fruitId) {
     console.log('User permissions:', userPermissions);
 }
 
-// Update your editFruit function to include debugging
+// Update the editFruit function to work with searchable input
 async function editFruit(fruitId) {
     // Check permissions first
     if (!userPermissions.canEdit) {
         showPermissionMessage('edit');
         return;
     }
-    
-    debugEditFlow(fruitId); // Add this line temporarily
     
     const fruit = fruits.find(f => f.id === fruitId);
     if (!fruit) {
@@ -3285,7 +3360,13 @@ async function editFruit(fruitId) {
             console.log('🔄 Populating form with fruit data:', fruit);
             
             form.querySelector('[name="name"]').value = fruit.name || '';
-            form.querySelector('[name="assignee"]').value = fruit.assignedTo || '';
+            
+            // Use the search input for assignee
+            const assigneeInput = document.getElementById('assigneeInput');
+            if (assigneeInput) {
+                assigneeInput.value = fruit.assignedTo || '';
+            }
+            
             form.querySelector('[name="phone"]').value = fruit.phone || '';
             form.querySelector('[name="instagram"]').value = fruit.instagram || '';
             form.querySelector('[name="facebook"]').value = fruit.facebook || '';
@@ -3315,7 +3396,6 @@ async function editFruit(fruitId) {
         }
     }, 100);
 }
-
         async function deleteFruitFromSharePoint(fruitId) {
             try {
                 console.log('📊 Deleting fruit from SharePoint:', fruitId);
@@ -5483,8 +5563,7 @@ async function callSharePointAPI(url, options = {}) {
             }
         }
 
-
-        // Load users for Assign To dropdown
+// Load users for Assign To dropdown with better Person field handling
 async function loadUsersForDropdown() {
     try {
         console.log('👥 Loading users for Assign To dropdown...');
@@ -5500,24 +5579,44 @@ async function loadUsersForDropdown() {
         
         if (!response.ok) {
             console.warn('⚠️ Could not load users list, using current user only');
-            return [currentUser.name];
+            return currentUser ? [currentUser.name] : ['Unassigned'];
         }
         
         const data = await response.json();
         const userItems = data.value || [];
         
-        console.log('📋 Users loaded for dropdown:', userItems.length);
+        console.log('📋 Users loaded for dropdown:', userItems);
         
-        // Extract display names from Person field
+        // Extract display names with better Person field handling
         const userNames = userItems.map(item => {
-            // Handle Person field - it might be an object with displayName
-            if (item.fields.DisplayName && typeof item.fields.DisplayName === 'object') {
-                return item.fields.DisplayName.displayName || 
-                       item.fields.DisplayName.title || 
-                       item.fields.DisplayName.email || 
-                       'Unknown User';
+            const fields = item.fields;
+            
+            // Try different field names for Person/DisplayName
+            let displayName = '';
+            
+            // Method 1: Direct DisplayName field
+            if (fields.DisplayName) {
+                if (typeof fields.DisplayName === 'object') {
+                    displayName = fields.DisplayName.displayName || 
+                                 fields.DisplayName.title || 
+                                 fields.DisplayName.email || 
+                                 '';
+                } else {
+                    displayName = fields.DisplayName;
+                }
             }
-            return item.fields.DisplayName || 'Unknown User';
+            
+            // Method 2: Title field as fallback
+            if (!displayName && fields.Title) {
+                displayName = fields.Title;
+            }
+            
+            // Method 3: Email field as last resort
+            if (!displayName && fields.Email) {
+                displayName = fields.Email.split('@')[0]; // Use username part of email
+            }
+            
+            return displayName || 'Unknown User';
         }).filter(name => name && name !== 'Unknown User');
         
         // Add current user if not in list
@@ -5525,49 +5624,162 @@ async function loadUsersForDropdown() {
             userNames.push(currentUser.name);
         }
         
+        // Add "Unassigned" option
+        if (!userNames.includes('Unassigned')) {
+            userNames.unshift('Unassigned');
+        }
+        
         // Remove duplicates and sort
-        const uniqueUserNames = [...new Set(userNames)].sort();
+        const uniqueUserNames = [...new Set(userNames)].sort((a, b) => {
+            if (a === 'Unassigned') return -1;
+            if (b === 'Unassigned') return 1;
+            return a.localeCompare(b);
+        });
         
         console.log('✅ Available users for assignment:', uniqueUserNames);
         return uniqueUserNames;
         
     } catch (error) {
         console.error('❌ Error loading users for dropdown:', error);
-        // Fallback to current user only
-        return currentUser ? [currentUser.name] : [];
+        // Fallback options
+        return currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
     }
 }
-
-// Populate Assign To dropdown
+   
+        
+// Populate searchable Assign To dropdown
 async function populateAssigneeDropdown() {
     try {
-        const assigneeSelect = document.getElementById('assigneeSelect');
-        if (!assigneeSelect) {
-            console.log('❌ Assignee dropdown not found');
+        const assigneeInput = document.getElementById('assigneeInput');
+        const assigneeDatalist = document.getElementById('assigneeOptions');
+        
+        if (!assigneeInput || !assigneeDatalist) {
+            console.log('❌ Assignee search elements not found');
             return;
         }
         
-        // Clear existing options except the first one
-        while (assigneeSelect.options.length > 1) {
-            assigneeSelect.remove(1);
-        }
+        // Clear existing options
+        assigneeDatalist.innerHTML = '';
         
         const users = await loadUsersForDropdown();
         
-        // Add users to dropdown
+        // Add users to datalist
         users.forEach(user => {
             const option = document.createElement('option');
             option.value = user;
-            option.textContent = user;
-            assigneeSelect.appendChild(option);
+            assigneeDatalist.appendChild(option);
         });
         
         console.log('✅ Assignee dropdown populated with', users.length, 'users');
+        
+        // Add enhanced search functionality
+        enhanceAssigneeSearch(assigneeInput, users);
         
     } catch (error) {
         console.error('❌ Error populating assignee dropdown:', error);
     }
 }
+
+// Enhanced search functionality
+function enhanceAssigneeSearch(inputElement, users) {
+    let currentFocus = -1;
+    
+    // Add input event listener for live search
+    inputElement.addEventListener('input', function(e) {
+        const val = this.value.toLowerCase();
+        showDropdownSuggestions(val, users);
+    });
+    
+    // Keyboard navigation
+    inputElement.addEventListener('keydown', function(e) {
+        const items = document.getElementById('assigneeSuggestions');
+        if (!items) return;
+        
+        const itemElements = items.getElementsByTagName('div');
+        
+        if (e.keyCode === 40) { // Down arrow
+            currentFocus++;
+            addActive(itemElements);
+        } else if (e.keyCode === 38) { // Up arrow
+            currentFocus--;
+            addActive(itemElements);
+        } else if (e.keyCode === 13) { // Enter
+            e.preventDefault();
+            if (currentFocus > -1) {
+                if (itemElements) itemElements[currentFocus].click();
+            }
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        hideDropdownSuggestions();
+    });
+}
+
+// Show dropdown suggestions
+function showDropdownSuggestions(filter, users) {
+    hideDropdownSuggestions();
+    
+    if (!filter) return;
+    
+    const inputElement = document.getElementById('assigneeInput');
+    const container = inputElement.parentElement;
+    
+    // Filter users based on input
+    const filteredUsers = users.filter(user => 
+        user.toLowerCase().includes(filter)
+    );
+    
+    if (filteredUsers.length === 0) return;
+    
+    // Create suggestions container
+    const suggestions = document.createElement('div');
+    suggestions.id = 'assigneeSuggestions';
+    suggestions.className = 'absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto';
+    suggestions.style.top = '100%';
+    suggestions.style.left = '0';
+    
+    // Add suggestions
+    filteredUsers.forEach(user => {
+        const suggestion = document.createElement('div');
+        suggestion.className = 'px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0';
+        suggestion.textContent = user;
+        suggestion.addEventListener('click', function() {
+            inputElement.value = user;
+            hideDropdownSuggestions();
+        });
+        suggestions.appendChild(suggestion);
+    });
+    
+    container.appendChild(suggestions);
+}
+
+// Hide dropdown suggestions
+function hideDropdownSuggestions() {
+    const existing = document.getElementById('assigneeSuggestions');
+    if (existing) {
+        existing.remove();
+    }
+}
+
+// Add active class to suggestions
+function addActive(items) {
+    if (!items) return false;
+    removeActive(items);
+    if (currentFocus >= items.length) currentFocus = 0;
+    if (currentFocus < 0) currentFocus = (items.length - 1);
+    items[currentFocus].classList.add('bg-blue-100');
+}
+
+// Remove active class from suggestions
+function removeActive(items) {
+    for (let i = 0; i < items.length; i++) {
+        items[i].classList.remove('bg-blue-100');
+    }
+}
+
+
 
         function updateUsersTable() {
             const tbody = document.getElementById('usersTable');
@@ -5978,7 +6190,7 @@ async function debugSharePointFields() {
 
 <!-- Version Display -->
 <div id="versionInfo" class="fixed bottom-4 right-4 text-xs text-gray-400 bg-white bg-opacity-80 px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
-    v1.0.2
+    v1.0.3
 </div>
 
 
