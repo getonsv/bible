@@ -1182,24 +1182,33 @@
         ];
 
 
-        
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // Force logout on every page load
-    logout();
-    
-    // Then check for OAuth callback parameters
+    // Check for OAuth callback parameters FIRST (before any logout)
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const returnedState = urlParams.get('state');
     
     if (authCode) {
-        console.log('🔐 OAuth callback detected');
+        console.log('🔐 OAuth callback detected - processing authentication');
+        // Don't logout during OAuth callback - process it directly
         processOAuthCallback(authCode, returnedState);
     } else {
-        console.log('🔧 No callback detected, initializing auth UI...');
-        initializeMicrosoftAuth();
+        console.log('🔧 No OAuth callback - checking for existing valid session');
+        
+        // Check if we have a valid existing session
+        const hasValidSession = checkForValidSession();
+        
+        if (hasValidSession) {
+            console.log('✅ Valid session found - restoring');
+            restoreSession();
+        } else {
+            console.log('❌ No valid session - showing login');
+            // Only logout if no valid session exists
+            logout();
+            initializeMicrosoftAuth();
+        }
     }
     
     loadLocalData();
@@ -1207,6 +1216,48 @@
     populateDropdowns();
     initializeEventListeners();
 });
+
+// Add this new function to check for valid sessions
+function checkForValidSession() {
+    // Check for Microsoft session
+    const msToken = sessionStorage.getItem('access_token');
+    const msExpiry = sessionStorage.getItem('token_expiry');
+    
+    // Check for saved user
+    const savedUser = sessionStorage.getItem('current_user');
+    
+    // Session is valid if we have a token that hasn't expired and a user
+    if (msToken && msExpiry && savedUser) {
+        const isTokenValid = Date.now() < parseInt(msExpiry);
+        return isTokenValid;
+    }
+    
+    return false;
+}
+
+// Add this function to restore a valid session
+function restoreSession() {
+    const msToken = sessionStorage.getItem('access_token');
+    const savedUser = sessionStorage.getItem('current_user');
+    
+    if (msToken && savedUser) {
+        sharePointAccessToken = msToken;
+        isSharePointMode = true;
+        currentUser = JSON.parse(savedUser);
+        
+        // Load data and show dashboard
+        loadDataFromSharePoint().then(() => {
+            showDashboard();
+            startRealTimeSync();
+            showNotification('Welcome back!');
+        }).catch(error => {
+            console.error('Failed to restore session:', error);
+            logout();
+            initializeMicrosoftAuth();
+        });
+    }
+}
+        
 
 
         // Real-time sync functions
@@ -1401,68 +1452,95 @@ function validateEmailDomain(email) {
     return MAGIC_LINK_CONFIG.ALLOWED_DOMAINS.some(allowed => domain.endsWith(allowed));
 }
 
-        function checkForOAuthCallback() {
+
+function checkForOAuthCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
-    const returnedState = urlParams.get('state');
     const error = urlParams.get('error');
-    const errorDescription = urlParams.get('error_description');
-    
-    console.log('🔐 Checking for OAuth callback:', {
-        hasCode: !!authCode,
-        codeLength: authCode ? authCode.length : 0,
-        hasState: !!returnedState,
-        stateValue: returnedState,
-        hasError: !!error,
-        error: error,
-        errorDescription: errorDescription,
-        fullURL: window.location.href
-    });
     
     if (error) {
-        console.error('❌ OAuth error:', error, errorDescription);
-        showNotification('Authentication failed: ' + (errorDescription || error), 'error');
-        // Clean URL
+        console.error('❌ OAuth error:', error);
+        showNotification('Authentication failed: ' + error, 'error');
         window.history.replaceState({}, document.title, window.location.pathname);
         return true;
     }
     
     if (authCode) {
-        console.log('🔐 OAuth callback detected, processing...');
-        showNotification('Processing authentication...', 'info');
-        
-        // Determine if this is Google or Microsoft OAuth based on state
-        if (returnedState && returnedState.startsWith('google_auth_')) {
-            console.log('🔐 Processing Google OAuth callback');
-            processGoogleOAuthCallback(authCode, returnedState);
-        } else {
-            console.log('🔐 Processing Microsoft OAuth callback');
-            processOAuthCallback(authCode, returnedState);
-        }
+        console.log('🔐 OAuth callback detected');
         return true;
     }
     
-    console.log('🔐 No OAuth callback parameters found');
     return false;
 }
-
 
 async function processOAuthCallback(authCode, returnedState) {
     try {
         console.log('🔄 Processing Microsoft OAuth callback...');
         
-        // Clear any existing session first
-        logout();
+        // Don't logout here - we're in the middle of authentication
         
-        // ... rest of your existing processOAuthCallback code ...
         // Validate state parameter
         const storedState = sessionStorage.getItem('pkce_state');
         if (returnedState && storedState && returnedState !== storedState) {
             throw new Error('Invalid state parameter - possible security issue');
         }
         
-        // Continue with normal OAuth processing...
-        // ... rest of your existing code ...
+        // Check if we already processed this callback
+        if (sessionStorage.getItem('oauth_processed')) {
+            console.log('⚠️ OAuth callback already processed, skipping...');
+            return;
+        }
+        
+        // Mark as processed to prevent duplicate processing
+        sessionStorage.setItem('oauth_processed', 'true');
+        
+        // Exchange code for token
+        console.log('🔄 Exchanging code for token...');
+        const tokenData = await exchangeCodeForTokenPKCE(authCode);
+        
+        sharePointAccessToken = tokenData.access_token;
+        isSharePointMode = true;
+        
+        // Store token with expiration
+        sessionStorage.setItem('access_token', tokenData.access_token);
+        sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
+        
+        // Get user info from Microsoft
+        console.log('🔄 Getting user info from Microsoft...');
+        const basicUserInfo = await getUserInfo(tokenData.access_token);
+        
+        console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
+        
+        // Check if user exists in SharePoint Users list and get their role
+        console.log('🔄 Checking user in SharePoint list...');
+        const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
+        
+        if (!userInfo) {
+            console.log('❌ User not authorized in SharePoint');
+            logout();
+            return;
+        }
+        
+        // Set current user with SharePoint-defined permissions
+        currentUser = userInfo;
+        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+        
+        // Clean up PKCE parameters and processing flag
+        sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('pkce_state');
+        sessionStorage.removeItem('oauth_processed');
+        
+        // Clean URL - IMPORTANT: Remove OAuth parameters from URL
+        console.log('🔄 Cleaning URL and showing dashboard...');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Load data from SharePoint
+        await loadDataFromSharePoint();
+        
+        showDashboard();
+        startRealTimeSync();
+        
+        showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
         
     } catch (error) {
         console.error('❌ OAuth callback processing failed:', error);
@@ -1481,6 +1559,8 @@ async function processOAuthCallback(authCode, returnedState) {
         initializeMicrosoftAuth();
     }
 }
+
+
 
 async function loadDataWithGoogleAuth() {
     try {
@@ -1699,6 +1779,35 @@ function checkExistingSession() {
     initializeMicrosoftAuth();
 }
 
+// Add page refresh detection that preserves OAuth flow
+let isOAuthInProgress = false;
+
+window.addEventListener('beforeunload', function() {
+    // Check if we're in the middle of OAuth
+    const hasPkceParams = sessionStorage.getItem('pkce_code_verifier') && 
+                         sessionStorage.getItem('pkce_state');
+    const hasOAuthCode = new URLSearchParams(window.location.search).get('code');
+    
+    isOAuthInProgress = hasPkceParams || hasOAuthCode;
+    
+    if (!isOAuthInProgress) {
+        // Only clear session if not in OAuth flow
+        sessionStorage.setItem('should_logout_on_load', 'true');
+    }
+});
+
+window.addEventListener('load', function() {
+    const shouldLogout = sessionStorage.getItem('should_logout_on_load');
+    const isOAuthCallback = new URLSearchParams(window.location.search).get('code');
+    
+    if (shouldLogout && !isOAuthCallback) {
+        sessionStorage.removeItem('should_logout_on_load');
+        console.log('Page was refreshed - logging out');
+        logout();
+    }
+});
+
+
 
 async function loadFruitsWithGoogleAuth() {
     try {
@@ -1780,11 +1889,6 @@ async function loadActivitiesWithGoogleAuth() {
 // Add this to your existing JavaScript code
 let pageJustLoaded = true;
 
-// Detect page refresh
-window.addEventListener('beforeunload', function() {
-    // Set a flag that we're about to refresh
-    sessionStorage.setItem('page_refreshing', 'true');
-});
 
 // Check if page was refreshed when it loads
 window.addEventListener('load', function() {
@@ -4963,32 +5067,27 @@ async function callSharePointAPI(url, options = {}) {
             populateFruitDropdowns();
         }
 
-        
+ 
+
 function logout() {
+    console.log('🚪 Logging out...');
+    
     // Stop real-time sync
     stopRealTimeSync();
     
-    // Clear all user data
+    // Clear user data but preserve some session items for OAuth flow
     currentUser = null;
     sharePointAccessToken = null;
     isSharePointMode = false;
     
-    // Clear ALL session storage
-    sessionStorage.clear();
-    
-    // Clear ALL local storage (optional - uncomment if you want to clear local data too)
-    // localStorage.clear();
-    
-    // Alternatively, if you want to keep local data but clear auth, use:
-    // sessionStorage.removeItem('access_token');
-    // sessionStorage.removeItem('token_expiry');
-    // sessionStorage.removeItem('google_access_token');
-    // sessionStorage.removeItem('current_user');
+    // Clear authentication tokens but keep OAuth state for callbacks
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('token_expiry');
+    sessionStorage.removeItem('google_access_token');
+    sessionStorage.removeItem('current_user');
+    // Keep PKCE parameters during OAuth flow
     // sessionStorage.removeItem('pkce_code_verifier');
     // sessionStorage.removeItem('pkce_state');
-    // sessionStorage.removeItem('google_auth_state');
-    // sessionStorage.removeItem('oauth_processed');
-    // sessionStorage.removeItem('google_oauth_processed');
     
     // Hide dashboard, show login
     document.getElementById('dashboard').classList.add('hidden');
@@ -4997,10 +5096,8 @@ function logout() {
     
     // Reset connection status
     updateConnectionStatus();
-    
-    // Show logout message
-    showNotification('Please sign in to continue');
 }
+
 
         // Check current state
         console.log('Current URL:', window.location.href);
