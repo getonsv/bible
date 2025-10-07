@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism Tool - FRMS</title>
+    <title>Evengelism System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1061,12 +1061,12 @@
         // Google OAuth configuration
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
-            CLIENT_SECRET: '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',
+            CLIENT_SECRET: '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',
             PROJECT_ID: 'hmbcfrm',
             AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
             TOKEN_URI: 'https://oauth2.googleapis.com/token',
             SCOPES: 'openid email profile',
-            REDIRECT_URI: window.location.origin + window.location.pathname // Use current URL dynamically
+            REDIRECT_URI: 'https://app.shill.es/ev' // This must match exactly
         };
 
 
@@ -1261,7 +1261,8 @@
             }
         }
 
-        function initializeMicrosoftAuth() {
+        
+            function initializeMicrosoftAuth() {
     console.log('🔧 Initializing authentication options...');
     
     const buttonContainer = document.getElementById('googleSignInButton');
@@ -1299,6 +1300,7 @@
     
     console.log('✅ Multi-provider authentication initialized');
 }
+
 
 
         function initializeGoogleAuth() {
@@ -1892,18 +1894,23 @@ async function loadActivitiesWithGoogleAuth() {
         async function authenticateWithGoogle() {
     try {
         console.log('🔐 Starting Google OAuth authentication...');
+        showNotification('Redirecting to Google...', 'info');
         
         // Generate state parameter for security
         const state = 'google_auth_' + Date.now();
         sessionStorage.setItem('google_auth_state', state);
         
-        // Use current URL as redirect URI
-        const redirectUri = window.location.origin + window.location.pathname;
+        // Use the exact redirect URI from config
+        const redirectUri = GOOGLE_CONFIG.REDIRECT_URI;
         
         console.log('🔐 Using redirect URI:', redirectUri);
         
         if (!GOOGLE_CONFIG.CLIENT_ID) {
             throw new Error('Google Client ID is not configured');
+        }
+        
+        if (!GOOGLE_CONFIG.CLIENT_SECRET) {
+            throw new Error('Google Client Secret is not configured');
         }
         
         const scopes = [
@@ -1912,17 +1919,27 @@ async function loadActivitiesWithGoogleAuth() {
             'profile'
         ].join(' ');
         
-        // Build OAuth URL
+        // Build OAuth URL with exact parameters
         const authUrl = new URL(GOOGLE_CONFIG.AUTH_URI);
-        authUrl.searchParams.set('client_id', GOOGLE_CONFIG.CLIENT_ID);
-        authUrl.searchParams.set('redirect_uri', redirectUri);
-        authUrl.searchParams.set('response_type', 'code');
-        authUrl.searchParams.set('scope', scopes);
-        authUrl.searchParams.set('state', state);
-        authUrl.searchParams.set('access_type', 'online');
-        authUrl.searchParams.set('prompt', 'consent');
+        const params = {
+            client_id: GOOGLE_CONFIG.CLIENT_ID,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: scopes,
+            state: state,
+            access_type: 'online',
+            prompt: 'consent'
+        };
         
-        console.log('🔗 Redirecting to Google OAuth...');
+        // Add all parameters to URL
+        Object.keys(params).forEach(key => {
+            authUrl.searchParams.set(key, params[key]);
+        });
+        
+        console.log('🔗 Full Google OAuth URL:', authUrl.toString().substring(0, 100) + '...');
+        console.log('📋 OAuth Parameters:', params);
+        
+        // Redirect to Google OAuth
         window.location.href = authUrl.toString();
         
     } catch (error) {
@@ -1930,6 +1947,7 @@ async function loadActivitiesWithGoogleAuth() {
         showNotification('Google authentication failed: ' + error.message, 'error');
     }
 }
+
 
 
         function showGoogleSignInPopup() {
@@ -1954,15 +1972,16 @@ async function loadActivitiesWithGoogleAuth() {
             }, 1000);
         }
 
-        async function exchangeGoogleCodeForToken(authCode) {
+        
+async function exchangeGoogleCodeForToken(authCode) {
     try {
         console.log('🔄 Google token exchange starting...');
         
-        // Use the same redirect URI that was used in the auth request
-        const redirectUri = window.location.origin + window.location.pathname;
+        // Use the exact redirect URI from config
+        const redirectUri = GOOGLE_CONFIG.REDIRECT_URI;
         
-        console.log('🔄 Using redirect URI for token exchange:', redirectUri);
-        console.log('🔄 Client ID:', GOOGLE_CONFIG.CLIENT_ID.substring(0, 10) + '...');
+        console.log('🔄 Using redirect URI:', redirectUri);
+        console.log('🔄 Client ID:', GOOGLE_CONFIG.CLIENT_ID.substring(0, 15) + '...');
         console.log('🔄 Auth code length:', authCode.length);
         
         const requestBody = new URLSearchParams({
@@ -1973,7 +1992,7 @@ async function loadActivitiesWithGoogleAuth() {
             redirect_uri: redirectUri
         });
 
-        console.log('🔄 Request body prepared (excluding client_secret for security)');
+        console.log('🔄 Making token request to:', GOOGLE_CONFIG.TOKEN_URI);
         
         const response = await fetch(GOOGLE_CONFIG.TOKEN_URI, {
             method: 'POST',
@@ -1985,23 +2004,34 @@ async function loadActivitiesWithGoogleAuth() {
         
         const responseText = await response.text();
         console.log('🔄 Response status:', response.status);
-        console.log('🔄 Response headers:', response.headers);
+        console.log('🔄 Response text:', responseText);
         
         if (!response.ok) {
             let errorData;
             try {
                 errorData = JSON.parse(responseText);
             } catch (e) {
-                errorData = { error: 'parse_error', error_description: responseText };
+                errorData = { error: 'parse_error', error_description: 'Could not parse error response: ' + responseText };
             }
+            
             console.error('❌ Google token exchange failed:', errorData);
-            throw new Error(errorData.error_description || errorData.error || 'Google token exchange failed');
+            
+            // Provide more specific error messages
+            if (errorData.error === 'invalid_client') {
+                throw new Error('Invalid client configuration. Check Client ID and Client Secret.');
+            } else if (errorData.error === 'invalid_grant') {
+                throw new Error('Invalid authorization code. The code may have expired.');
+            } else if (errorData.error === 'redirect_uri_mismatch') {
+                throw new Error('Redirect URI mismatch. Check authorized redirect URIs in Google Cloud Console.');
+            } else {
+                throw new Error(errorData.error_description || errorData.error || 'Google token exchange failed');
+            }
         }
         
         const tokenData = JSON.parse(responseText);
         console.log('✅ Google token exchange successful');
         console.log('🔄 Token type:', tokenData.token_type);
-        console.log('🔄 Access token length:', tokenData.access_token ? tokenData.access_token.length : 'none');
+        console.log('🔄 Access token received:', !!tokenData.access_token);
         console.log('🔄 Scope:', tokenData.scope);
         
         return tokenData;
@@ -2011,31 +2041,31 @@ async function loadActivitiesWithGoogleAuth() {
         throw error;
     }
 }
-        
 
-        function debugGoogleOAuthConfig() {
-            console.log('🔧 Debugging Google OAuth Configuration:');
-            console.log('Client ID:', GOOGLE_CONFIG.CLIENT_ID ? '✓ Set' : '✗ Missing');
-            console.log('Client Secret:', GOOGLE_CONFIG.CLIENT_SECRET ? '✓ Set' : '✗ Missing');
-            console.log('Redirect URI:', GOOGLE_CONFIG.REDIRECT_URI ? GOOGLE_CONFIG.REDIRECT_URI : '✗ Missing');
-            console.log('Auth URI:', GOOGLE_CONFIG.AUTH_URI);
-            console.log('Token URI:', GOOGLE_CONFIG.TOKEN_URI);
-            
-            // Verify redirect URI format
-            if (GOOGLE_CONFIG.REDIRECT_URI) {
-                try {
-                    new URL(GOOGLE_CONFIG.REDIRECT_URI);
-                    console.log('✓ Redirect URI is valid URL');
-                } catch (e) {
-                    console.error('✗ Redirect URI is invalid:', e.message);
-                }
-            }
-            
-            // Check if current URL matches redirect URI
-            const currentUrl = window.location.origin + window.location.pathname;
-            console.log('Current URL:', currentUrl);
-            console.log('Redirect URI Match:', currentUrl === GOOGLE_CONFIG.REDIRECT_URI ? '✓ Match' : '✗ Mismatch');
-        }
+
+function debugGoogleOAuthConfig() {
+    console.log('🔧 Comprehensive Google OAuth Debug:');
+    console.log('✓ Client ID:', GOOGLE_CONFIG.CLIENT_ID);
+    console.log('✓ Client Secret:', GOOGLE_CONFIG.CLIENT_SECRET ? '✓ Set (first 10 chars): ' + GOOGLE_CONFIG.CLIENT_SECRET.substring(0, 10) + '...' : '✗ Missing');
+    console.log('✓ Redirect URI:', GOOGLE_CONFIG.REDIRECT_URI);
+    console.log('✓ Current URL:', window.location.href);
+    console.log('✓ Pathname:', window.location.pathname);
+    console.log('✓ Origin:', window.location.origin);
+    
+    // Check if redirect URI matches current URL pattern
+    const currentBaseUrl = window.location.origin + window.location.pathname;
+    console.log('✓ Redirect URI Match:', currentBaseUrl === GOOGLE_CONFIG.REDIRECT_URI ? '✓ Exact Match' : '✗ Mismatch');
+    
+    // Check if we're in a callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    console.log('✓ Has auth code:', !!authCode);
+    console.log('✓ Auth code length:', authCode ? authCode.length : 'none');
+}
+
+// Run this immediately to check configuration
+debugGoogleOAuthConfig();
+
 
 
         async function getGoogleUserInfo(accessToken) {
