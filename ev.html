@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evangelism FRM (MSFT)</title>
+    <title>Evangelism FRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -4504,6 +4504,21 @@ setTimeout(handleStuckLoading, 3000);
             updateConnectionStatus();
             showNotification('Logged out successfully');
         }
+
+
+        // Check current state
+        console.log('Current URL:', window.location.href);
+        console.log('Has access token:', !!sessionStorage.getItem('access_token'));
+        console.log('Has current user:', !!sessionStorage.getItem('current_user'));
+
+        // If stuck with OAuth parameters, force process them
+        const urlParams = new URLSearchParams(window.location.search);
+        const authCode = urlParams.get('code');
+        if (authCode) {
+            const returnedState = urlParams.get('state');
+            processOAuthCallback(authCode, returnedState);
+        }
+        
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
