@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EV System</title>
+    <title>Evengelism System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1132,12 +1132,13 @@
         };
         
 
-        // Azure Function Configuration - Magic Link
-            const AZURE_FUNCTION_CONFIG = {
-                BASE_URL: 'https://evangelism-crm-magiclink-g5a3dfg0cteagkav.canadacentral-01.azurewebsites.net/api',
-                REQUEST_MAGIC_LINK: '/RequestMagicLink',
-                VERIFY_TOKEN: '/VerifyMagicLinkToken'
-            };
+        // Temporary CORS proxy solution
+        const AZURE_FUNCTION_CONFIG = {
+            BASE_URL: 'https://cors-anywhere.herokuapp.com/https://evangelism-crm-magiclink-g5a3dfg0cteagkav.canadacentral-01.azurewebsites.net/api',
+            REQUEST_MAGIC_LINK: '/RequestMagicLink',
+            VERIFY_TOKEN: '/VerifyMagicLinkToken'
+        };
+
 
         // Global state
         let currentUser = null;
