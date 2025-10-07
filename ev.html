@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(1) Evangelism FRM</title>
+    <title>Evangelism FRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1054,29 +1054,32 @@
         };
         
         // Google OAuth configuration
- const GOOGLE_CONFIG = {
-    CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
-    CLIENT_SECRET: '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',
-    PROJECT_ID: 'hmbcfrm',
-    AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
-    TOKEN_URI: 'https://oauth2.googleapis.com/token',
-    SCOPES: 'openid email profile',
-    REDIRECT_URIS: [
-        'https://app.shill.es/ev',
-        'https://app.shill.es/',
-        'https://app.shill.es/FRMS.html',
-        'https://app.shill.es/index.html',
-        'https://app.geton.asia/',
-        'https://geton.asia/',
-        'https://shill.es/'
-    ],
-    JAVASCRIPT_ORIGINS: [
-        'https://app.shill.es',
-        'https://app.geton.asia',
-        'https://geton.asia',
-        'https://shill.es'
-    ]
-};
+        const GOOGLE_CONFIG = {
+            CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
+            CLIENT_SECRET: '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',
+            PROJECT_ID: 'hmbcfrm',
+            AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
+            TOKEN_URI: 'https://oauth2.googleapis.com/token',
+            SCOPES: 'openid email profile',
+            REDIRECT_URIS: [
+                        'https://app.shill.es/ev',
+                        'https://app.shill.es/',
+                        'https://app.shill.es/FRMS.html',
+                        'https://app.shill.es/index.html',
+                        'https://app.geton.asia/',
+                        'https://geton.asia/',
+                        'https://shill.es/'
+                        ],
+            JAVASCRIPT_ORIGINS: [
+                    'https://app.shill.es',
+                    'https://app.geton.asia',
+                    'https://geton.asia',
+                    'https://shill.es'
+                   ]
+        };  
+
+
+
         // Global state
         let currentUser = null;
         let currentTab = 'overview';
@@ -1128,7 +1131,7 @@
         ];
 
         // Initialize the app
-        document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM with PKCE authentication...');
     console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
     console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
@@ -1139,11 +1142,19 @@
     // First, check for OAuth callback parameters
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
+    const returnedState = urlParams.get('state');
     
     if (authCode) {
-        console.log('🔐 OAuth callback detected, processing immediately...');
-        const returnedState = urlParams.get('state');
-        processOAuthCallback(authCode, returnedState);
+        console.log('🔐 OAuth callback detected, checking provider...');
+        
+        // Determine if this is Google or Microsoft OAuth based on state
+        if (returnedState && returnedState.startsWith('google_auth_')) {
+            console.log('🔐 Processing Google OAuth callback');
+            processGoogleOAuthCallback(authCode, returnedState);
+        } else {
+            console.log('🔐 Processing Microsoft OAuth callback');
+            processOAuthCallback(authCode, returnedState);
+        }
     } else {
         console.log('🔧 No callback detected, initializing auth UI...');
         // Initialize authentication UI
@@ -1161,7 +1172,7 @@
     // Add stuck loading handler with longer delay
     setTimeout(handleStuckLoading, 5000);
 });
-        
+
 
         // Real-time sync functions
         function startRealTimeSync() {
@@ -1458,48 +1469,130 @@
     }
 
 
-        function checkExistingSession() {
-            // Check for Microsoft session
-            const msToken = sessionStorage.getItem('access_token');
-            const msExpiry = sessionStorage.getItem('token_expiry');
-            
-            // Check for Google session
-            const googleToken = sessionStorage.getItem('google_access_token');
-            const savedUser = sessionStorage.getItem('current_user');
-            
-            if (msToken && msExpiry && Date.now() < parseInt(msExpiry)) {
-                console.log('🔐 Valid Microsoft session found, restoring...');
-                sharePointAccessToken = msToken;
-                isSharePointMode = true;
-                
-                // Restore user info
-                if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                }
-                
-                loadDataFromSharePoint().then(() => {
-                    showDashboard();
-                    startRealTimeSync();
-                    showNotification('Microsoft session restored with real-time sync!');
-                });
-                    } else if (googleToken && savedUser) {
-                console.log('🔐 Valid Google session found, restoring...');
-                currentUser = JSON.parse(savedUser);
-                
-                // Load data from SharePoint
-                if (sharePointAccessToken) {
-                    loadDataFromSharePoint().then(() => {
-                        showDashboard();
-                        startRealTimeSync();
-                        showNotification('Google session restored with SharePoint sync!');
-                    });
-                } else {
-                    // In production, require SharePoint connection
-                    showNotification('Please sign in again. SharePoint connection required.', 'warning');
-                    logout();
-                }
-            }
+    async function processGoogleOAuthCallback(authCode, returnedState) {
+    try {
+        console.log('🔄 Processing Google OAuth callback...');
+        
+        // Validate state parameter
+        const storedState = sessionStorage.getItem('google_auth_state');
+        if (returnedState && storedState && returnedState !== storedState) {
+            throw new Error('Invalid state parameter - possible security issue');
         }
+        
+        // Check if we already processed this callback
+        if (sessionStorage.getItem('google_oauth_processed')) {
+            console.log('⚠️ Google OAuth callback already processed, skipping...');
+            return;
+        }
+        
+        // Mark as processed to prevent duplicate processing
+        sessionStorage.setItem('google_oauth_processed', 'true');
+        
+        // Exchange code for token
+        console.log('🔄 Exchanging Google code for token...');
+        const tokenData = await exchangeGoogleCodeForToken(authCode);
+        
+        console.log('✅ Google token exchange successful');
+        
+        // Get user info from Google
+        console.log('🔄 Getting user info from Google...');
+        const userInfo = await getGoogleUserInfo(tokenData.access_token);
+        
+        console.log('👤 Google user authenticated:', userInfo.email);
+        
+        // For Google users, we need to check SharePoint authorization
+        console.log('🔄 Checking user in SharePoint list...');
+        const sharePointUserInfo = await checkUserInSharePointList(userInfo.email, userInfo.name, 'google');
+        
+        if (!sharePointUserInfo) {
+            console.log('❌ User not authorized in SharePoint');
+            logout();
+            return;
+        }
+        
+        // Set current user with SharePoint-defined permissions
+        currentUser = sharePointUserInfo;
+        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+        sessionStorage.setItem('google_access_token', tokenData.access_token);
+        
+        // Clean up Google OAuth parameters and processing flag
+        sessionStorage.removeItem('google_auth_state');
+        sessionStorage.removeItem('google_oauth_processed');
+        
+        // Clean URL - IMPORTANT: Remove OAuth parameters from URL
+        console.log('🔄 Cleaning URL and showing dashboard...');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // For Google users, we still need SharePoint access token for data operations
+        // Show a message that SharePoint features require Microsoft login
+        showDashboard();
+        
+        showNotification(`Welcome ${userInfo.name}! Google authentication successful.`);
+        
+        // Note: Google users can view data but need Microsoft login for SharePoint operations
+        if (!sharePointAccessToken) {
+            showNotification('Note: SharePoint operations require Microsoft 365 sign-in', 'info');
+        }
+        
+    } catch (error) {
+        console.error('❌ Google OAuth callback processing failed:', error);
+        showNotification('Google authentication failed: ' + error.message, 'error');
+        
+        // Clean up on failure
+        sessionStorage.removeItem('google_auth_state');
+        sessionStorage.removeItem('google_oauth_processed');
+        
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show login screen again
+        initializeMicrosoftAuth();
+    }
+}
+
+
+function checkExistingSession() {
+    // Check for Microsoft session
+    const msToken = sessionStorage.getItem('access_token');
+    const msExpiry = sessionStorage.getItem('token_expiry');
+    
+    // Check for Google session
+    const googleToken = sessionStorage.getItem('google_access_token');
+    const savedUser = sessionStorage.getItem('current_user');
+    
+    if (msToken && msExpiry && Date.now() < parseInt(msExpiry)) {
+        console.log('🔐 Valid Microsoft session found, restoring...');
+        sharePointAccessToken = msToken;
+        isSharePointMode = true;
+        
+        // Restore user info
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+        }
+        
+        loadDataFromSharePoint().then(() => {
+            showDashboard();
+            startRealTimeSync();
+            showNotification('Microsoft session restored with real-time sync!');
+        });
+    } else if (googleToken && savedUser) {
+        console.log('🔐 Valid Google session found, restoring...');
+        currentUser = JSON.parse(savedUser);
+        
+        // Load data from SharePoint if we have access
+        if (sharePointAccessToken) {
+            loadDataFromSharePoint().then(() => {
+                showDashboard();
+                startRealTimeSync();
+                showNotification('Google session restored with SharePoint sync!');
+            });
+        } else {
+            // Google user without SharePoint access - show dashboard with limited functionality
+            showDashboard();
+            showNotification('Google session restored. SharePoint features require Microsoft sign-in.', 'info');
+        }
+    }
+}
 
         // PKCE Helper Functions
         function base64URLEncode(array) {
@@ -1531,10 +1624,10 @@
         const state = 'google_auth_' + Date.now();
         sessionStorage.setItem('google_auth_state', state);
         
-        // Use a FIXED redirect URI that matches exactly what's in Google Console
-        const redirectUri = 'https://app.shill.es/ev';
+        // Use the exact redirect URI that matches your Google Console configuration
+        const redirectUri = GOOGLE_CONFIG.REDIRECT_URI;
         
-        console.log('🔐 Using fixed redirect URI:', redirectUri);
+        console.log('🔐 Using redirect URI:', redirectUri);
         
         const scopes = [
             'openid',
@@ -1586,13 +1679,12 @@
         }
 
         
-        
-async function exchangeGoogleCodeForToken(authCode) {
+    async function exchangeGoogleCodeForToken(authCode) {
     try {
         console.log('🔄 Google token exchange starting...');
         
-        // Use the SAME redirect URI that was used in the auth request
-        const redirectUri = 'https://app.shill.es/ev';
+        // Use the same redirect URI that was used in the auth request
+        const redirectUri = GOOGLE_CONFIG.REDIRECT_URI;
         
         console.log('🔄 Using redirect URI for token exchange:', redirectUri);
         
@@ -1625,7 +1717,7 @@ async function exchangeGoogleCodeForToken(authCode) {
         console.error('❌ Google token exchange failed:', error);
         throw error;
     }
-}
+}    
 
         async function getGoogleUserInfo(accessToken) {
             try {
@@ -2634,38 +2726,51 @@ function handleStuckLoading() {
     // Check if we're stuck on login page after successful auth
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
+    const returnedState = urlParams.get('state');
     
     // Only process if we have a code AND we're not already processing
     if (authCode && 
         document.getElementById('loginScreen') && 
-        !document.getElementById('loginScreen').classList.contains('hidden') &&
-        !sessionStorage.getItem('oauth_processed')) {
+        !document.getElementById('loginScreen').classList.contains('hidden')) {
         
         console.log('⚠️ Detected stuck loading - checking if we should process callback');
         
-        // Only process if we have PKCE parameters
-        const hasPkceParams = sessionStorage.getItem('pkce_code_verifier') && 
-                             sessionStorage.getItem('pkce_state');
-        
-        if (hasPkceParams) {
-            console.log('🔄 Stuck loading detected with PKCE params, processing callback...');
-            const returnedState = urlParams.get('state');
-            processOAuthCallback(authCode, returnedState).catch(error => {
-                console.error('❌ Forced callback processing failed:', error);
-                // Clear the URL and reset
-                window.history.replaceState({}, document.title, window.location.pathname);
-                sessionStorage.removeItem('oauth_processed');
-                initializeMicrosoftAuth();
-            });
+        // Check if it's Google OAuth
+        if (returnedState && returnedState.startsWith('google_auth_')) {
+            const googleProcessed = sessionStorage.getItem('google_oauth_processed');
+            if (!googleProcessed) {
+                console.log('🔄 Stuck loading detected with Google OAuth, processing callback...');
+                processGoogleOAuthCallback(authCode, returnedState).catch(error => {
+                    console.error('❌ Forced Google callback processing failed:', error);
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    sessionStorage.removeItem('google_oauth_processed');
+                    initializeMicrosoftAuth();
+                });
+                return;
+            }
         } else {
-            console.log('⚠️ Stuck loading but no PKCE params, clearing URL');
-            window.history.replaceState({}, document.title, window.location.pathname);
-            initializeMicrosoftAuth();
+            // Check if it's Microsoft OAuth
+            const hasPkceParams = sessionStorage.getItem('pkce_code_verifier') && 
+                                 sessionStorage.getItem('pkce_state');
+            const msProcessed = sessionStorage.getItem('oauth_processed');
+            
+            if (hasPkceParams && !msProcessed) {
+                console.log('🔄 Stuck loading detected with PKCE params, processing callback...');
+                processOAuthCallback(authCode, returnedState).catch(error => {
+                    console.error('❌ Forced callback processing failed:', error);
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    sessionStorage.removeItem('oauth_processed');
+                    initializeMicrosoftAuth();
+                });
+                return;
+            }
         }
+        
+        console.log('⚠️ Stuck loading but no valid OAuth params, clearing URL');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        initializeMicrosoftAuth();
     }
 }
-
-
 
 function handleGoogleSignIn(response) {
     console.log('🔐 Google Sign-In response received');
@@ -4572,29 +4677,31 @@ setTimeout(handleStuckLoading, 3000);
         }
 
         function logout() {
-            // Stop real-time sync
-            stopRealTimeSync();
-            
-            currentUser = null;
-            sharePointAccessToken = null;
-            isSharePointMode = false;
-            
-            // Clear all session data
-            sessionStorage.removeItem('access_token');
-            sessionStorage.removeItem('token_expiry');
-            sessionStorage.removeItem('google_access_token');
-            sessionStorage.removeItem('current_user');
-            sessionStorage.removeItem('pkce_code_verifier');
-            sessionStorage.removeItem('pkce_state');
-            sessionStorage.removeItem('google_auth_state');
-            
-            document.getElementById('dashboard').classList.add('hidden');
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('adminTabBtn').classList.add('hidden');
-            
-            updateConnectionStatus();
-            showNotification('Logged out successfully');
-        }
+    // Stop real-time sync
+    stopRealTimeSync();
+    
+    currentUser = null;
+    sharePointAccessToken = null;
+    isSharePointMode = false;
+    
+    // Clear all session data (both Microsoft and Google)
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('token_expiry');
+    sessionStorage.removeItem('google_access_token');
+    sessionStorage.removeItem('current_user');
+    sessionStorage.removeItem('pkce_code_verifier');
+    sessionStorage.removeItem('pkce_state');
+    sessionStorage.removeItem('google_auth_state');
+    sessionStorage.removeItem('oauth_processed');
+    sessionStorage.removeItem('google_oauth_processed');
+    
+    document.getElementById('dashboard').classList.add('hidden');
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('adminTabBtn').classList.add('hidden');
+    
+    updateConnectionStatus();
+    showNotification('Logged out successfully');
+}
 
 
         // Check current state
