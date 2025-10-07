@@ -63,7 +63,7 @@
             </div>
             
             <div class="mt-6 text-center">
-                <p class="text-xs text-gray-400 mt-2">Copyright 2024 • System by GetOn</p>
+                <p class="text-xs text-gray-400 mt-2">Copyright <span id="currentYear"></span> • System by GetOn</p>
             </div>
         </div>
     </div>
@@ -1211,6 +1211,9 @@ document.addEventListener('DOMContentLoaded', function() {
     populateDropdowns();
     initializeEventListeners();
 });       
+
+// Set current year for copyright
+document.getElementById('currentYear').textContent = new Date().getFullYear();
 
 function forceLogout() {
     console.log('🚪 FORCE LOGGING OUT - Clearing all sessions');
