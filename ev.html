@@ -1181,37 +1181,71 @@
             'Other'
         ];
 
-
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // Check if this is a page refresh and force logout
-    if (performance.navigation.type === 1 || performance.getEntriesByType("navigation")[0]?.type === 'reload') {
-        console.log('🔄 Page was refreshed - forcing logout');
-        forceLogout();
+    // First, check if this is an OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    const returnedState = urlParams.get('state');
+    const error = urlParams.get('error');
+    
+    if (authCode) {
+        console.log('🔐 OAuth callback detected - processing authentication');
+        // Process OAuth without logging out
+        processOAuthCallback(authCode, returnedState);
+    } else if (error) {
+        console.error('❌ OAuth error:', error);
+        showNotification('Authentication failed: ' + error, 'error');
+        // Clean URL and show login
+        window.history.replaceState({}, document.title, window.location.pathname);
         initializeMicrosoftAuth();
     } else {
-        // Check for OAuth callback parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const authCode = urlParams.get('code');
-        const returnedState = urlParams.get('state');
+        console.log('🔧 No OAuth callback - checking session state');
         
-        if (authCode) {
-            console.log('🔐 OAuth callback detected');
-            processOAuthCallback(authCode, returnedState);
+        // Check if we have a valid session
+        const hasValidSession = checkForValidSession();
+        
+        if (hasValidSession) {
+            console.log('✅ Valid session found - restoring dashboard');
+            restoreSession();
         } else {
-            console.log('🔧 No callback detected, initializing auth UI...');
-            initializeMicrosoftAuth();
-            // Don't check existing session on fresh load
+            console.log('❌ No valid session - showing login screen');
+            showLoginScreen();
         }
     }
     
+    // Initialize UI components
+    initializeUI();
+});
+
+// Add this function to show login screen properly
+function showLoginScreen() {
+    // Clear any partial session data
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('current_user');
+    
+    // Ensure login screen is visible
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('dashboard').classList.add('hidden');
+    
+    // Initialize auth UI
+    initializeMicrosoftAuth();
+}
+
+// Add this function to initialize UI components
+function initializeUI() {
     loadLocalData();
     updateConnectionStatus();
     populateDropdowns();
     initializeEventListeners();
-});       
-
+    
+    // Set copyright year
+    const yearElement = document.getElementById('currentYear');
+    if (yearElement) {
+        yearElement.textContent = new Date().getFullYear();
+    }
+}
 // Set current year for copyright
 document.getElementById('currentYear').textContent = new Date().getFullYear();
 
@@ -1255,23 +1289,62 @@ function forceLogout() {
     console.log('✅ Force logout completed');
 }
 
-// Add this new function to check for valid sessions
 function checkForValidSession() {
     // Check for Microsoft session
     const msToken = sessionStorage.getItem('access_token');
     const msExpiry = sessionStorage.getItem('token_expiry');
-    
-    // Check for saved user
     const savedUser = sessionStorage.getItem('current_user');
     
-    // Session is valid if we have a token that hasn't expired and a user
+    console.log('🔍 Session check:', {
+        hasToken: !!msToken,
+        hasExpiry: !!msExpiry,
+        hasUser: !!savedUser,
+        token: msToken ? '***' + msToken.slice(-10) : 'none'
+    });
+    
+    // Session is valid if we have all required components
     if (msToken && msExpiry && savedUser) {
         const isTokenValid = Date.now() < parseInt(msExpiry);
+        console.log('🔐 Token validity:', isTokenValid);
         return isTokenValid;
     }
     
     return false;
 }
+
+function restoreSession() {
+    const msToken = sessionStorage.getItem('access_token');
+    const savedUser = sessionStorage.getItem('current_user');
+    
+    if (msToken && savedUser) {
+        sharePointAccessToken = msToken;
+        isSharePointMode = true;
+        
+        try {
+            currentUser = JSON.parse(savedUser);
+            console.log('👤 Restoring user:', currentUser.name);
+            
+            // Load data and show dashboard
+            loadDataFromSharePoint().then(() => {
+                showDashboard();
+                startRealTimeSync();
+                showNotification('Welcome back, ' + currentUser.name + '!');
+            }).catch(error => {
+                console.error('❌ Failed to restore session data:', error);
+                showNotification('Session restored but data loading failed', 'warning');
+                showDashboard(); // Still show dashboard with local data
+            });
+        } catch (error) {
+            console.error('❌ Failed to parse user data:', error);
+            showLoginScreen();
+        }
+    } else {
+        console.log('❌ Insufficient session data for restoration');
+        showLoginScreen();
+    }
+}
+
+
 
 // Add this function to restore a valid session
 function restoreSession() {
@@ -1396,7 +1469,7 @@ function restoreSession() {
             }
         }
 
-        function initializeMicrosoftAuth() {
+function initializeMicrosoftAuth() {
     console.log('🔧 Initializing Microsoft authentication...');
     
     const buttonContainer = document.getElementById('googleSignInButton');
@@ -1419,7 +1492,25 @@ function restoreSession() {
     }
     
     console.log('✅ Microsoft authentication initialized');
+}        
+
+function handleAuthError(error) {
+    console.error('❌ Authentication error:', error);
+    
+    let errorMessage = 'Authentication failed';
+    
+    if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage = 'Network error - please check your connection';
+    } else if (error.message.includes('token') || error.message.includes('expired')) {
+        errorMessage = 'Session expired - please sign in again';
+    } else if (error.message.includes('permission') || error.message.includes('access denied')) {
+        errorMessage = 'Access denied - please contact your administrator';
+    }
+    
+    showNotification(errorMessage, 'error');
+    showLoginScreen();
 }
+
 
 // Wait for verification response
 async function waitForVerificationResponse(token) {
@@ -1511,11 +1602,13 @@ function checkForOAuthCallback() {
     return false;
 }
 
+
 async function processOAuthCallback(authCode, returnedState) {
     try {
         console.log('🔄 Processing Microsoft OAuth callback...');
         
-        // Don't logout here - we're in the middle of authentication
+        // Show loading state
+        showNotification('Completing authentication...', 'info');
         
         // Validate state parameter
         const storedState = sessionStorage.getItem('pkce_state');
@@ -1525,7 +1618,9 @@ async function processOAuthCallback(authCode, returnedState) {
         
         // Check if we already processed this callback
         if (sessionStorage.getItem('oauth_processed')) {
-            console.log('⚠️ OAuth callback already processed, skipping...');
+            console.log('⚠️ OAuth callback already processed, redirecting...');
+            window.history.replaceState({}, document.title, window.location.pathname);
+            restoreSession();
             return;
         }
         
@@ -1535,6 +1630,10 @@ async function processOAuthCallback(authCode, returnedState) {
         // Exchange code for token
         console.log('🔄 Exchanging code for token...');
         const tokenData = await exchangeCodeForTokenPKCE(authCode);
+        
+        if (!tokenData.access_token) {
+            throw new Error('No access token received from Microsoft');
+        }
         
         sharePointAccessToken = tokenData.access_token;
         isSharePointMode = true;
@@ -1554,9 +1653,7 @@ async function processOAuthCallback(authCode, returnedState) {
         const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
         
         if (!userInfo) {
-            console.log('❌ User not authorized in SharePoint');
-            logout();
-            return;
+            throw new Error('User not authorized in SharePoint');
         }
         
         // Set current user with SharePoint-defined permissions
@@ -1578,7 +1675,7 @@ async function processOAuthCallback(authCode, returnedState) {
         showDashboard();
         startRealTimeSync();
         
-        showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
+        showNotification(`Welcome ${userInfo.name}! Authentication successful.`);
         
     } catch (error) {
         console.error('❌ OAuth callback processing failed:', error);
@@ -1594,10 +1691,9 @@ async function processOAuthCallback(authCode, returnedState) {
         window.history.replaceState({}, document.title, window.location.pathname);
         
         // Show login screen again
-        initializeMicrosoftAuth();
+        showLoginScreen();
     }
 }
-
 
 
 async function loadDataWithGoogleAuth() {
@@ -5513,9 +5609,25 @@ async function callSharePointAPI(url, options = {}) {
             populateFruitDropdowns();
         }
 
- 
-function logout() {
-    forceLogout();
+ function logout() {
+    console.log('🚪 User initiated logout...');
+    
+    // Stop real-time sync
+    stopRealTimeSync();
+    
+    // Clear user data
+    currentUser = null;
+    sharePointAccessToken = null;
+    isSharePointMode = false;
+    
+    // Clear authentication tokens but keep some session items for better UX
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('token_expiry');
+    sessionStorage.removeItem('current_user');
+    
+    // Show login screen
+    showLoginScreen();
+    
     showNotification('Logged out successfully');
 }
 
