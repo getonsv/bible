@@ -2897,51 +2897,60 @@ window.addEventListener('load', function() {
                     }
                 }
 
-                async function loadFruitsFromSharePoint() {
-                    try {
-                        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items?expand=fields`;
-                        
-                        console.log('📊 Loading fruits from:', url);
-                        
-                        const response = await fetch(url, {
-                            headers: {
-                                'Authorization': `Bearer ${sharePointAccessToken}`,
-                                'Accept': 'application/json'
-                            }
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                        }
-                        
-                        const data = await response.json();
-                        const items = data.value || [];
-                        
-                        fruits = items.map(item => ({
-                            id: item.id.toString(),
-                            name: item.fields.Title || '',
-                            assignedTo: item.fields.AssignedTo || '',
-                            phone: item.fields.Phone || '',
-                            instagram: item.fields.Instagram || '',
-                            facebook: item.fields.Facebook || '',
-                            twitter: item.fields.Twitter || '',
-                            leadSource: item.fields.LeadSource || '',
-                            campaign: item.fields.Campaign || '',
-                            status: item.fields.Status || 'Initial Contact',
-                            notes: item.fields.Notes || '',
-                            createdDate: item.fields.Created || item.createdDateTime,
-                            createdBy: item.fields.CreatedByUser || 'Unknown'
-                        }));
-                        
-                        console.log('📊 Loaded', fruits.length, 'fruits from SharePoint');
-                        
-                    } catch (error) {
-                        console.error('❌ Error loading fruits from SharePoint:', error);
-                        fruits = []; // Start with empty array if loading fails
-                    }
-                }
+async function loadFruitsFromSharePoint() {
+    try {
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items?expand=fields`;
+        
+        console.log('📊 Loading fruits from:', url);
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const items = data.value || [];
+        
+        console.log('📦 Raw fruits data from SharePoint:', items); // Debug log
+        
+        fruits = items.map(item => {
+            const fruit = {
+                id: item.id.toString(),
+                name: item.fields.Title || '',
+                assignedTo: item.fields.AssignedTo || '',
+                phone: item.fields.Phone || '',
+                instagram: item.fields.Instagram || '',
+                facebook: item.fields.Facebook || '',
+                twitter: item.fields.Twitter || '',
+                leadSource: item.fields.LeadSource || '',
+                campaign: item.fields.Campaign || '',
+                status: item.fields.Status || 'Initial Contact',
+                notes: item.fields.Notes || '',
+                createdDate: item.fields.Created || item.createdDateTime,
+                createdBy: item.fields.CreatedByUser || 'Unknown'
+            };
+            
+            console.log('✅ Processed fruit:', fruit); // Debug log
+            return fruit;
+        });
+        
+        console.log('📊 Loaded', fruits.length, 'fruits from SharePoint');
+        
+    } catch (error) {
+        console.error('❌ Error loading fruits from SharePoint:', error);
+        fruits = [];
+    }
+}
 
-    
+
+
+
 async function loadActivitiesFromSharePoint() {
     try {
         // Get all activities with proper field selection
@@ -3688,85 +3697,88 @@ setTimeout(handleStuckLoading, 3000);
             `).join('');
         }
 
-            function updateFruitsGrid() {
-                const container = document.getElementById('fruitsGrid');
-                if (!container) return;
-                
-                if (fruits.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center py-12 col-span-full">
-                            <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-users text-gray-400 text-3xl"></i>
-                            </div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">No contacts found</h3>
-                            <p class="text-gray-500 mb-4">Start building your ministry database by adding your first contact.</p>
-                            <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                                <i class="fas fa-plus mr-2"></i>Add Your First Contact
-                            </button>
-                        </div>
-                    `;
-                    return;
-                }
-            container.innerHTML = fruits.map(fruit => {
-                const progressData = getProgressData(fruit.status);
-                return `
-                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
-                    <div class="flex items-start justify-between mb-4">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900">${fruit.name}</h3>
-                            <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo}</p>
-                        </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}">
-                            ${fruit.status}
-                        </span>
-                    </div>
-                    
-                    <!-- Progress Bar -->
-                    <div class="mb-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-gray-700">Evangelism Progress</span>
-                            <span class="text-sm text-gray-600">${progressData.percentage}%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5">
-                            <div class="progress-bar h-2.5 rounded-full ${progressData.color}" style="width: ${progressData.percentage}%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-2 mb-4">
-                        <div class="flex items-center text-sm text-gray-600">
-                            <i class="fas fa-phone w-4 mr-2"></i>
-                            ${fruit.phone || 'No phone'}
-                        </div>
-                        <div class="flex items-center text-sm text-gray-600">
-                            <i class="fas fa-bullhorn w-4 mr-2"></i>
-                            ${fruit.leadSource}
-                        </div>
-                        ${fruit.campaign ? `
-                            <div class="flex items-center text-sm text-gray-600">
-                                <i class="fas fa-tag w-4 mr-2"></i>
-                                ${fruit.campaign}
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="viewFruitDetails('${fruit.id}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-eye mr-1"></i>View Details
-                        </button>
-                        <button onclick="editFruit('${fruit.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-edit mr-1"></i>Edit
-                        </button>
-                        <button onclick="logActivityForFruit('${fruit.name}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-phone mr-1"></i>Log Activity
-                        </button>
-                        <button onclick="deleteFruit('${fruit.id}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
-                            <i class="fas fa-trash mr-1"></i>Delete
-                        </button>
-                    </div>
+        function updateFruitsGrid() {
+    const container = document.getElementById('fruitsGrid');
+    if (!container) return;
+    
+    if (fruits.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12 col-span-full">
+                <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-users text-gray-400 text-3xl"></i>
                 </div>
-            `;
-            }).join('');
-        }
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No contacts found</h3>
+                <p class="text-gray-500 mb-4">Start building your ministry database by adding your first contact.</p>
+                <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Add Your First Contact
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = fruits.map(fruit => {
+        const progressData = getProgressData(fruit.status);
+        return `
+        <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">${fruit.name}</h3>
+                    <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo || 'Unassigned'}</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}">
+                    ${fruit.status}
+                </span>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">Evangelism Progress</span>
+                    <span class="text-sm text-gray-600">${progressData.percentage}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="progress-bar h-2.5 rounded-full ${progressData.color}" style="width: ${progressData.percentage}%"></div>
+                </div>
+            </div>
+            
+            <div class="space-y-2 mb-4">
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-phone w-4 mr-2"></i>
+                    ${fruit.phone || 'No phone'}
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-bullhorn w-4 mr-2"></i>
+                    ${fruit.leadSource || 'No lead source'}
+                </div>
+                ${fruit.campaign ? `
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-tag w-4 mr-2"></i>
+                        ${fruit.campaign}
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="viewFruitDetails('${fruit.id}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                    <i class="fas fa-eye mr-1"></i>View Details
+                </button>
+                <button onclick="editFruit('${fruit.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                    <i class="fas fa-edit mr-1"></i>Edit
+                </button>
+                <button onclick="logActivityForFruit('${fruit.name}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                    <i class="fas fa-phone mr-1"></i>Log Activity
+                </button>
+                <button onclick="deleteFruit('${fruit.id}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
+                    <i class="fas fa-trash mr-1"></i>Delete
+                </button>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+
 
         function getStatusColor(status) {
             const colors = {
@@ -3810,28 +3822,33 @@ setTimeout(handleStuckLoading, 3000);
             return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
 
-        function populateDropdowns() {
-            // Populate status filter
-            const statusFilter = document.getElementById('statusFilter');
-            if (statusFilter) {
-                statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
-                    STATUS_PROGRESSION.map(status => 
-                        `<option value="${status}">${status}</option>`
-                    ).join('');
-            }
 
-            // Populate source filter
-            const sourceFilter = document.getElementById('sourceFilter');
-            if (sourceFilter) {
-                sourceFilter.innerHTML = '<option value="">All Sources</option>' + 
-                    LEAD_SOURCES.map(source => 
-                        `<option value="${source}">${source}</option>`
-                    ).join('');
-            }
+    function populateDropdowns() {
+    // Populate status filter
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
+            STATUS_PROGRESSION.map(status => 
+                `<option value="${status}">${status}</option>`
+            ).join('');
+    }
 
-            // Populate fruit dropdowns in modals
-            populateFruitDropdowns();
-        }
+    // Populate source filter
+    const sourceFilter = document.getElementById('sourceFilter');
+    if (sourceFilter) {
+        sourceFilter.innerHTML = '<option value="">All Sources</option>' + 
+            LEAD_SOURCES.map(source => 
+                `<option value="${source}">${source}</option>`
+            ).join('');
+    }
+
+    // Populate fruit dropdowns in modals
+    populateFruitDropdowns();
+    
+    // Populate assignee dropdown
+    populateAssigneeDropdown();
+}
+
 
         function populateFruitDropdowns() {
             const activityFruitSelect = document.getElementById('activityFruitSelect');
@@ -4758,6 +4775,9 @@ async function updateFruit(event) {
             // Update in SharePoint first
             await updateFruitInSharePoint(fruitId, updatedFruit);
             showNotification(`${updatedFruit.name} updated in SharePoint successfully!`);
+            
+            // Reload fruits from SharePoint to ensure data consistency
+            await loadFruitsFromSharePoint();
         } else {
             showNotification(`${updatedFruit.name} updated locally (SharePoint not connected)`);
         }
@@ -4781,16 +4801,35 @@ async function updateFruit(event) {
         
     } catch (error) {
         console.error('❌ Failed to update fruit:', error);
-        
-        // Check if it's a permission error
-        if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Access denied')) {
-            showNotification('Access denied: You do not have permission to edit items in SharePoint.', 'error');
-        } else {
-            showNotification('Failed to update fruit: ' + error.message, 'error');
-        }
+        showNotification('Failed to update fruit: ' + error.message, 'error');
     }
 }
 
+
+// Debug function to check lead source data
+function debugLeadSourceData() {
+    console.log('🔍 Debugging lead source data...');
+    
+    fruits.forEach((fruit, index) => {
+        console.log(`Fruit ${index + 1}:`, {
+            name: fruit.name,
+            leadSource: fruit.leadSource,
+            hasLeadSource: !!fruit.leadSource,
+            leadSourceType: typeof fruit.leadSource
+        });
+    });
+    
+    // Check if lead sources are displaying in the grid
+    const fruitCards = document.querySelectorAll('#fruitsGrid .bg-white');
+    console.log('🎯 Fruit cards found:', fruitCards.length);
+    
+    fruitCards.forEach((card, index) => {
+        const leadSourceElement = card.querySelector('.fa-bullhorn')?.closest('.flex')?.querySelector('span');
+        console.log(`Card ${index + 1} lead source display:`, leadSourceElement?.textContent);
+    });
+}
+
+// Call this in console: debugLeadSourceData()
 
 function updateActivityTimeline() {
     const activityTimeline = document.getElementById('activityTimeline');
@@ -5444,6 +5483,92 @@ async function callSharePointAPI(url, options = {}) {
             }
         }
 
+
+        // Load users for Assign To dropdown
+async function loadUsersForDropdown() {
+    try {
+        console.log('👥 Loading users for Assign To dropdown...');
+        
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'&$select=id,fields&$top=500`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            console.warn('⚠️ Could not load users list, using current user only');
+            return [currentUser.name];
+        }
+        
+        const data = await response.json();
+        const userItems = data.value || [];
+        
+        console.log('📋 Users loaded for dropdown:', userItems.length);
+        
+        // Extract display names from Person field
+        const userNames = userItems.map(item => {
+            // Handle Person field - it might be an object with displayName
+            if (item.fields.DisplayName && typeof item.fields.DisplayName === 'object') {
+                return item.fields.DisplayName.displayName || 
+                       item.fields.DisplayName.title || 
+                       item.fields.DisplayName.email || 
+                       'Unknown User';
+            }
+            return item.fields.DisplayName || 'Unknown User';
+        }).filter(name => name && name !== 'Unknown User');
+        
+        // Add current user if not in list
+        if (currentUser && currentUser.name && !userNames.includes(currentUser.name)) {
+            userNames.push(currentUser.name);
+        }
+        
+        // Remove duplicates and sort
+        const uniqueUserNames = [...new Set(userNames)].sort();
+        
+        console.log('✅ Available users for assignment:', uniqueUserNames);
+        return uniqueUserNames;
+        
+    } catch (error) {
+        console.error('❌ Error loading users for dropdown:', error);
+        // Fallback to current user only
+        return currentUser ? [currentUser.name] : [];
+    }
+}
+
+// Populate Assign To dropdown
+async function populateAssigneeDropdown() {
+    try {
+        const assigneeSelect = document.getElementById('assigneeSelect');
+        if (!assigneeSelect) {
+            console.log('❌ Assignee dropdown not found');
+            return;
+        }
+        
+        // Clear existing options except the first one
+        while (assigneeSelect.options.length > 1) {
+            assigneeSelect.remove(1);
+        }
+        
+        const users = await loadUsersForDropdown();
+        
+        // Add users to dropdown
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user;
+            option.textContent = user;
+            assigneeSelect.appendChild(option);
+        });
+        
+        console.log('✅ Assignee dropdown populated with', users.length, 'users');
+        
+    } catch (error) {
+        console.error('❌ Error populating assignee dropdown:', error);
+    }
+}
+
         function updateUsersTable() {
             const tbody = document.getElementById('usersTable');
             if (!tbody) return;
@@ -5853,7 +5978,7 @@ async function debugSharePointFields() {
 
 <!-- Version Display -->
 <div id="versionInfo" class="fixed bottom-4 right-4 text-xs text-gray-400 bg-white bg-opacity-80 px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
-    v1.0.1
+    v1.0.2
 </div>
 
 
