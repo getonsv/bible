@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism CRM</title>
+    <title>Evengelism System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -3612,57 +3612,98 @@ setTimeout(handleStuckLoading, 3000);
 
         // Schedule BB function
         async function scheduleBB(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(event.target);
-            const fruitName = formData.get('fruitName');
-            
-            // Update fruit status
-            const fruit = fruits.find(f => f.name === fruitName);
-            if (fruit) {
-                fruit.status = 'BB Session Scheduled';
-                fruit.lastUpdated = new Date().toISOString();
-                fruit.updatedBy = currentUser.email;
-                
-                saveLocalData();
-                updateFruitsGrid();
-            }
-            
-            // Log the scheduling activity
-            const scheduleActivity = {
-                fruitName: fruitName,
-                type: 'BB Session',
-                duration: '0',
-                notes: `Scheduled ${formData.get('sessionType')} for ${formData.get('date')} at ${formData.get('time')}. Location: ${formData.get('location')}. ${formData.get('scheduleNotes')}`,
-                outcome: 'Scheduled Next Step',
-                user: currentUser.name,
-                createdDate: new Date().toISOString()
-            };
-            
+    event.preventDefault();
+    
+    // Check permissions first
+    if (!userPermissions.canAdd) {
+        showPermissionMessage('add');
+        return;
+    }
+    
+    const formData = new FormData(event.target);
+    const fruitName = formData.get('fruitName');
+    const sessionDate = formData.get('date');
+    const sessionTime = formData.get('time');
+    const sessionType = formData.get('sessionType');
+    const location = formData.get('location');
+    const scheduleNotes = formData.get('scheduleNotes');
+    
+    // Update fruit status
+    const fruit = fruits.find(f => f.name === fruitName);
+    if (fruit) {
+        fruit.status = 'BB Session Scheduled';
+        fruit.lastUpdated = new Date().toISOString();
+        fruit.updatedBy = currentUser.email;
+        
+        // Save the update
+        if (isSharePointMode && sharePointAccessToken) {
             try {
-                if (isSharePointMode && sharePointAccessToken) {
-                    // Add to SharePoint
-                    const result = await addActivityToSharePoint(scheduleActivity);
-                    scheduleActivity.id = result.id.toString();
-                    showNotification('BB Session scheduled in SharePoint!');
-                } else {
-                    scheduleActivity.id = 'activity_' + Date.now();
-                    showNotification('BB Session scheduled locally');
-                }
-                
-                activities.push(scheduleActivity);
-                saveLocalData();
-                updateRecentActivities();
-                updateStats();
-                
-                closeModal('scheduleModal');
-                event.target.reset();
-                
+                await updateFruitInSharePoint(fruit.id, fruit);
             } catch (error) {
-                console.error('❌ Failed to schedule BB session:', error);
-                showNotification('Failed to schedule BB session: ' + error.message, 'error');
+                console.error('Failed to update fruit status in SharePoint:', error);
             }
         }
+        
+        saveLocalData();
+        updateFruitsGrid();
+    }
+    
+    // Create detailed notes for the activity
+    const activityNotes = `Scheduled ${sessionType} for ${sessionDate} at ${sessionTime}. Location: ${location}. ${scheduleNotes}`;
+    
+    // Log the scheduling activity
+    const scheduleActivity = {
+        fruitName: fruitName,
+        type: 'BB Session Scheduled',
+        duration: '0',
+        notes: activityNotes,
+        outcome: 'Scheduled Next Step',
+        user: currentUser.name,
+        createdDate: new Date().toISOString()
+    };
+    
+    try {
+        if (isSharePointMode && sharePointAccessToken) {
+            // Add to SharePoint
+            const result = await addActivityToSharePoint(scheduleActivity);
+            scheduleActivity.id = result.id.toString();
+            showNotification('BB Session scheduled in SharePoint!');
+        } else {
+            scheduleActivity.id = 'activity_' + Date.now();
+            showNotification('BB Session scheduled locally');
+        }
+        
+        activities.push(scheduleActivity);
+        saveLocalData();
+        updateRecentActivities();
+        updateStats();
+        
+        closeModal('scheduleModal');
+        event.target.reset();
+        
+    } catch (error) {
+        console.error('❌ Failed to schedule BB session:', error);
+        showNotification('Failed to schedule BB session: ' + error.message, 'error');
+    }
+}
+
+
+function debugFruitActivities(fruitName) {
+    console.log('🐛 DEBUG: Checking activities for:', fruitName);
+    console.log('📊 Total activities:', activities.length);
+    
+    const matchingActivities = activities.filter(activity => 
+        activity.fruitName === fruitName
+    );
+    
+    console.log('✅ Matching activities:', matchingActivities);
+    console.log('🔍 Activity properties sample:', matchingActivities[0]);
+    
+    return matchingActivities;
+}
+
+
+
 
         // Tab functions
         function showTab(tabName) {
@@ -3788,91 +3829,104 @@ setTimeout(handleStuckLoading, 3000);
             }
         }
 
+        
         function loadFruitActivities(fruitName) {
-            // Filter activities for this fruit
-            const fruitActivities = activities.filter(activity => 
-                activity.fruitName === fruitName
-            ).sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
-            
-            // Update activity stats
-            document.getElementById('activityCount').textContent = `${fruitActivities.length} activities`;
-            document.getElementById('totalActivities').textContent = fruitActivities.length;
-            
-            const totalMinutes = fruitActivities.reduce((sum, activity) => 
-                sum + (parseInt(activity.duration) || 0), 0
-            );
-            document.getElementById('totalMinutes').textContent = totalMinutes;
-            
-            const lastActivityDate = fruitActivities.length > 0 ? 
-                formatRelativeDate(fruitActivities[0].createdDate) : 'Never';
-            document.getElementById('lastActivity').textContent = lastActivityDate;
-            
-            // Populate activities list
-            const activitiesList = document.getElementById('fruitActivitiesList');
-            
-            if (fruitActivities.length === 0) {
-                activitiesList.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
-                        <p class="text-lg font-medium mb-2">No activities yet</p>
-                        <p class="text-sm">Start by logging your first interaction with ${fruitName}</p>
-                        <button onclick="logActivityForCurrentFruit()" class="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                            <i class="fas fa-plus mr-2"></i>Log First Activity
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-            
-            activitiesList.innerHTML = fruitActivities.map((activity, index) => {
-                const isFirst = index === 0;
-                const isLast = index === fruitActivities.length - 1;
+    console.log('🔍 Loading activities for fruit:', fruitName);
+    console.log('📊 All activities:', activities);
+    
+    // Filter activities for this fruit - fix the property name
+    const fruitActivities = activities.filter(activity => {
+        console.log('🔍 Checking activity:', {
+            activityFruit: activity.fruitName,
+            targetFruit: fruitName,
+            matches: activity.fruitName === fruitName
+        });
+        return activity.fruitName === fruitName;
+    }).sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+    
+    console.log('✅ Found activities for', fruitName, ':', fruitActivities);
+    
+    // Update activity stats
+    document.getElementById('activityCount').textContent = `${fruitActivities.length} activities`;
+    document.getElementById('totalActivities').textContent = fruitActivities.length;
+    
+    const totalMinutes = fruitActivities.reduce((sum, activity) => 
+        sum + (parseInt(activity.duration) || 0), 0
+    );
+    document.getElementById('totalMinutes').textContent = totalMinutes;
+    
+    const lastActivityDate = fruitActivities.length > 0 ? 
+        formatRelativeDate(fruitActivities[0].createdDate) : 'Never';
+    document.getElementById('lastActivity').textContent = lastActivityDate;
+    
+    // Populate activities list
+    const activitiesList = document.getElementById('fruitActivitiesList');
+    
+    if (fruitActivities.length === 0) {
+        activitiesList.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                <p class="text-lg font-medium mb-2">No activities yet</p>
+                <p class="text-sm">Start by logging your first interaction with ${fruitName}</p>
+                <button onclick="logActivityForCurrentFruit()" class="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Log First Activity
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    activitiesList.innerHTML = fruitActivities.map((activity, index) => {
+        const isFirst = index === 0;
+        const isLast = index === fruitActivities.length - 1;
+        
+        return `
+            <div class="relative">
+                <!-- Timeline line -->
+                ${!isLast ? '<div class="absolute left-6 top-12 w-0.5 h-full bg-gray-200"></div>' : ''}
                 
-                return `
-                    <div class="relative">
-                        <!-- Timeline line -->
-                        ${!isLast ? '<div class="absolute left-6 top-12 w-0.5 h-full bg-gray-200"></div>' : ''}
-                        
-                        <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                            <!-- Activity icon -->
-                            <div class="flex-shrink-0 w-12 h-12 ${isFirst ? 'bg-green-500' : 'bg-blue-500'} rounded-full flex items-center justify-center">
-                                <i class="fas ${getActivityIcon(activity.type)} text-white"></i>
-                            </div>
-                            
-                            <!-- Activity content -->
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h5 class="text-sm font-semibold text-gray-900">${activity.type}</h5>
-                                    <div class="flex items-center space-x-2">
-                                        ${activity.duration && parseInt(activity.duration) > 0 ? 
-                                            `<span class="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                                                <i class="fas fa-clock mr-1"></i>${activity.duration} min
-                                            </span>` : ''
-                                        }
-                                        <span class="text-xs text-gray-500">${formatRelativeDate(activity.createdDate)}</span>
-                                    </div>
-                                </div>
-                                
-                                ${activity.notes ? `
-                                    <p class="text-sm text-gray-700 mb-2">${activity.notes}</p>
-                                ` : ''}
-                                
-                                <div class="flex items-center justify-between">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getOutcomeBadgeColor(activity.outcome)}">
-                                        ${activity.outcome || 'No outcome recorded'}
-                                    </span>
-                                    <span class="text-xs text-gray-500">by ${activity.user}</span>
-                                </div>
-                                
-                                <div class="text-xs text-gray-400 mt-1">
-                                    ${formatDate(activity.createdDate)}
-                                </div>
+                <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <!-- Activity icon -->
+                    <div class="flex-shrink-0 w-12 h-12 ${isFirst ? 'bg-green-500' : 'bg-blue-500'} rounded-full flex items-center justify-center">
+                        <i class="fas ${getActivityIcon(activity.type)} text-white"></i>
+                    </div>
+                    
+                    <!-- Activity content -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-2">
+                            <h5 class="text-sm font-semibold text-gray-900">${activity.type}</h5>
+                            <div class="flex items-center space-x-2">
+                                ${activity.duration && parseInt(activity.duration) > 0 ? 
+                                    `<span class="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                                        <i class="fas fa-clock mr-1"></i>${activity.duration} min
+                                    </span>` : ''
+                                }
+                                <span class="text-xs text-gray-500">${formatRelativeDate(activity.createdDate)}</span>
                             </div>
                         </div>
+                        
+                        ${activity.notes ? `
+                            <p class="text-sm text-gray-700 mb-2">${activity.notes}</p>
+                        ` : ''}
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getOutcomeBadgeColor(activity.outcome)}">
+                                ${activity.outcome || 'No outcome recorded'}
+                            </span>
+                            <span class="text-xs text-gray-500">by ${activity.user || 'Unknown User'}</span>
+                        </div>
+                        
+                        <div class="text-xs text-gray-400 mt-1">
+                            ${formatDate(activity.createdDate)}
+                        </div>
                     </div>
-                `;
-            }).join('');
-        }
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+
 
         function getActivityIcon(activityType) {
             const icons = {
