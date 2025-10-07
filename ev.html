@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERMS</title>
+    <title>Evengelism System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -2702,7 +2702,7 @@ async function loadActivitiesWithGoogleAuth() {
                     }
                 }
 
-            
+           
         async function loadActivitiesFromSharePoint() {
     try {
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields`;
@@ -2725,14 +2725,21 @@ async function loadActivitiesWithGoogleAuth() {
             // Get the fruit name from the lookup field or title
             let fruitName = '';
             
-            // Try to get from lookup field first (most common)
             if (item.fields.FruitNameLookup) {
                 fruitName = item.fields.FruitNameLookup;
             } else if (item.fields.FruitName) {
                 fruitName = item.fields.FruitName;
             } else if (item.fields.Title) {
-                // If title contains the fruit name, extract it
                 fruitName = item.fields.Title;
+            }
+            
+            // Get user from Person field - handle different possible field structures
+            let user = 'Unknown';
+            if (item.fields.User) {
+                // If User is a Person field, it might be an object with displayName
+                user = item.fields.User.displayName || item.fields.User.email || item.fields.User || 'Unknown';
+            } else if (item.fields.CreatedBy) {
+                user = item.fields.CreatedBy.user.displayName || 'Unknown';
             }
             
             return {
@@ -2742,12 +2749,10 @@ async function loadActivitiesWithGoogleAuth() {
                 duration: item.fields.Duration || item.fields.DurationMinutes || '0',
                 notes: item.fields.Notes || item.fields.Description || '',
                 outcome: item.fields.Outcome || item.fields.Result || '',
-                user: item.fields.User || item.fields.CreatedBy || item.fields.Author || 'Unknown',
+                user: user, // This now properly handles the Person field
                 createdDate: item.fields.Created || item.fields.CreatedDateTime || item.createdDateTime
             };
         });
-        
-        console.log('Loaded activities:', activities); // Remove this line after testing if desired
         
     } catch (error) {
         console.error('Error loading activities from SharePoint:', error);
@@ -2755,6 +2760,7 @@ async function loadActivitiesWithGoogleAuth() {
     }
 }
 
+        
 
         async function addFruitToSharePoint(fruitData) {
             try {
@@ -2827,7 +2833,7 @@ async function loadActivitiesWithGoogleAuth() {
                     Duration: parseInt(activityData.duration) || 0,
                     Notes: activityData.notes,
                     Outcome: activityData.outcome,
-                    User: activityData.user
+                    User: activityData.user // This maps to your "User" Person field
                 }
             })
         });
@@ -2845,7 +2851,6 @@ async function loadActivitiesWithGoogleAuth() {
         throw error;
     }
 }
-
 
         async function updateFruitInSharePoint(fruitId, fruitData) {
             try {
@@ -3565,8 +3570,8 @@ setTimeout(handleStuckLoading, 3000);
             }
         }
 
-        
-        async function logActivity(event) {
+
+async function logActivity(event) {
     event.preventDefault();
     
     if (!userPermissions.canAdd) {
@@ -3581,7 +3586,7 @@ setTimeout(handleStuckLoading, 3000);
         duration: formData.get('duration'),
         notes: formData.get('activityNotes'),
         outcome: formData.get('outcome'),
-        user: currentUser.name,
+        user: currentUser.name, // This will be recorded in the "User" field
         createdDate: new Date().toISOString()
     };
     
@@ -3616,8 +3621,7 @@ setTimeout(handleStuckLoading, 3000);
         showNotification('Failed to log activity: ' + error.message, 'error');
     }
 }
-
-
+    
 
 async function scheduleBB(event) {
     event.preventDefault();
@@ -3645,7 +3649,7 @@ async function scheduleBB(event) {
         duration: '0',
         notes: activityNotes,
         outcome: 'Scheduled Next Step',
-        user: currentUser.name,
+        user: currentUser.name, // This will be recorded in the "User" field
         createdDate: new Date().toISOString()
     };
     
