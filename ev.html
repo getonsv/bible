@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism System</title>
+    <title>Evengelism Tool - FRMS</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1262,7 +1262,7 @@
         }
 
         
-            function initializeMicrosoftAuth() {
+function initializeMicrosoftAuth() {
     console.log('🔧 Initializing authentication options...');
     
     const buttonContainer = document.getElementById('googleSignInButton');
@@ -1283,12 +1283,19 @@
                     </div>
                 </div>
                 
-                <button onclick="debugGoogleOAuthConfig(); authenticateWithGoogle();" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
+                <button onclick="authenticateWithGoogle()" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
                     <i class="fab fa-google text-xl text-red-500"></i>
                     <span>Sign in with Google</span>
                 </button>
                 
                 <div class="mt-4 text-center">
+                    <p class="text-xs text-gray-500">
+                        <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                        Google users require SharePoint validation
+                    </p>
+                </div>
+                
+                <div class="mt-2 text-center">
                     <p class="text-xs text-gray-500">
                         <i class="fas fa-shield-alt text-green-500 mr-1"></i>
                         Activities on this application is being monitored
@@ -1300,7 +1307,6 @@
     
     console.log('✅ Multi-provider authentication initialized');
 }
-
 
 
         function initializeGoogleAuth() {
@@ -1368,28 +1374,11 @@
 }
 
 
-    async function processOAuthCallback(authCode, returnedState) {
+async function processOAuthCallback(authCode, returnedState) {
     try {
         console.log('🔄 Processing Microsoft OAuth callback...');
         
-        // Validate state parameter
-        const storedState = sessionStorage.getItem('pkce_state');
-        if (returnedState && storedState && returnedState !== storedState) {
-            throw new Error('Invalid state parameter - possible security issue');
-        }
-        
-        // Check if we already processed this callback
-        if (sessionStorage.getItem('oauth_processed')) {
-            console.log('⚠️ OAuth callback already processed, skipping...');
-            return;
-        }
-        
-        // Mark as processed to prevent duplicate processing
-        sessionStorage.setItem('oauth_processed', 'true');
-        
-        // Exchange code for token
-        console.log('🔄 Exchanging code for token...');
-        const tokenData = await exchangeCodeForTokenPKCE(authCode);
+        // ... (existing Microsoft auth code) ...
         
         sharePointAccessToken = tokenData.access_token;
         isSharePointMode = true;
@@ -1406,64 +1395,51 @@
             const googleUserInfo = JSON.parse(pendingGoogleUser);
             
             // Validate the Google user with SharePoint
-            await validateGoogleUserWithSharePoint(googleUserInfo);
+            const sharePointUserInfo = await validateGoogleUserWithSharePoint(googleUserInfo);
             
-        } else {
-            // Regular Microsoft user flow
-            console.log('🔄 Getting user info from Microsoft...');
-            const basicUserInfo = await getUserInfo(tokenData.access_token);
-            
-            console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
-            
-            // Check if user exists in SharePoint Users list and get their role
-            console.log('🔄 Checking user in SharePoint list...');
-            const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
-            
-            if (!userInfo) {
-                console.log('❌ User not authorized in SharePoint');
+            if (!sharePointUserInfo) {
+                console.log('❌ Pending Google user validation failed');
                 logout();
                 return;
             }
             
-            // Set current user with SharePoint-defined permissions
-            currentUser = userInfo;
+            // Set current user
+            currentUser = sharePointUserInfo;
             sessionStorage.setItem('current_user', JSON.stringify(currentUser));
             
-            // Clean up PKCE parameters and processing flag
+            // Clean up
+            sessionStorage.removeItem('pending_google_user');
             sessionStorage.removeItem('pkce_code_verifier');
             sessionStorage.removeItem('pkce_state');
             sessionStorage.removeItem('oauth_processed');
             
-            // Clean URL - IMPORTANT: Remove OAuth parameters from URL
-            console.log('🔄 Cleaning URL and showing dashboard...');
+            // Clean URL and show dashboard
             window.history.replaceState({}, document.title, window.location.pathname);
-            
-            // Load data from SharePoint
             await loadDataFromSharePoint();
-            
             showDashboard();
             startRealTimeSync();
+            showNotification(`Welcome ${sharePointUserInfo.name}! Authentication complete.`);
             
-            showNotification(`Welcome ${userInfo.name}! You have ${userInfo.role} access.`);
+        } else {
+            // Regular Microsoft user flow (existing code)
+            // ... (your existing Microsoft user flow) ...
         }
         
     } catch (error) {
         console.error('❌ OAuth callback processing failed:', error);
         showNotification('Authentication failed: ' + error.message, 'error');
         
-        // Clean up on failure
+        // Clean up
         sessionStorage.removeItem('pkce_code_verifier');
         sessionStorage.removeItem('pkce_state');
         sessionStorage.removeItem('oauth_processed');
         sessionStorage.removeItem('pending_google_user');
         
-        // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show login screen again
         initializeMicrosoftAuth();
     }
 }
+
 
 
 async function loadDataWithGoogleAuth() {
@@ -1568,7 +1544,7 @@ async function loadActivitiesWithGoogleAuth() {
 }
 
 
-        async function processGoogleOAuthCallback(authCode, returnedState) {
+async function processGoogleOAuthCallback(authCode, returnedState) {
     try {
         console.log('🔄 Processing Google OAuth callback...');
         
@@ -1602,9 +1578,25 @@ async function loadActivitiesWithGoogleAuth() {
         // Store Google token
         sessionStorage.setItem('google_access_token', tokenData.access_token);
         
-        // Validate user against SharePoint using server-side API
+        // Check if SharePoint access is available for validation
+        if (!sharePointAccessToken) {
+            console.log('❌ SharePoint access required for user validation');
+            showNotification('SharePoint connection required. Please sign in with Microsoft 365 first.', 'error');
+            
+            // Store Google user info temporarily and initiate Microsoft auth
+            sessionStorage.setItem('pending_google_user', JSON.stringify(userInfo));
+            
+            // Automatically start Microsoft authentication
+            setTimeout(() => {
+                authenticateWithMicrosoft();
+            }, 1500);
+            
+            return;
+        }
+        
+        // Validate user against SharePoint
         console.log('🔐 Validating Google user with SharePoint...');
-        const sharePointUserInfo = await validateGoogleUserWithSharePointAPI(userInfo);
+        const sharePointUserInfo = await validateGoogleUserWithSharePoint(userInfo);
         
         if (!sharePointUserInfo) {
             console.log('❌ User not authorized in SharePoint');
@@ -1612,11 +1604,11 @@ async function loadActivitiesWithGoogleAuth() {
             return;
         }
         
-        // Set current user with SharePoint-defined permissions
+        // Set current user
         currentUser = sharePointUserInfo;
         sessionStorage.setItem('current_user', JSON.stringify(currentUser));
         
-        // Clean up Google OAuth parameters
+        // Clean up parameters
         sessionStorage.removeItem('google_auth_state');
         sessionStorage.removeItem('google_oauth_processed');
         
@@ -1624,10 +1616,11 @@ async function loadActivitiesWithGoogleAuth() {
         console.log('🔄 Cleaning URL and showing dashboard...');
         window.history.replaceState({}, document.title, window.location.pathname);
         
-        // Load data from SharePoint using Google authentication
-        await loadDataWithGoogleAuth();
+        // Load data from SharePoint
+        await loadDataFromSharePoint();
         
         showDashboard();
+        startRealTimeSync();
         showNotification(`Welcome ${sharePointUserInfo.name}! Google authentication successful.`);
         
     } catch (error) {
@@ -1637,6 +1630,7 @@ async function loadActivitiesWithGoogleAuth() {
         // Clean up on failure
         sessionStorage.removeItem('google_auth_state');
         sessionStorage.removeItem('google_oauth_processed');
+        sessionStorage.removeItem('pending_google_user');
         
         // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -1646,63 +1640,46 @@ async function loadActivitiesWithGoogleAuth() {
     }
 }
 
-        async function validateGoogleUserWithSharePointAPI(googleUserInfo) {
+
+
+async function validateGoogleUserWithSharePointAPI(googleUserInfo) {
     try {
-        console.log('🔐 Validating Google user with SharePoint API:', googleUserInfo.email);
+        console.log('🔐 Validating Google user with SharePoint:', googleUserInfo.email);
         
-        const googleToken = sessionStorage.getItem('google_access_token');
-        if (!googleToken) {
-            throw new Error('Google authentication required');
+        // Option A: If we have SharePoint access token (from YOUR Microsoft login)
+        if (sharePointAccessToken) {
+            console.log('🔐 Using app SharePoint access for validation');
+            
+            // Use YOUR SharePoint access to check if Google user exists in your user list
+            const sharePointUserInfo = await checkUserInSharePointList(
+                googleUserInfo.email, 
+                googleUserInfo.name, 
+                'google'
+            );
+            
+            if (sharePointUserInfo) {
+                console.log('✅ Google user authorized via SharePoint');
+                return sharePointUserInfo;
+            } else {
+                console.log('❌ Google user not found in SharePoint user list');
+                showNotification('Access denied: Your email is not authorized in the system.', 'error');
+                return null;
+            }
         }
-
-        // Call your server API to validate the user against SharePoint
-        // You'll need to implement this endpoint on your server
-        const response = await fetch('/api/validate-user', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${googleToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email: googleUserInfo.email,
-                name: googleUserInfo.name
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('User validation failed');
-        }
-
-        const userData = await response.json();
         
-        if (!userData.authorized) {
-            console.log('❌ User not authorized in SharePoint:', googleUserInfo.email);
-            showNotification('Access denied: Your email is not authorized in SharePoint. Please contact your administrator.', 'error');
-            return null;
-        }
-
-        console.log('✅ User authorized with role:', userData.role);
-        
-        return {
-            name: userData.displayName || googleUserInfo.name,
-            email: googleUserInfo.email,
-            id: googleUserInfo.email, // Use email as ID for Google users
-            role: userData.role,
-            permissions: userData.role,
-            status: userData.status,
-            source: 'google',
-            department: userData.department || '',
-            lastLogin: new Date().toISOString()
-        };
+        // Option B: If no SharePoint access available
+        console.log('⚠️ No SharePoint access available for validation');
+        showNotification('System configuration issue: Cannot validate users at this time.', 'error');
+        return null;
         
     } catch (error) {
         console.error('❌ Google user validation failed:', error);
-        showNotification('User validation failed: ' + error.message, 'error');
-        throw error;
+        throw new Error('User validation failed: ' + error.message);
     }
 }
 
-        async function validateGoogleUserWithSharePoint(googleUserInfo) {
+
+async function validateGoogleUserWithSharePoint(googleUserInfo) {
     try {
         console.log('🔐 Validating Google user with SharePoint:', googleUserInfo.email);
         
@@ -1710,37 +1687,20 @@ async function loadActivitiesWithGoogleAuth() {
             throw new Error('SharePoint access required for user validation');
         }
 
-        // Check if user exists in SharePoint Users list
-        const sharePointUserInfo = await checkUserInSharePointList(googleUserInfo.email, googleUserInfo.name, 'google');
+        // Use existing SharePoint function to validate user
+        const sharePointUserInfo = await checkUserInSharePointList(
+            googleUserInfo.email, 
+            googleUserInfo.name, 
+            'google'
+        );
         
         if (!sharePointUserInfo) {
             console.log('❌ User not authorized in SharePoint:', googleUserInfo.email);
             showNotification('Access denied: Your email is not authorized in SharePoint. Please contact your administrator.', 'error');
-            logout();
             return null;
         }
 
-        // Set current user with SharePoint-defined permissions
-        currentUser = sharePointUserInfo;
-        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-
-        // Clean up Google OAuth parameters and processing flag
-        sessionStorage.removeItem('google_auth_state');
-        sessionStorage.removeItem('google_oauth_processed');
-        sessionStorage.removeItem('pending_google_user');
-
-        // Clean URL
-        console.log('🔄 Cleaning URL and showing dashboard...');
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        // Load data from SharePoint
-        await loadDataFromSharePoint();
-
-        showDashboard();
-        startRealTimeSync();
-        
-        showNotification(`Welcome ${sharePointUserInfo.name}! Google authentication successful.`);
-
+        console.log('✅ User authorized with role:', sharePointUserInfo.role);
         return sharePointUserInfo;
         
     } catch (error) {
@@ -1749,6 +1709,7 @@ async function loadActivitiesWithGoogleAuth() {
         throw error;
     }
 }
+
 
 
 function checkExistingSession() {
