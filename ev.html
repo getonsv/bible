@@ -2795,10 +2795,12 @@ window.addEventListener('load', function() {
                 }
 
        
-        async function loadActivitiesFromSharePoint() {
+async function loadActivitiesFromSharePoint() {
     try {
-        // Include the User field expansion to get Person field details
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields(select=Title,ActivityType,Duration,Notes,Outcome,User,Created,FruitNameLookup)&$top=5000`;
+        // Get all activities with proper field selection
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields&$top=5000`;
+        
+        console.log('📊 Loading activities from SharePoint...');
         
         const response = await fetch(url, {
             headers: {
@@ -2814,59 +2816,64 @@ window.addEventListener('load', function() {
         const data = await response.json();
         const items = data.value || [];
         
-        console.log('Raw SharePoint activities:', items); // This will help us see the actual data structure
+        console.log('📦 Raw activities from SharePoint:', items);
         
         activities = items.map(item => {
-            // Get the fruit name - try multiple field names
+            // Debug the raw item structure
+            console.log('🔍 Raw activity item:', item);
+            
+            // Extract fruit name from different possible fields
             let fruitName = '';
             if (item.fields.FruitNameLookup) {
                 fruitName = item.fields.FruitNameLookup;
+            } else if (item.fields.FruitName) {
+                fruitName = item.fields.FruitName;
             } else if (item.fields.Title) {
-                // Extract fruit name from title if it follows pattern "Activity with FruitName"
-                const title = item.fields.Title;
-                if (title.includes(' with ')) {
-                    fruitName = title.split(' with ')[1];
-                } else {
-                    fruitName = title;
-                }
+                // Try to extract from title "Activity with FruitName"
+                const titleMatch = item.fields.Title.match(/with\s+(.+)$/);
+                fruitName = titleMatch ? titleMatch[1] : item.fields.Title;
             }
             
-            // Get user from Person field - handle different structures
+            // Extract user from different possible fields
             let user = 'Unknown';
             if (item.fields.User) {
-                // Person field can be an object with displayName, email, etc.
                 if (typeof item.fields.User === 'object') {
                     user = item.fields.User.displayName || 
                            item.fields.User.title || 
                            item.fields.User.email || 
                            'Unknown User';
-                } else if (typeof item.fields.User === 'string') {
+                } else {
                     user = item.fields.User;
                 }
+            } else if (item.fields.CreatedBy) {
+                user = item.fields.CreatedBy.displayName || 'Unknown';
             }
             
             const activity = {
                 id: item.id.toString(),
                 fruitName: fruitName.trim(),
                 type: item.fields.ActivityType || 'Activity',
-                duration: item.fields.Duration || '0',
+                duration: item.fields.Duration || item.fields.DurationMinutes || '0',
                 notes: item.fields.Notes || '',
                 outcome: item.fields.Outcome || '',
                 user: user,
-                createdDate: item.fields.Created || item.createdDateTime
+                createdDate: item.fields.Created || item.fields.CreatedDateTime || item.createdDateTime
             };
             
-            console.log('Processed activity:', activity); // See the final structure
+            console.log('✅ Processed activity:', activity);
             return activity;
         });
         
-        console.log('Total activities loaded:', activities.length);
+        console.log('📊 Total activities loaded:', activities.length);
+        console.log('📋 All activity fruit names:', [...new Set(activities.map(a => a.fruitName))]);
         
     } catch (error) {
-        console.error('Error loading activities from SharePoint:', error);
+        console.error('❌ Error loading activities from SharePoint:', error);
         activities = [];
     }
-}
+}                
+
+
 
         async function addFruitToSharePoint(fruitData) {
             try {
@@ -2979,25 +2986,29 @@ async function updateFruitInSharePoint(fruitId, fruitData) {
         
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}/fields`;
         
+        // Map the fields to your SharePoint column names
+        const updateData = {
+            Title: fruitData.name || '',
+            AssignedTo: fruitData.assignedTo || '',
+            Phone: fruitData.phone || '',
+            Instagram: fruitData.instagram || '',
+            Facebook: fruitData.facebook || '',
+            Twitter: fruitData.twitter || '',
+            LeadSource: fruitData.leadSource || '',
+            Campaign: fruitData.campaign || '',
+            Status: fruitData.status || 'Initial Contact',
+            Notes: fruitData.notes || ''
+        };
+        
+        console.log('🔄 Sending update data:', updateData);
+        
         const response = await fetch(url, {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${sharePointAccessToken}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                Title: fruitData.name,
-                AssignedTo: fruitData.assignedTo,
-                Phone: fruitData.phone,
-                Instagram: fruitData.instagram,
-                Facebook: fruitData.facebook,
-                Twitter: fruitData.twitter,
-                LeadSource: fruitData.leadSource,
-                Campaign: fruitData.campaign,
-                Status: fruitData.status,
-                Notes: fruitData.notes
-                // Note: UpdatedByUser field might not exist in your list
-            })
+            body: JSON.stringify(updateData)
         });
         
         if (!response.ok) {
@@ -3017,6 +3028,77 @@ async function updateFruitInSharePoint(fruitId, fruitData) {
     }
 }
 
+
+// Add this debug function
+function debugEditFlow(fruitId) {
+    console.log('🔧 DEBUG EDIT FLOW');
+    console.log('Fruit ID:', fruitId);
+    
+    const fruit = fruits.find(f => f.id === fruitId);
+    console.log('Found fruit:', fruit);
+    
+    console.log('All fruits:', fruits);
+    console.log('Current user:', currentUser);
+    console.log('SharePoint mode:', isSharePointMode);
+    console.log('User permissions:', userPermissions);
+}
+
+// Update your editFruit function to include debugging
+async function editFruit(fruitId) {
+    // Check permissions first
+    if (!userPermissions.canEdit) {
+        showPermissionMessage('edit');
+        return;
+    }
+    
+    debugEditFlow(fruitId); // Add this line temporarily
+    
+    const fruit = fruits.find(f => f.id === fruitId);
+    if (!fruit) {
+        showNotification('Fruit not found', 'error');
+        return;
+    }
+    
+    // Pre-fill the add fruit modal with existing data for editing
+    showAddFruitModal();
+    
+    // Wait for modal to be visible, then populate fields
+    setTimeout(() => {
+        const form = document.querySelector('#addFruitModal form');
+        if (form) {
+            console.log('🔄 Populating form with fruit data:', fruit);
+            
+            form.querySelector('[name="name"]').value = fruit.name || '';
+            form.querySelector('[name="assignee"]').value = fruit.assignedTo || '';
+            form.querySelector('[name="phone"]').value = fruit.phone || '';
+            form.querySelector('[name="instagram"]').value = fruit.instagram || '';
+            form.querySelector('[name="facebook"]').value = fruit.facebook || '';
+            form.querySelector('[name="twitter"]').value = fruit.twitter || '';
+            form.querySelector('[name="leadSource"]').value = fruit.leadSource || '';
+            form.querySelector('[name="campaign"]').value = fruit.campaign || '';
+            form.querySelector('[name="status"]').value = fruit.status || '';
+            form.querySelector('[name="notes"]').value = fruit.notes || '';
+            
+            // Change form title and button text
+            document.querySelector('#addFruitModal h3').textContent = 'Edit Fruit';
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.textContent = 'Update Fruit';
+                submitButton.innerHTML = 'Update Fruit';
+            }
+            
+            // Store the fruit ID for updating
+            form.setAttribute('data-editing-id', fruitId);
+            
+            // Change form handler
+            form.onsubmit = function(event) {
+                updateFruit(event);
+            };
+            
+            console.log('✅ Form populated and ready for editing');
+        }
+    }, 100);
+}
 
         async function deleteFruitFromSharePoint(fruitId) {
             try {
@@ -3722,6 +3804,148 @@ function debugEditFruit(fruitId) {
             }
         }
 
+function loadFruitActivities(fruitName) {
+    if (!fruitName) {
+        console.log('❌ No fruit name provided for activities');
+        return;
+    }
+    
+    console.log('🔍 Loading activities for fruit:', fruitName);
+    console.log('📊 Total activities available:', activities.length);
+    
+    // More flexible matching
+    const fruitActivities = activities.filter(activity => {
+        if (!activity.fruitName) {
+            console.log('⚠️ Activity missing fruitName:', activity);
+            return false;
+        }
+        
+        const activityFruit = activity.fruitName.toString().trim();
+        const targetFruit = fruitName.toString().trim();
+        
+        // Multiple matching strategies
+        const matches = activityFruit === targetFruit || 
+                       activityFruit.toLowerCase() === targetFruit.toLowerCase() ||
+                       activityFruit.includes(targetFruit) ||
+                       targetFruit.includes(activityFruit);
+        
+        if (matches) {
+            console.log('✅ Activity matches:', {
+                activityFruit: activityFruit,
+                targetFruit: targetFruit,
+                activityType: activity.type
+            });
+        }
+        
+        return matches;
+    }).sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+    
+    console.log('🎯 Found matching activities:', fruitActivities.length);
+    console.log('📋 Matching activities:', fruitActivities);
+    
+    // Update activity stats
+    document.getElementById('activityCount').textContent = `${fruitActivities.length} activities`;
+    document.getElementById('totalActivities').textContent = fruitActivities.length;
+    
+    const totalMinutes = fruitActivities.reduce((sum, activity) => 
+        sum + (parseInt(activity.duration) || 0), 0
+    );
+    document.getElementById('totalMinutes').textContent = totalMinutes;
+    
+    const lastActivityDate = fruitActivities.length > 0 ? 
+        formatRelativeDate(fruitActivities[0].createdDate) : 'Never';
+    document.getElementById('lastActivity').textContent = lastActivityDate;
+    
+    // Populate activities list with timeline
+    displayActivitiesTimeline(fruitActivities, fruitName);
+}
+
+// New function to display activities in timeline format
+function displayActivitiesTimeline(activities, fruitName) {
+    const activitiesList = document.getElementById('fruitActivitiesList');
+    
+    if (activities.length === 0) {
+        activitiesList.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                <p class="text-lg font-medium mb-2">No activities yet</p>
+                <p class="text-sm">No activities recorded for "${fruitName}"</p>
+                <button onclick="logActivityForCurrentFruit()" class="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Log First Activity
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    // Create timeline with proper styling
+    activitiesList.innerHTML = activities.map((activity, index) => {
+        const isFirst = index === 0;
+        const isLast = index === activities.length - 1;
+        
+        return `
+            <div class="relative flex">
+                <!-- Timeline line and dot -->
+                <div class="flex flex-col items-center mr-4">
+                    <div class="w-3 h-3 rounded-full bg-blue-500 z-10"></div>
+                    ${!isLast ? '<div class="w-0.5 h-full bg-gray-300 mt-1"></div>' : ''}
+                </div>
+                
+                <!-- Activity card -->
+                <div class="flex-1 mb-6 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="p-4">
+                        <!-- Header with type and date -->
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <i class="fas ${getActivityIcon(activity.type)} text-blue-600 text-sm"></i>
+                                </div>
+                                <h4 class="font-semibold text-gray-800">${activity.type}</h4>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                ${formatDate(activity.createdDate)}
+                            </div>
+                        </div>
+                        
+                        <!-- Duration and user -->
+                        <div class="flex items-center justify-between mb-3 text-sm text-gray-600">
+                            <div class="flex items-center space-x-4">
+                                ${activity.duration && parseInt(activity.duration) > 0 ? `
+                                    <span class="flex items-center">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        ${activity.duration} min
+                                    </span>
+                                ` : ''}
+                                <span class="flex items-center">
+                                    <i class="fas fa-user mr-1"></i>
+                                    by ${activity.user || 'Unknown'}
+                                </span>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getOutcomeBadgeColor(activity.outcome)}">
+                                ${activity.outcome || 'No outcome'}
+                            </span>
+                        </div>
+                        
+                        <!-- Notes -->
+                        ${activity.notes ? `
+                            <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                                <p class="text-sm text-gray-700">${activity.notes}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Relative time -->
+                        <div class="text-xs text-gray-400">
+                            ${formatRelativeDate(activity.createdDate)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    console.log('✅ Timeline displayed with', activities.length, 'activities');
+}
+
 
 async function logActivity(event) {
     event.preventDefault();
@@ -4039,21 +4263,34 @@ setTimeout(checkActivityData, 3000);
 setTimeout(validateActivityData, 2000);
 
 
-        function getActivityIcon(activityType) {
-            const icons = {
-                'Phone Call': 'fa-phone',
-                'WhatsApp Message': 'fa-comment',
-                'WhatsApp Call': 'fa-phone',
-                'Instagram DM': 'fa-instagram',
-                'Facebook Message': 'fa-facebook-messenger',
-                'Twitter DM': 'fa-twitter',
-                'In-Person Meeting': 'fa-handshake',
-                'BB Session': 'fa-cross',
-                'Email': 'fa-envelope',
-                'Text Message': 'fa-sms'
-            };
-            return icons[activityType] || 'fa-comment';
-        }
+function getActivityIcon(activityType) {
+    const icons = {
+        'Phone Call': 'fa-phone',
+        'WhatsApp Message': 'fa-comment',
+        'WhatsApp Call': 'fa-phone',
+        'Instagram DM': 'fa-instagram',
+        'Facebook Message': 'fa-facebook-messenger',
+        'Twitter DM': 'fa-twitter',
+        'In-Person Meeting': 'fa-handshake',
+        'BB Session': 'fa-cross',
+        'BB Session Scheduled': 'fa-calendar-plus',
+        'Email': 'fa-envelope',
+        'Text Message': 'fa-sms'
+    };
+    return icons[activityType] || 'fa-comment';
+}
+
+function getOutcomeBadgeColor(outcome) {
+    const colors = {
+        'Positive Response': 'bg-green-100 text-green-800',
+        'Neutral Response': 'bg-yellow-100 text-yellow-800',
+        'Need Follow-up': 'bg-orange-100 text-orange-800',
+        'Not Interested': 'bg-red-100 text-red-800',
+        'Scheduled Next Step': 'bg-blue-100 text-blue-800'
+    };
+    return colors[outcome] || 'bg-gray-100 text-gray-800';
+}
+
 
         function getOutcomeBadgeColor(outcome) {
             const colors = {
