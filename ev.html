@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism System</title>
+    <title>Evengelism CRM</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1185,11 +1185,6 @@
         document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // First, check for magic link token
-    if (checkForMagicLinkToken()) {
-        return;
-    }
-    
     // Then check for OAuth callback parameters
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
@@ -1314,268 +1309,29 @@
         }
 
         function initializeMicrosoftAuth() {
-    console.log('🔧 Initializing authentication options...');
+    console.log('🔧 Initializing Microsoft authentication...');
     
     const buttonContainer = document.getElementById('googleSignInButton');
     if (buttonContainer) {
         buttonContainer.innerHTML = `
-            <div class="space-y-3">
+            <div class="space-y-4">
                 <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
                     <i class="fab fa-microsoft text-xl"></i>
                     <span>Sign in with Microsoft 365</span>
                 </button>
                 
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-white text-gray-500">or</span>
-                    </div>
-                </div>
-                
                 <div class="text-center">
-                    <p class="text-sm text-gray-600 mb-3">
-                        Magic links require Microsoft 365 sign-in first
-                    </p>
-                    <button onclick="showMagicLinkModal()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                        <i class="fas fa-envelope text-xl"></i>
-                        <span>Sign in with Magic Link</span>
-                    </button>
-                </div>
-                
-                <div class="mt-4 text-center">
                     <p class="text-xs text-gray-500">
                         <i class="fas fa-shield-alt text-green-500 mr-1"></i>
-                        Activities on this application is being monitored
+                        Secure authentication with your organization account
                     </p>
                 </div>
             </div>
         `;
     }
-}
-
-// Magic Link Functions
-function showMagicLinkModal() {
-    document.getElementById('magicLinkModal').classList.remove('hidden');
-    document.getElementById('magicLinkForm').classList.remove('hidden');
-    document.getElementById('magicLinkSent').classList.add('hidden');
-    document.getElementById('magicLinkEmail').value = '';
-}
-
-
-// Process magic link form submission
-async function sendMagicLink(event) {
-    event.preventDefault();
     
-    const emailInput = document.getElementById('magicLinkEmail');
-    const email = emailInput.value.trim();
-    
-    if (!email) {
-        showNotification('Please enter your email address', 'error');
-        return;
-    }
-    
-    try {
-        showNotification('Sending magic link...', 'info');
-        
-        // Disable the button
-        const submitButton = event.target.querySelector('button[type="submit"]');
-        const originalText = submitButton.innerHTML;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-        submitButton.disabled = true;
-        
-        // Check if user has SharePoint access
-        if (!sharePointAccessToken) {
-            throw new Error('Please sign in with Microsoft 365 first to use magic links');
-        }
-        
-        const result = await sendMagicLinkToBackend(email);
-        
-        // Show success state
-        document.getElementById('magicLinkForm').classList.add('hidden');
-        document.getElementById('magicLinkSent').classList.remove('hidden');
-        document.getElementById('sentEmail').textContent = email;
-        
-        // Store email for potential resend
-        sessionStorage.setItem('pending_magic_link_email', email);
-        
-        showNotification('Magic link sent! Check your email.');
-        
-    } catch (error) {
-        console.error('❌ Failed to send magic link:', error);
-        
-        if (error.message.includes('sign in with Microsoft')) {
-            showNotification('Please sign in with Microsoft 365 first to use magic links', 'error');
-        } else {
-            showNotification('Failed to send magic link: ' + error.message, 'error');
-        }
-        
-        // Re-enable the button
-        const submitButton = event.target.querySelector('button[type="submit"]');
-        submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Send Magic Link';
-        submitButton.disabled = false;
-    }
+    console.log('✅ Microsoft authentication initialized');
 }
-
-
-// Resend magic link
-async function resendMagicLink() {
-    const email = sessionStorage.getItem('pending_magic_link_email');
-    
-    if (!email) {
-        showNotification('No email found to resend', 'error');
-        return;
-    }
-    
-    try {
-        showNotification('Resending magic link...', 'info');
-        await sendMagicLinkToBackend(email);
-        showNotification('Magic link resent! Check your email again.');
-    } catch (error) {
-        console.error('❌ Failed to resend magic link:', error);
-        showNotification('Failed to resend magic link: ' + error.message, 'error');
-    }
-}
-
-
-
-async function sendMagicLinkToBackend(email) {
-    try {
-        console.log('📧 Creating magic link request in SharePoint...');
-        
-        // Use the EXACT SAME method as your fruit/activity creation
-        const siteId = SHAREPOINT_CONFIG.SITE_ID;
-        const requestsListId = 'ede76111-9eaf-48b0-8315-3d5c3e6ad6e8'; // Your MagicLinkRequests list
-        
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${siteId}/lists/${requestsListId}/items`;
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({
-                fields: {
-                    Title: `Magic Link Request - ${email}`,
-                    Email: email,
-                    RedirectUrl: window.location.href,
-                    Status: 'Pending',
-                    RequestDate: new Date().toISOString()
-                }
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to create magic link request: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log('✅ Magic link request created in SharePoint:', result.id);
-        
-        return { 
-            success: true, 
-            message: 'Magic link request submitted successfully' 
-        };
-        
-    } catch (error) {
-        console.error('❌ Magic link request failed:', error);
-        throw error;
-    }
-}
-
-
-// Wait for magic link response
-async function waitForMagicLinkResponse(email) {
-    console.log('⏳ Waiting for magic link response...');
-    
-    for (let attempt = 0; attempt < MAGIC_LINK_CONFIG.MAX_POLLING_ATTEMPTS; attempt++) {
-        console.log(`📡 Polling attempt ${attempt + 1}/${MAGIC_LINK_CONFIG.MAX_POLLING_ATTEMPTS}`);
-        
-        await new Promise(resolve => setTimeout(resolve, MAGIC_LINK_CONFIG.POLLING_INTERVAL));
-        
-        try {
-            // URL encode the email for the filter
-            const encodedEmail = encodeURIComponent(email);
-            const responseUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${MAGIC_LINK_CONFIG.RESPONSES_LIST_ID}/items?$expand=fields&$filter=fields/Email eq '${encodedEmail}'&$orderby=fields/ResponseDate desc&$top=1`;
-            
-            const response = await fetch(responseUrl, {
-                headers: {
-                    'Authorization': `Bearer ${sharePointAccessToken}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('📨 Response data:', data);
-                
-                if (data.value && data.value.length > 0) {
-                    const latestResponse = data.value[0];
-                    const status = latestResponse.fields.Status;
-                    console.log('📊 Response status:', status);
-                    
-                    if (status === 'Success') {
-                        return { 
-                            success: true, 
-                            message: 'Magic link sent successfully' 
-                        };
-                    } else if (status === 'Error') {
-                        const errorMessage = latestResponse.fields.Message || 'Failed to send magic link';
-                        throw new Error(errorMessage);
-                    }
-                    // If status is still pending, continue polling
-                }
-            } else {
-                console.log('⚠️ No response yet, continuing to poll...');
-            }
-        } catch (error) {
-            console.log(`Attempt ${attempt + 1}: Error -`, error.message);
-            // Continue polling unless it's a final error
-            if (error.message.includes('Failed to send magic link') || error.message.includes('User not found')) {
-                throw error;
-            }
-        }
-    }
-    
-    throw new Error('Timeout waiting for magic link response. Please try again.');
-}
-
-// Verify token via Azure Function
-async function verifyMagicLinkToken(token) {
-    try {
-        console.log('🔐 Verifying magic link token via Azure Function...');
-        
-        const response = await fetch(AZURE_FUNCTION_CONFIG.BASE_URL + AZURE_FUNCTION_CONFIG.VERIFY_TOKEN, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                token: token
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Token verification failed: ${response.status}`);
-        }
-
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.error || 'Token verification failed');
-        }
-
-        return result;
-        
-    } catch (error) {
-        console.error('❌ Token verification failed:', error);
-        throw error;
-    }
-}
-
 
 // Wait for verification response
 async function waitForVerificationResponse(token) {
@@ -1645,130 +1401,6 @@ function validateEmailDomain(email) {
     const domain = email.split('@')[1];
     return MAGIC_LINK_CONFIG.ALLOWED_DOMAINS.some(allowed => domain.endsWith(allowed));
 }
-
-async function resendMagicLink() {
-    const email = sessionStorage.getItem('pending_magic_link_email');
-    
-    if (!email) {
-        showNotification('No email found to resend', 'error');
-        return;
-    }
-    
-    try {
-        showNotification('Resending magic link...', 'info');
-        await sendMagicLinkToBackend(email);
-        showNotification('Magic link resent!');
-    } catch (error) {
-        console.error('❌ Failed to resend magic link:', error);
-        showNotification('Failed to resend magic link: ' + error.message, 'error');
-    }
-}
-
-
-// Process magic link token from URL
-async function processMagicLinkToken(token) {
-    try {
-        console.log('🔐 Processing magic link token...');
-        showNotification('Verifying magic link...', 'info');
-        
-        const result = await verifyMagicLinkToken(token);
-        
-        if (!result.success || !result.user) {
-            throw new Error('Invalid user data received');
-        }
-        
-        const userInfo = result.user;
-        console.log('✅ Magic link user authenticated:', userInfo.email);
-        
-        // Set current user
-        currentUser = {
-            name: userInfo.name,
-            email: userInfo.email,
-            role: userInfo.role,
-            permissions: userInfo.role,
-            status: userInfo.status,
-            source: 'magic_link'
-        };
-        
-        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-        
-        // Set permissions based on role
-        mapRoleToPermissions(userInfo.role);
-        
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        showDashboard();
-        
-        // Show appropriate message
-        if (sharePointAccessToken) {
-            showNotification(`Welcome ${userInfo.name}! Full access granted.`);
-            startRealTimeSync();
-        } else {
-            showNotification(`Welcome ${userInfo.name}! Magic link authentication successful.`, 'success');
-        }
-        
-    } catch (error) {
-        console.error('❌ Magic link authentication failed:', error);
-        showNotification('Magic link authentication failed: ' + error.message, 'error');
-        
-        // Clean URL on failure
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-}
-
-
-// Check for magic link token on page load
-function checkForMagicLinkToken() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const magicToken = urlParams.get('magic_token');
-    
-    if (magicToken) {
-        console.log('🔐 Magic link token detected in URL');
-        processMagicLinkToken(magicToken);
-        return true;
-    }
-    
-    return false;
-}
-
-
-// Verify magic link token with backend
-async function verifyMagicLinkToken(token) {
-    // This would call your backend to verify the token
-    const response = await fetch(`${MAGIC_LINK_CONFIG.API_URL}/verify`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: token })
-    });
-    
-    if (!response.ok) {
-        throw new Error('Invalid magic link token');
-    }
-    
-    const data = await response.json();
-    return data.user;
-}
-
-// Check for magic link token on page load
-function checkForMagicLinkToken() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const magicToken = urlParams.get('magic_token');
-    
-    if (magicToken) {
-        console.log('🔐 Magic link token detected');
-        processMagicLinkToken(magicToken);
-        return true;
-    }
-    
-    return false;
-}
-
-
-
-
 
         function checkForOAuthCallback() {
     const urlParams = new URLSearchParams(window.location.search);
