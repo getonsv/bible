@@ -1185,29 +1185,24 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // Check for OAuth callback parameters FIRST (before any logout)
-    const urlParams = new URLSearchParams(window.location.search);
-    const authCode = urlParams.get('code');
-    const returnedState = urlParams.get('state');
-    
-    if (authCode) {
-        console.log('🔐 OAuth callback detected - processing authentication');
-        // Don't logout during OAuth callback - process it directly
-        processOAuthCallback(authCode, returnedState);
+    // Check if this is a page refresh and force logout
+    if (performance.navigation.type === 1 || performance.getEntriesByType("navigation")[0]?.type === 'reload') {
+        console.log('🔄 Page was refreshed - forcing logout');
+        forceLogout();
+        initializeMicrosoftAuth();
     } else {
-        console.log('🔧 No OAuth callback - checking for existing valid session');
+        // Check for OAuth callback parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const authCode = urlParams.get('code');
+        const returnedState = urlParams.get('state');
         
-        // Check if we have a valid existing session
-        const hasValidSession = checkForValidSession();
-        
-        if (hasValidSession) {
-            console.log('✅ Valid session found - restoring');
-            restoreSession();
+        if (authCode) {
+            console.log('🔐 OAuth callback detected');
+            processOAuthCallback(authCode, returnedState);
         } else {
-            console.log('❌ No valid session - showing login');
-            // Only logout if no valid session exists
-            logout();
+            console.log('🔧 No callback detected, initializing auth UI...');
             initializeMicrosoftAuth();
+            // Don't check existing session on fresh load
         }
     }
     
@@ -1215,7 +1210,47 @@ document.addEventListener('DOMContentLoaded', function() {
     updateConnectionStatus();
     populateDropdowns();
     initializeEventListeners();
-});
+});       
+
+function forceLogout() {
+    console.log('🚪 FORCE LOGGING OUT - Clearing all sessions');
+    
+    // Stop real-time sync
+    stopRealTimeSync();
+    
+    // Clear all global variables
+    currentUser = null;
+    sharePointAccessToken = null;
+    isSharePointMode = false;
+    fruits = [];
+    activities = [];
+    
+    // Clear ALL session storage completely
+    sessionStorage.clear();
+    
+    // Clear ALL local storage (optional - comment out if you want to keep local data)
+    localStorage.clear();
+    
+    // Hide dashboard, show login
+    const dashboard = document.getElementById('dashboard');
+    const loginScreen = document.getElementById('loginScreen');
+    const adminTabBtn = document.getElementById('adminTabBtn');
+    
+    if (dashboard) dashboard.classList.add('hidden');
+    if (loginScreen) loginScreen.classList.remove('hidden');
+    if (adminTabBtn) adminTabBtn.classList.add('hidden');
+    
+    // Reset UI elements
+    updateConnectionStatus();
+    
+    // Reset user display
+    const userAvatar = document.getElementById('userAvatar');
+    const userName = document.getElementById('userName');
+    if (userAvatar) userAvatar.textContent = 'U';
+    if (userName) userName.textContent = 'User';
+    
+    console.log('✅ Force logout completed');
+}
 
 // Add this new function to check for valid sessions
 function checkForValidSession() {
@@ -1766,6 +1801,30 @@ async function loadActivitiesWithGoogleAuth() {
         throw error;
     }
 }
+
+// Handle manual refresh
+window.addEventListener('beforeunload', function(event) {
+    // Set a flag that we're about to refresh
+    sessionStorage.setItem('isRefreshing', 'true');
+});
+
+window.addEventListener('load', function() {
+    // Check if we just refreshed
+    const wasRefreshing = sessionStorage.getItem('isRefreshing');
+    
+    if (wasRefreshing) {
+        console.log('🔄 Page was manually refreshed - clearing session');
+        sessionStorage.removeItem('isRefreshing');
+        
+        // Don't force logout here if it's an OAuth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        const authCode = urlParams.get('code');
+        
+        if (!authCode) {
+            forceLogout();
+        }
+    }
+});
 
 
 function checkExistingSession() {
@@ -2990,7 +3049,7 @@ async function updateFruitInSharePoint(fruitId, fruitData) {
 
         // Dashboard functions
         
-        
+ 
 function showDashboard() {
     console.log('🔄 Showing dashboard...');
     
@@ -3010,11 +3069,12 @@ function showDashboard() {
         console.error('❌ Dashboard element not found');
     }
     
-    // Update user display
+    // Only update user display if we have a current user
     const userAvatar = document.getElementById('userAvatar');
     const userName = document.getElementById('userName');
     
     if (currentUser) {
+        console.log('👤 Setting user display for:', currentUser.name);
         if (userAvatar) userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
         if (userName) userName.textContent = currentUser.name;
         
@@ -3023,6 +3083,11 @@ function showDashboard() {
         if (adminTabBtn && userPermissions.isAdmin) {
             adminTabBtn.classList.remove('hidden');
         }
+    } else {
+        console.log('⚠️ No current user - resetting display');
+        // Reset to default if no user
+        if (userAvatar) userAvatar.textContent = 'U';
+        if (userName) userName.textContent = 'User';
     }
     
     updateConnectionStatus();
@@ -3036,7 +3101,8 @@ function showDashboard() {
     updateAdminStats();
     
     console.log('✅ Dashboard fully loaded');
-}
+}      
+
 
 function handleStuckLoading() {
     // Check if we're stuck on login page after successful auth
@@ -5068,36 +5134,31 @@ async function callSharePointAPI(url, options = {}) {
         }
 
  
-
 function logout() {
-    console.log('🚪 Logging out...');
-    
-    // Stop real-time sync
-    stopRealTimeSync();
-    
-    // Clear user data but preserve some session items for OAuth flow
-    currentUser = null;
-    sharePointAccessToken = null;
-    isSharePointMode = false;
-    
-    // Clear authentication tokens but keep OAuth state for callbacks
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('token_expiry');
-    sessionStorage.removeItem('google_access_token');
-    sessionStorage.removeItem('current_user');
-    // Keep PKCE parameters during OAuth flow
-    // sessionStorage.removeItem('pkce_code_verifier');
-    // sessionStorage.removeItem('pkce_state');
-    
-    // Hide dashboard, show login
-    document.getElementById('dashboard').classList.add('hidden');
-    document.getElementById('loginScreen').classList.remove('hidden');
-    document.getElementById('adminTabBtn').classList.add('hidden');
-    
-    // Reset connection status
-    updateConnectionStatus();
+    forceLogout();
+    showNotification('Logged out successfully');
 }
 
+
+// Enhanced page reload detection
+(function() {
+    let currentUrl = window.location.href;
+    
+    // Check if page was reloaded
+    if (sessionStorage.getItem('lastUrl') === currentUrl) {
+        console.log('🔁 Page reload detected - forcing logout');
+        forceLogout();
+    }
+    
+    // Store current URL for next check
+    sessionStorage.setItem('lastUrl', currentUrl);
+    
+    // Also check performance navigation
+    if (performance.navigation && performance.navigation.type === 1) {
+        console.log('🔁 Performance navigation indicates reload');
+        forceLogout();
+    }
+})();
 
         // Check current state
         console.log('Current URL:', window.location.href);
