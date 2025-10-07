@@ -1117,49 +1117,48 @@
             'Other'
         ];
 
-        // Initialize the app
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Initializing Evangelism CRM with PKCE authentication...');
-    console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
-    console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
-    
-    // Clear any previous processing flags
-    sessionStorage.removeItem('oauth_processed');
-    
-    // First, check for OAuth callback parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const authCode = urlParams.get('code');
-    const returnedState = urlParams.get('state');
-    
-    if (authCode) {
-        console.log('🔐 OAuth callback detected, checking provider...');
-        
-        // Determine if this is Google or Microsoft OAuth based on state
-        if (returnedState && returnedState.startsWith('google_auth_')) {
-            console.log('🔐 Processing Google OAuth callback');
-            processGoogleOAuthCallback(authCode, returnedState);
-        } else {
-            console.log('🔐 Processing Microsoft OAuth callback');
-            processOAuthCallback(authCode, returnedState);
-        }
-    } else {
-        console.log('🔧 No callback detected, initializing auth UI...');
-        // Initialize authentication UI
-        initializeMicrosoftAuth();
-        
-        // Check for existing session
-        checkExistingSession();
-    }
-    
-    loadLocalData();
-    updateConnectionStatus();
-    populateDropdowns();
-    initializeEventListeners();
-    
-    // Add stuck loading handler with longer delay
-    setTimeout(handleStuckLoading, 5000);
-});
-
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Initializing Evangelism CRM with PKCE authentication...');
+            console.log('📊 SharePoint Site:', SHAREPOINT_CONFIG.SITE_URL);
+            console.log('🔑 Client ID:', SHAREPOINT_CONFIG.CLIENT_ID.substring(0, 8) + '...');
+            
+            // Clear any previous processing flags
+            sessionStorage.removeItem('oauth_processed');
+            sessionStorage.removeItem('google_oauth_processed');
+            
+            // First, check for OAuth callback parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const authCode = urlParams.get('code');
+            const returnedState = urlParams.get('state');
+            
+            if (authCode) {
+                console.log('🔐 OAuth callback detected, checking provider...');
+                
+                // Determine if this is Google or Microsoft OAuth based on state
+                if (returnedState && returnedState.startsWith('google_auth_')) {
+                    console.log('🔐 Processing Google OAuth callback');
+                    processGoogleOAuthCallback(authCode, returnedState);
+                } else {
+                    console.log('🔐 Processing Microsoft OAuth callback');
+                    processOAuthCallback(authCode, returnedState);
+                }
+            } else {
+                console.log('🔧 No callback detected, initializing auth UI...');
+                // Initialize authentication UI
+                initializeMicrosoftAuth();
+                
+                // Check for existing session
+                checkExistingSession();
+            }
+            
+            loadLocalData();
+            updateConnectionStatus();
+            populateDropdowns();
+            initializeEventListeners();
+            
+            // Add stuck loading handler with longer delay
+            setTimeout(handleStuckLoading, 5000);
+        });
 
         // Real-time sync functions
         function startRealTimeSync() {
@@ -2738,7 +2737,6 @@ function showDashboard() {
     
     console.log('✅ Dashboard fully loaded');
 }
-
 
 function handleStuckLoading() {
     // Check if we're stuck on login page after successful auth
@@ -4721,18 +4719,24 @@ setTimeout(handleStuckLoading, 3000);
     showNotification('Logged out successfully');
 }
 
-
         // Check current state
         console.log('Current URL:', window.location.href);
         console.log('Has access token:', !!sessionStorage.getItem('access_token'));
         console.log('Has current user:', !!sessionStorage.getItem('current_user'));
 
-        // If stuck with OAuth parameters, force process them
+        // If stuck with OAuth parameters, force process them with proper provider detection
         const urlParams = new URLSearchParams(window.location.search);
         const authCode = urlParams.get('code');
+        const returnedState = urlParams.get('state');
+
         if (authCode) {
-            const returnedState = urlParams.get('state');
-            processOAuthCallback(authCode, returnedState);
+            if (returnedState && returnedState.startsWith('google_auth_')) {
+                console.log('🔄 Manual Google OAuth callback processing');
+                processGoogleOAuthCallback(authCode, returnedState);
+            } else {
+                console.log('🔄 Manual Microsoft OAuth callback processing');
+                processOAuthCallback(authCode, returnedState);
+            }
         }
         
     </script>
