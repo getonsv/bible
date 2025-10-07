@@ -1054,6 +1054,8 @@
         };
         
         // Google OAuth configuration
+
+        // Google OAuth configuration
         const GOOGLE_CONFIG = {
             CLIENT_ID: '354721698101-flu5ss6uti0noejlfj9b09jjeentf46b.apps.googleusercontent.com',
             CLIENT_SECRET: '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',
@@ -1061,25 +1063,10 @@
             AUTH_URI: 'https://accounts.google.com/o/oauth2/auth',
             TOKEN_URI: 'https://oauth2.googleapis.com/token',
             SCOPES: 'openid email profile',
-            REDIRECT_URIS: [
-                        'https://app.shill.es/ev',
-                        'https://app.shill.es/',
-                        'https://app.shill.es/FRMS.html',
-                        'https://app.shill.es/index.html',
-                        'https://app.geton.asia/',
-                        'https://geton.asia/',
-                        'https://shill.es/'
-                        ],
-            JAVASCRIPT_ORIGINS: [
-                    'https://app.shill.es',
-                    'https://app.geton.asia',
-                    'https://geton.asia',
-                    'https://shill.es'
-                   ]
-        };  
+            REDIRECT_URI: 'https://app.shill.es/ev' // Make sure this EXACTLY matches your Google Console
+        };
 
-
-
+        
         // Global state
         let currentUser = null;
         let currentTab = 'overview';
