@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> FRM</title>
+    <title>Evangelism FRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -1066,7 +1066,7 @@
             REDIRECT_URI: 'https://app.shill.es/ev' // Make sure this EXACTLY matches your Google Console
         };
 
-        
+
         // Global state
         let currentUser = null;
         let currentTab = 'overview';
@@ -1259,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        
         function initializeMicrosoftAuth() {
             console.log('🔧 Initializing authentication options...');
             
@@ -1281,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                         
-                        <button onclick="authenticateWithGoogle()" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
+                        <button onclick="debugGoogleOAuthConfig(); authenticateWithGoogle();" class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 flex items-center justify-center space-x-2 transition-colors">
                             <i class="fab fa-google text-xl text-red-500"></i>
                             <span>Sign in with Google</span>
                         </button>
@@ -1296,13 +1297,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             }
             
-            // Initialize Google Sign-In after a short delay to ensure DOM is ready
-            setTimeout(() => {
-                initializeGoogleAuth();
-            }, 500);
-            
             console.log('✅ Multi-provider authentication initialized');
         }
+
 
         function initializeGoogleAuth() {
             // Load Google Identity Services
@@ -1603,45 +1600,61 @@ function checkExistingSession() {
         }
 
         async function authenticateWithGoogle() {
-    try {
-        console.log('🔐 Starting Google OAuth authentication...');
-        showNotification('Redirecting to Google...', 'info');
-        
-        // Generate state parameter for security
-        const state = 'google_auth_' + Date.now();
-        sessionStorage.setItem('google_auth_state', state);
-        
-        // Use the exact redirect URI that matches your Google Console configuration
-        const redirectUri = GOOGLE_CONFIG.REDIRECT_URI;
-        
-        console.log('🔐 Using redirect URI:', redirectUri);
-        
-        const scopes = [
-            'openid',
-            'email',
-            'profile'
-        ].join(' ');
-        
-        // Build OAuth URL
-        const authUrl = new URL(GOOGLE_CONFIG.AUTH_URI);
-        authUrl.searchParams.set('client_id', GOOGLE_CONFIG.CLIENT_ID);
-        authUrl.searchParams.set('redirect_uri', redirectUri);
-        authUrl.searchParams.set('response_type', 'code');
-        authUrl.searchParams.set('scope', scopes);
-        authUrl.searchParams.set('state', state);
-        authUrl.searchParams.set('access_type', 'online');
-        authUrl.searchParams.set('prompt', 'consent');
-        
-        console.log('🔗 Google OAuth URL:', authUrl.toString());
-        
-        // Redirect to Google OAuth
-        window.location.href = authUrl.toString();
-        
-    } catch (error) {
-        console.error('❌ Google OAuth authentication failed:', error);
-        showNotification('Google authentication failed: ' + error.message, 'error');
-    }
-}
+            try {
+                console.log('🔐 Starting Google OAuth authentication...');
+                showNotification('Redirecting to Google...', 'info');
+                
+                // Generate state parameter for security
+                const state = 'google_auth_' + Date.now();
+                sessionStorage.setItem('google_auth_state', state);
+                
+                // Use the exact redirect URI from config - FIXED
+                const redirectUri = GOOGLE_CONFIG.REDIRECT_URI;
+                
+                console.log('🔐 Using redirect URI:', redirectUri);
+                
+                if (!redirectUri) {
+                    throw new Error('Redirect URI is not configured');
+                }
+                
+                const scopes = [
+                    'openid',
+                    'email',
+                    'profile'
+                ].join(' ');
+                
+                // Build OAuth URL with PROPER parameters - FIXED
+                const authUrl = new URL(GOOGLE_CONFIG.AUTH_URI);
+                const params = new URLSearchParams({
+                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                    redirect_uri: redirectUri,
+                    response_type: 'code',
+                    scope: scopes,
+                    state: state,
+                    access_type: 'online',
+                    prompt: 'consent'
+                });
+                
+                authUrl.search = params.toString();
+                
+                console.log('🔗 Full Google OAuth URL:', authUrl.toString());
+                console.log('📋 OAuth Parameters:', {
+                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                    redirect_uri: redirectUri,
+                    response_type: 'code',
+                    scope: scopes,
+                    state: state
+                });
+                
+                // Redirect to Google OAuth
+                window.location.href = authUrl.toString();
+                
+            } catch (error) {
+                console.error('❌ Google OAuth authentication failed:', error);
+                showNotification('Google authentication failed: ' + error.message, 'error');
+            }
+        }
+
 
         function showGoogleSignInPopup() {
             // Create a manual Google Sign-In popup
@@ -1705,6 +1718,24 @@ function checkExistingSession() {
         throw error;
     }
 }    
+
+function debugGoogleOAuthConfig() {
+    console.log('🔧 Debugging Google OAuth Configuration:');
+    console.log('Client ID:', GOOGLE_CONFIG.CLIENT_ID ? '✓ Set' : '✗ Missing');
+    console.log('Redirect URI:', GOOGLE_CONFIG.REDIRECT_URI ? GOOGLE_CONFIG.REDIRECT_URI : '✗ Missing');
+    console.log('Auth URI:', GOOGLE_CONFIG.AUTH_URI);
+    console.log('Token URI:', GOOGLE_CONFIG.TOKEN_URI);
+    
+    // Verify redirect URI format
+    if (GOOGLE_CONFIG.REDIRECT_URI) {
+        try {
+            new URL(GOOGLE_CONFIG.REDIRECT_URI);
+            console.log('✓ Redirect URI is valid URL');
+        } catch (e) {
+            console.error('✗ Redirect URI is invalid:', e.message);
+        }
+    }
+}
 
         async function getGoogleUserInfo(accessToken) {
             try {
