@@ -94,7 +94,7 @@
                             <div id="syncOptions" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border z-10">
                                 <button onclick="testSharePointConnection()" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg flex items-center space-x-2">
                                     <i class="fas fa-stethoscope text-purple-600"></i>
-                                    <span>Test SharePoint Connection</span>
+                                    <span>Test Datasource Connection</span>
                                 </button>
                                 <button onclick="exportData()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
                                     <i class="fas fa-download text-blue-600"></i>
@@ -1557,7 +1557,7 @@ function checkExistingSession() {
         loadDataFromSharePoint().then(() => {
             showDashboard();
             startRealTimeSync();
-            showNotification('Microsoft session restored with real-time sync!');
+            showNotification('Session restored with real-time sync!');
         });
     } else if (googleToken && savedUser) {
         console.log('🔐 Valid Google session found, restoring...');
@@ -1568,7 +1568,7 @@ function checkExistingSession() {
             loadDataFromSharePoint().then(() => {
                 showDashboard();
                 startRealTimeSync();
-                showNotification('Google session restored with SharePoint sync!');
+                showNotification('Session restored with real-time sync!');
             });
         } else {
             // Google user without SharePoint access - show dashboard with limited functionality
