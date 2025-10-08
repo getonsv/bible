@@ -1226,58 +1226,45 @@
                 'Other'
             ];
 
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Initializing Evangelism CRM...');
     
-    // DOMContentLoaded function:
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('🔧 Initializing Evangelism CRM...');
-        
-        // Check if this is an OAuth callback first
-        const urlParams = new URLSearchParams(window.location.search);
-        const authCode = urlParams.get('code');
-        const error = urlParams.get('error');
-        
-        if (error) {
-            console.error('❌ OAuth error:', error);
-            showNotification('Authentication failed: ' + error, 'error');
-            // Clean URL and show login
-            window.history.replaceState({}, document.title, window.location.pathname);
-            initializeMicrosoftAuth();
-            return;
-        }
-        
-        if (authCode) {
-            console.log('🔐 OAuth callback detected - processing...');
-            processOAuthCallback(authCode, urlParams.get('state'));
-            return;
-        }
-        
-        // Check for existing valid session
-        if (checkForValidSession()) {
-            console.log('🔑 Valid session found - restoring...');
-            restoreSession();
-        } else {
-            console.log('🔑 No valid session - showing login screen');
-            showLoginScreen();
-        }
-        
-        // Initialize UI components
-        initializeUI();
+    // Clear any stuck authentication states first
+    sessionStorage.removeItem('oauth_processing');
+    
+    // Check if this is an OAuth callback first
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    const error = urlParams.get('error');
+    
+    if (error) {
+        console.error('❌ OAuth error:', error);
+        showNotification('Authentication failed: ' + error, 'error');
+        // Clean URL and show login
+        window.history.replaceState({}, document.title, window.location.pathname);
+        initializeMicrosoftAuth();
+        return;
+    }
+    
+    if (authCode) {
+        console.log('🔐 OAuth callback detected - processing...');
+        processOAuthCallback(authCode, urlParams.get('state'));
+        return;
+    }
+    
+    // Check for existing valid session
+    if (checkForValidSession()) {
+        console.log('🔑 Valid session found - restoring...');
+        restoreSession();
+    } else {
+        console.log('🔑 No valid session - showing login screen');
+        showLoginScreen();
+    }
+    
+    // Initialize UI components
+    initializeUI();
+});
 
-        // Check for valid session
-        if (checkForValidSession() && window.location.pathname === '/') {
-            console.log('✅ Valid session detected, ensuring dashboard is visible');
-            // Small delay to ensure DOM is ready
-            setTimeout(() => {
-                if (document.getElementById('loginScreen') && 
-                    !document.getElementById('loginScreen').classList.contains('hidden')) {
-                    console.log('🔄 Auto-redirecting to dashboard...');
-                    showDashboard();
-                }
-            }, 100);
-        }
-    });
-
-    // Enhanced session validation
     function checkForValidSession() {
         const msToken = sessionStorage.getItem('access_token');
         const msExpiry = sessionStorage.getItem('token_expiry');
@@ -1878,36 +1865,103 @@
                 }
             }
 
+function initializeMicrosoftAuth() {
+    console.log('🔧 Initializing Microsoft authentication UI...');
+    
+    const buttonContainer = document.getElementById('googleSignInButton');
+    if (!buttonContainer) {
+        console.error('❌ Sign In button container not found');
+        return;
+    }
+    
+    // Clear any existing content and show the sign-in button
+    buttonContainer.innerHTML = `
+        <div class="space-y-4">
+            <button onclick="startMicrosoftAuth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                <i class="fab fa-microsoft text-xl"></i>
+                <span>Sign in with Microsoft 365</span>
+            </button>
             
+            <div class="text-center">
+                <p class="text-xs text-gray-500">
+                    <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                    Secure authentication with your organization account
+                </p>
+            </div>
+        </div>
+    `;
+    
+    console.log('✅ Microsoft authentication UI ready');
+}
 
-    function initializeMicrosoftAuth() {
-        console.log('🔧 Initializing Microsoft authentication UI...');
-        
-        const buttonContainer = document.getElementById('googleSignInButton');
-        if (!buttonContainer) {
-            console.error('❌ Google Sign In button container not found');
-            return;
-        }
-        
-        // Clear any loading state and show the sign-in button
+// Enhanced startMicrosoftAuth function
+function startMicrosoftAuth() {
+    console.log('🚀 Starting Microsoft authentication...');
+    
+    // Show loading state immediately
+    showAuthLoading('Redirecting to Microsoft 365...');
+    
+    // Small delay to ensure UI updates before redirect
+    setTimeout(() => {
+        authenticateWithMicrosoft();
+    }, 100);
+}
+
+// Add this function to show loading states
+function showAuthLoading(message = 'Authenticating...') {
+    const buttonContainer = document.getElementById('googleSignInButton');
+    if (buttonContainer) {
         buttonContainer.innerHTML = `
-            <div class="space-y-4">
-                <button onclick="startMicrosoftAuth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                    <i class="fab fa-microsoft text-xl"></i>
-                    <span>Sign in with Microsoft 365</span>
-                </button>
-                
-                <div class="text-center">
-                    <p class="text-xs text-gray-500">
-                        <i class="fas fa-shield-alt text-green-500 mr-1"></i>
-                        Secure authentication with your organization account
-                    </p>
-                </div>
+            <div class="w-full bg-gray-100 text-gray-600 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span>${message}</span>
             </div>
         `;
-        
-        console.log('✅ Microsoft authentication UI ready');
     }
+}
+
+// Enhanced authenticateWithMicrosoft function
+async function authenticateWithMicrosoft() {
+    try {
+        console.log('🔐 Starting PKCE Microsoft authentication...');
+        
+        // Generate PKCE parameters
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        const state = 'auth_' + Date.now();
+        
+        console.log('🔐 PKCE parameters generated:', {
+            verifierLength: codeVerifier.length,
+            challengeLength: codeChallenge.length,
+            state: state
+        });
+        
+        // Store PKCE parameters securely
+        sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+        sessionStorage.setItem('pkce_state', state);
+        
+        // Build PKCE auth URL
+        const authUrl = buildPKCEAuthUrl(codeChallenge, state);
+        console.log('🔐 PKCE auth URL built');
+        
+        // Redirect to Microsoft authentication
+        window.location.href = authUrl;
+        
+    } catch (error) {
+        console.error('❌ PKCE authentication failed:', error);
+        
+        // Reset UI on failure
+        initializeMicrosoftAuth();
+        showNotification('Authentication failed: ' + error.message, 'error');
+        
+        // Clean up on failure
+        sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('pkce_state');
+    }
+}
+
+
+
 
     // Separate function to start auth (to avoid any event issues)
         function startMicrosoftAuth() {
@@ -2833,36 +2887,46 @@
                 }
             }
 
+
             function buildPKCEAuthUrl(codeChallenge, state) {
-                // Try multiple redirect URIs that might be configured
-                const possibleRedirectUris = [
-                    'https://app.shill.es/ev',
-                    'https://app.shill.es/ev/',
-                    'https://app.shill.es',
-                    'https://app.shill.es/',
-                    window.location.origin + window.location.pathname,
-                    window.location.origin + '/',
-                    window.location.origin
-                ];
-                
-                // Use the current page URL as redirect URI (most likely to work)
-                const redirectUri = window.location.origin + window.location.pathname;
-                console.log('🔗 Using redirect URI:', redirectUri);
-                
-                const params = new URLSearchParams({
-                    client_id: SHAREPOINT_CONFIG.CLIENT_ID,
-                    response_type: 'code',
-                    redirect_uri: redirectUri,
-                    scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read openid profile email',
-                    response_mode: 'query',
-                    state: state,
-                    code_challenge: codeChallenge,
-                    code_challenge_method: 'S256',
-                    prompt: 'select_account'
-                });
-                
-                return `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/authorize?${params.toString()}`;
-            }
+            const redirectUri = window.location.origin + window.location.pathname;
+            console.log('🔗 Using redirect URI:', redirectUri);
+            
+            const params = new URLSearchParams({
+                client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+                response_type: 'code',
+                redirect_uri: redirectUri,
+                scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read openid profile email',
+                response_mode: 'query',
+                state: state,
+                code_challenge: codeChallenge,
+                code_challenge_method: 'S256',
+                prompt: 'select_account'
+            });
+            
+            const authUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/authorize?${params.toString()}`;
+            
+            console.log('🔗 Full auth URL (first 200 chars):', authUrl.substring(0, 200) + '...');
+            return authUrl;
+        }
+
+
+        function resetAuthUI() {
+            console.log('🔄 Resetting authentication UI...');
+            
+            // Clear any stuck authentication state
+            sessionStorage.removeItem('pkce_code_verifier');
+            sessionStorage.removeItem('pkce_state');
+            sessionStorage.removeItem('oauth_processing');
+            
+            // Force reinitialize the auth UI
+            initializeMicrosoftAuth();
+            
+            showNotification('Authentication UI reset successfully', 'info');
+        }
+
+        // Make it available globally for easy access
+        window.resetAuth = resetAuthUI;
 
             async function waitForAuthResult(popup) {
                 return new Promise((resolve) => {
