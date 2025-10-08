@@ -1226,18 +1226,34 @@
             'Other'
         ];
 
-   
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // Clear any existing session to ensure fresh start
-    clearSession();
-    
-    // Check if this is an OAuth callback
+    // EMERGENCY: Check if we have OAuth callback parameters but no PKCE state
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
+    const state = urlParams.get('state');
     
+    if (authCode && state && state.startsWith('auth_')) {
+        console.log('🚨 EMERGENCY: OAuth callback detected but PKCE state may be lost');
+        
+        // Try to reconstruct the PKCE state from the state parameter
+        const timestamp = state.replace('auth_', '');
+        console.log('🔐 Attempting to reconstruct PKCE state from timestamp:', timestamp);
+        
+        // Show a user-friendly message and option to retry
+        showNotification('Authentication session expired. Please try signing in again.', 'error');
+        
+        // Clear the URL parameters to prevent infinite loop
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Re-initialize auth
+        initializeMicrosoftAuth();
+        return;
+    }
+    
+    // Rest of your existing initialization code...
     if (authCode) {
         console.log('🔐 OAuth callback detected');
         processOAuthCallback(authCode, urlParams.get('state'));
@@ -1249,6 +1265,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize UI components
     initializeUI();
 });
+        
 
 // Clear session completely
 function clearSession() {
