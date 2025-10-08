@@ -7001,14 +7001,137 @@ async function debugSharePointFields() {
         const urlParams = new URLSearchParams(window.location.search);
         const authCode = urlParams.get('code');
         const returnedState = urlParams.get('state');
+
+
+function nuclearButtonFix() {
+    console.log('💣 ACTIVATING NUCLEAR BUTTON FIX...');
+    
+    // Fix Quick Actions buttons
+    const quickActions = {
+        'addFruitQuick': showAddFruitModal,
+        'scheduleBBQuick': showScheduleModal, 
+        'logActivityQuick': showActivityModal,
+        'generateReportQuick': generateReport
+    };
+    
+    Object.entries(quickActions).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            console.log(`🔧 Nuclear fixing: ${id}`);
+            
+            // COMPLETELY replace the button
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+            
+            // Add absolute click handling
+            newButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                console.log(`💣 NUCLEAR CLICK: ${id}`);
+                handler();
+                return false;
+            });
+            
+            // Also set onclick directly
+            newButton.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                console.log(`💣 NUCLEAR ONCLICK: ${id}`);
+                handler();
+                return false;
+            };
+            
+            // Make it visually obvious it's fixed
+            newButton.style.border = '3px solid #00ff00';
+            newButton.style.backgroundColor = '#e8f5e8';
+            
+            console.log(`✅ NUCLEAR FIXED: ${id}`);
+        }
+    });
+    
+    // Fix navigation tabs
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(button => {
+        const originalOnClick = button.getAttribute('onclick');
+        if (originalOnClick && originalOnClick.includes('showTab')) {
+            const tabName = originalOnClick.match(/showTab\('([^']+)'\)/)?.[1];
+            if (tabName) {
+                button.onclick = function(e) {
+                    e.preventDefault();
+                    console.log(`💣 TAB CLICK: ${tabName}`);
+                    showTab(tabName);
+                    return false;
+                };
+                button.style.border = '2px solid orange';
+            }
+        }
+    });
+    
+    console.log('💣 NUCLEAR FIX COMPLETE - Buttons should work now!');
+}
+
+// Fix modal close buttons
+function fixModalButtons() {
+    const modals = ['addFruitModal', 'activityModal', 'scheduleModal', 'exportModal', 'importModal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            const closeBtn = modal.querySelector('button[onclick*="closeModal"]');
+            if (closeBtn) {
+                closeBtn.onclick = function(e) {
+                    e.preventDefault();
+                    closeModal(modalId);
+                    return false;
+                };
+            }
+        }
+    });
+}
+
+// =============================================
+// 🚀 IMMEDIATE EXECUTION - RUNS ON PAGE LOAD
+// =============================================
+
+// Wait for page to be fully ready
+function initNuclearFix() {
+    console.log('🚀 INITIALIZING NUCLEAR FIX...');
+    
+    // Fix buttons immediately
+    setTimeout(nuclearButtonFix, 100);
+    
+    // Fix buttons again after a short delay (in case of dynamic content)
+    setTimeout(nuclearButtonFix, 1000);
+    
+    // Fix modal buttons
+    setTimeout(fixModalButtons, 1500);
+    
+    // Continuous monitoring (fix buttons every 2 seconds for 10 seconds)
+    let attempts = 0;
+    const monitor = setInterval(() => {
+        nuclearButtonFix();
+        attempts++;
+        if (attempts >= 5) {
+            clearInterval(monitor);
+            console.log('🚀 Button monitoring complete');
+        }
+    }, 2000);
+}
+
+// Start the nuclear fix when page loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNuclearFix);
+} else {
+    initNuclearFix();
+}
+
+// Also expose to global scope for manual execution
+window.nuclearFix = nuclearButtonFix;
+window.fixAllButtons = nuclearButtonFix;
         
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-
-<!-- Simple Version Tag -->
-<div class="fixed bottom-4 right-4 text-xs text-gray-500 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm z-40">
-    FRMS v1.0.7
-</div>
 
 </body>
 </html>
