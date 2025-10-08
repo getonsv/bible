@@ -1173,10 +1173,8 @@
             SITE_URL: 'https://getonasia.sharepoint.com/sites/frms/',
             FRUITS_LIST_ID: '139125e5-1bd9-4172-a7d9-ddf3a1dd8586',
             ACTIVITIES_LIST_ID: '6dfb4043-9d8c-4d38-b2ce-7a2fb7ae4f79',
-            USERS_LIST_ID: 'BFA74452-66DA-4A02-BD4D-D1F3E091DDF0',
-            GRAPH_API_URL: 'https://graph.microsoft.com/v1.0',
-            USERS_LIST_ID: 'b8f3c2d1-4e5f-6a7b-8c9d-0e1f2a3b4c5d',
-
+            USERS_LIST_ID: 'BFA74452-66DA-4A02-BD4D-D1F3E091DDF0', // Users Management List
+            GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
         };
         
         // Global state
@@ -1840,35 +1838,7 @@ function restoreSession() {
             }
         }
 
-
-        async function refreshTokenIfNeeded() {
-            const tokenExpiry = sessionStorage.getItem('token_expiry');
-            if (!tokenExpiry || Date.now() >= parseInt(tokenExpiry)) {
-                console.log('🔄 Token expired, requiring re-authentication');
-                clearSession();
-                showLoginScreen();
-                return false;
-            }
-            return true;
-        }
-
-        // Call this before any SharePoint API call
-        async function callSharePointWithTokenCheck(url, options = {}) {
-            const tokenValid = await refreshTokenIfNeeded();
-            if (!tokenValid) {
-                throw new Error('Authentication required');
-            }
-            
-            return fetch(url, {
-                ...options,
-                headers: {
-                    ...options.headers,
-                    'Authorization': `Bearer ${sharePointAccessToken}`,
-                    'Accept': 'application/json'
-                }
-            });
-        }
-
+        
 
 function initializeMicrosoftAuth() {
     console.log('🔧 Initializing Microsoft authentication UI...');
@@ -2853,29 +2823,6 @@ window.addEventListener('load', function() {
             });
             
             return `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/authorize?${params.toString()}`;
-        }
-
-
-        async function verifyTokenValidity() {
-            try {
-                const response = await fetch('https://graph.microsoft.com/v1.0/me', {
-                    headers: {
-                        'Authorization': `Bearer ${sharePointAccessToken}`,
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    console.error('❌ Token is invalid:', response.status);
-                    return false;
-                }
-                
-                console.log('✅ Token is valid');
-                return true;
-            } catch (error) {
-                console.error('❌ Token verification failed:', error);
-                return false;
-            }
         }
 
         async function waitForAuthResult(popup) {
@@ -4518,10 +4465,10 @@ setTimeout(debugButtonEvents, 3000);
             event.preventDefault();
             const fruitId = extractFruitIdFromButton(button, 'editFruit');
             if (fruitId) {
-                console.log('✏️ Editing fruit:', fruitId);
+                console.log '✏️ Editing fruit:', fruitId);
                 editFruit(fruitId);
             }
-        
+        }
         
         // Handle Delete button
         else if (button.textContent.includes('Delete') || (onclick && onclick.includes('deleteFruit'))) {
@@ -4532,7 +4479,7 @@ setTimeout(debugButtonEvents, 3000);
                 deleteFruit(fruitId);
             }
         }
-    ;
+    });
     
     // Quick Actions buttons
     document.addEventListener('click', function(event) {
@@ -4566,7 +4513,7 @@ setTimeout(debugButtonEvents, 3000);
     });
     
     console.log('✅ Event listeners initialized');
-
+}
 
 // Helper functions to extract parameters from buttons
 function extractFruitIdFromButton(button, functionName) {
@@ -4589,7 +4536,7 @@ function extractFruitIdFromButton(button, functionName) {
             const fruit = fruits.find(f => f.name === fruitName);
             return fruit ? fruit.id : null;
         }
-    };
+    }
     
     console.warn('❌ Could not extract fruit ID from button:', button);
     return null;
@@ -5006,6 +4953,64 @@ async function scheduleBB(event) {
         showNotification('Failed to schedule BB session: ' + error.message, 'error');
     }
 }
+
+async function scheduleBB(event) {
+    event.preventDefault();
+    
+    if (!userPermissions.canAdd) {
+        showPermissionMessage('add');
+        return;
+    }
+    
+    const formData = new FormData(event.target);
+    const fruitName = formData.get('fruitName');
+    const sessionDate = formData.get('date');
+    const sessionTime = formData.get('time');
+    const sessionType = formData.get('sessionType');
+    const location = formData.get('location');
+    const scheduleNotes = formData.get('scheduleNotes');
+    
+    // Create detailed notes for the BB session activity
+    const activityNotes = `Scheduled ${sessionType} for ${sessionDate} at ${sessionTime}. Location: ${location}. ${scheduleNotes}`;
+    
+    // Log as a BB Session activity
+    const scheduleActivity = {
+        fruitName: fruitName,
+        type: 'BB Session Scheduled',
+        duration: '0',
+        notes: activityNotes,
+        outcome: 'Scheduled Next Step',
+        user: currentUser.name, // This will be recorded in the "User" field
+        createdDate: new Date().toISOString()
+    };
+    
+    try {
+        if (isSharePointMode && sharePointAccessToken) {
+            const result = await addActivityToSharePoint(scheduleActivity);
+            scheduleActivity.id = result.id.toString();
+            showNotification('BB Session scheduled in SharePoint!');
+            
+            // Reload activities to ensure consistency
+            await loadActivitiesFromSharePoint();
+        } else {
+            scheduleActivity.id = 'activity_' + Date.now();
+            showNotification('BB Session scheduled locally');
+        }
+        
+        activities.push(scheduleActivity);
+        saveLocalData();
+        updateRecentActivities();
+        updateStats();
+        
+        closeModal('scheduleModal');
+        event.target.reset();
+        
+    } catch (error) {
+        console.error('Failed to schedule BB session:', error);
+        showNotification('Failed to schedule BB session: ' + error.message, 'error');
+    }
+}
+
 
 
 function debugFruitActivities(fruitName) {
@@ -6227,20 +6232,12 @@ async function callSharePointAPI(url, options = {}) {
             }
         }
 
+// Load users for Assign To dropdown with better Person field handling
 async function loadUsersForDropdown() {
     try {
         console.log('👥 Loading users for Assign To dropdown...');
         
-        // First verify token
-        const tokenValid = await verifyTokenValidity();
-        if (!tokenValid) {
-            console.warn('⚠️ Token invalid, using fallback options');
-            return getFallbackUserOptions();
-        }
-
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'&$select=id,fields&$top=500`;
-        
-        console.log('🔗 Fetching users from:', url);
         
         const response = await fetch(url, {
             headers: {
@@ -6250,69 +6247,76 @@ async function loadUsersForDropdown() {
         });
         
         if (!response.ok) {
-            if (response.status === 401) {
-                console.error('❌ Unauthorized - token may have expired');
-                // Trigger re-authentication
-                handleTokenExpired();
-                return getFallbackUserOptions();
-            }
-            console.warn(`⚠️ Could not load users list (${response.status}), using fallback`);
-            return getFallbackUserOptions();
+            console.warn('⚠️ Could not load users list, using current user only');
+            return currentUser ? [currentUser.name] : ['Unassigned'];
         }
         
         const data = await response.json();
         const userItems = data.value || [];
         
-        console.log('📋 Users loaded for dropdown:', userItems.length, 'items');
+        console.log('📋 Users loaded for dropdown:', userItems);
         
-        // Extract display names
+        // Extract display names with better Person field handling
         const userNames = userItems.map(item => {
             const fields = item.fields;
-            return fields.DisplayName || fields.Title || 'Unknown User';
+            
+            // Try different field names for Person/DisplayName
+            let displayName = '';
+            
+            // Method 1: Direct DisplayName field
+            if (fields.DisplayName) {
+                if (typeof fields.DisplayName === 'object') {
+                    displayName = fields.DisplayName.displayName || 
+                                 fields.DisplayName.title || 
+                                 fields.DisplayName.email || 
+                                 '';
+                } else {
+                    displayName = fields.DisplayName;
+                }
+            }
+            
+            // Method 2: Title field as fallback
+            if (!displayName && fields.Title) {
+                displayName = fields.Title;
+            }
+            
+            // Method 3: Email field as last resort
+            if (!displayName && fields.Email) {
+                displayName = fields.Email.split('@')[0]; // Use username part of email
+            }
+            
+            return displayName || 'Unknown User';
         }).filter(name => name && name !== 'Unknown User');
         
-        return prepareUserOptions(userNames);
+        // Add current user if not in list
+        if (currentUser && currentUser.name && !userNames.includes(currentUser.name)) {
+            userNames.push(currentUser.name);
+        }
+        
+        // Add "Unassigned" option
+        if (!userNames.includes('Unassigned')) {
+            userNames.unshift('Unassigned');
+        }
+        
+        // Remove duplicates and sort
+        const uniqueUserNames = [...new Set(userNames)].sort((a, b) => {
+            if (a === 'Unassigned') return -1;
+            if (b === 'Unassigned') return 1;
+            return a.localeCompare(b);
+        });
+        
+        console.log('✅ Available users for assignment:', uniqueUserNames);
+        return uniqueUserNames;
         
     } catch (error) {
         console.error('❌ Error loading users for dropdown:', error);
-        return getFallbackUserOptions();
+        // Fallback options
+        return currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
     }
-}
-
-function getFallbackUserOptions() {
-    const options = ['Unassigned'];
-    if (currentUser && currentUser.name) {
-        options.push(currentUser.name);
-    }
-    return options;
-}
-
-function prepareUserOptions(userNames) {
-    // Add current user if not in list
-    if (currentUser && currentUser.name && !userNames.includes(currentUser.name)) {
-        userNames.push(currentUser.name);
-    }
-    
-    // Add "Unassigned" option
-    if (!userNames.includes('Unassigned')) {
-        userNames.unshift('Unassigned');
-    }
-    
-    // Remove duplicates and sort
-    return [...new Set(userNames)].sort((a, b) => {
-        if (a === 'Unassigned') return -1;
-        if (b === 'Unassigned') return 1;
-        return a.localeCompare(b);
-    });
-}
-
-function handleTokenExpired() {
-    console.log('🔐 Token expired, clearing session...');
-    clearSession();
-    showNotification('Session expired. Please sign in again.', 'warning');
-    showLoginScreen();
 }
    
+        
+// Populate searchable Assign To dropdown
 async function populateAssigneeDropdown() {
     try {
         const assigneeInput = document.getElementById('assigneeInput');
@@ -6322,10 +6326,6 @@ async function populateAssigneeDropdown() {
             console.log('❌ Assignee search elements not found');
             return;
         }
-        
-        // Show loading state
-        assigneeInput.placeholder = 'Loading users...';
-        assigneeInput.disabled = true;
         
         // Clear existing options
         assigneeDatalist.innerHTML = '';
@@ -6341,51 +6341,13 @@ async function populateAssigneeDropdown() {
         
         console.log('✅ Assignee dropdown populated with', users.length, 'users');
         
-        // Update input state
-        assigneeInput.placeholder = 'Type to search users...';
-        assigneeInput.disabled = false;
+        // Add enhanced search functionality
+        enhanceAssigneeSearch(assigneeInput, users);
         
     } catch (error) {
         console.error('❌ Error populating assignee dropdown:', error);
-        const assigneeInput = document.getElementById('assigneeInput');
-        if (assigneeInput) {
-            assigneeInput.placeholder = 'Error loading users';
-            assigneeInput.disabled = false;
-        }
     }
 }
-
-
-async function testUsersListConnection() {
-    try {
-        console.log('🔍 Testing Users list connection...');
-        
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}`;
-        
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            const listInfo = await response.json();
-            console.log('✅ Users list accessible:', listInfo);
-            return true;
-        } else {
-            console.error('❌ Cannot access Users list:', response.status);
-            return false;
-        }
-    } catch (error) {
-        console.error('❌ Error testing Users list:', error);
-        return false;
-    }
-}
-
-// Call this in browser console to test
-// testUsersListConnection()
-
 
 // Enhanced search functionality
 function enhanceAssigneeSearch(inputElement, users) {
