@@ -1527,21 +1527,24 @@ function showLoginScreen() {
 }
 
 
-// Initialize UI components
 function initializeUI() {
     console.log('🎨 Initializing UI components...');
     
-    // Load local data (fruits, activities)
+    // Load data first
     loadLocalData();
     
-    // Update connection status
-    updateConnectionStatus();
-    
-    // Populate dropdowns
-    populateDropdowns();
-    
-    // Initialize event listeners
+    // Initialize event listeners BEFORE updating UI
     initializeEventListeners();
+    initializeQuickActions();
+    
+    // Then update UI components
+    updateConnectionStatus();
+    updateStats();
+    updateRecentActivities();
+    updateFruitsGrid();
+    populateDropdowns();
+    applyPermissionBasedUI();
+    updateAdminStats();
     
     // Set copyright year
     const yearElement = document.getElementById('currentYear');
@@ -1549,11 +1552,48 @@ function initializeUI() {
         yearElement.textContent = new Date().getFullYear();
     }
     
-    // Initialize version tag
-    initializeVersionTag();
-    
     console.log('✅ UI initialization complete');
 }
+
+
+
+function testAllButtons() {
+    console.log('🧪 TESTING ALL BUTTONS:');
+    
+    // Test Quick Actions
+    const quickActions = ['addFruitQuick', 'scheduleBBQuick', 'logActivityQuick', 'generateReportQuick'];
+    quickActions.forEach(id => {
+        const btn = document.getElementById(id);
+        console.log(`Quick Action ${id}:`, btn ? 'FOUND' : 'MISSING');
+    });
+    
+    // Test fruit grid buttons
+    const fruitButtons = document.querySelectorAll('#fruitsGrid button');
+    console.log(`Fruit grid buttons: ${fruitButtons.length} found`);
+    
+    // Test modal buttons
+    const modalButtons = document.querySelectorAll('.modal button');
+    console.log(`Modal buttons: ${modalButtons.length} found`);
+    
+    // Test navigation tabs
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    console.log(`Tab buttons: ${tabButtons.length} found`);
+}
+
+
+// Call this in browser console to test
+window.debugButtons = function() {
+    testAllButtons();
+    initializeQuickActions();
+    initializeEventListeners();
+    console.log('🔄 Button system reinitialized');
+};
+
+// Auto-test after page load
+setTimeout(() => {
+    testAllButtons();
+}, 2000);
+
 
 
 // Add this function to show login screen properly
@@ -3972,71 +4012,41 @@ setTimeout(handleStuckLoading, 3000);
 // Call this after a short delay
 setTimeout(handleStuckLoading, 3000);
 
-        function applyPermissionBasedUI() {
-            console.log('🔐 Applying permission-based UI restrictions...');
-            
-            // Get all action buttons
-            const addFruitButtons = document.querySelectorAll('[onclick*="showAddFruitModal"]');
-            const addActivityButtons = document.querySelectorAll('[onclick*="showActivityModal"]');
-            const scheduleButtons = document.querySelectorAll('[onclick*="showScheduleModal"]');
-            const editButtons = document.querySelectorAll('[onclick*="editFruit"]');
-            const deleteButtons = document.querySelectorAll('[onclick*="deleteFruit"]');
-            
-            // Apply add permissions
-            addFruitButtons.forEach(button => {
-                if (!userPermissions.canAdd) {
-                    button.disabled = true;
-                    button.classList.add('opacity-50', 'cursor-not-allowed');
-                    button.title = 'You do not have permission to add fruits';
-                    // Replace onclick with permission message
-                    button.setAttribute('onclick', 'showPermissionMessage("add")');
-                }
-            });
-            
-            addActivityButtons.forEach(button => {
-                if (!userPermissions.canAdd) {
-                    button.disabled = true;
-                    button.classList.add('opacity-50', 'cursor-not-allowed');
-                    button.title = 'You do not have permission to log activities';
-                    button.setAttribute('onclick', 'showPermissionMessage("add")');
-                }
-            });
-            
-            scheduleButtons.forEach(button => {
-                if (!userPermissions.canAdd) {
-                    button.disabled = true;
-                    button.classList.add('opacity-50', 'cursor-not-allowed');
-                    button.title = 'You do not have permission to schedule sessions';
-                    button.setAttribute('onclick', 'showPermissionMessage("add")');
-                }
-            });
-            
-            // Apply edit permissions
-            editButtons.forEach(button => {
-                if (!userPermissions.canEdit) {
-                    button.disabled = true;
-                    button.classList.add('opacity-50', 'cursor-not-allowed');
-                    button.title = 'You do not have permission to edit fruits';
-                    button.setAttribute('onclick', 'showPermissionMessage("edit")');
-                }
-            });
-            
-            // Apply delete permissions
-            deleteButtons.forEach(button => {
-                if (!userPermissions.canDelete) {
-                    button.disabled = true;
-                    button.classList.add('opacity-50', 'cursor-not-allowed');
-                    button.title = 'You do not have permission to delete items';
-                    button.setAttribute('onclick', 'showPermissionMessage("delete")');
-                }
-            });
-            
-            // Show permission status in navigation
-            updatePermissionStatus();
-            
-            console.log('✅ Permission-based UI applied');
-        }
-
+function applyPermissionBasedUI() {
+    console.log('🔐 Applying permission-based UI restrictions...');
+    
+    // Only apply visual changes, don't break event handlers
+    const addFruitButtons = document.querySelectorAll('[onclick*="showAddFruitModal"], [data-action]');
+    const editButtons = document.querySelectorAll('[onclick*="editFruit"], [data-action="edit"]');
+    const deleteButtons = document.querySelectorAll('[onclick*="deleteFruit"], [data-action="delete"]');
+    
+    // Visual changes only
+    if (!userPermissions.canAdd) {
+        addFruitButtons.forEach(button => {
+            button.disabled = true;
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+            button.title = 'You do not have permission to add items';
+        });
+    }
+    
+    if (!userPermissions.canEdit) {
+        editButtons.forEach(button => {
+            button.disabled = true;
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+            button.title = 'You do not have permission to edit items';
+        });
+    }
+    
+    if (!userPermissions.canDelete) {
+        deleteButtons.forEach(button => {
+            button.disabled = true;
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+            button.title = 'You do not have permission to delete items';
+        });
+    }
+    
+    console.log('✅ Permission-based UI applied (visual only)');
+}
         function updatePermissionStatus() {
             // Add permission indicator to navigation
             const statusContainer = document.querySelector('#connectionStatus').parentElement;
@@ -4166,24 +4176,26 @@ setTimeout(handleStuckLoading, 3000);
             `).join('');
         }
 
-        function updateFruitsGrid() {
+function updateFruitsGrid() {
     const container = document.getElementById('fruitsGrid');
     if (!container) return;
     
     if (fruits.length === 0) {
         // ... keep the existing empty state code exactly as is ...
-        container.innerHTML = `
-            <div class="text-center py-12 col-span-full">
-                <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-users text-gray-400 text-3xl"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No contacts found</h3>
-                <p class="text-gray-500 mb-4">Start building your ministry database by adding your first contact.</p>
-                <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Add Your First Contact
-                </button>
-            </div>
-        `;
+        container.innerHTML = `<div class="grid grid-cols-2 gap-2">
+    <button data-action="view" data-fruit-id="${fruit.id}" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
+        <i class="fas fa-eye mr-1"></i>View Details
+    </button>
+    <button data-action="edit" data-fruit-id="${fruit.id}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+        <i class="fas fa-edit mr-1"></i>Edit
+    </button>
+    <button data-action="log-activity" data-fruit-name="${fruit.name}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+        <i class="fas fa-phone mr-1"></i>Log Activity
+    </button>
+    <button data-action="delete" data-fruit-id="${fruit.id}" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors">
+        <i class="fas fa-trash mr-1"></i>Delete
+    </button>
+</div>`;
         return;
     }
     
@@ -4394,12 +4406,75 @@ setTimeout(debugButtonEvents, 3000);
             }
         }
 
-    function initializeEventListeners() {
+    function initializeQuickActions() {
+    console.log('🎯 Initializing Quick Actions event listeners...');
+    
+    // Add Fruit Quick Action
+    const addFruitBtn = document.getElementById('addFruitQuick');
+    if (addFruitBtn) {
+        addFruitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('➕ Add Fruit Quick Action clicked');
+            showAddFruitModal();
+        });
+        console.log('✅ Add Fruit Quick Action listener attached');
+    } else {
+        console.log('❌ Add Fruit Quick Action button not found');
+    }
+    
+    // Schedule BB Quick Action
+    const scheduleBBBtn = document.getElementById('scheduleBBQuick');
+    if (scheduleBBBtn) {
+        scheduleBBBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📅 Schedule BB Quick Action clicked');
+            showScheduleModal();
+        });
+        console.log('✅ Schedule BB Quick Action listener attached');
+    } else {
+        console.log('❌ Schedule BB Quick Action button not found');
+    }
+    
+    // Log Activity Quick Action
+    const logActivityBtn = document.getElementById('logActivityQuick');
+    if (logActivityBtn) {
+        logActivityBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📞 Log Activity Quick Action clicked');
+            showActivityModal();
+        });
+        console.log('✅ Log Activity Quick Action listener attached');
+    } else {
+        console.log('❌ Log Activity Quick Action button not found');
+    }
+    
+    // Generate Report Quick Action
+    const generateReportBtn = document.getElementById('generateReportQuick');
+    if (generateReportBtn) {
+        generateReportBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📊 Generate Report Quick Action clicked');
+            generateReport();
+        });
+        console.log('✅ Generate Report Quick Action listener attached');
+    } else {
+        console.log('❌ Generate Report Quick Action button not found');
+    }
+    
+    console.log('✅ Quick Actions initialization complete');
+}
+
+
+
+function initializeEventListeners() {
     console.log('🎯 Initializing event listeners...');
-    document.getElementById('addFruitQuick')?.addEventListener('click', showAddFruitModal);
-    document.getElementById('scheduleBBQuick')?.addEventListener('click', showScheduleModal);
-    document.getElementById('logActivityQuick')?.addEventListener('click', showActivityModal);
-    document.getElementById('generateReportQuick')?.addEventListener('click', generateReport);
+    
+    // Initialize Quick Actions
+    initializeQuickActions();
     
     // Fruit search functionality
     const fruitSearch = document.getElementById('fruitSearch');
@@ -4426,90 +4501,79 @@ setTimeout(debugButtonEvents, 3000);
         if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
             syncOptions.classList.add('hidden');
         }
-    ;
-    
-
-        const button = event.target.closest('button');
-        if (!button) return;
-        
-        const onclick = button.getAttribute('onclick');
-        console.log('🔍 Button clicked:', {
-            text: button.textContent,
-            onclick: onclick,
-            id: button.id
-        });
-        
-        // Handle View Details button
-        if (button.textContent.includes('View Details') || (onclick && onclick.includes('viewFruitDetails'))) {
-            event.preventDefault();
-            const fruitId = extractFruitIdFromButton(button, 'viewFruitDetails');
-            if (fruitId) {
-                console.log('👁️ Viewing details for fruit:', fruitId);
-                viewFruitDetails(fruitId);
-            }
-        }
-        
-        // Handle Log Activity button
-        else if (button.textContent.includes('Log Activity') || (onclick && onclick.includes('logActivityForFruit'))) {
-            event.preventDefault();
-            const fruitName = extractFruitNameFromButton(button, 'logActivityForFruit');
-            if (fruitName) {
-                console.log('📞 Logging activity for fruit:', fruitName);
-                logActivityForFruit(fruitName);
-            }
-        }
-        
-        // Handle Edit button
-        else if (button.textContent.includes('Edit') || (onclick && onclick.includes('editFruit'))) {
-            event.preventDefault();
-            const fruitId = extractFruitIdFromButton(button, 'editFruit');
-            if (fruitId) {
-                console.log ('✏️ Editing fruit:', fruitId);
-                editFruit(fruitId);
-            }
-        }
-        
-        // Handle Delete button
-        else if (button.textContent.includes('Delete') || (onclick && onclick.includes('deleteFruit'))) {
-            event.preventDefault();
-            const fruitId = extractFruitIdFromButton(button, 'deleteFruit');
-            if (fruitId) {
-                console.log('🗑️ Deleting fruit:', fruitId);
-                deleteFruit(fruitId);
-            }
-        }
     });
     
-    // Quick Actions buttons
     document.addEventListener('click', function(event) {
         const button = event.target.closest('button');
         if (!button) return;
         
-        // Check if it's a Quick Actions button by parent context
-        const quickActions = button.closest('.grid-cols-4');
-        if (quickActions) {
-            if (button.textContent.includes('Schedule BB')) {
-                event.preventDefault();
-                console.log('📅 Opening schedule modal from Quick Actions');
-                showScheduleModal();
-            }
-            else if (button.textContent.includes('Log Activity')) {
-                event.preventDefault();
-                console.log('📞 Opening activity modal from Quick Actions');
-                showActivityModal();
-            }
-            else if (button.textContent.includes('Generate Report')) {
-                event.preventDefault();
-                console.log('📊 Generating report from Quick Actions');
-                generateReport();
-            }
-            else if (button.textContent.includes('Add Fruit')) {
-                event.preventDefault();
-                console.log('➕ Opening add fruit modal from Quick Actions');
-                showAddFruitModal();
-            }
-        }
+    console.log('🔍 Button clicked:', {
+        text: button.textContent,
+        id: button.id,
+        class: button.className
     });
+    
+    // Handle data attribute buttons (new system)
+    const action = button.getAttribute('data-action');
+    const fruitId = button.getAttribute('data-fruit-id');
+    const fruitName = button.getAttribute('data-fruit-name');
+    
+    if (action) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        switch(action) {
+            case 'view':
+                if (fruitId) {
+                    console.log('👁️ Viewing details for fruit:', fruitId);
+                    viewFruitDetails(fruitId);
+                }
+                break;
+            case 'edit':
+                if (fruitId) {
+                    console.log('✏️ Editing fruit:', fruitId);
+                    editFruit(fruitId);
+                }
+                break;
+            case 'delete':
+                if (fruitId) {
+                    console.log('🗑️ Deleting fruit:', fruitId);
+                    deleteFruit(fruitId);
+                }
+                break;
+            case 'log-activity':
+                if (fruitName) {
+                    console.log('📞 Logging activity for fruit:', fruitName);
+                    logActivityForFruit(fruitName);
+                }
+                break;
+        }
+        return;
+    }
+    
+    // Handle legacy onclick buttons (fallback)
+    const onclick = button.getAttribute('onclick');
+    if (onclick) {
+        // Let the native onclick handler work
+        return;
+    }
+    
+    // Handle Quick Actions by text content (fallback)
+    const buttonText = button.textContent.trim();
+    const quickActions = button.closest('.grid-cols-4');
+    if (quickActions) {
+        event.preventDefault();
+        if (buttonText.includes('Add Fruit') || buttonText.includes('Add Your First Contact')) {
+            showAddFruitModal();
+        } else if (buttonText.includes('Schedule BB')) {
+            showScheduleModal();
+        } else if (buttonText.includes('Log Activity')) {
+            showActivityModal();
+        } else if (buttonText.includes('Generate Report')) {
+            generateReport();
+        }
+    }
+});
     
     console.log('✅ Event listeners initialized');
 }
