@@ -5007,64 +5007,6 @@ async function scheduleBB(event) {
     }
 }
 
-async function scheduleBB(event) {
-    event.preventDefault();
-    
-    if (!userPermissions.canAdd) {
-        showPermissionMessage('add');
-        return;
-    }
-    
-    const formData = new FormData(event.target);
-    const fruitName = formData.get('fruitName');
-    const sessionDate = formData.get('date');
-    const sessionTime = formData.get('time');
-    const sessionType = formData.get('sessionType');
-    const location = formData.get('location');
-    const scheduleNotes = formData.get('scheduleNotes');
-    
-    // Create detailed notes for the BB session activity
-    const activityNotes = `Scheduled ${sessionType} for ${sessionDate} at ${sessionTime}. Location: ${location}. ${scheduleNotes}`;
-    
-    // Log as a BB Session activity
-    const scheduleActivity = {
-        fruitName: fruitName,
-        type: 'BB Session Scheduled',
-        duration: '0',
-        notes: activityNotes,
-        outcome: 'Scheduled Next Step',
-        user: currentUser.name, // This will be recorded in the "User" field
-        createdDate: new Date().toISOString()
-    };
-    
-    try {
-        if (isSharePointMode && sharePointAccessToken) {
-            const result = await addActivityToSharePoint(scheduleActivity);
-            scheduleActivity.id = result.id.toString();
-            showNotification('BB Session scheduled in SharePoint!');
-            
-            // Reload activities to ensure consistency
-            await loadActivitiesFromSharePoint();
-        } else {
-            scheduleActivity.id = 'activity_' + Date.now();
-            showNotification('BB Session scheduled locally');
-        }
-        
-        activities.push(scheduleActivity);
-        saveLocalData();
-        updateRecentActivities();
-        updateStats();
-        
-        closeModal('scheduleModal');
-        event.target.reset();
-        
-    } catch (error) {
-        console.error('Failed to schedule BB session:', error);
-        showNotification('Failed to schedule BB session: ' + error.message, 'error');
-    }
-}
-
-
 
 function debugFruitActivities(fruitName) {
     console.log('🐛 DEBUG: Checking activities for:', fruitName);
