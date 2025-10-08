@@ -6292,12 +6292,20 @@ async function callSharePointAPI(url, options = {}) {
             }
         }
 
-// Load users for Assign To dropdown with better Person field handling
 async function loadUsersForDropdown() {
     try {
         console.log('👥 Loading users for Assign To dropdown...');
         
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'&$select=id,fields&$top=500`;
+        // First, check if we have SharePoint access
+        if (!sharePointAccessToken) {
+            console.log('⚠️ No SharePoint access token, using fallback options');
+            return getFallbackUserOptions();
+        }
+
+        // Try a simpler query first - just get all users without filters
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?$expand=fields&$top=100`;
+        
+        console.log('🔍 Fetching users from:', url);
         
         const response = await fetch(url, {
             headers: {
@@ -6307,74 +6315,115 @@ async function loadUsersForDropdown() {
         });
         
         if (!response.ok) {
-            console.warn('⚠️ Could not load users list, using current user only');
-            return currentUser ? [currentUser.name] : ['Unassigned'];
+            console.warn(`⚠️ SharePoint users request failed: ${response.status} ${response.statusText}`);
+            console.log('🔄 Trying alternative Users List ID...');
+            return tryAlternativeUsersList();
         }
         
         const data = await response.json();
         const userItems = data.value || [];
         
-        console.log('📋 Users loaded for dropdown:', userItems);
+        console.log('📋 Users loaded from SharePoint:', userItems.length);
         
-        // Extract display names with better Person field handling
+        if (userItems.length === 0) {
+            console.log('ℹ️ No users found in SharePoint, using fallback');
+            return getFallbackUserOptions();
+        }
+        
+        // Extract display names safely
         const userNames = userItems.map(item => {
-            const fields = item.fields;
+            const fields = item.fields || {};
             
-            // Try different field names for Person/DisplayName
-            let displayName = '';
-            
-            // Method 1: Direct DisplayName field
-            if (fields.DisplayName) {
-                if (typeof fields.DisplayName === 'object') {
-                    displayName = fields.DisplayName.displayName || 
-                                 fields.DisplayName.title || 
-                                 fields.DisplayName.email || 
-                                 '';
-                } else {
-                    displayName = fields.DisplayName;
-                }
-            }
-            
-            // Method 2: Title field as fallback
-            if (!displayName && fields.Title) {
-                displayName = fields.Title;
-            }
-            
-            // Method 3: Email field as last resort
-            if (!displayName && fields.Email) {
-                displayName = fields.Email.split('@')[0]; // Use username part of email
-            }
-            
-            return displayName || 'Unknown User';
+            // Try different field names in order of priority
+            return fields.DisplayName || 
+                   fields.Title || 
+                   fields.Email?.split('@')[0] || 
+                   'Unknown User';
         }).filter(name => name && name !== 'Unknown User');
         
-        // Add current user if not in list
-        if (currentUser && currentUser.name && !userNames.includes(currentUser.name)) {
-            userNames.push(currentUser.name);
-        }
+        // Add current user and default options
+        const finalUsers = addDefaultUserOptions(userNames);
         
-        // Add "Unassigned" option
-        if (!userNames.includes('Unassigned')) {
-            userNames.unshift('Unassigned');
-        }
-        
-        // Remove duplicates and sort
-        const uniqueUserNames = [...new Set(userNames)].sort((a, b) => {
-            if (a === 'Unassigned') return -1;
-            if (b === 'Unassigned') return 1;
-            return a.localeCompare(b);
-        });
-        
-        console.log('✅ Available users for assignment:', uniqueUserNames);
-        return uniqueUserNames;
+        console.log('✅ Available users for assignment:', finalUsers);
+        return finalUsers;
         
     } catch (error) {
         console.error('❌ Error loading users for dropdown:', error);
-        // Fallback options
-        return currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+        return getFallbackUserOptions();
     }
 }
-   
+
+// Helper functions
+function getFallbackUserOptions() {
+    const options = ['Unassigned'];
+    if (currentUser && currentUser.name) {
+        options.push(currentUser.name);
+    }
+    console.log('🔄 Using fallback user options:', options);
+    return options;
+}
+
+function addDefaultUserOptions(userNames) {
+    const options = [...userNames];
+    
+    // Add current user if not in list
+    if (currentUser && currentUser.name && !options.includes(currentUser.name)) {
+        options.push(currentUser.name);
+    }
+    
+    // Add "Unassigned" at the beginning
+    if (!options.includes('Unassigned')) {
+        options.unshift('Unassigned');
+    }
+    
+    // Remove duplicates and sort
+    return [...new Set(options)].sort((a, b) => {
+        if (a === 'Unassigned') return -1;
+        if (b === 'Unassigned') return 1;
+        return a.localeCompare(b);
+    });
+}
+
+async function tryAlternativeUsersList() {
+    console.log('🔄 Attempting to find correct Users List...');
+    
+    // Try to get all lists to find the correct Users list
+    try {
+        const listsUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists`;
+        
+        const response = await fetch(listsUrl, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const lists = data.value || [];
+            
+            console.log('📋 Available SharePoint lists:');
+            lists.forEach(list => {
+                console.log(`- ${list.name} (${list.id}): ${list.displayName}`);
+            });
+            
+            // Look for a list that might be the users list
+            const usersList = lists.find(list => 
+                list.name.toLowerCase().includes('user') || 
+                list.displayName.toLowerCase().includes('user')
+            );
+            
+            if (usersList) {
+                console.log(`✅ Found potential Users list: ${usersList.displayName} (${usersList.id})`);
+                // You could update SHAREPOINT_CONFIG.USERS_LIST_ID here if needed
+            }
+        }
+    } catch (error) {
+        console.log('❌ Could not retrieve list of lists');
+    }
+    
+    return getFallbackUserOptions();
+}
         
 // Populate searchable Assign To dropdown
 async function populateAssigneeDropdown() {
