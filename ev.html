@@ -4518,10 +4518,10 @@ setTimeout(debugButtonEvents, 3000);
             event.preventDefault();
             const fruitId = extractFruitIdFromButton(button, 'editFruit');
             if (fruitId) {
-                console.log '✏️ Editing fruit:', fruitId);
+                console.log('✏️ Editing fruit:', fruitId);
                 editFruit(fruitId);
             }
-        }
+        
         
         // Handle Delete button
         else if (button.textContent.includes('Delete') || (onclick && onclick.includes('deleteFruit'))) {
@@ -4532,7 +4532,7 @@ setTimeout(debugButtonEvents, 3000);
                 deleteFruit(fruitId);
             }
         }
-    });
+    ;
     
     // Quick Actions buttons
     document.addEventListener('click', function(event) {
@@ -4566,7 +4566,7 @@ setTimeout(debugButtonEvents, 3000);
     });
     
     console.log('✅ Event listeners initialized');
-}
+
 
 // Helper functions to extract parameters from buttons
 function extractFruitIdFromButton(button, functionName) {
@@ -4589,7 +4589,7 @@ function extractFruitIdFromButton(button, functionName) {
             const fruit = fruits.find(f => f.name === fruitName);
             return fruit ? fruit.id : null;
         }
-    }
+    };
     
     console.warn('❌ Could not extract fruit ID from button:', button);
     return null;
