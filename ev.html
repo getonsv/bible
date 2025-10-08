@@ -1262,9 +1262,14 @@ function clearSession() {
     // Clear session storage
     sessionStorage.clear();
     
+    // Clear PKCE parameters from localStorage too
+    localStorage.removeItem('pkce_code_verifier');
+    localStorage.removeItem('pkce_state');
+    
     // Stop any sync
     stopRealTimeSync();
 }
+
 
 // Show login screen explicitly
 function showLoginScreen() {
@@ -1291,7 +1296,8 @@ function showLoginScreen() {
     initializeMicrosoftAuth();
 }
 
-// Initialize UI components
+
+// Add this function to initialize UI components
 function initializeUI() {
     console.log('🎨 Initializing UI components...');
     
@@ -1301,8 +1307,8 @@ function initializeUI() {
     // Update connection status
     updateConnectionStatus();
     
-    // Populate dropdowns
-    populateDropdowns();
+    // Only populate basic dropdowns that don't require SharePoint
+    populateBasicDropdowns();
     
     // Initialize event listeners
     initializeEventListeners();
@@ -1319,6 +1325,13 @@ function initializeUI() {
     console.log('✅ UI initialization complete');
 }
 
+// Refresh user dropdown when authentication state changes
+function refreshUserDropdown() {
+    if (sharePointAccessToken) {
+        console.log('🔄 Refreshing user dropdown with SharePoint access...');
+        populateAssigneeDropdown();
+    }
+}
 
 // Add this function to show login screen properly
 function showLoginScreen() {
@@ -1821,11 +1834,34 @@ async function processOAuthCallback(authCode, returnedState) {
         // Show loading state
         showNotification('Processing authentication...', 'info');
         
+        // Debug PKCE state before exchange
+        console.log('🔐 Pre-token exchange PKCE state:');
+        const pkceState = verifyPkceState();
+        
+        if (!pkceState.hasCodeVerifier) {
+            // If we still don't have the code verifier, try to restore from URL parameters
+            console.log('🔐 Attempting to restore PKCE state from URL...');
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorDescription = urlParams.get('error_description');
+            const error = urlParams.get('error');
+            
+            if (error) {
+                throw new Error(`OAuth error: ${error} - ${errorDescription || 'Unknown error'}`);
+            }
+            
+            throw new Error('PKCE code verifier missing. The authentication session may have expired or storage was cleared.');
+        }
+        
+        // Validate state parameter if available
+        if (returnedState && pkceState.state && returnedState !== pkceState.state) {
+            throw new Error('Invalid state parameter - possible security issue');
+        }
+        
         // Process the authentication
         const tokenData = await exchangeCodeForTokenPKCE(authCode);
         
         if (!tokenData.access_token) {
-            throw new Error('No access token received');
+            throw new Error('No access token received from Microsoft');
         }
         
         // Store token and get user info
@@ -1843,15 +1879,17 @@ async function processOAuthCallback(authCode, returnedState) {
         currentUser = sharePointUserInfo;
         sessionStorage.setItem('current_user', JSON.stringify(currentUser));
         
-        // Clean up URL and session
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
+        // Clean up URL and PKCE parameters from ALL storage locations
+        cleanupPkceStorage();
         window.history.replaceState({}, document.title, window.location.pathname);
         
         // Load data and show dashboard
         await loadDataFromSharePoint();
         showDashboard();
         startRealTimeSync();
+        
+        // IMPORTANT: Populate ALL dropdowns including SharePoint-dependent ones AFTER authentication
+        populateDropdowns();
         
         showNotification(`Welcome ${sharePointUserInfo.name}!`);
         
@@ -1860,11 +1898,29 @@ async function processOAuthCallback(authCode, returnedState) {
         showNotification('Authentication failed: ' + error.message, 'error');
         
         // Clean up and show login screen
+        cleanupPkceStorage();
         clearSession();
         showLoginScreen();
     }
 }
 
+
+// Debug function to check storage state
+function debugStorageState() {
+    console.log('🔍 STORAGE DEBUG INFO:');
+    console.log('LocalStorage PKCE:', {
+        verifier: localStorage.getItem('pkce_code_verifier')?.substring(0, 20) + '...',
+        state: localStorage.getItem('pkce_state')
+    });
+    console.log('SessionStorage PKCE:', {
+        verifier: sessionStorage.getItem('pkce_code_verifier')?.substring(0, 20) + '...',
+        state: sessionStorage.getItem('pkce_state')
+    });
+    console.log('TempStorage PKCE:', window.tempPkceStorage);
+    console.log('URL Parameters:', Object.fromEntries(new URLSearchParams(window.location.search)));
+}
+
+// Call this in console if needed: debugStorageState()
 
 function checkAndFixDashboard() {
     console.log('🔧 Checking dashboard state...');
@@ -2366,44 +2422,132 @@ window.addEventListener('load', function() {
             }, 1000);
         }
 
-        
 
-        async function authenticateWithMicrosoft() {
-            try {
-                console.log('🔐 Starting PKCE Microsoft authentication...');
-                showNotification('Redirecting to Microsoft 365...', 'info');
-                
-                // Generate PKCE parameters
-                const codeVerifier = generateCodeVerifier();
-                const codeChallenge = await generateCodeChallenge(codeVerifier);
-                const state = 'auth_' + Date.now();
-                
-                console.log('🔐 PKCE parameters generated:', {
-                    verifierLength: codeVerifier.length,
-                    challengeLength: codeChallenge.length,
-                    state: state
-                });
-                
-                // Store PKCE parameters securely
-                sessionStorage.setItem('pkce_code_verifier', codeVerifier);
-                sessionStorage.setItem('pkce_state', state);
-                
-                // Build PKCE auth URL
-                const authUrl = buildPKCEAuthUrl(codeChallenge, state);
-                console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
-                
-                // Redirect to Microsoft authentication (same window)
-                window.location.href = authUrl;
-                
-            } catch (error) {
-                console.error('❌ PKCE authentication failed:', error);
-                showNotification('Authentication failed: ' + error.message, 'error');
-                
-                // Clean up on failure
-                sessionStorage.removeItem('pkce_code_verifier');
-                sessionStorage.removeItem('pkce_state');
-            }
+async function authenticateWithMicrosoft() {
+    try {
+        console.log('🔐 Starting PKCE Microsoft authentication...');
+        showNotification('Redirecting to Microsoft 365...', 'info');
+        
+        // Generate PKCE parameters
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        const state = 'auth_' + Date.now();
+        
+        console.log('🔐 PKCE parameters generated:', {
+            verifierLength: codeVerifier.length,
+            challengeLength: codeChallenge.length,
+            state: state
+        });
+        
+        // Store PKCE parameters in the most persistent way possible
+        // 1. Encode and store in sessionStorage (primary)
+        sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+        sessionStorage.setItem('pkce_state', state);
+        
+        // 2. Store in localStorage as backup
+        localStorage.setItem('pkce_code_verifier', codeVerifier);
+        localStorage.setItem('pkce_state', state);
+        
+        // 3. Store in a cookie as additional backup (persists across redirects)
+        document.cookie = `pkce_code_verifier=${encodeURIComponent(codeVerifier)}; path=/; max-age=300`; // 5 minutes
+        document.cookie = `pkce_state=${state}; path=/; max-age=300`;
+        
+        console.log('🔐 PKCE parameters stored in multiple locations');
+        
+        // Build PKCE auth URL
+        const authUrl = buildPKCEAuthUrl(codeChallenge, state);
+        console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
+        
+        // Redirect to Microsoft authentication (same window)
+        window.location.href = authUrl;
+        
+    } catch (error) {
+        console.error('❌ PKCE authentication failed:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
+        
+        // Clean up on failure
+        cleanupPkceStorage();
+    }
+}
+
+
+// Cookie helper functions
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    return null;
+}
+
+function deleteCookie(name) {
+    document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+}
+
+// Clean up PKCE storage from all locations
+function cleanupPkceStorage() {
+    localStorage.removeItem('pkce_code_verifier');
+    localStorage.removeItem('pkce_state');
+    sessionStorage.removeItem('pkce_code_verifier');
+    sessionStorage.removeItem('pkce_state');
+    delete window.tempPkceStorage;
+}
+
+
+// Add this function to verify PKCE state
+function verifyPkceState() {
+    // Check all possible storage locations
+    const localStorageVerifier = localStorage.getItem('pkce_code_verifier');
+    const localStorageState = localStorage.getItem('pkce_state');
+    
+    const sessionStorageVerifier = sessionStorage.getItem('pkce_code_verifier');
+    const sessionStorageState = sessionStorage.getItem('pkce_state');
+    
+    const cookieVerifier = getCookie('pkce_code_verifier');
+    const cookieState = getCookie('pkce_state');
+    
+    const tempStorageVerifier = window.tempPkceStorage?.code_verifier;
+    const tempStorageState = window.tempPkceStorage?.state;
+    
+    // Use the first available verifier (cookies are most reliable for redirects)
+    const codeVerifier = cookieVerifier || localStorageVerifier || sessionStorageVerifier || tempStorageVerifier;
+    const state = cookieState || localStorageState || sessionStorageState || tempStorageState;
+    
+    console.log('🔐 PKCE State Verification:', {
+        cookies: {
+            hasCodeVerifier: !!cookieVerifier,
+            hasState: !!cookieState
+        },
+        localStorage: {
+            hasCodeVerifier: !!localStorageVerifier,
+            hasState: !!localStorageState
+        },
+        sessionStorage: {
+            hasCodeVerifier: !!sessionStorageVerifier,
+            hasState: !!sessionStorageState
+        },
+        tempStorage: {
+            hasCodeVerifier: !!tempStorageVerifier,
+            hasState: !!tempStorageState
+        },
+        final: {
+            hasCodeVerifier: !!codeVerifier,
+            hasState: !!state,
+            codeVerifierLength: codeVerifier?.length,
+            source: codeVerifier === cookieVerifier ? 'cookie' : 
+                   codeVerifier === localStorageVerifier ? 'localStorage' : 
+                   codeVerifier === sessionStorageVerifier ? 'sessionStorage' : 
+                   codeVerifier === tempStorageVerifier ? 'tempStorage' : 'none'
         }
+    });
+    
+    return {
+        hasCodeVerifier: !!codeVerifier,
+        hasState: !!state,
+        codeVerifier: codeVerifier,
+        state: state
+    };
+}
+
 
         function showManualCodeExtractionHelper(popup) {
             const helper = document.createElement('div');
@@ -2773,51 +2917,87 @@ window.addEventListener('load', function() {
             });
         }
 
-        async function exchangeCodeForTokenPKCE(authCode) {
-            try {
-                console.log('🔄 PKCE token exchange starting...');
-                
-                const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
-                if (!codeVerifier) {
-                    throw new Error('PKCE code verifier not found');
-                }
-                
-                const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
-                
-                const redirectUri = window.location.origin + window.location.pathname;
-                
-                const body = new URLSearchParams({
-                    client_id: SHAREPOINT_CONFIG.CLIENT_ID,
-                    scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
-                    code: authCode,
-                    redirect_uri: redirectUri,
-                    grant_type: 'authorization_code',
-                    code_verifier: codeVerifier // PKCE proof
-                });
-                
-                const response = await fetch(tokenUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: body.toString()
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error_description || 'PKCE token exchange failed');
-                }
-                
-                const tokenData = await response.json();
-                console.log('✅ PKCE token exchange successful');
-                
-                return tokenData;
-                
-            } catch (error) {
-                console.error('❌ PKCE token exchange failed:', error);
-                throw error;
-            }
+async function exchangeCodeForTokenPKCE(authCode) {
+    try {
+        console.log('🔄 PKCE token exchange starting...');
+        
+        // Check all storage locations for code verifier
+        const codeVerifier = localStorage.getItem('pkce_code_verifier') || 
+                            sessionStorage.getItem('pkce_code_verifier') || 
+                            window.tempPkceStorage?.code_verifier;
+        
+        console.log('🔐 Retrieved code verifier:', {
+            fromLocalStorage: !!localStorage.getItem('pkce_code_verifier'),
+            fromSessionStorage: !!sessionStorage.getItem('pkce_code_verifier'),
+            fromTempStorage: !!window.tempPkceStorage?.code_verifier,
+            exists: !!codeVerifier,
+            length: codeVerifier?.length,
+            first10: codeVerifier?.substring(0, 10) + '...'
+        });
+        
+        if (!codeVerifier) {
+            // Debug all storage keys
+            const allLocalKeys = Object.keys(localStorage);
+            const allSessionKeys = Object.keys(sessionStorage);
+            console.log('🔐 All localStorage keys:', allLocalKeys);
+            console.log('🔐 All sessionStorage keys:', allSessionKeys);
+            console.log('🔐 Window temp storage:', window.tempPkceStorage);
+            
+            throw new Error('PKCE code verifier not found in any storage location');
         }
+        
+        const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
+        
+        const redirectUri = window.location.origin + window.location.pathname;
+        
+        const body = new URLSearchParams({
+            client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+            scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
+            code: authCode,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code',
+            code_verifier: codeVerifier // PKCE proof
+        });
+        
+        console.log('🔐 Token exchange request:', {
+            client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+            code_length: authCode.length,
+            redirect_uri: redirectUri,
+            code_verifier_length: codeVerifier.length,
+            token_url: tokenUrl
+        });
+        
+        const response = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body.toString()
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Token exchange failed:', response.status, errorText);
+            
+            // If it's a 400 error, it might be because the code verifier is wrong
+            if (response.status === 400) {
+                throw new Error('Invalid PKCE code verifier. The authentication session may have expired.');
+            }
+            
+            throw new Error(`PKCE token exchange failed: ${response.status}`);
+        }
+        
+        const tokenData = await response.json();
+        console.log('✅ PKCE token exchange successful');
+        
+        return tokenData;
+        
+    } catch (error) {
+        console.error('❌ PKCE token exchange failed:', error);
+        throw error;
+    }
+}
+
 
         async function getUserInfo(token) {
             try {
@@ -3576,8 +3756,8 @@ async function editFruit(fruitId) {
             }
         }
 
-        // Dashboard functions
         
+
 function showDashboard() {
     console.log('🔄 Showing dashboard...');
     
@@ -3607,8 +3787,15 @@ function showDashboard() {
     // Update all UI components
     updateUIComponents();
     
+    // Ensure dropdowns are populated with SharePoint data
+    if (sharePointAccessToken) {
+        console.log('🔄 Refreshing dropdowns with SharePoint data...');
+        populateDropdowns();
+    }
+    
     console.log('✅ Dashboard fully loaded');
 }
+
 
 function updateUserDisplay() {
     const userAvatar = document.getElementById('userAvatar');
@@ -4054,7 +4241,10 @@ setTimeout(handleStuckLoading, 3000);
         }
 
 
-    function populateDropdowns() {
+// Populate only basic dropdowns that don't require SharePoint access
+function populateBasicDropdowns() {
+    console.log('📋 Populating basic dropdowns...');
+    
     // Populate status filter
     const statusFilter = document.getElementById('statusFilter');
     if (statusFilter) {
@@ -4073,13 +4263,38 @@ setTimeout(handleStuckLoading, 3000);
             ).join('');
     }
 
-    // Populate fruit dropdowns in modals
+    // Populate fruit dropdowns in modals from local data
     populateFruitDropdowns();
     
-    // Populate assignee dropdown
-    populateAssigneeDropdown();
+    console.log('✅ Basic dropdowns populated');
 }
 
+
+// Populate ALL dropdowns including SharePoint-dependent ones
+function populateDropdowns() {
+    console.log('📋 Populating ALL dropdowns (including SharePoint)...');
+    
+    // Populate basic dropdowns
+    populateBasicDropdowns();
+    
+    // Only populate SharePoint-dependent dropdowns if we have access
+    if (sharePointAccessToken) {
+        console.log('🔐 Populating SharePoint-dependent dropdowns...');
+        populateAssigneeDropdown();
+    } else {
+        console.log('⚠️ Skipping SharePoint-dependent dropdowns - no access token');
+        // Set fallback assignee options
+        const assigneeDatalist = document.getElementById('assigneeOptions');
+        if (assigneeDatalist) {
+            const fallbackUsers = currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+            fallbackUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                assigneeDatalist.appendChild(option);
+            });
+        }
+    }
+}
 
         function populateFruitDropdowns() {
             const activityFruitSelect = document.getElementById('activityFruitSelect');
@@ -5714,29 +5929,44 @@ async function callSharePointAPI(url, options = {}) {
             }
         }
 
+        
+
 // Load users for Assign To dropdown with better Person field handling
 async function loadUsersForDropdown() {
     try {
         console.log('👥 Loading users for Assign To dropdown...');
         
+        // Get fresh access token from multiple sources
+        const accessToken = sessionStorage.getItem('access_token') || sharePointAccessToken;
+        
+        if (!accessToken) {
+            console.error('❌ No SharePoint access token available for loading users');
+            throw new Error('Authentication required to load users');
+        }
+        
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'&$select=id,fields&$top=500`;
+        
+        console.log('🔐 Loading users from SharePoint...');
         
         const response = await fetch(url, {
             headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Authorization': `Bearer ${accessToken}`,
                 'Accept': 'application/json'
             }
         });
         
         if (!response.ok) {
-            console.warn('⚠️ Could not load users list, using current user only');
-            return currentUser ? [currentUser.name] : ['Unassigned'];
+            if (response.status === 401) {
+                console.error('❌ Access token invalid or expired');
+                throw new Error('Authentication expired. Please sign in again.');
+            }
+            throw new Error(`Failed to load users: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
         const userItems = data.value || [];
         
-        console.log('📋 Users loaded for dropdown:', userItems);
+        console.log('📋 Users loaded for dropdown:', userItems.length, 'users found');
         
         // Extract display names with better Person field handling
         const userNames = userItems.map(item => {
@@ -5792,12 +6022,11 @@ async function loadUsersForDropdown() {
         
     } catch (error) {
         console.error('❌ Error loading users for dropdown:', error);
-        // Fallback options
-        return currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+        throw error; // Re-throw to handle in calling function
     }
 }
+
    
-        
 // Populate searchable Assign To dropdown
 async function populateAssigneeDropdown() {
     try {
@@ -5808,6 +6037,9 @@ async function populateAssigneeDropdown() {
             console.log('❌ Assignee search elements not found');
             return;
         }
+        
+        // Show loading state
+        showAssigneeLoading();
         
         // Clear existing options
         assigneeDatalist.innerHTML = '';
@@ -5828,8 +6060,25 @@ async function populateAssigneeDropdown() {
         
     } catch (error) {
         console.error('❌ Error populating assignee dropdown:', error);
+        showNotification('Failed to load users list: ' + error.message, 'error');
+        
+        // Fallback: at least show current user and Unassigned
+        const assigneeDatalist = document.getElementById('assigneeOptions');
+        if (assigneeDatalist) {
+            const fallbackUsers = currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+            fallbackUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                assigneeDatalist.appendChild(option);
+            });
+            console.log('✅ Fallback assignee options set');
+        }
+    } finally {
+        hideAssigneeLoading();
     }
 }
+
+
 
 // Enhanced search functionality
 function enhanceAssigneeSearch(inputElement, users) {
