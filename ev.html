@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,7 +78,7 @@
                         <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center">
                             <i class="fas fa-cross text-white"></i>
                         </div>
-                        <h1 class="text-xl font-bold text-gray-800">ERMS</h1>
+                        <h1 class="text-xl font-bold text-gray-800">Evangelism CRM</h1>
                         <div class="flex items-center space-x-2">
                             <div id="connectionStatus" class="flex items-center space-x-1">
                                 <div class="w-2 h-2 bg-gray-400 rounded-full" id="statusIndicator"></div>
@@ -1130,6 +1131,40 @@
             USERS_LIST_ID: 'BFA74452-66DA-4A02-BD4D-D1F3E091DDF0', // Users Management List
             GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
         };
+
+
+        // --- ADD: fetchWithAuth helper (paste after SHAREPOINT_CONFIG / token var declarations) ---
+async function fetchWithAuth(url, opts = {}) {
+    // ensure headers object
+    opts.headers = opts.headers || {};
+
+    // Check token
+    if (!window.sharePointAccessToken) {
+        console.error('❌ fetchWithAuth: no sharePointAccessToken available');
+        // Throw so callers can handle gracefully
+        throw new Error('No SharePoint access token. Please authenticate.');
+    }
+
+    // Attach Authorization header (preserve other headers)
+    opts.headers = Object.assign({
+        'Authorization': `Bearer ${window.sharePointAccessToken}`,
+        'Accept': 'application/json'
+    }, opts.headers);
+
+    const res = await fetchWithAuth(url, opts);
+    
+
+    if (res.status === 401) {
+        // explicit, actionable error for debugging
+        console.error('❌ Graph API returned 401 Unauthorized for URL:', url);
+        // read body for extra info (non-blocking)
+        try { const txt = await res.text(); console.error('Response body:', txt); } catch(e) {}
+        throw new Error('Unauthorized (401) - check SharePoint token/permissions.');
+    }
+
+    return res;
+}
+
         
         // Global state
         let currentUser = null;
@@ -1527,7 +1562,8 @@ async function waitForVerificationResponse(token) {
         try {
             const encodedToken = encodeURIComponent(token);
             const responseUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${MAGIC_LINK_CONFIG.VERIFICATION_RESPONSES_LIST_ID}/items?$expand=fields&$filter=fields/Token eq '${encodedToken}'&$orderby=fields/ResponseDate desc&$top=1`;
-            
+        
+
             const response = await fetch(responseUrl, {
                 headers: {
                     'Authorization': `Bearer ${sharePointAccessToken}`,
@@ -2669,7 +2705,7 @@ window.addEventListener('load', function() {
 
         async function getUserInfo(token) {
             try {
-                const response = await fetch('https://graph.microsoft.com/v1.0/me', {
+                const response = await fetchWithAuth('https://graph.microsoft.com/v1.0/me', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
@@ -2716,7 +2752,7 @@ window.addEventListener('load', function() {
                     
                     console.log('🔐 Querying SharePoint Users list for all users');
                     
-                    const response = await fetch(url, {
+                    const response = await fetchWithAuth(url, {
                         headers: {
                             'Authorization': `Bearer ${sharePointAccessToken}`,
                             'Accept': 'application/json',
@@ -2903,7 +2939,7 @@ async function loadFruitsFromSharePoint() {
         
         console.log('📊 Loading fruits from:', url);
         
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
             headers: {
                 'Authorization': `Bearer ${sharePointAccessToken}`,
                 'Accept': 'application/json'
@@ -3045,7 +3081,7 @@ async function loadActivitiesFromSharePoint() {
         
         console.log('📊 Loading activities from SharePoint...');
         
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
             headers: {
                 'Authorization': `Bearer ${sharePointAccessToken}`,
                 'Accept': 'application/json'
@@ -3121,7 +3157,7 @@ async function loadActivitiesFromSharePoint() {
                 
                 const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items`;
                 
-                const response = await fetch(url, {
+                const response = await fetchWithAuth(url, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${sharePointAccessToken}`,
@@ -3194,7 +3230,7 @@ async function loadActivitiesFromSharePoint() {
         
         console.log('Creating activity with data:', requestBody);
         
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${sharePointAccessToken}`,
@@ -3309,7 +3345,7 @@ async function updateAdditionalFruitFields(fruitId, fruitData) {
         if (Object.keys(additionalData).length > 0) {
             console.log('🔄 Updating additional fields:', additionalData);
             
-            const response = await fetch(url, {
+            const response = await fetchWithAuth(url, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${sharePointAccessToken}`,
@@ -3409,7 +3445,7 @@ async function editFruit(fruitId) {
                 
                 const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items/${fruitId}`;
                 
-                const response = await fetch(url, {
+                const response = await fetchWithAuth(url, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${sharePointAccessToken}`
@@ -5456,7 +5492,7 @@ function resetAddFruitModal() {
                 // Test by getting site information
                 const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}`;
                 
-                const response = await fetch(url, {
+                const response = await fetchWithAuth(url, {
                     headers: {
                         'Authorization': `Bearer ${sharePointAccessToken}`,
                         'Accept': 'application/json'
@@ -5488,7 +5524,7 @@ async function callSharePointAPI(url, options = {}) {
     try {
         // If we have SharePoint access token (Microsoft auth), use it directly
         if (sharePointAccessToken) {
-            const response = await fetch(url, {
+            const response = await fetchWithAuth(url, {
                 ...options,
                 headers: {
                     ...options.headers,
@@ -5551,7 +5587,7 @@ async function callSharePointAPI(url, options = {}) {
 
                 const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields`;
                 
-                const response = await fetch(url, {
+                const response = await fetchWithAuth(url, {
                     headers: {
                         'Authorization': `Bearer ${sharePointAccessToken}`,
                         'Accept': 'application/json'
@@ -5588,59 +5624,63 @@ async function callSharePointAPI(url, options = {}) {
         }
 
 
-        // Load users for Assign To dropdown
+// --- REPLACE or update loadUsersForDropdown() function with this robust version ---
 async function loadUsersForDropdown() {
     try {
-        console.log('👥 Loading users for Assign To dropdown...');
-        
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'&$select=id,fields&$top=500`;
-        
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            console.warn('⚠️ Could not load users list, using current user only');
-            return [currentUser.name];
+        // example Graph URL you might have; keep your original URL variable if present
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$top=500`;
+
+        const res = await fetchWithAuth(url);
+        if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(`Failed loading users: ${res.status} ${txt}`);
         }
-        
-        const data = await response.json();
-        const userItems = data.value || [];
-        
-        console.log('📋 Users loaded for dropdown:', userItems.length);
-        
-        // Extract display names from Person field
-        const userNames = userItems.map(item => {
-            // Handle Person field - it might be an object with displayName
-            if (item.fields.DisplayName && typeof item.fields.DisplayName === 'object') {
-                return item.fields.DisplayName.displayName || 
-                       item.fields.DisplayName.title || 
-                       item.fields.DisplayName.email || 
-                       'Unknown User';
-            }
-            return item.fields.DisplayName || 'Unknown User';
-        }).filter(name => name && name !== 'Unknown User');
-        
-        // Add current user if not in list
-        if (currentUser && currentUser.name && !userNames.includes(currentUser.name)) {
-            userNames.push(currentUser.name);
+
+        const json = await res.json();
+        const items = json.value || [];
+
+        const assigneeInput = document.getElementById('assigneeInput') || document.getElementById('activityFruitInput'); // adapt to your IDs
+        const assigneeDatalist = document.getElementById('assigneeOptions') || document.getElementById('activityFruitOptions'); // adapt to your IDs
+
+        // build datalist/options defensively
+        const optionsHtml = items.map(item => {
+            // safe navigation
+            const fields = item && item.fields ? item.fields : {};
+            // try common name fields
+            const name =
+                (fields.DisplayName || fields.displayName || fields.Title || fields.TitleText || fields.Name) ||
+                (item && item.name) ||
+                (item && item.title) ||
+                '';
+
+            if (!name) return ''; // skip empty
+
+            // escape quotes / angle brackets
+            return `<option value="${name.replace(/"/g, '&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}"></option>`;
+        }).filter(Boolean).join('');
+
+        if (assigneeDatalist) assigneeDatalist.innerHTML = optionsHtml;
+        // If you used a select dropdown elsewhere (legacy), also populate it safely:
+        const assigneeSelect = document.getElementById('assigneeSelect');
+        if (assigneeSelect) {
+            assigneeSelect.innerHTML = '<option value="">Select user...</option>' + items.map(item => {
+                const fields = item && item.fields ? item.fields : {};
+                const name = (fields.DisplayName || fields.displayName || fields.Title || fields.Name) || (item && item.name) || '';
+                const id = item && (item.id || item.fields && item.fields.Id) ? (item.id || item.fields.Id) : '';
+                if (!name) return '';
+                return `<option value="${id}">${name}</option>`;
+            }).filter(Boolean).join('');
         }
-        
-        // Remove duplicates and sort
-        const uniqueUserNames = [...new Set(userNames)].sort();
-        
-        console.log('✅ Available users for assignment:', uniqueUserNames);
-        return uniqueUserNames;
-        
-    } catch (error) {
-        console.error('❌ Error loading users for dropdown:', error);
-        // Fallback to current user only
-        return currentUser ? [currentUser.name] : [];
+
+        console.log('✅ Users for dropdown loaded:', items.length);
+    } catch (err) {
+        console.error('❌ Error loading users for dropdown:', err);
+        // keep existing UI behaviour: show friendly toast or console
+        showNotification && typeof showNotification === 'function' && showNotification('Error loading users for dropdown: ' + err.message, 'error');
     }
 }
+
+
 
 // Populate Assign To dropdown
 async function populateAssigneeDropdown() {
@@ -5821,7 +5861,7 @@ async function populateAssigneeDropdown() {
             try {
                 const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items`;
                 
-                const response = await fetch(url, {
+                const response = await fetchWithAuth(url, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${sharePointAccessToken}`,
@@ -5942,7 +5982,7 @@ async function updateUser(event) {
                 Department: updatedUser.department,
                 Notes: updatedUser.notes
             };
-            const res = await fetch(url, {
+            const res = await fetchWithAuth(url, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${sharePointAccessToken}`,
@@ -5976,6 +6016,8 @@ async function updateUser(event) {
         showNotification('Failed to update user: ' + err.message, 'error');
     }
 }
+
+
 
 
         async function deleteUser(userId) {
@@ -6021,7 +6063,7 @@ async function updateUser(event) {
             try {
                 const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items/${userId}`;
                 
-                const response = await fetch(url, {
+                const response = await fetchWithAuth(url, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${sharePointAccessToken}`
@@ -6144,7 +6186,7 @@ async function debugSharePointFields() {
         // Get the list schema to see available fields
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/columns`;
         
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
             headers: {
                 'Authorization': `Bearer ${sharePointAccessToken}`,
                 'Accept': 'application/json'
