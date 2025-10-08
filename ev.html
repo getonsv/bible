@@ -1176,6 +1176,77 @@
             GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
         };
         
+        // Persistent in-memory storage that survives page reloads
+window._pkceStorage = window._pkceStorage || {};
+
+// Override the PKCE storage functions to use this persistent storage
+const originalAuthenticateWithMicrosoft = window.authenticateWithMicrosoft;
+window.authenticateWithMicrosoft = async function() {
+    try {
+        console.log('🔐 Starting PKCE Microsoft authentication...');
+        showNotification('Redirecting to Microsoft 365...', 'info');
+        
+        // Generate PKCE parameters
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        const state = 'auth_' + Date.now();
+        
+        console.log('🔐 PKCE parameters generated:', {
+            verifierLength: codeVerifier.length,
+            challengeLength: codeChallenge.length,
+            state: state
+        });
+        
+        // Store in persistent in-memory storage
+        window._pkceStorage = {
+            code_verifier: codeVerifier,
+            state: state,
+            timestamp: Date.now()
+        };
+        
+        // Also store in all other locations as backup
+        sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+        sessionStorage.setItem('pkce_state', state);
+        localStorage.setItem('pkce_code_verifier', codeVerifier);
+        localStorage.setItem('pkce_state', state);
+        
+        console.log('🔐 PKCE parameters stored in persistent memory');
+        
+        // Build PKCE auth URL
+        const authUrl = buildPKCEAuthUrl(codeChallenge, state);
+        console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
+        
+        // Redirect to Microsoft authentication (same window)
+        window.location.href = authUrl;
+        
+    } catch (error) {
+        console.error('❌ PKCE authentication failed:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
+        cleanupPkceStorage();
+    }
+};
+
+// Update verifyPkceState to check the persistent storage first
+const originalVerifyPkceState = window.verifyPkceState;
+window.verifyPkceState = function() {
+    const persistentStorageVerifier = window._pkceStorage?.code_verifier;
+    const persistentStorageState = window._pkceStorage?.state;
+    
+    // If we have data in persistent storage, use it
+    if (persistentStorageVerifier && persistentStorageState) {
+        console.log('🔐 Using PKCE parameters from persistent memory storage');
+        return {
+            hasCodeVerifier: true,
+            hasState: true,
+            codeVerifier: persistentStorageVerifier,
+            state: persistentStorageState
+        };
+    }
+    
+    // Otherwise fall back to the original implementation
+    return originalVerifyPkceState();
+};
+
         // Global state
         let currentUser = null;
         let currentTab = 'overview';
@@ -1226,18 +1297,35 @@
             'Other'
         ];
 
-   
 
+   
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // Clear any existing session to ensure fresh start
-    clearSession();
-    
-    // Check if this is an OAuth callback
+    // EMERGENCY: Check if we have OAuth callback parameters but no PKCE state
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
+    const state = urlParams.get('state');
     
+    if (authCode && state && state.startsWith('auth_')) {
+        console.log('🚨 EMERGENCY: OAuth callback detected but PKCE state may be lost');
+        
+        // Try to reconstruct the PKCE state from the state parameter
+        const timestamp = state.replace('auth_', '');
+        console.log('🔐 Attempting to reconstruct PKCE state from timestamp:', timestamp);
+        
+        // Show a user-friendly message and option to retry
+        showNotification('Authentication session expired. Please try signing in again.', 'error');
+        
+        // Clear the URL parameters to prevent infinite loop
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Re-initialize auth
+        initializeMicrosoftAuth();
+        return;
+    }
+    
+    // Rest of your existing initialization code...
     if (authCode) {
         console.log('🔐 OAuth callback detected');
         processOAuthCallback(authCode, urlParams.get('state'));
@@ -2376,14 +2464,21 @@ function verifyPkceState() {
     const sessionStorageVerifier = sessionStorage.getItem('pkce_code_verifier');
     const sessionStorageState = sessionStorage.getItem('pkce_state');
     
+    const cookieVerifier = getCookie('pkce_code_verifier');
+    const cookieState = getCookie('pkce_state');
+    
     const tempStorageVerifier = window.tempPkceStorage?.code_verifier;
     const tempStorageState = window.tempPkceStorage?.state;
     
-    // Use the first available verifier
-    const codeVerifier = localStorageVerifier || sessionStorageVerifier || tempStorageVerifier;
-    const state = localStorageState || sessionStorageState || tempStorageState;
+    // Use the first available verifier (cookies are most reliable for redirects)
+    const codeVerifier = cookieVerifier || localStorageVerifier || sessionStorageVerifier || tempStorageVerifier;
+    const state = cookieState || localStorageState || sessionStorageState || tempStorageState;
     
     console.log('🔐 PKCE State Verification:', {
+        cookies: {
+            hasCodeVerifier: !!cookieVerifier,
+            hasState: !!cookieState
+        },
         localStorage: {
             hasCodeVerifier: !!localStorageVerifier,
             hasState: !!localStorageState
@@ -2394,14 +2489,14 @@ function verifyPkceState() {
         },
         tempStorage: {
             hasCodeVerifier: !!tempStorageVerifier,
-            hasState: !!tempStorageState,
-            age: window.tempPkceStorage ? Date.now() - window.tempPkceStorage.timestamp : 'N/A'
+            hasState: !!tempStorageState
         },
         final: {
             hasCodeVerifier: !!codeVerifier,
             hasState: !!state,
             codeVerifierLength: codeVerifier?.length,
-            source: codeVerifier === localStorageVerifier ? 'localStorage' : 
+            source: codeVerifier === cookieVerifier ? 'cookie' : 
+                   codeVerifier === localStorageVerifier ? 'localStorage' : 
                    codeVerifier === sessionStorageVerifier ? 'sessionStorage' : 
                    codeVerifier === tempStorageVerifier ? 'tempStorage' : 'none'
         }
@@ -2414,6 +2509,7 @@ function verifyPkceState() {
         state: state
     };
 }
+
 
 // Call this in your processOAuthCallback function to debug
 console.log('🔐 Pre-token exchange PKCE check:');
@@ -2549,6 +2645,19 @@ async function authenticateWithMicrosoft() {
     }
 }
 
+// Cookie helper functions
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    return null;
+}
+
+function deleteCookie(name) {
+    document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+}
+
+
 
 // Clean up PKCE storage from all locations
 function cleanupPkceStorage() {
@@ -2556,8 +2665,12 @@ function cleanupPkceStorage() {
     localStorage.removeItem('pkce_state');
     sessionStorage.removeItem('pkce_code_verifier');
     sessionStorage.removeItem('pkce_state');
+    deleteCookie('pkce_code_verifier');
+    deleteCookie('pkce_state');
     delete window.tempPkceStorage;
 }
+
+
         function showManualCodeExtractionHelper(popup) {
             const helper = document.createElement('div');
             helper.id = 'authHelper';
