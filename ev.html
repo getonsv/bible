@@ -1854,7 +1854,6 @@ function checkForOAuthCallback() {
     return false;
 }
 
-
 async function processOAuthCallback(authCode, returnedState) {
     try {
         console.log('🔄 Processing OAuth callback...');
@@ -1867,14 +1866,29 @@ async function processOAuthCallback(authCode, returnedState) {
         const pkceState = verifyPkceState();
         
         if (!pkceState.hasCodeVerifier) {
-            throw new Error('PKCE code verifier missing. Authentication session may have expired.');
+            // If we still don't have the code verifier, try to restore from URL parameters
+            console.log('🔐 Attempting to restore PKCE state from URL...');
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorDescription = urlParams.get('error_description');
+            const error = urlParams.get('error');
+            
+            if (error) {
+                throw new Error(`OAuth error: ${error} - ${errorDescription || 'Unknown error'}`);
+            }
+            
+            throw new Error('PKCE code verifier missing. The authentication session may have expired or storage was cleared.');
+        }
+        
+        // Validate state parameter if available
+        if (returnedState && pkceState.state && returnedState !== pkceState.state) {
+            throw new Error('Invalid state parameter - possible security issue');
         }
         
         // Process the authentication
         const tokenData = await exchangeCodeForTokenPKCE(authCode);
         
         if (!tokenData.access_token) {
-            throw new Error('No access token received');
+            throw new Error('No access token received from Microsoft');
         }
         
         // Store token and get user info
@@ -1892,11 +1906,8 @@ async function processOAuthCallback(authCode, returnedState) {
         currentUser = sharePointUserInfo;
         sessionStorage.setItem('current_user', JSON.stringify(currentUser));
         
-        // Clean up URL and PKCE parameters from BOTH storage locations
-        localStorage.removeItem('pkce_code_verifier');
-        localStorage.removeItem('pkce_state');
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
+        // Clean up URL and PKCE parameters from ALL storage locations
+        cleanupPkceStorage();
         window.history.replaceState({}, document.title, window.location.pathname);
         
         // Load data and show dashboard
@@ -1914,11 +1925,29 @@ async function processOAuthCallback(authCode, returnedState) {
         showNotification('Authentication failed: ' + error.message, 'error');
         
         // Clean up and show login screen
+        cleanupPkceStorage();
         clearSession();
         showLoginScreen();
     }
 }
 
+
+// Debug function to check storage state
+function debugStorageState() {
+    console.log('🔍 STORAGE DEBUG INFO:');
+    console.log('LocalStorage PKCE:', {
+        verifier: localStorage.getItem('pkce_code_verifier')?.substring(0, 20) + '...',
+        state: localStorage.getItem('pkce_state')
+    });
+    console.log('SessionStorage PKCE:', {
+        verifier: sessionStorage.getItem('pkce_code_verifier')?.substring(0, 20) + '...',
+        state: sessionStorage.getItem('pkce_state')
+    });
+    console.log('TempStorage PKCE:', window.tempPkceStorage);
+    console.log('URL Parameters:', Object.fromEntries(new URLSearchParams(window.location.search)));
+}
+
+// Call this in console if needed: debugStorageState()
 
 function checkAndFixDashboard() {
     console.log('🔧 Checking dashboard state...');
@@ -2340,17 +2369,19 @@ window.addEventListener('load', function() {
 
 // Add this function to verify PKCE state
 function verifyPkceState() {
-    // Check localStorage first (persists across redirects)
+    // Check all possible storage locations
     const localStorageVerifier = localStorage.getItem('pkce_code_verifier');
     const localStorageState = localStorage.getItem('pkce_state');
     
-    // Check sessionStorage as backup
     const sessionStorageVerifier = sessionStorage.getItem('pkce_code_verifier');
     const sessionStorageState = sessionStorage.getItem('pkce_state');
     
-    // Use localStorage first, fall back to sessionStorage
-    const codeVerifier = localStorageVerifier || sessionStorageVerifier;
-    const state = localStorageState || sessionStorageState;
+    const tempStorageVerifier = window.tempPkceStorage?.code_verifier;
+    const tempStorageState = window.tempPkceStorage?.state;
+    
+    // Use the first available verifier
+    const codeVerifier = localStorageVerifier || sessionStorageVerifier || tempStorageVerifier;
+    const state = localStorageState || sessionStorageState || tempStorageState;
     
     console.log('🔐 PKCE State Verification:', {
         localStorage: {
@@ -2361,10 +2392,18 @@ function verifyPkceState() {
             hasCodeVerifier: !!sessionStorageVerifier,
             hasState: !!sessionStorageState
         },
+        tempStorage: {
+            hasCodeVerifier: !!tempStorageVerifier,
+            hasState: !!tempStorageState,
+            age: window.tempPkceStorage ? Date.now() - window.tempPkceStorage.timestamp : 'N/A'
+        },
         final: {
             hasCodeVerifier: !!codeVerifier,
             hasState: !!state,
-            codeVerifierLength: codeVerifier?.length
+            codeVerifierLength: codeVerifier?.length,
+            source: codeVerifier === localStorageVerifier ? 'localStorage' : 
+                   codeVerifier === sessionStorageVerifier ? 'sessionStorage' : 
+                   codeVerifier === tempStorageVerifier ? 'tempStorage' : 'none'
         }
     });
     
@@ -2375,7 +2414,6 @@ function verifyPkceState() {
         state: state
     };
 }
-
 
 // Call this in your processOAuthCallback function to debug
 console.log('🔐 Pre-token exchange PKCE check:');
@@ -2463,7 +2501,7 @@ console.log(verifyPkceState());
             }, 1000);
         }
 
-async function authenticateWithMicrosoft() {
+        async function authenticateWithMicrosoft() {
     try {
         console.log('🔐 Starting PKCE Microsoft authentication...');
         showNotification('Redirecting to Microsoft 365...', 'info');
@@ -2479,17 +2517,23 @@ async function authenticateWithMicrosoft() {
             state: state
         });
         
-        // Store PKCE parameters in localStorage (persists across redirects)
+        // Store PKCE parameters in multiple locations for redundancy
+        // 1. localStorage (persists across redirects)
         localStorage.setItem('pkce_code_verifier', codeVerifier);
         localStorage.setItem('pkce_state', state);
         
-        // Also store in sessionStorage as backup
+        // 2. sessionStorage
         sessionStorage.setItem('pkce_code_verifier', codeVerifier);
         sessionStorage.setItem('pkce_state', state);
         
-        // Verify storage immediately
-        const storedVerifier = localStorage.getItem('pkce_code_verifier');
-        console.log('🔐 Code verifier stored in localStorage:', !!storedVerifier, 'Length:', storedVerifier?.length);
+        // 3. Temporary in-memory storage as backup
+        window.tempPkceStorage = {
+            code_verifier: codeVerifier,
+            state: state,
+            timestamp: Date.now()
+        };
+        
+        console.log('🔐 PKCE parameters stored in multiple locations');
         
         // Build PKCE auth URL
         const authUrl = buildPKCEAuthUrl(codeChallenge, state);
@@ -2503,14 +2547,18 @@ async function authenticateWithMicrosoft() {
         showNotification('Authentication failed: ' + error.message, 'error');
         
         // Clean up on failure
-        localStorage.removeItem('pkce_code_verifier');
-        localStorage.removeItem('pkce_state');
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
+        cleanupPkceStorage();
     }
 }
 
-
+// Clean up PKCE storage from all locations
+function cleanupPkceStorage() {
+    localStorage.removeItem('pkce_code_verifier');
+    localStorage.removeItem('pkce_state');
+    sessionStorage.removeItem('pkce_code_verifier');
+    sessionStorage.removeItem('pkce_state');
+    delete window.tempPkceStorage;
+}
         function showManualCodeExtractionHelper(popup) {
             const helper = document.createElement('div');
             helper.id = 'authHelper';
@@ -2889,12 +2937,15 @@ async function exchangeCodeForTokenPKCE(authCode) {
     try {
         console.log('🔄 PKCE token exchange starting...');
         
-        // Check both storage locations for code verifier
-        const codeVerifier = localStorage.getItem('pkce_code_verifier') || sessionStorage.getItem('pkce_code_verifier');
+        // Check all storage locations for code verifier
+        const codeVerifier = localStorage.getItem('pkce_code_verifier') || 
+                            sessionStorage.getItem('pkce_code_verifier') || 
+                            window.tempPkceStorage?.code_verifier;
         
-        console.log('🔐 Retrieved code verifier from storage:', {
+        console.log('🔐 Retrieved code verifier:', {
             fromLocalStorage: !!localStorage.getItem('pkce_code_verifier'),
             fromSessionStorage: !!sessionStorage.getItem('pkce_code_verifier'),
+            fromTempStorage: !!window.tempPkceStorage?.code_verifier,
             exists: !!codeVerifier,
             length: codeVerifier?.length,
             first10: codeVerifier?.substring(0, 10) + '...'
@@ -2906,7 +2957,9 @@ async function exchangeCodeForTokenPKCE(authCode) {
             const allSessionKeys = Object.keys(sessionStorage);
             console.log('🔐 All localStorage keys:', allLocalKeys);
             console.log('🔐 All sessionStorage keys:', allSessionKeys);
-            throw new Error('PKCE code verifier not found in any storage');
+            console.log('🔐 Window temp storage:', window.tempPkceStorage);
+            
+            throw new Error('PKCE code verifier not found in any storage location');
         }
         
         const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
@@ -2922,11 +2975,12 @@ async function exchangeCodeForTokenPKCE(authCode) {
             code_verifier: codeVerifier // PKCE proof
         });
         
-        console.log('🔐 Token exchange request body (redacted):', {
+        console.log('🔐 Token exchange request:', {
             client_id: SHAREPOINT_CONFIG.CLIENT_ID,
             code_length: authCode.length,
             redirect_uri: redirectUri,
-            code_verifier_length: codeVerifier.length
+            code_verifier_length: codeVerifier.length,
+            token_url: tokenUrl
         });
         
         const response = await fetch(tokenUrl, {
@@ -2940,6 +2994,12 @@ async function exchangeCodeForTokenPKCE(authCode) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('❌ Token exchange failed:', response.status, errorText);
+            
+            // If it's a 400 error, it might be because the code verifier is wrong
+            if (response.status === 400) {
+                throw new Error('Invalid PKCE code verifier. The authentication session may have expired.');
+            }
+            
             throw new Error(`PKCE token exchange failed: ${response.status}`);
         }
         
