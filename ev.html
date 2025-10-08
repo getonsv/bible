@@ -1,10 +1,11 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERMS</title>
+    <title>Evengelism System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1227,28 +1228,252 @@
         ];
 
    
-
+// DOMContentLoaded function:
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // Clear any existing session to ensure fresh start
-    clearSession();
-    
-    // Check if this is an OAuth callback
+    // Check if this is an OAuth callback first
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
+    const error = urlParams.get('error');
+    
+    if (error) {
+        console.error('❌ OAuth error:', error);
+        showNotification('Authentication failed: ' + error, 'error');
+        // Clean URL and show login
+        window.history.replaceState({}, document.title, window.location.pathname);
+        initializeMicrosoftAuth();
+        return;
+    }
     
     if (authCode) {
-        console.log('🔐 OAuth callback detected');
+        console.log('🔐 OAuth callback detected - processing...');
         processOAuthCallback(authCode, urlParams.get('state'));
+        return;
+    }
+    
+    // Check for existing valid session
+    if (checkForValidSession()) {
+        console.log('🔑 Valid session found - restoring...');
+        restoreSession();
     } else {
-        console.log('🔧 Showing login screen');
+        console.log('🔑 No valid session - showing login screen');
         showLoginScreen();
     }
     
     // Initialize UI components
     initializeUI();
 });
+
+// Enhanced session validation
+function checkForValidSession() {
+    const msToken = sessionStorage.getItem('access_token');
+    const msExpiry = sessionStorage.getItem('token_expiry');
+    const savedUser = sessionStorage.getItem('current_user');
+    
+    console.log('🔍 Session check:', {
+        hasToken: !!msToken,
+        hasExpiry: !!msExpiry,
+        hasUser: !!savedUser,
+        token: msToken ? '***' + msToken.slice(-10) : 'none'
+    });
+    
+    if (msToken && msExpiry && savedUser) {
+        const isTokenValid = Date.now() < parseInt(msExpiry);
+        console.log('🔐 Token validity:', isTokenValid);
+        return isTokenValid;
+    }
+    
+    return false;
+}
+
+// Enhanced session restoration
+function restoreSession() {
+    const msToken = sessionStorage.getItem('access_token');
+    const savedUser = sessionStorage.getItem('current_user');
+    
+    if (msToken && savedUser) {
+        sharePointAccessToken = msToken;
+        isSharePointMode = true;
+        
+        try {
+            currentUser = JSON.parse(savedUser);
+            console.log('👤 Restoring user:', currentUser.name);
+            
+            // Show dashboard immediately
+            showDashboard();
+            
+            // Then load data in background
+            loadDataFromSharePoint().then(() => {
+                console.log('✅ Session data restored successfully');
+                startRealTimeSync();
+                showNotification('Welcome back, ' + currentUser.name + '!');
+            }).catch(error => {
+                console.error('❌ Failed to restore session data:', error);
+                showNotification('Session restored but data loading failed', 'warning');
+                // Dashboard is already shown, just update with local data
+                updateUIComponents();
+            });
+            
+        } catch (error) {
+            console.error('❌ Failed to parse user data:', error);
+            showLoginScreen();
+        }
+    } else {
+        console.log('❌ Insufficient session data for restoration');
+        showLoginScreen();
+    }
+}
+
+// Enhanced dashboard showing with force display
+function showDashboard() {
+    console.log('🔄 Showing dashboard...');
+    
+    const loginScreen = document.getElementById('loginScreen');
+    const dashboard = document.getElementById('dashboard');
+    
+    // Force hide login screen
+    if (loginScreen) {
+        loginScreen.classList.add('hidden');
+        loginScreen.style.display = 'none';
+        console.log('✅ Login screen hidden');
+    }
+    
+    // Force show dashboard
+    if (dashboard) {
+        dashboard.classList.remove('hidden');
+        dashboard.style.display = 'block';
+        console.log('✅ Dashboard shown');
+    }
+    
+    // Update user display
+    updateUserDisplay();
+    
+    // Update all UI components
+    updateUIComponents();
+    
+    console.log('✅ Dashboard fully loaded');
+}
+
+// Enhanced OAuth callback processing
+async function processOAuthCallback(authCode, returnedState) {
+    try {
+        console.log('🔄 Processing OAuth callback...');
+        
+        // Show loading state
+        showNotification('Processing authentication...', 'info');
+        
+        // Process the authentication
+        const tokenData = await exchangeCodeForTokenPKCE(authCode);
+        
+        if (!tokenData.access_token) {
+            throw new Error('No access token received');
+        }
+        
+        // Store token and get user info
+        sharePointAccessToken = tokenData.access_token;
+        sessionStorage.setItem('access_token', tokenData.access_token);
+        sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
+        
+        const userInfo = await getUserInfo(tokenData.access_token);
+        const sharePointUserInfo = await checkUserInSharePointList(userInfo.email, userInfo.name, 'microsoft');
+        
+        if (!sharePointUserInfo) {
+            throw new Error('User not authorized in SharePoint');
+        }
+        
+        currentUser = sharePointUserInfo;
+        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
+        
+        // Clean up URL and session
+        sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('pkce_state');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show dashboard immediately
+        showDashboard();
+        
+        // Then load data
+        await loadDataFromSharePoint();
+        startRealTimeSync();
+        
+        showNotification(`Welcome ${sharePointUserInfo.name}!`);
+        
+    } catch (error) {
+        console.error('❌ OAuth callback failed:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
+        
+        // Clean up and show login screen
+        clearSession();
+        showLoginScreen();
+    }
+}
+
+// Enhanced clear session function
+function clearSession() {
+    console.log('🧹 Clearing session data...');
+    
+    // Clear global variables
+    currentUser = null;
+    sharePointAccessToken = null;
+    isSharePointMode = false;
+    
+    // Clear session storage but keep some items for debugging
+    const itemsToKeep = [];
+    const allKeys = Object.keys(sessionStorage);
+    allKeys.forEach(key => {
+        if (!itemsToKeep.includes(key)) {
+            sessionStorage.removeItem(key);
+        }
+    });
+    
+    // Stop any sync
+    stopRealTimeSync();
+}
+
+// Add this function to debug display issues
+function debugDisplayState() {
+    console.log('🎯 CURRENT DISPLAY STATE:');
+    console.log('- Login screen hidden:', document.getElementById('loginScreen').classList.contains('hidden'));
+    console.log('- Dashboard hidden:', document.getElementById('dashboard').classList.contains('hidden'));
+    console.log('- Current user:', currentUser);
+    console.log('- SharePoint mode:', isSharePointMode);
+    console.log('- Has access token:', !!sessionStorage.getItem('access_token'));
+}
+
+// Call this if you're still having issues
+function forceDashboardDisplay() {
+    console.log('🚀 FORCING DASHBOARD DISPLAY');
+    
+    // Hide login screen with multiple methods
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen) {
+        loginScreen.classList.add('hidden');
+        loginScreen.style.display = 'none';
+        loginScreen.style.visibility = 'hidden';
+        loginScreen.style.opacity = '0';
+        loginScreen.style.position = 'absolute';
+    }
+    
+    // Show dashboard with multiple methods
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard) {
+        dashboard.classList.remove('hidden');
+        dashboard.style.display = 'block';
+        dashboard.style.visibility = 'visible';
+        dashboard.style.opacity = '1';
+        dashboard.style.position = 'relative';
+    }
+    
+    debugDisplayState();
+}
+
+// Add this emergency function that you can call from browser console
+window.emergencyShowDashboard = function() {
+    console.log('🚨 EMERGENCY DASHBOARD SHOW');
+    forceDashboardDisplay();
+};   
+
 
 // Clear session completely
 function clearSession() {
@@ -1266,30 +1491,37 @@ function clearSession() {
     stopRealTimeSync();
 }
 
-// Show login screen explicitly
+
 function showLoginScreen() {
     console.log('🖥️ Showing login screen...');
     
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('dashboard');
     
-    // Ensure login screen is visible
+    // Force show login screen
     if (loginScreen) {
         loginScreen.classList.remove('hidden');
+        loginScreen.style.display = 'flex';
+        loginScreen.style.visibility = 'visible';
+        loginScreen.style.opacity = '1';
+        loginScreen.style.position = 'fixed';
         console.log('✅ Login screen shown');
-    } else {
-        console.error('❌ Login screen element not found');
     }
     
-    // Ensure dashboard is hidden
+    // Force hide dashboard
     if (dashboard) {
         dashboard.classList.add('hidden');
+        dashboard.style.display = 'none';
+        dashboard.style.visibility = 'hidden';
+        dashboard.style.opacity = '0';
+        dashboard.style.position = 'absolute';
         console.log('✅ Dashboard hidden');
     }
     
     // Initialize authentication UI
     initializeMicrosoftAuth();
 }
+
 
 // Initialize UI components
 function initializeUI() {
@@ -6341,7 +6573,7 @@ async function debugSharePointFields() {
 
 <!-- Simple Version Tag -->
 <div class="fixed bottom-4 right-4 text-xs text-gray-500 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm z-40">
-    FRMS v1.0.5
+    FRMS v1.0.7
 </div>
 
 </body>
