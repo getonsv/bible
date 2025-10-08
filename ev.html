@@ -72,6 +72,50 @@
             background-position: right 12px center;
             background-size: 16px 16px;
         }
+
+        /* Enhanced notification styles */
+        #notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            max-width: 400px;
+            word-wrap: break-word;
+            animation: slideInRight 0.3s ease-out;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .notification.hidden {
+            animation: slideOutRight 0.3s ease-in;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -1154,10 +1198,13 @@
 </div>
 
     <!-- Notification Toast -->
-    <div id="notification" class="hidden fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg notification z-50">
-        <div class="flex items-center space-x-2">
+    <div id="notification" class="hidden fixed top-4 right-4 z-50">
+        <div class="flex items-center space-x-3 px-6 py-4 rounded-lg shadow-lg bg-green-600 text-white max-w-md">
             <i class="fas fa-check-circle"></i>
-            <span id="notificationText">Success!</span>
+            <span id="notificationText" class="flex-1">Success!</span>
+            <button onclick="hideNotification()" class="text-white hover:text-gray-200 ml-2">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     </div>
 
@@ -3335,6 +3382,7 @@ async function exchangeCodeForTokenPKCE(authCode) {
                 }
 
                 async function loadDataFromSharePoint() {
+                    
                     try {
                         console.log('📊 Loading data from SharePoint Lists...');
                         showNotification('Loading data from SharePoint...', 'info');
@@ -4507,26 +4555,72 @@ function debugEditFruit(fruitId) {
             }
         }
 
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const notificationText = document.getElementById('notificationText');
-            
-            notificationText.textContent = message;
-            
-            // Set color based on type
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50 ${
-                type === 'error' ? 'bg-red-600 text-white' :
-                type === 'warning' ? 'bg-yellow-600 text-white' :
-                type === 'info' ? 'bg-blue-600 text-white' :
-                'bg-green-600 text-white'
-            }`;
-            
-            notification.classList.remove('hidden');
-            
-            setTimeout(() => {
-                notification.classList.add('hidden');
-            }, 3000);
-        }
+        
+function showNotification(message, type = 'success') {
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notificationText');
+    
+    if (!notification || !notificationText) {
+        console.error('❌ Notification elements not found');
+        return;
+    }
+    
+    notificationText.textContent = message;
+    
+    // Set color and icon based on type
+    let bgColor, icon;
+    switch (type) {
+        case 'error':
+            bgColor = 'bg-red-600';
+            icon = 'fas fa-exclamation-circle';
+            break;
+        case 'warning':
+            bgColor = 'bg-yellow-600';
+            icon = 'fas fa-exclamation-triangle';
+            break;
+        case 'info':
+            bgColor = 'bg-blue-600';
+            icon = 'fas fa-info-circle';
+            break;
+        default:
+            bgColor = 'bg-green-600';
+            icon = 'fas fa-check-circle';
+    }
+    
+    // Update notification classes
+    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50 ${bgColor} text-white`;
+    
+    // Update icon
+    const iconElement = notification.querySelector('i');
+    if (iconElement) {
+        iconElement.className = icon;
+    } else {
+        notification.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <i class="${icon}"></i>
+                <span id="notificationText">${message}</span>
+            </div>
+        `;
+    }
+    
+    // Ensure notification is visible
+    notification.classList.remove('hidden');
+    notification.style.display = 'flex';
+    
+    // Auto-hide after 4 seconds (longer for better visibility)
+    setTimeout(() => {
+        hideNotification();
+    }, 4000);
+}
+
+function hideNotification() {
+    const notification = document.getElementById('notification');
+    if (notification) {
+        notification.classList.add('hidden');
+        notification.style.display = 'none';
+    }
+}
+
 
         // Add fruit function
         async function addFruit(event) {
@@ -4742,6 +4836,9 @@ async function logActivity(event) {
         return;
     }
     
+    showNotification('Logging activity...', 'info');
+        event.preventDefault();
+   
     const formData = new FormData(event.target);
     const newActivity = {
         fruitName: formData.get('fruitName'),
@@ -4798,6 +4895,9 @@ async function scheduleBB(event) {
         return;
     }
     
+    showNotification('Scheduling BB session...', 'info');
+    }
+    
     const formData = new FormData(event.target);
     const fruitName = formData.get('fruitName');
     const sessionDate = formData.get('date');
@@ -4850,7 +4950,6 @@ async function scheduleBB(event) {
         console.error('Failed to schedule BB session:', error);
         showNotification('Failed to schedule BB session: ' + error.message, 'error');
     }
-}
 
 async function scheduleBB(event) {
     event.preventDefault();
@@ -5544,6 +5643,19 @@ function resetAddFruitModal() {
         submitButton.innerHTML = '<i class="fas fa-plus mr-2"></i>Add to SharePoint';
     }
 }
+
+
+// Global error handler for better user feedback
+window.addEventListener('error', function(event) {
+    console.error('Global error:', event.error);
+    showNotification('An unexpected error occurred. Please try again.', 'error');
+});
+
+// Handle unhandled promise rejections
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    showNotification('An unexpected error occurred. Please refresh the page.', 'error');
+});
         
 
         function generateReport() {
