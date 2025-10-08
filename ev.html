@@ -4420,13 +4420,16 @@ setTimeout(debugButtonEvents, 3000);
         };
     }
 
+    // Close dropdowns when clicking outside
     document.addEventListener('click', function(event) {
         const syncOptions = document.getElementById('syncOptions');
         if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
             syncOptions.classList.add('hidden');
         }
-    });
-            const button = event.target.closest('button');
+    ;
+    
+
+        const button = event.target.closest('button');
         if (!button) return;
         
         const onclick = button.getAttribute('onclick');
