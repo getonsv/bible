@@ -1,11 +1,10 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism System</title>
+    <title>Evengelism</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -1227,330 +1226,47 @@
             'Other'
         ];
 
-   
-// DOMContentLoaded function:
+        
 document.addEventListener('DOMContentLoaded', function() {
+    initializeVersionTag();
     console.log('🔧 Initializing Evangelism CRM...');
+    console.log('🔍 Initial URL:', window.location.href);
     
-    // Check if this is an OAuth callback first
+    // First, check if this is an OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
+    const returnedState = urlParams.get('state');
     const error = urlParams.get('error');
     
-    if (error) {
+    if (authCode) {
+        console.log('🔐 OAuth callback detected - processing authentication');
+        processOAuthCallback(authCode, returnedState);
+    } else if (error) {
         console.error('❌ OAuth error:', error);
         showNotification('Authentication failed: ' + error, 'error');
-        // Clean URL and show login
         window.history.replaceState({}, document.title, window.location.pathname);
-        initializeMicrosoftAuth();
-        return;
-    }
-    
-    if (authCode) {
-        console.log('🔐 OAuth callback detected - processing...');
-        processOAuthCallback(authCode, urlParams.get('state'));
-        return;
-    }
-    
-    // Check for existing valid session
-    if (checkForValidSession()) {
-        console.log('🔑 Valid session found - restoring...');
-        restoreSession();
-    } else {
-        console.log('🔑 No valid session - showing login screen');
         showLoginScreen();
+    } else {
+        console.log('🔧 No OAuth callback - checking session state');
+        
+        // Check if we have a valid session
+        const hasValidSession = checkForValidSession();
+        
+        if (hasValidSession) {
+            console.log('✅ Valid session found - restoring dashboard');
+            restoreSession();
+        } else {
+            console.log('❌ No valid session - showing login screen');
+            showLoginScreen();
+        }
     }
     
     // Initialize UI components
     initializeUI();
+    
+    // Initial dashboard state check
+    setTimeout(checkAndFixDashboard, 500);
 });
-
-// Enhanced session validation
-function checkForValidSession() {
-    const msToken = sessionStorage.getItem('access_token');
-    const msExpiry = sessionStorage.getItem('token_expiry');
-    const savedUser = sessionStorage.getItem('current_user');
-    
-    console.log('🔍 Session check:', {
-        hasToken: !!msToken,
-        hasExpiry: !!msExpiry,
-        hasUser: !!savedUser,
-        token: msToken ? '***' + msToken.slice(-10) : 'none'
-    });
-    
-    if (msToken && msExpiry && savedUser) {
-        const isTokenValid = Date.now() < parseInt(msExpiry);
-        console.log('🔐 Token validity:', isTokenValid);
-        return isTokenValid;
-    }
-    
-    return false;
-}
-
-// Enhanced session restoration
-function restoreSession() {
-    const msToken = sessionStorage.getItem('access_token');
-    const savedUser = sessionStorage.getItem('current_user');
-    
-    if (msToken && savedUser) {
-        sharePointAccessToken = msToken;
-        isSharePointMode = true;
-        
-        try {
-            currentUser = JSON.parse(savedUser);
-            console.log('👤 Restoring user:', currentUser.name);
-            
-            // Show dashboard immediately
-            showDashboard();
-            
-            // Then load data in background
-            loadDataFromSharePoint().then(() => {
-                console.log('✅ Session data restored successfully');
-                startRealTimeSync();
-                showNotification('Welcome back, ' + currentUser.name + '!');
-            }).catch(error => {
-                console.error('❌ Failed to restore session data:', error);
-                showNotification('Session restored but data loading failed', 'warning');
-                // Dashboard is already shown, just update with local data
-                updateUIComponents();
-            });
-            
-        } catch (error) {
-            console.error('❌ Failed to parse user data:', error);
-            showLoginScreen();
-        }
-    } else {
-        console.log('❌ Insufficient session data for restoration');
-        showLoginScreen();
-    }
-}
-
-// Enhanced dashboard showing with force display
-function showDashboard() {
-    console.log('🔄 Showing dashboard...');
-    
-    const loginScreen = document.getElementById('loginScreen');
-    const dashboard = document.getElementById('dashboard');
-    
-    // Force hide login screen
-    if (loginScreen) {
-        loginScreen.classList.add('hidden');
-        loginScreen.style.display = 'none';
-        console.log('✅ Login screen hidden');
-    }
-    
-    // Force show dashboard
-    if (dashboard) {
-        dashboard.classList.remove('hidden');
-        dashboard.style.display = 'block';
-        console.log('✅ Dashboard shown');
-    }
-    
-    // Update user display
-    updateUserDisplay();
-    
-    // Update all UI components
-    updateUIComponents();
-    
-    console.log('✅ Dashboard fully loaded');
-}
-
-// Enhanced OAuth callback processing
-async function processOAuthCallback(authCode, returnedState) {
-    try {
-        console.log('🔄 Processing OAuth callback...');
-        
-        // Show loading state
-        showNotification('Processing authentication...', 'info');
-        
-        // Process the authentication
-        const tokenData = await exchangeCodeForTokenPKCE(authCode);
-        
-        if (!tokenData.access_token) {
-            throw new Error('No access token received');
-        }
-        
-        // Store token and get user info
-        sharePointAccessToken = tokenData.access_token;
-        sessionStorage.setItem('access_token', tokenData.access_token);
-        sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
-        
-        const userInfo = await getUserInfo(tokenData.access_token);
-        const sharePointUserInfo = await checkUserInSharePointList(userInfo.email, userInfo.name, 'microsoft');
-        
-        if (!sharePointUserInfo) {
-            throw new Error('User not authorized in SharePoint');
-        }
-        
-        currentUser = sharePointUserInfo;
-        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-        
-        // Clean up URL and session
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show dashboard immediately
-        showDashboard();
-        
-        // Then load data
-        await loadDataFromSharePoint();
-        startRealTimeSync();
-        
-        showNotification(`Welcome ${sharePointUserInfo.name}!`);
-        
-    } catch (error) {
-        console.error('❌ OAuth callback failed:', error);
-        showNotification('Authentication failed: ' + error.message, 'error');
-        
-        // Clean up and show login screen
-        clearSession();
-        showLoginScreen();
-    }
-}
-
-// Enhanced clear session function
-function clearSession() {
-    console.log('🧹 Clearing session data...');
-    
-    // Clear global variables
-    currentUser = null;
-    sharePointAccessToken = null;
-    isSharePointMode = false;
-    
-    // Clear session storage but keep some items for debugging
-    const itemsToKeep = [];
-    const allKeys = Object.keys(sessionStorage);
-    allKeys.forEach(key => {
-        if (!itemsToKeep.includes(key)) {
-            sessionStorage.removeItem(key);
-        }
-    });
-    
-    // Stop any sync
-    stopRealTimeSync();
-}
-
-// Add this function to debug display issues
-function debugDisplayState() {
-    console.log('🎯 CURRENT DISPLAY STATE:');
-    console.log('- Login screen hidden:', document.getElementById('loginScreen').classList.contains('hidden'));
-    console.log('- Dashboard hidden:', document.getElementById('dashboard').classList.contains('hidden'));
-    console.log('- Current user:', currentUser);
-    console.log('- SharePoint mode:', isSharePointMode);
-    console.log('- Has access token:', !!sessionStorage.getItem('access_token'));
-}
-
-// Call this if you're still having issues
-function forceDashboardDisplay() {
-    console.log('🚀 FORCING DASHBOARD DISPLAY');
-    
-    // Hide login screen with multiple methods
-    const loginScreen = document.getElementById('loginScreen');
-    if (loginScreen) {
-        loginScreen.classList.add('hidden');
-        loginScreen.style.display = 'none';
-        loginScreen.style.visibility = 'hidden';
-        loginScreen.style.opacity = '0';
-        loginScreen.style.position = 'absolute';
-    }
-    
-    // Show dashboard with multiple methods
-    const dashboard = document.getElementById('dashboard');
-    if (dashboard) {
-        dashboard.classList.remove('hidden');
-        dashboard.style.display = 'block';
-        dashboard.style.visibility = 'visible';
-        dashboard.style.opacity = '1';
-        dashboard.style.position = 'relative';
-    }
-    
-    debugDisplayState();
-}
-
-// Add this emergency function that you can call from browser console
-window.emergencyShowDashboard = function() {
-    console.log('🚨 EMERGENCY DASHBOARD SHOW');
-    forceDashboardDisplay();
-};   
-
-
-// Clear session completely
-function clearSession() {
-    console.log('🧹 Clearing session data...');
-    
-    // Clear global variables
-    currentUser = null;
-    sharePointAccessToken = null;
-    isSharePointMode = false;
-    
-    // Clear session storage
-    sessionStorage.clear();
-    
-    // Stop any sync
-    stopRealTimeSync();
-}
-
-
-function showLoginScreen() {
-    console.log('🖥️ Showing login screen...');
-    
-    const loginScreen = document.getElementById('loginScreen');
-    const dashboard = document.getElementById('dashboard');
-    
-    // Force show login screen
-    if (loginScreen) {
-        loginScreen.classList.remove('hidden');
-        loginScreen.style.display = 'flex';
-        loginScreen.style.visibility = 'visible';
-        loginScreen.style.opacity = '1';
-        loginScreen.style.position = 'fixed';
-        console.log('✅ Login screen shown');
-    }
-    
-    // Force hide dashboard
-    if (dashboard) {
-        dashboard.classList.add('hidden');
-        dashboard.style.display = 'none';
-        dashboard.style.visibility = 'hidden';
-        dashboard.style.opacity = '0';
-        dashboard.style.position = 'absolute';
-        console.log('✅ Dashboard hidden');
-    }
-    
-    // Initialize authentication UI
-    initializeMicrosoftAuth();
-}
-
-
-// Initialize UI components
-function initializeUI() {
-    console.log('🎨 Initializing UI components...');
-    
-    // Load local data (fruits, activities)
-    loadLocalData();
-    
-    // Update connection status
-    updateConnectionStatus();
-    
-    // Populate dropdowns
-    populateDropdowns();
-    
-    // Initialize event listeners
-    initializeEventListeners();
-    
-    // Set copyright year
-    const yearElement = document.getElementById('currentYear');
-    if (yearElement) {
-        yearElement.textContent = new Date().getFullYear();
-    }
-    
-    // Initialize version tag
-    initializeVersionTag();
-    
-    console.log('✅ UI initialization complete');
-}
-
 
 // Add this function to show login screen properly
 function showLoginScreen() {
@@ -1834,109 +1550,31 @@ function restoreSession() {
             }
         }
 
-        
-
 function initializeMicrosoftAuth() {
-    console.log('🔧 Initializing Microsoft authentication UI...');
+    console.log('🔧 Initializing Microsoft authentication...');
     
     const buttonContainer = document.getElementById('googleSignInButton');
-    if (!buttonContainer) {
-        console.error('❌ Google Sign In button container not found');
-        return;
-    }
-    
-    // Clear any loading state and show the sign-in button
-    buttonContainer.innerHTML = `
-        <div class="space-y-4">
-            <button onclick="startMicrosoftAuth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                <i class="fab fa-microsoft text-xl"></i>
-                <span>Sign in with Microsoft 365</span>
-            </button>
-            
-            <div class="text-center">
-                <p class="text-xs text-gray-500">
-                    <i class="fas fa-shield-alt text-green-500 mr-1"></i>
-                    Secure authentication with your organization account
-                </p>
+    if (buttonContainer) {
+        buttonContainer.innerHTML = `
+            <div class="space-y-4">
+                <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                    <i class="fab fa-microsoft text-xl"></i>
+                    <span>Sign in with Microsoft 365</span>
+                </button>
+                
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">
+                        <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                        Secure authentication with your organization account
+                    </p>
+                </div>
             </div>
-        </div>
-    `;
-    
-    console.log('✅ Microsoft authentication UI ready');
-}
-
-// Separate function to start auth (to avoid any event issues)
-function startMicrosoftAuth() {
-    console.log('🚀 Starting Microsoft authentication...');
-    authenticateWithMicrosoft();
-}
-
-
-
-
-// Emergency function to force show login screen
-function forceShowLoginScreen() {
-    console.log('🚨 FORCING LOGIN SCREEN DISPLAY');
-    
-    // Clear everything
-    clearSession();
-    
-    // Hide dashboard with multiple methods
-    const dashboard = document.getElementById('dashboard');
-    if (dashboard) {
-        dashboard.classList.add('hidden');
-        dashboard.style.display = 'none';
+        `;
     }
     
-    // Show login screen with multiple methods
-    const loginScreen = document.getElementById('loginScreen');
-    if (loginScreen) {
-        loginScreen.classList.remove('hidden');
-        loginScreen.style.display = 'flex';
-    }
-    
-    // Re-initialize auth UI
-    initializeMicrosoftAuth();
-    
-    console.log('✅ Login screen should be visible now');
-}
+    console.log('✅ Microsoft authentication initialized');
+}        
 
-// Call this if login screen still doesn't show
-// forceShowLoginScreen();
-
-
-// Check CSS and display properties
-function checkElementVisibility() {
-    console.log('👀 Checking element visibility...');
-    
-    const loginScreen = document.getElementById('loginScreen');
-    const dashboard = document.getElementById('dashboard');
-    
-    if (loginScreen) {
-        console.log('Login screen:', {
-            hiddenClass: loginScreen.classList.contains('hidden'),
-            displayStyle: loginScreen.style.display,
-            computedDisplay: window.getComputedStyle(loginScreen).display,
-            opacity: window.getComputedStyle(loginScreen).opacity,
-            visibility: window.getComputedStyle(loginScreen).visibility
-        });
-    }
-    
-    if (dashboard) {
-        console.log('Dashboard:', {
-            hiddenClass: dashboard.classList.contains('hidden'),
-            displayStyle: dashboard.style.display,
-            computedDisplay: window.getComputedStyle(dashboard).display
-        });
-    }
-}
-
-// Call this in console: checkElementVisibility()
-
-
-
-
-        
 function handleAuthError(error) {
     console.error('❌ Authentication error:', error);
     
@@ -2048,51 +1686,107 @@ function checkForOAuthCallback() {
 
 async function processOAuthCallback(authCode, returnedState) {
     try {
-        console.log('🔄 Processing OAuth callback...');
+        console.log('🔄 Processing Microsoft OAuth callback...');
+        console.log('🔍 Current URL:', window.location.href);
         
         // Show loading state
-        showNotification('Processing authentication...', 'info');
+        showNotification('Completing authentication...', 'info');
         
-        // Process the authentication
+        // Validate state parameter
+        const storedState = sessionStorage.getItem('pkce_state');
+        if (returnedState && storedState && returnedState !== storedState) {
+            throw new Error('Invalid state parameter - possible security issue');
+        }
+        
+        // Check if we already processed this callback
+        if (sessionStorage.getItem('oauth_processed')) {
+            console.log('⚠️ OAuth callback already processed, redirecting to dashboard...');
+            window.history.replaceState({}, document.title, window.location.pathname);
+            showDashboard(); // Force show dashboard
+            return;
+        }
+        
+        // Mark as processed to prevent duplicate processing
+        sessionStorage.setItem('oauth_processed', 'true');
+        
+        // Exchange code for token
+        console.log('🔄 Exchanging code for token...');
         const tokenData = await exchangeCodeForTokenPKCE(authCode);
         
         if (!tokenData.access_token) {
-            throw new Error('No access token received');
+            throw new Error('No access token received from Microsoft');
         }
         
-        // Store token and get user info
         sharePointAccessToken = tokenData.access_token;
+        isSharePointMode = true;
+        
+        // Store token with expiration
         sessionStorage.setItem('access_token', tokenData.access_token);
         sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
         
-        const userInfo = await getUserInfo(tokenData.access_token);
-        const sharePointUserInfo = await checkUserInSharePointList(userInfo.email, userInfo.name, 'microsoft');
+        // Get user info from Microsoft
+        console.log('🔄 Getting user info from Microsoft...');
+        const basicUserInfo = await getUserInfo(tokenData.access_token);
         
-        if (!sharePointUserInfo) {
+        console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
+        
+        // Check if user exists in SharePoint Users list and get their role
+        console.log('🔄 Checking user in SharePoint list...');
+        const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
+        
+        if (!userInfo) {
             throw new Error('User not authorized in SharePoint');
         }
         
-        currentUser = sharePointUserInfo;
+        // Set current user with SharePoint-defined permissions
+        currentUser = userInfo;
         sessionStorage.setItem('current_user', JSON.stringify(currentUser));
         
-        // Clean up URL and session
+        // Clean up PKCE parameters and processing flag
         sessionStorage.removeItem('pkce_code_verifier');
         sessionStorage.removeItem('pkce_state');
-        window.history.replaceState({}, document.title, window.location.pathname);
+        sessionStorage.removeItem('oauth_processed');
         
-        // Load data and show dashboard
+        // Clean URL - IMPORTANT: Remove OAuth parameters from URL
+        console.log('🔄 Cleaning URL and showing dashboard...');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        console.log('🔍 URL after cleanup:', window.location.href);
+        
+        // Load data from SharePoint
+        console.log('🔄 Loading data from SharePoint...');
         await loadDataFromSharePoint();
+        
+        // FORCE SHOW DASHBOARD
+        console.log('🎯 FORCING DASHBOARD DISPLAY');
         showDashboard();
         startRealTimeSync();
         
-        showNotification(`Welcome ${sharePointUserInfo.name}!`);
+        showNotification(`Welcome ${userInfo.name}! Authentication successful.`);
+        
+        // Double-check dashboard is visible
+        setTimeout(() => {
+            const dashboard = document.getElementById('dashboard');
+            const loginScreen = document.getElementById('loginScreen');
+            console.log('🔍 Final state check:');
+            console.log(' - Dashboard hidden:', dashboard?.classList.contains('hidden'));
+            console.log(' - Login screen hidden:', loginScreen?.classList.contains('hidden'));
+            console.log(' - Current user:', currentUser);
+        }, 1000);
         
     } catch (error) {
-        console.error('❌ OAuth callback failed:', error);
+        console.error('❌ OAuth callback processing failed:', error);
         showNotification('Authentication failed: ' + error.message, 'error');
         
-        // Clean up and show login screen
-        clearSession();
+        // Clean up on failure
+        sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('pkce_state');
+        sessionStorage.removeItem('oauth_processed');
+        sessionStorage.removeItem('pending_google_user');
+        
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show login screen again
         showLoginScreen();
     }
 }
@@ -3333,12 +3027,14 @@ async function loadFruitsFromSharePoint() {
 }
 
 
+
+
 async function loadActivitiesFromSharePoint() {
     try {
-        // Get activities with specific field selection for User
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?$select=id,createdDateTime,fields&$expand=fields($select=Title,ActivityType,Duration,Notes,Outcome,FruitNameLookup,User,Created,CreatedBy)&$top=5000`;
+        // Get all activities with proper field selection
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields&$top=5000`;
         
-        console.log('📊 Loading activities with explicit field selection...');
+        console.log('📊 Loading activities from SharePoint...');
         
         const response = await fetch(url, {
             headers: {
@@ -3354,147 +3050,61 @@ async function loadActivitiesFromSharePoint() {
         const data = await response.json();
         const items = data.value || [];
         
-        console.log('📦 Activities with User field:', items);
-        
         activities = items.map(item => {
-            // Extract fruit name
+            // Extract fruit name from different possible fields
             let fruitName = '';
             if (item.fields.FruitNameLookup) {
                 fruitName = item.fields.FruitNameLookup;
+            } else if (item.fields.FruitName) {
+                fruitName = item.fields.FruitName;
             } else if (item.fields.Title) {
+                // Try to extract from title "Activity with FruitName"
                 const titleMatch = item.fields.Title.match(/with\s+(.+)$/);
                 fruitName = titleMatch ? titleMatch[1] : item.fields.Title;
             }
             
-            // Extract user with multiple fallback methods
-            let user = extractUserName(item.fields);
+            // Extract user from different possible fields
+            let user = 'Unknown';
+            if (item.fields.User) {
+                if (typeof item.fields.User === 'object') {
+                    user = item.fields.User.displayName || 
+                           item.fields.User.title || 
+                           item.fields.User.email || 
+                           'Unknown User';
+                } else {
+                    user = item.fields.User;
+                }
+            } else if (item.fields.CreatedBy) {
+                user = item.fields.CreatedBy.displayName || 'Unknown';
+            }
             
             const activity = {
                 id: item.id.toString(),
                 fruitName: fruitName.trim(),
                 type: item.fields.ActivityType || 'Activity',
-                duration: item.fields.Duration || '0',
+                duration: item.fields.Duration || item.fields.DurationMinutes || '0',
                 notes: item.fields.Notes || '',
                 outcome: item.fields.Outcome || '',
                 user: user,
-                createdDate: item.fields.Created || item.createdDateTime
+                createdDate: item.fields.Created || item.fields.CreatedDateTime || item.createdDateTime
             };
             
             return activity;
         });
         
-        console.log('📊 Activities loaded with users:', activities);
+        console.log('📊 Total activities loaded:', activities.length);
+        
+        // Refresh Activities tab if it's currently active
+        if (currentTab === 'activities') {
+            updateActivityTimeline();
+        }
         
     } catch (error) {
-        console.error('❌ Error loading activities:', error);
+        console.error('❌ Error loading activities from SharePoint:', error);
         activities = [];
     }
 }
 
-// Helper function to extract user name from Person field
-function extractUserName(fields) {
-    console.log('🔍 Extracting user from fields:', fields);
-    
-    // Method 1: User field (Person field)
-    if (fields.User) {
-        console.log('👤 User field found:', fields.User);
-        
-        if (typeof fields.User === 'object') {
-            // Try all possible properties for display name
-            const possibleProperties = [
-                'displayName', 'title', 'name', 'givenName', 
-                'surname', 'userPrincipalName', 'email', 'mail'
-            ];
-            
-            for (const prop of possibleProperties) {
-                if (fields.User[prop]) {
-                    console.log(`✅ Found user name in ${prop}:`, fields.User[prop]);
-                    return formatUserName(fields.User[prop]);
-                }
-            }
-        } else if (typeof fields.User === 'string') {
-            return formatUserName(fields.User);
-        }
-    }
-    
-    // Method 2: CreatedBy field
-    if (fields.CreatedBy) {
-        console.log('👤 CreatedBy field found:', fields.CreatedBy);
-        
-        if (typeof fields.CreatedBy === 'object') {
-            if (fields.CreatedBy.displayName) {
-                return formatUserName(fields.CreatedBy.displayName);
-            } else if (fields.CreatedBy.title) {
-                return formatUserName(fields.CreatedBy.title);
-            } else if (fields.CreatedBy.email) {
-                return formatUserName(fields.CreatedBy.email);
-            }
-        } else if (typeof fields.CreatedBy === 'string') {
-            return formatUserName(fields.CreatedBy);
-        }
-    }
-    
-    // Method 3: Check if there's a user email field
-    if (fields.UserEmail) {
-        return formatUserName(fields.UserEmail);
-    }
-    
-    console.log('❌ No user name found in fields');
-    return 'Unknown User';
-}
-
-// Format user name - clean up email addresses, etc.
-function formatUserName(userString) {
-    if (!userString) return 'Unknown User';
-    
-    // If it's an email, extract the username part
-    if (userString.includes('@')) {
-        return userString.split('@')[0];
-    }
-    
-    // Capitalize first letter of each word
-    return userString.split(' ').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ');
-}
-
-
-// Debug function to check User field structure
-async function debugUserFieldStructure() {
-    try {
-        console.log('🔍 Debugging User field structure...');
-        
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?$top=1&$expand=fields,fields/User`;
-        
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.value && data.value.length > 0) {
-                const sampleActivity = data.value[0];
-                console.log('📋 Sample activity User field:', sampleActivity.fields.User);
-                console.log('📋 Full activity fields:', sampleActivity.fields);
-                
-                // Check all properties of the User object
-                if (sampleActivity.fields.User && typeof sampleActivity.fields.User === 'object') {
-                    console.log('🔍 User object properties:');
-                    Object.keys(sampleActivity.fields.User).forEach(key => {
-                        console.log(`  - ${key}:`, sampleActivity.fields.User[key]);
-                    });
-                }
-            }
-        }
-    } catch (error) {
-        console.error('❌ Error debugging user field:', error);
-    }
-}
-
-// Call this in console: debugUserFieldStructure()
 
         async function addFruitToSharePoint(fruitData) {
             try {
@@ -3543,7 +3153,7 @@ async function debugUserFieldStructure() {
         }
 
      
-async function addActivityToSharePoint(activityData) {
+    async function addActivityToSharePoint(activityData) {
     try {
         // Find the fruit to get its ID for the lookup
         const fruit = fruits.find(f => f.name === activityData.fruitName);
@@ -3559,12 +3169,21 @@ async function addActivityToSharePoint(activityData) {
                 ActivityType: activityData.type,
                 Duration: parseInt(activityData.duration) || 0,
                 Notes: activityData.notes,
-                Outcome: activityData.outcome,
-                FruitNameLookupId: parseInt(fruit.id)
+                Outcome: activityData.outcome
             }
         };
         
-        console.log('🔄 Creating activity with data:', requestBody);
+        // Add FruitNameLookupId if we have the fruit ID
+        if (fruit.id) {
+            requestBody.fields.FruitNameLookupId = parseInt(fruit.id);
+        }
+        
+        // Add User field - this should map to your Person field
+        if (activityData.user) {
+            requestBody.fields.User = activityData.user;
+        }
+        
+        console.log('Creating activity with data:', requestBody);
         
         const response = await fetch(url, {
             method: 'POST',
@@ -3582,15 +3201,14 @@ async function addActivityToSharePoint(activityData) {
         }
         
         const result = await response.json();
-        console.log('✅ Activity created successfully:', result);
+        console.log('Activity created successfully:', result);
         return result;
         
     } catch (error) {
-        console.error('❌ Error adding activity to SharePoint:', error);
+        console.error('Error adding activity to SharePoint:', error);
         throw error;
     }
 }
-
 
 
 async function updateFruitInSharePoint(fruitId, fruitData) {
@@ -6573,7 +6191,7 @@ async function debugSharePointFields() {
 
 <!-- Simple Version Tag -->
 <div class="fixed bottom-4 right-4 text-xs text-gray-500 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm z-40">
-    FRMS v1.0.7
+    FRMS v1.0.0
 </div>
 
 </body>
