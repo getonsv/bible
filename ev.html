@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -650,8 +651,10 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Fruit</label>
-                        <input list="activityFruitOptions" id="activityFruitSelect" name="fruitName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Search fruits...">
-                        <datalist id="activityFruitOptions"></datalist>
+                        <select name="fruitName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="activityFruitSelect">
+                            <option value="">Select fruit...</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
                     </div>
                     
                     <div>
@@ -1224,115 +1227,29 @@
             'Other'
         ];
 
-        
-
-// Persistent in-memory storage that survives page reloads
-window._pkceStorage = window._pkceStorage || {};
-
-// Override the PKCE storage functions to use this persistent storage
-const originalAuthenticateWithMicrosoft = window.authenticateWithMicrosoft;
-window.authenticateWithMicrosoft = async function() {
-    try {
-        console.log('🔐 Starting PKCE Microsoft authentication...');
-        showNotification('Redirecting to Microsoft 365...', 'info');
-        
-        // Generate PKCE parameters
-        const codeVerifier = generateCodeVerifier();
-        const codeChallenge = await generateCodeChallenge(codeVerifier);
-        const state = 'auth_' + Date.now();
-        
-        console.log('🔐 PKCE parameters generated:', {
-            verifierLength: codeVerifier.length,
-            challengeLength: codeChallenge.length,
-            state: state
-        });
-        
-        // Store in persistent in-memory storage
-        window._pkceStorage = {
-            code_verifier: codeVerifier,
-            state: state,
-            timestamp: Date.now()
-        };
-        
-        // Also store in all other locations as backup
-        sessionStorage.setItem('pkce_code_verifier', codeVerifier);
-        sessionStorage.setItem('pkce_state', state);
-        localStorage.setItem('pkce_code_verifier', codeVerifier);
-        localStorage.setItem('pkce_state', state);
-        
-        console.log('🔐 PKCE parameters stored in persistent memory');
-        
-        // Build PKCE auth URL
-        const authUrl = buildPKCEAuthUrl(codeChallenge, state);
-        console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
-        
-        // Redirect to Microsoft authentication (same window)
-        window.location.href = authUrl;
-        
-    } catch (error) {
-        console.error('❌ PKCE authentication failed:', error);
-        showNotification('Authentication failed: ' + error.message, 'error');
-        cleanupPkceStorage();
-    }
-};
-
-// Update verifyPkceState to check the persistent storage first
-const originalVerifyPkceState = window.verifyPkceState;
-window.verifyPkceState = function() {
-    const persistentStorageVerifier = window._pkceStorage?.code_verifier;
-    const persistentStorageState = window._pkceStorage?.state;
-    
-    // If we have data in persistent storage, use it
-    if (persistentStorageVerifier && persistentStorageState) {
-        console.log('🔐 Using PKCE parameters from persistent memory storage');
-        return {
-            hasCodeVerifier: true,
-            hasState: true,
-            codeVerifier: persistentStorageVerifier,
-            state: persistentStorageState
-        };
-    }
-    
-    // Otherwise fall back to the original implementation
-    return originalVerifyPkceState();
-};
-
+   
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
+    // Clear any existing session to ensure fresh start
+    clearSession();
+    
     // Check if this is an OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
-    const state = urlParams.get('state');
     
-    if (authCode && state && state.startsWith('auth_')) {
+    if (authCode) {
         console.log('🔐 OAuth callback detected');
-        
-        // Check if we have PKCE state BEFORE doing anything else
-        console.log('🔐 Pre-processing PKCE state check:');
-        const pkceState = verifyPkceState();
-        
-        if (pkceState.hasCodeVerifier) {
-            console.log('✅ PKCE state found, processing OAuth callback normally');
-            processOAuthCallback(authCode, state);
-        } else {
-            console.log('❌ PKCE state missing, showing login screen');
-            // Clear URL parameters to prevent infinite loop
-            window.history.replaceState({}, document.title, window.location.pathname);
-            showLoginScreen();
-        }
-        return;
+        processOAuthCallback(authCode, urlParams.get('state'));
+    } else {
+        console.log('🔧 Showing login screen');
+        showLoginScreen();
     }
-    
-    // Normal initialization (no OAuth callback)
-    console.log('🔧 Showing login screen');
-    showLoginScreen();
     
     // Initialize UI components
     initializeUI();
 });
-
 
 // Clear session completely
 function clearSession() {
@@ -1346,14 +1263,9 @@ function clearSession() {
     // Clear session storage
     sessionStorage.clear();
     
-    // Clear PKCE parameters from localStorage too
-    localStorage.removeItem('pkce_code_verifier');
-    localStorage.removeItem('pkce_state');
-    
     // Stop any sync
     stopRealTimeSync();
 }
-
 
 // Show login screen explicitly
 function showLoginScreen() {
@@ -1380,8 +1292,7 @@ function showLoginScreen() {
     initializeMicrosoftAuth();
 }
 
-
-// Add this function to initialize UI components
+// Initialize UI components
 function initializeUI() {
     console.log('🎨 Initializing UI components...');
     
@@ -1391,8 +1302,8 @@ function initializeUI() {
     // Update connection status
     updateConnectionStatus();
     
-    // Only populate basic dropdowns that don't require SharePoint
-    populateBasicDropdowns();
+    // Populate dropdowns
+    populateDropdowns();
     
     // Initialize event listeners
     initializeEventListeners();
@@ -1409,13 +1320,6 @@ function initializeUI() {
     console.log('✅ UI initialization complete');
 }
 
-// Refresh user dropdown when authentication state changes
-function refreshUserDropdown() {
-    if (sharePointAccessToken) {
-        console.log('🔄 Refreshing user dropdown with SharePoint access...');
-        populateAssigneeDropdown();
-    }
-}
 
 // Add this function to show login screen properly
 function showLoginScreen() {
@@ -1918,37 +1822,11 @@ async function processOAuthCallback(authCode, returnedState) {
         // Show loading state
         showNotification('Processing authentication...', 'info');
         
-        // Debug PKCE state before exchange
-        console.log('🔐 Pre-token exchange PKCE state:');
-        const pkceState = verifyPkceState();
-        
-        if (!pkceState.hasCodeVerifier) {
-            throw new Error('PKCE code verifier missing. Authentication session may have expired.');
-        }
-        
-        // Validate state parameter - be more lenient for timing issues
-        if (returnedState && pkceState.state) {
-            if (returnedState !== pkceState.state) {
-                console.warn('⚠️ State parameter mismatch:', {
-                    returnedState,
-                    storedState: pkceState.state
-                });
-                
-                // Check if it's just a timing issue (both start with 'auth_')
-                if (returnedState.startsWith('auth_') && pkceState.state.startsWith('auth_')) {
-                    console.log('⚠️ State mismatch appears to be timing-related, proceeding anyway');
-                    // Continue with authentication despite state mismatch
-                } else {
-                    throw new Error('Invalid state parameter - possible security issue');
-                }
-            }
-        }
-        
         // Process the authentication
         const tokenData = await exchangeCodeForTokenPKCE(authCode);
         
         if (!tokenData.access_token) {
-            throw new Error('No access token received from Microsoft');
+            throw new Error('No access token received');
         }
         
         // Store token and get user info
@@ -1966,17 +1844,15 @@ async function processOAuthCallback(authCode, returnedState) {
         currentUser = sharePointUserInfo;
         sessionStorage.setItem('current_user', JSON.stringify(currentUser));
         
-        // Clean up URL and PKCE parameters from ALL storage locations
-        cleanupPkceStorage();
+        // Clean up URL and session
+        sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('pkce_state');
         window.history.replaceState({}, document.title, window.location.pathname);
         
         // Load data and show dashboard
         await loadDataFromSharePoint();
         showDashboard();
         startRealTimeSync();
-        
-        // IMPORTANT: Populate ALL dropdowns including SharePoint-dependent ones AFTER authentication
-        populateDropdowns();
         
         showNotification(`Welcome ${sharePointUserInfo.name}!`);
         
@@ -1985,54 +1861,11 @@ async function processOAuthCallback(authCode, returnedState) {
         showNotification('Authentication failed: ' + error.message, 'error');
         
         // Clean up and show login screen
-        cleanupPkceStorage();
         clearSession();
         showLoginScreen();
     }
 }
 
-
-// Debug function to check authentication state
-function debugAuthState() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const authCode = urlParams.get('code');
-    const state = urlParams.get('state');
-    
-    console.log('🔍 AUTH STATE DEBUG:');
-    console.log('URL Parameters:', {
-        hasCode: !!authCode,
-        codeLength: authCode?.length,
-        hasState: !!state,
-        state: state
-    });
-    
-    const pkceState = verifyPkceState();
-    console.log('PKCE State:', pkceState);
-    
-    console.log('Session Storage:', {
-        accessToken: !!sessionStorage.getItem('access_token'),
-        currentUser: !!sessionStorage.getItem('current_user')
-    });
-}
-
-// Call this in console if needed: debugAuthState()
-
-// Debug function to check storage state
-function debugStorageState() {
-    console.log('🔍 STORAGE DEBUG INFO:');
-    console.log('LocalStorage PKCE:', {
-        verifier: localStorage.getItem('pkce_code_verifier')?.substring(0, 20) + '...',
-        state: localStorage.getItem('pkce_state')
-    });
-    console.log('SessionStorage PKCE:', {
-        verifier: sessionStorage.getItem('pkce_code_verifier')?.substring(0, 20) + '...',
-        state: sessionStorage.getItem('pkce_state')
-    });
-    console.log('TempStorage PKCE:', window.tempPkceStorage);
-    console.log('URL Parameters:', Object.fromEntries(new URLSearchParams(window.location.search)));
-}
-
-// Call this in console if needed: debugStorageState()
 
 function checkAndFixDashboard() {
     console.log('🔧 Checking dashboard state...');
@@ -2114,18 +1947,7 @@ async function loadFruitsWithGoogleAuth() {
             instagram: item.fields.Instagram || '',
             facebook: item.fields.Facebook || '',
             twitter: item.fields.Twitter || '',
-            // robustly normalise LeadSource (handles string, array, person/object shapes)
-            leadSource: (function(raw) {
-                if (!raw) return '';
-                if (typeof raw === 'string') return raw;
-                if (Array.isArray(raw)) {
-                    return raw.map(x => x?.displayName || x?.Title || x?.Value || x?.value || (typeof x === 'string' ? x : '')).filter(Boolean).join(', ');
-                }
-                if (typeof raw === 'object') {
-                    return raw.displayName || raw.Title || raw.Value || raw.value || raw.Label || raw.Name || raw.name || JSON.stringify(raw);
-                }
-                return String(raw);
-            })(item.fields.LeadSource || item.fields.LeadSourceId || item.fields.Source || ''),
+            leadSource: item.fields.LeadSource || '',
             campaign: item.fields.Campaign || '',
             status: item.fields.Status || 'Initial Contact',
             notes: item.fields.Notes || '',
@@ -2279,6 +2101,31 @@ async function loadActivitiesWithGoogleAuth() {
         throw error;
     }
 }
+
+// Handle manual refresh
+window.addEventListener('beforeunload', function(event) {
+    // Set a flag that we're about to refresh
+    sessionStorage.setItem('isRefreshing', 'true');
+});
+
+window.addEventListener('load', function() {
+    // Check if we just refreshed
+    const wasRefreshing = sessionStorage.getItem('isRefreshing');
+    
+    if (wasRefreshing) {
+        console.log('🔄 Page was manually refreshed - clearing session');
+        sessionStorage.removeItem('isRefreshing');
+        
+        // Don't force logout here if it's an OAuth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        const authCode = urlParams.get('code');
+        
+        if (!authCode) {
+            forceLogout();
+        }
+    }
+});
+
 
 function checkExistingSession() {
     // Clear any existing session on page load/refresh
@@ -2520,132 +2367,44 @@ window.addEventListener('load', function() {
             }, 1000);
         }
 
+        
 
-async function authenticateWithMicrosoft() {
-    try {
-        console.log('🔐 Starting PKCE Microsoft authentication...');
-        showNotification('Redirecting to Microsoft 365...', 'info');
-        
-        // Generate PKCE parameters
-        const codeVerifier = generateCodeVerifier();
-        const codeChallenge = await generateCodeChallenge(codeVerifier);
-        const state = 'auth_' + Date.now();
-        
-        console.log('🔐 PKCE parameters generated:', {
-            verifierLength: codeVerifier.length,
-            challengeLength: codeChallenge.length,
-            state: state
-        });
-        
-        // Store PKCE parameters in the most persistent way possible
-        // 1. Encode and store in sessionStorage (primary)
-        sessionStorage.setItem('pkce_code_verifier', codeVerifier);
-        sessionStorage.setItem('pkce_state', state);
-        
-        // 2. Store in localStorage as backup
-        localStorage.setItem('pkce_code_verifier', codeVerifier);
-        localStorage.setItem('pkce_state', state);
-        
-        // 3. Store in a cookie as additional backup (persists across redirects)
-        document.cookie = `pkce_code_verifier=${encodeURIComponent(codeVerifier)}; path=/; max-age=300`; // 5 minutes
-        document.cookie = `pkce_state=${state}; path=/; max-age=300`;
-        
-        console.log('🔐 PKCE parameters stored in multiple locations');
-        
-        // Build PKCE auth URL
-        const authUrl = buildPKCEAuthUrl(codeChallenge, state);
-        console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
-        
-        // Redirect to Microsoft authentication (same window)
-        window.location.href = authUrl;
-        
-    } catch (error) {
-        console.error('❌ PKCE authentication failed:', error);
-        showNotification('Authentication failed: ' + error.message, 'error');
-        
-        // Clean up on failure
-        cleanupPkceStorage();
-    }
-}
-
-
-// Cookie helper functions
-function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
-    return null;
-}
-
-function deleteCookie(name) {
-    document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-}
-
-// Clean up PKCE storage from all locations
-function cleanupPkceStorage() {
-    localStorage.removeItem('pkce_code_verifier');
-    localStorage.removeItem('pkce_state');
-    sessionStorage.removeItem('pkce_code_verifier');
-    sessionStorage.removeItem('pkce_state');
-    delete window.tempPkceStorage;
-}
-
-
-// Add this function to verify PKCE state
-function verifyPkceState() {
-    // Check all possible storage locations
-    const localStorageVerifier = localStorage.getItem('pkce_code_verifier');
-    const localStorageState = localStorage.getItem('pkce_state');
-    
-    const sessionStorageVerifier = sessionStorage.getItem('pkce_code_verifier');
-    const sessionStorageState = sessionStorage.getItem('pkce_state');
-    
-    const cookieVerifier = getCookie('pkce_code_verifier');
-    const cookieState = getCookie('pkce_state');
-    
-    const tempStorageVerifier = window.tempPkceStorage?.code_verifier;
-    const tempStorageState = window.tempPkceStorage?.state;
-    
-    // Use the first available verifier (cookies are most reliable for redirects)
-    const codeVerifier = cookieVerifier || localStorageVerifier || sessionStorageVerifier || tempStorageVerifier;
-    const state = cookieState || localStorageState || sessionStorageState || tempStorageState;
-    
-    console.log('🔐 PKCE State Verification:', {
-        cookies: {
-            hasCodeVerifier: !!cookieVerifier,
-            hasState: !!cookieState
-        },
-        localStorage: {
-            hasCodeVerifier: !!localStorageVerifier,
-            hasState: !!localStorageState
-        },
-        sessionStorage: {
-            hasCodeVerifier: !!sessionStorageVerifier,
-            hasState: !!sessionStorageState
-        },
-        tempStorage: {
-            hasCodeVerifier: !!tempStorageVerifier,
-            hasState: !!tempStorageState
-        },
-        final: {
-            hasCodeVerifier: !!codeVerifier,
-            hasState: !!state,
-            codeVerifierLength: codeVerifier?.length,
-            source: codeVerifier === cookieVerifier ? 'cookie' : 
-                   codeVerifier === localStorageVerifier ? 'localStorage' : 
-                   codeVerifier === sessionStorageVerifier ? 'sessionStorage' : 
-                   codeVerifier === tempStorageVerifier ? 'tempStorage' : 'none'
+        async function authenticateWithMicrosoft() {
+            try {
+                console.log('🔐 Starting PKCE Microsoft authentication...');
+                showNotification('Redirecting to Microsoft 365...', 'info');
+                
+                // Generate PKCE parameters
+                const codeVerifier = generateCodeVerifier();
+                const codeChallenge = await generateCodeChallenge(codeVerifier);
+                const state = 'auth_' + Date.now();
+                
+                console.log('🔐 PKCE parameters generated:', {
+                    verifierLength: codeVerifier.length,
+                    challengeLength: codeChallenge.length,
+                    state: state
+                });
+                
+                // Store PKCE parameters securely
+                sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+                sessionStorage.setItem('pkce_state', state);
+                
+                // Build PKCE auth URL
+                const authUrl = buildPKCEAuthUrl(codeChallenge, state);
+                console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
+                
+                // Redirect to Microsoft authentication (same window)
+                window.location.href = authUrl;
+                
+            } catch (error) {
+                console.error('❌ PKCE authentication failed:', error);
+                showNotification('Authentication failed: ' + error.message, 'error');
+                
+                // Clean up on failure
+                sessionStorage.removeItem('pkce_code_verifier');
+                sessionStorage.removeItem('pkce_state');
+            }
         }
-    });
-    
-    return {
-        hasCodeVerifier: !!codeVerifier,
-        hasState: !!state,
-        codeVerifier: codeVerifier,
-        state: state
-    };
-}
-
 
         function showManualCodeExtractionHelper(popup) {
             const helper = document.createElement('div');
@@ -3015,87 +2774,51 @@ function verifyPkceState() {
             });
         }
 
-async function exchangeCodeForTokenPKCE(authCode) {
-    try {
-        console.log('🔄 PKCE token exchange starting...');
-        
-        // Check all storage locations for code verifier
-        const codeVerifier = localStorage.getItem('pkce_code_verifier') || 
-                            sessionStorage.getItem('pkce_code_verifier') || 
-                            window.tempPkceStorage?.code_verifier;
-        
-        console.log('🔐 Retrieved code verifier:', {
-            fromLocalStorage: !!localStorage.getItem('pkce_code_verifier'),
-            fromSessionStorage: !!sessionStorage.getItem('pkce_code_verifier'),
-            fromTempStorage: !!window.tempPkceStorage?.code_verifier,
-            exists: !!codeVerifier,
-            length: codeVerifier?.length,
-            first10: codeVerifier?.substring(0, 10) + '...'
-        });
-        
-        if (!codeVerifier) {
-            // Debug all storage keys
-            const allLocalKeys = Object.keys(localStorage);
-            const allSessionKeys = Object.keys(sessionStorage);
-            console.log('🔐 All localStorage keys:', allLocalKeys);
-            console.log('🔐 All sessionStorage keys:', allSessionKeys);
-            console.log('🔐 Window temp storage:', window.tempPkceStorage);
-            
-            throw new Error('PKCE code verifier not found in any storage location');
-        }
-        
-        const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
-        
-        const redirectUri = window.location.origin + window.location.pathname;
-        
-        const body = new URLSearchParams({
-            client_id: SHAREPOINT_CONFIG.CLIENT_ID,
-            scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
-            code: authCode,
-            redirect_uri: redirectUri,
-            grant_type: 'authorization_code',
-            code_verifier: codeVerifier // PKCE proof
-        });
-        
-        console.log('🔐 Token exchange request:', {
-            client_id: SHAREPOINT_CONFIG.CLIENT_ID,
-            code_length: authCode.length,
-            redirect_uri: redirectUri,
-            code_verifier_length: codeVerifier.length,
-            token_url: tokenUrl
-        });
-        
-        const response = await fetch(tokenUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: body.toString()
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Token exchange failed:', response.status, errorText);
-            
-            // If it's a 400 error, it might be because the code verifier is wrong
-            if (response.status === 400) {
-                throw new Error('Invalid PKCE code verifier. The authentication session may have expired.');
+        async function exchangeCodeForTokenPKCE(authCode) {
+            try {
+                console.log('🔄 PKCE token exchange starting...');
+                
+                const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
+                if (!codeVerifier) {
+                    throw new Error('PKCE code verifier not found');
+                }
+                
+                const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
+                
+                const redirectUri = window.location.origin + window.location.pathname;
+                
+                const body = new URLSearchParams({
+                    client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+                    scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
+                    code: authCode,
+                    redirect_uri: redirectUri,
+                    grant_type: 'authorization_code',
+                    code_verifier: codeVerifier // PKCE proof
+                });
+                
+                const response = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: body.toString()
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error_description || 'PKCE token exchange failed');
+                }
+                
+                const tokenData = await response.json();
+                console.log('✅ PKCE token exchange successful');
+                
+                return tokenData;
+                
+            } catch (error) {
+                console.error('❌ PKCE token exchange failed:', error);
+                throw error;
             }
-            
-            throw new Error(`PKCE token exchange failed: ${response.status}`);
         }
-        
-        const tokenData = await response.json();
-        console.log('✅ PKCE token exchange successful');
-        
-        return tokenData;
-        
-    } catch (error) {
-        console.error('❌ PKCE token exchange failed:', error);
-        throw error;
-    }
-}
-
 
         async function getUserInfo(token) {
             try {
@@ -3437,56 +3160,57 @@ async function loadActivitiesFromSharePoint() {
     }
 }
 
-
-// Robust user name extractor for Person fields (handles many Graph/SharePoint shapes)
+// Helper function to extract user name from Person field
 function extractUserName(fields) {
     console.log('🔍 Extracting user from fields:', fields);
-
-    // potential field candidates (check these in order)
-    const candidates = [
-        fields.User,
-        fields.CreatedByUser,
-        fields.CreatedBy,
-        fields.Author,
-        fields.Editor,
-        fields.ModifiedBy,
-        fields['User/0'],
-        fields['Author/0'],
-        fields['Editor/0']
-    ];
-
-    for (const cand of candidates) {
-        if (!cand) continue;
-
-        // string
-        if (typeof cand === 'string' && cand.trim()) return cand.trim();
-
-        // array
-        if (Array.isArray(cand) && cand.length) {
-            const names = cand.map(x => x?.displayName || x?.Title || x?.name || x?.email || x?.Mail || x?.value || '').filter(Boolean);
-            if (names.length) return names.join(', ');
-        }
-
-        // object
-        if (typeof cand === 'object') {
-            // attempt common properties returned by Graph/SharePoint
-            const name = cand.displayName || cand.title || cand.Name || cand.Mail || cand.email || cand.userPrincipalName || cand.Value || cand.value;
-            if (name) return name;
-            // sometimes Person field nests as { '0': {...} }
-            if (cand[0] && typeof cand[0] === 'object') {
-                const n = cand[0].displayName || cand[0].title || cand[0].Name || cand[0].email || cand[0].Mail;
-                if (n) return n;
+    
+    // Method 1: User field (Person field)
+    if (fields.User) {
+        console.log('👤 User field found:', fields.User);
+        
+        if (typeof fields.User === 'object') {
+            // Try all possible properties for display name
+            const possibleProperties = [
+                'displayName', 'title', 'name', 'givenName', 
+                'surname', 'userPrincipalName', 'email', 'mail'
+            ];
+            
+            for (const prop of possibleProperties) {
+                if (fields.User[prop]) {
+                    console.log(`✅ Found user name in ${prop}:`, fields.User[prop]);
+                    return formatUserName(fields.User[prop]);
+                }
             }
+        } else if (typeof fields.User === 'string') {
+            return formatUserName(fields.User);
         }
     }
-
-    // Last resort: try Created or CreatedBy fields text
-    if (fields.CreatedBy && typeof fields.CreatedBy === 'string' && fields.CreatedBy.trim()) return fields.CreatedBy.trim();
-    if (fields.Created && typeof fields.Created === 'string' && fields.Created.trim()) return fields.Created.trim();
-
-    return 'Unknown';
+    
+    // Method 2: CreatedBy field
+    if (fields.CreatedBy) {
+        console.log('👤 CreatedBy field found:', fields.CreatedBy);
+        
+        if (typeof fields.CreatedBy === 'object') {
+            if (fields.CreatedBy.displayName) {
+                return formatUserName(fields.CreatedBy.displayName);
+            } else if (fields.CreatedBy.title) {
+                return formatUserName(fields.CreatedBy.title);
+            } else if (fields.CreatedBy.email) {
+                return formatUserName(fields.CreatedBy.email);
+            }
+        } else if (typeof fields.CreatedBy === 'string') {
+            return formatUserName(fields.CreatedBy);
+        }
+    }
+    
+    // Method 3: Check if there's a user email field
+    if (fields.UserEmail) {
+        return formatUserName(fields.UserEmail);
+    }
+    
+    console.log('❌ No user name found in fields');
+    return 'Unknown User';
 }
-
 
 // Format user name - clean up email addresses, etc.
 function formatUserName(userString) {
@@ -3853,8 +3577,8 @@ async function editFruit(fruitId) {
             }
         }
 
+        // Dashboard functions
         
-
 function showDashboard() {
     console.log('🔄 Showing dashboard...');
     
@@ -3884,15 +3608,8 @@ function showDashboard() {
     // Update all UI components
     updateUIComponents();
     
-    // Ensure dropdowns are populated with SharePoint data
-    if (sharePointAccessToken) {
-        console.log('🔄 Refreshing dropdowns with SharePoint data...');
-        populateDropdowns();
-    }
-    
     console.log('✅ Dashboard fully loaded');
 }
-
 
 function updateUserDisplay() {
     const userAvatar = document.getElementById('userAvatar');
@@ -4338,10 +4055,7 @@ setTimeout(handleStuckLoading, 3000);
         }
 
 
-// Populate only basic dropdowns that don't require SharePoint access
-function populateBasicDropdowns() {
-    console.log('📋 Populating basic dropdowns...');
-    
+    function populateDropdowns() {
     // Populate status filter
     const statusFilter = document.getElementById('statusFilter');
     if (statusFilter) {
@@ -4360,65 +4074,30 @@ function populateBasicDropdowns() {
             ).join('');
     }
 
-    // Populate fruit dropdowns in modals from local data
+    // Populate fruit dropdowns in modals
     populateFruitDropdowns();
     
-    console.log('✅ Basic dropdowns populated');
+    // Populate assignee dropdown
+    populateAssigneeDropdown();
 }
 
 
-// Populate ALL dropdowns including SharePoint-dependent ones
-function populateDropdowns() {
-    console.log('📋 Populating ALL dropdowns (including SharePoint)...');
-    
-    // Populate basic dropdowns
-    populateBasicDropdowns();
-    
-    // Only populate SharePoint-dependent dropdowns if we have access
-    if (sharePointAccessToken) {
-        console.log('🔐 Populating SharePoint-dependent dropdowns...');
-        populateAssigneeDropdown();
-    } else {
-        console.log('⚠️ Skipping SharePoint-dependent dropdowns - no access token');
-        // Set fallback assignee options
-        const assigneeDatalist = document.getElementById('assigneeOptions');
-        if (assigneeDatalist) {
-            const fallbackUsers = currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
-            fallbackUsers.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user;
-                assigneeDatalist.appendChild(option);
-            });
+        function populateFruitDropdowns() {
+            const activityFruitSelect = document.getElementById('activityFruitSelect');
+            const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
+            
+            const fruitOptions = fruits.map(fruit => 
+                `<option value="${fruit.name}">${fruit.name}</option>`
+            ).join('');
+            
+            if (activityFruitSelect) {
+                activityFruitSelect.innerHTML = '<option value="">Select fruit...</option>' + fruitOptions;
+            }
+            
+            if (scheduleFruitSelect) {
+                scheduleFruitSelect.innerHTML = '<option value="">Select fruit...</option>' + fruitOptions;
+            }
         }
-    }
-}
-
-
-// helper to escape values inserted as HTML attributes
-function escapeHtml(str) {
-    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function populateFruitDropdowns() {
-    const activityInput = document.getElementById('activityFruitSelect');
-    const activityDatalist = document.getElementById('activityFruitOptions');
-    const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
-
-    // build datalist options (for search input)
-    if (activityDatalist) {
-        activityDatalist.innerHTML = fruits.map(f => `<option value="${escapeHtml(f.name)}">`).join('');
-    }
-    if (activityInput) {
-        activityInput.value = ''; // reset input when reopening modal
-    }
-
-    // keep schedule select as before (dropdown)
-    if (scheduleFruitSelect) {
-        scheduleFruitSelect.innerHTML = '<option value="">Select fruit...</option>' +
-            fruits.map(f => `<option value="${escapeHtml(f.name)}">${escapeHtml(f.name)}</option>`).join('');
-    }
-}
-
 
     
 // Add this to your initializeEventListeners function
@@ -6036,44 +5715,29 @@ async function callSharePointAPI(url, options = {}) {
             }
         }
 
-        
-
 // Load users for Assign To dropdown with better Person field handling
 async function loadUsersForDropdown() {
     try {
         console.log('👥 Loading users for Assign To dropdown...');
         
-        // Get fresh access token from multiple sources
-        const accessToken = sessionStorage.getItem('access_token') || sharePointAccessToken;
-        
-        if (!accessToken) {
-            console.error('❌ No SharePoint access token available for loading users');
-            throw new Error('Authentication required to load users');
-        }
-        
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'&$select=id,fields&$top=500`;
-        
-        console.log('🔐 Loading users from SharePoint...');
         
         const response = await fetch(url, {
             headers: {
-                'Authorization': `Bearer ${accessToken}`,
+                'Authorization': `Bearer ${sharePointAccessToken}`,
                 'Accept': 'application/json'
             }
         });
         
         if (!response.ok) {
-            if (response.status === 401) {
-                console.error('❌ Access token invalid or expired');
-                throw new Error('Authentication expired. Please sign in again.');
-            }
-            throw new Error(`Failed to load users: ${response.status} ${response.statusText}`);
+            console.warn('⚠️ Could not load users list, using current user only');
+            return currentUser ? [currentUser.name] : ['Unassigned'];
         }
         
         const data = await response.json();
         const userItems = data.value || [];
         
-        console.log('📋 Users loaded for dropdown:', userItems.length, 'users found');
+        console.log('📋 Users loaded for dropdown:', userItems);
         
         // Extract display names with better Person field handling
         const userNames = userItems.map(item => {
@@ -6129,11 +5793,12 @@ async function loadUsersForDropdown() {
         
     } catch (error) {
         console.error('❌ Error loading users for dropdown:', error);
-        throw error; // Re-throw to handle in calling function
+        // Fallback options
+        return currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
     }
 }
-
    
+        
 // Populate searchable Assign To dropdown
 async function populateAssigneeDropdown() {
     try {
@@ -6144,9 +5809,6 @@ async function populateAssigneeDropdown() {
             console.log('❌ Assignee search elements not found');
             return;
         }
-        
-        // Show loading state
-        showAssigneeLoading();
         
         // Clear existing options
         assigneeDatalist.innerHTML = '';
@@ -6167,25 +5829,8 @@ async function populateAssigneeDropdown() {
         
     } catch (error) {
         console.error('❌ Error populating assignee dropdown:', error);
-        showNotification('Failed to load users list: ' + error.message, 'error');
-        
-        // Fallback: at least show current user and Unassigned
-        const assigneeDatalist = document.getElementById('assigneeOptions');
-        if (assigneeDatalist) {
-            const fallbackUsers = currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
-            fallbackUsers.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user;
-                assigneeDatalist.appendChild(option);
-            });
-            console.log('✅ Fallback assignee options set');
-        }
-    } finally {
-        hideAssigneeLoading();
     }
 }
-
-
 
 // Enhanced search functionality
 function enhanceAssigneeSearch(inputElement, users) {
@@ -6287,66 +5932,63 @@ function removeActive(items) {
 }
 
 
-function updateUsersTable() {
-    const tbody = document.getElementById('usersTable');
-    if (!tbody) return;
 
-    if (authorizedUsers.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
-                    <i class="fas fa-users text-2xl mb-2"></i>
-                    <p>No users found. Add your first user to get started.</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    tbody.innerHTML = authorizedUsers.map(user => {
-        const actions = userPermissions.isAdmin
-            ? `<button onclick="editUser('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3"><i class="fas fa-edit"></i></button>
-               <button onclick="deleteUser('${user.id}')" class="text-red-600 hover:text-red-900"><i class="fas fa-trash"></i></button>`
-            : `<span class="text-sm text-gray-500">Restricted</span>`;
-
-        return `
-            <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10">
-                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
-                                ${user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+        function updateUsersTable() {
+            const tbody = document.getElementById('usersTable');
+            if (!tbody) return;
+            
+            if (authorizedUsers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            <i class="fas fa-users text-2xl mb-2"></i>
+                            <p>No users found. Add your first user to get started.</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = authorizedUsers.map(user => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                                    ${user.displayName.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${user.displayName}</div>
+                                <div class="text-sm text-gray-500">${user.email}</div>
+                                ${user.department ? `<div class="text-xs text-gray-400">${user.department}</div>` : ''}
                             </div>
                         </div>
-                        <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">${user.displayName}</div>
-                            <div class="text-sm text-gray-500">${user.email}</div>
-                            ${user.department ? `<div class="text-xs text-gray-400">${user.department}</div>` : ''}
-                        </div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}">
-                        ${user.role}
-                    </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(user.status)}">
-                        ${user.status}
-                    </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    ${actions}
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}">
+                            ${user.role}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(user.status)}">
+                            ${user.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="editUser('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteUser('${user.id}')" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
         function getRoleBadgeColor(role) {
             const colors = {
@@ -6470,119 +6112,9 @@ function updateUsersTable() {
             }
         }
 
-        
         async function editUser(userId) {
-    if (!userPermissions.isAdmin) {
-        showNotification('Only administrators can edit users', 'error');
-        return;
-    }
-
-    const user = authorizedUsers.find(u => u.id === userId);
-    if (!user) {
-        showNotification('User not found', 'error');
-        return;
-    }
-
-    showAddUserModal();
-
-    setTimeout(() => {
-        const form = document.querySelector('#addUserModal form');
-        if (!form) return;
-
-        form.querySelector('[name="displayName"]').value = user.displayName || '';
-        form.querySelector('[name="email"]').value = user.email || '';
-        form.querySelector('[name="role"]').value = user.role || 'User';
-        form.querySelector('[name="status"]').value = user.status || 'Active';
-        form.querySelector('[name="department"]').value = user.department || '';
-        form.querySelector('[name="notes"]').value = user.notes || '';
-
-        // mark modal as editing
-        form.setAttribute('data-editing-id', userId);
-
-        // replace submit handler to update
-        form.onsubmit = function(e) {
-            updateUser(e);
-        };
-
-        // update modal title/button
-        const title = document.querySelector('#addUserModal h3');
-        if (title) title.textContent = 'Edit User';
-        const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.textContent = 'Update User';
-            submitBtn.classList.remove('bg-green-600');
-            submitBtn.classList.add('bg-blue-600');
+            showNotification('User editing coming soon!', 'info');
         }
-    }, 120);
-}
-
-
-async function updateUser(event) {
-    event.preventDefault();
-
-    if (!userPermissions.isAdmin) {
-        showNotification('Only administrators can update users', 'error');
-        return;
-    }
-
-    const form = event.target;
-    const userId = form.getAttribute('data-editing-id');
-    if (!userId) {
-        showNotification('No user selected for update', 'error');
-        return;
-    }
-
-    const fd = new FormData(form);
-    const updatedUser = {
-        id: userId,
-        email: fd.get('email') || '',
-        displayName: fd.get('displayName') || '',
-        role: fd.get('role') || 'User',
-        status: fd.get('status') || 'Active',
-        department: fd.get('department') || '',
-        notes: fd.get('notes') || '',
-        lastLogin: (authorizedUsers.find(u => u.id === userId) || {}).lastLogin || 'Never'
-    };
-
-    try {
-        if (isSharePointMode && sharePointAccessToken) {
-            const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items/${userId}/fields`;
-            const resp = await fetch(url, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${sharePointAccessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    DisplayName: updatedUser.displayName,
-                    Email: updatedUser.email,
-                    Role: updatedUser.role,
-                    Status: updatedUser.status,
-                    Department: updatedUser.department,
-                    Notes: updatedUser.notes
-                })
-            });
-
-            if (!resp.ok) {
-                const t = await resp.text().catch(()=>'');
-                throw new Error('SharePoint update failed: ' + resp.status + ' ' + t);
-            }
-        }
-
-        // update local copy
-        const idx = authorizedUsers.findIndex(u => u.id === userId);
-        if (idx > -1) authorizedUsers[idx] = updatedUser;
-
-        updateUsersTable();
-        updateUserStats();
-        closeModal('addUserModal');
-        showNotification('User updated successfully!');
-    } catch (err) {
-        console.error('❌ Failed to update user:', err);
-        showNotification('Failed to update user: ' + (err.message || err), 'error');
-    }
-}
-
 
         async function deleteUser(userId) {
             if (!userPermissions.isAdmin) {
@@ -6810,7 +6342,7 @@ async function debugSharePointFields() {
 
 <!-- Simple Version Tag -->
 <div class="fixed bottom-4 right-4 text-xs text-gray-500 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm z-40">
-    ERMS v1.1.3
+    ERMS v1.0.5
 </div>
 
 </body>
