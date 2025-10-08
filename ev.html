@@ -1,9 +1,11 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism Reporting System</title>
+    <title>Evengelism System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -82,7 +84,7 @@
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-cross text-white text-2xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism FRMS</h1>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism FRM</h1>
                 <p class="text-gray-600">Fruit Relationship Management System</p>
             </div>
             
@@ -234,19 +236,19 @@
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                    <button id="addFruitQuick" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
                         <i class="fas fa-user-plus text-2xl"></i>
                         <span class="text-sm font-medium">Add Fruit</span>
                     </button>
-                    <button onclick="showScheduleModal()" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                    <button id="scheduleBBQuick" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
                         <i class="fas fa-calendar-plus text-2xl"></i>
                         <span class="text-sm font-medium">Schedule BB</span>
                     </button>
-                    <button onclick="showActivityModal()" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                    <button id="logActivityQuick" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
                         <i class="fas fa-phone-alt text-2xl"></i>
                         <span class="text-sm font-medium">Log Activity</span>
                     </button>
-                    <button onclick="generateReport()" class="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                    <button id="generateReportQuick" class="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
                         <i class="fas fa-file-alt text-2xl"></i>
                         <span class="text-sm font-medium">Generate Report</span>
                     </button>
@@ -2797,6 +2799,8 @@ window.addEventListener('load', function() {
                 'https://app.shill.es/ev/',
                 'https://app.shill.es',
                 'https://app.shill.es/',
+                'http://localhost:8000/',
+                'http://localhost:8000',
                 window.location.origin + window.location.pathname,
                 window.location.origin + '/',
                 window.location.origin
@@ -4162,13 +4166,12 @@ setTimeout(handleStuckLoading, 3000);
             `).join('');
         }
 
-        
-// In your updateFruitsGrid function, ensure buttons have proper onclick attributes
-function updateFruitsGrid() {
+        function updateFruitsGrid() {
     const container = document.getElementById('fruitsGrid');
     if (!container) return;
     
     if (fruits.length === 0) {
+        // ... keep the existing empty state code exactly as is ...
         container.innerHTML = `
             <div class="text-center py-12 col-span-full">
                 <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
@@ -4227,23 +4230,27 @@ function updateFruitsGrid() {
             </div>
             
             <div class="grid grid-cols-2 gap-2">
-                <button onclick="viewFruitDetails('${fruit.id}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <!-- UPDATED BUTTONS WITH DATA ATTRIBUTES -->
+                <button data-action="view" data-fruit-id="${fruit.id}" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
                     <i class="fas fa-eye mr-1"></i>View Details
                 </button>
-                <button onclick="editFruit('${fruit.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <button data-action="edit" data-fruit-id="${fruit.id}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
                     <i class="fas fa-edit mr-1"></i>Edit
                 </button>
-                <button onclick="logActivityForFruit('${fruit.name}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <button data-action="log-activity" data-fruit-name="${fruit.name}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
                     <i class="fas fa-phone mr-1"></i>Log Activity
                 </button>
-                <button onclick="deleteFruit('${fruit.id}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
+                <button data-action="delete" data-fruit-id="${fruit.id}" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
                     <i class="fas fa-trash mr-1"></i>Delete
                 </button>
             </div>
         </div>
         `;
     }).join('');
-}
+    
+    console.log('✅ Fruit grid updated with data attributes');
+}       
+
 
         function getStatusColor(status) {
             const colors = {
@@ -4332,18 +4339,44 @@ function debugFruitsLoading() {
 // Call this after fruits are loaded
 setTimeout(debugFruitsLoading, 2000);
 
-// Debug function to check button event handlers
-function debugButtonEvents() {
-    console.log('=== BUTTON EVENT DEBUG ===');
-    const buttons = document.querySelectorAll('#fruitsGrid button');
-    buttons.forEach((button, index) => {
-        console.log(`Button ${index}:`, {
-            text: button.textContent,
-            onclick: button.getAttribute('onclick'),
-            disabled: button.disabled
-        });
-    });
-}
+            // Debug function to check button event handlers
+            function debugButtonEvents() {
+                console.log('=== BUTTON EVENT DEBUG ===');
+                const buttons = document.querySelectorAll('#fruitsGrid button');
+                buttons.forEach((button, index) => {
+                    console.log(`Button ${index}:`, {
+                        text: button.textContent,
+                        onclick: button.getAttribute('onclick'),
+                        disabled: button.disabled
+                    });
+                });
+                console.log('=== BUTTON EVENT DEBUG ===');
+                
+                // Check Quick Actions
+                const quickActions = document.querySelectorAll('.grid-cols-4 button');
+                console.log('Quick Actions buttons:', quickActions.length);
+                quickActions.forEach((btn, i) => {
+                    console.log(`Quick Action ${i}:`, btn.textContent, 'onclick:', btn.getAttribute('onclick'));
+                });
+                
+                // Check Fruit Cards
+                const fruitCards = document.querySelectorAll('#fruitsGrid .bg-white');
+                console.log('Fruit cards:', fruitCards.length);
+                fruitCards.forEach((card, i) => {
+                    const buttons = card.querySelectorAll('button');
+                    console.log(`Card ${i} buttons:`, buttons.length);
+                    buttons.forEach((btn, j) => {
+                        console.log(`  Button ${j}:`, btn.textContent, 'onclick:', btn.getAttribute('onclick'));
+                    });
+                });
+            }
+
+// Call this after fruits are loaded
+setTimeout(debugButtonEvents, 3000);
+
+
+
+
         function populateFruitDropdowns() {
             const activityFruitSelect = document.getElementById('activityFruitSelect');
             const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
@@ -4361,9 +4394,13 @@ function debugButtonEvents() {
             }
         }
 
+    function initializeEventListeners() {
+    console.log('🎯 Initializing event listeners...');
+    document.getElementById('addFruitQuick')?.addEventListener('click', showAddFruitModal);
+    document.getElementById('scheduleBBQuick')?.addEventListener('click', showScheduleModal);
+    document.getElementById('logActivityQuick')?.addEventListener('click', showActivityModal);
+    document.getElementById('generateReportQuick')?.addEventListener('click', generateReport);
     
-// Add this to your initializeEventListeners function
-function initializeEventListeners() {
     // Fruit search functionality
     const fruitSearch = document.getElementById('fruitSearch');
     if (fruitSearch) {
@@ -4371,16 +4408,16 @@ function initializeEventListeners() {
     }
 
     // Handle fruit form submission
-    const fruitForm = document.getElementById('addFruitForm');
+    const fruitForm = document.querySelector('#addFruitModal form');
     if (fruitForm) {
-        fruitForm.addEventListener('submit', function(event) {
+        fruitForm.onsubmit = function(event) {
             const isEditing = this.getAttribute('data-editing-id');
             if (isEditing) {
                 updateFruit(event);
             } else {
                 addFruit(event);
             }
-        });
+        };
     }
 
     // Close dropdowns when clicking outside
@@ -4389,50 +4426,151 @@ function initializeEventListeners() {
         if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
             syncOptions.classList.add('hidden');
         }
-    });    
-    // Event delegation for dynamically generated fruit card buttons
+    });
+    
+    // Enhanced event delegation for dynamically generated buttons
     document.addEventListener('click', function(event) {
+        const button = event.target.closest('button');
+        if (!button) return;
+        
+        const onclick = button.getAttribute('onclick');
+        console.log('🔍 Button clicked:', {
+            text: button.textContent,
+            onclick: onclick,
+            id: button.id
+        });
+        
         // Handle View Details button
-        if (event.target.closest('button') && event.target.closest('button').textContent.includes('View Details')) {
-            const button = event.target.closest('button');
-            const fruitId = button.getAttribute('onclick').match(/'([^']+)'/)[1];
-            viewFruitDetails(fruitId);
+        if (button.textContent.includes('View Details') || (onclick && onclick.includes('viewFruitDetails'))) {
             event.preventDefault();
+            const fruitId = extractFruitIdFromButton(button, 'viewFruitDetails');
+            if (fruitId) {
+                console.log('👁️ Viewing details for fruit:', fruitId);
+                viewFruitDetails(fruitId);
+            }
         }
         
         // Handle Log Activity button
-        if (event.target.closest('button') && event.target.closest('button').textContent.includes('Log Activity')) {
-            const button = event.target.closest('button');
-            const fruitName = button.getAttribute('onclick').match(/'([^']+)'/)[1];
-            logActivityForFruit(fruitName);
+        else if (button.textContent.includes('Log Activity') || (onclick && onclick.includes('logActivityForFruit'))) {
             event.preventDefault();
+            const fruitName = extractFruitNameFromButton(button, 'logActivityForFruit');
+            if (fruitName) {
+                console.log('📞 Logging activity for fruit:', fruitName);
+                logActivityForFruit(fruitName);
+            }
+        }
+        
+        // Handle Edit button
+        else if (button.textContent.includes('Edit') || (onclick && onclick.includes('editFruit'))) {
+            event.preventDefault();
+            const fruitId = extractFruitIdFromButton(button, 'editFruit');
+            if (fruitId) {
+                console.log '✏️ Editing fruit:', fruitId);
+                editFruit(fruitId);
+            }
+        }
+        
+        // Handle Delete button
+        else if (button.textContent.includes('Delete') || (onclick && onclick.includes('deleteFruit'))) {
+            event.preventDefault();
+            const fruitId = extractFruitIdFromButton(button, 'deleteFruit');
+            if (fruitId) {
+                console.log('🗑️ Deleting fruit:', fruitId);
+                deleteFruit(fruitId);
+            }
         }
     });
+    
+    // Quick Actions buttons
+    document.addEventListener('click', function(event) {
+        const button = event.target.closest('button');
+        if (!button) return;
+        
+        // Check if it's a Quick Actions button by parent context
+        const quickActions = button.closest('.grid-cols-4');
+        if (quickActions) {
+            if (button.textContent.includes('Schedule BB')) {
+                event.preventDefault();
+                console.log('📅 Opening schedule modal from Quick Actions');
+                showScheduleModal();
+            }
+            else if (button.textContent.includes('Log Activity')) {
+                event.preventDefault();
+                console.log('📞 Opening activity modal from Quick Actions');
+                showActivityModal();
+            }
+            else if (button.textContent.includes('Generate Report')) {
+                event.preventDefault();
+                console.log('📊 Generating report from Quick Actions');
+                generateReport();
+            }
+            else if (button.textContent.includes('Add Fruit')) {
+                event.preventDefault();
+                console.log('➕ Opening add fruit modal from Quick Actions');
+                showAddFruitModal();
+            }
+        }
+    });
+    
+    console.log('✅ Event listeners initialized');
 }
 
-
-// Temporary debug function - remove after fixing
-function debugEditFruit(fruitId) {
-    console.log('🔧 DEBUG editFruit called with ID:', fruitId);
-    const fruit = fruits.find(f => f.id === fruitId);
-    console.log('🔧 Found fruit:', fruit);
-    console.log('🔧 All fruit IDs:', fruits.map(f => f.id));
+// Helper functions to extract parameters from buttons
+function extractFruitIdFromButton(button, functionName) {
+    // Try to get from onclick attribute first
+    const onclick = button.getAttribute('onclick');
+    if (onclick && onclick.includes(functionName)) {
+        const match = onclick.match(/'([^']+)'/);
+        if (match && match[1]) {
+            return match[1];
+        }
+    }
+    
+    // Fallback: try to get from data attributes or parent context
+    const card = button.closest('.bg-white');
+    if (card) {
+        // You might need to store fruit ID in a data attribute for more reliability
+        const fruitNameElement = card.querySelector('h3');
+        if (fruitNameElement) {
+            const fruitName = fruitNameElement.textContent;
+            const fruit = fruits.find(f => f.name === fruitName);
+            return fruit ? fruit.id : null;
+        }
+    }
+    
+    console.warn('❌ Could not extract fruit ID from button:', button);
+    return null;
 }
+
+function extractFruitNameFromButton(button, functionName) {
+    // Try to get from onclick attribute first
+    const onclick = button.getAttribute('onclick');
+    if (onclick && onclick.includes(functionName)) {
+        const match = onclick.match(/'([^']+)'/);
+        if (match && match[1]) {
+            return match[1];
+        }
+    }
+    
+    // Fallback: get from card context
+    const card = button.closest('.bg-white');
+    if (card) {
+        const fruitNameElement = card.querySelector('h3');
+        return fruitNameElement ? fruitNameElement.textContent : null;
+    }
+    
+    console.warn('❌ Could not extract fruit name from button:', button);
+    return null;
+}
+        
         // Modal functions
         function showAddFruitModal() {
             document.getElementById('addFruitModal').classList.remove('hidden');
         }
 
-        function showActivityModal() {
-            populateFruitDropdowns(); // Refresh fruit list
-            document.getElementById('activityModal').classList.remove('hidden');
-        }
-
-        function showScheduleModal() {
-            populateFruitDropdowns(); // Refresh fruit list
-            document.getElementById('scheduleModal').classList.remove('hidden');
-        }
-
+        
+       
+        
         function showExportModal() {
             // Update the item counts in the modal
             const modal = document.getElementById('exportModal');
@@ -5595,9 +5733,22 @@ function resetAddFruitModal() {
     }
 }
         
+        function showScheduleModal() {
+            console.log('📅 Opening schedule modal');
+            populateFruitDropdowns();
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        function showActivityModal() {
+            console.log('📞 Opening activity modal');
+            populateFruitDropdowns();
+            document.getElementById('activityModal').classList.remove('hidden');
+        }
 
         function generateReport() {
-            showNotification('Report generation coming soon!', 'info');
+            console.log('📊 Generating report');
+            showNotification('Report generation feature coming soon!', 'info');
+            // Add your report generation logic here
         }
 
         function exportReport() {
