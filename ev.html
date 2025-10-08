@@ -1526,25 +1526,23 @@ function showLoginScreen() {
 
 
 function initializeUI() {
-    console.log('🎨 PROPER UI INITIALIZATION STARTING...');
+    console.log('🎨 COMPREHENSIVE UI INITIALIZATION...');
     
-    // Load local data first
+    // Load data first
     loadLocalData();
     
-    // Update basic UI components
+    // Initialize ALL button systems in order
+    initializeQuickActions();
+    initializeHeaderAndAdminButtons();
+    
+    // Update UI components
     updateConnectionStatus();
     updateStats();
-    
-    // CRITICAL: Initialize event listeners BEFORE anything else
-    initializeEventListeners();
-    
-    // Update data-dependent components
     updateRecentActivities();
     updateFruitsGrid();
     populateDropdowns();
-    
-    // Apply permissions (visual only)
     applyPermissionBasedUI();
+    updateAdminStats();
     
     // Set copyright year
     const yearElement = document.getElementById('currentYear');
@@ -1552,11 +1550,46 @@ function initializeUI() {
         yearElement.textContent = new Date().getFullYear();
     }
     
-    console.log('✅ PROPER UI INITIALIZATION COMPLETE');
+    console.log('✅ COMPREHENSIVE UI INITIALIZATION COMPLETE');
     
-    // Verify event listeners are working
-    setTimeout(verifyEventListeners, 500);
+    // Verify everything is working
+    setTimeout(verifyAllButtons, 1000);
 }
+
+
+// In your Reports tab initialization, make sure this exists:
+function initializeReportButtons() {
+    const exportBtn = document.querySelector('#reportsTab button[onclick*="exportReport"]');
+    if (exportBtn) {
+        exportBtn.onclick = function(e) {
+            e.preventDefault();
+            console.log('🎯 Report Export clicked');
+            exportReport();
+        };
+    }
+}
+
+// Call this in your UI initialization
+
+
+function verifyAllButtons() {
+    console.log('🔍 VERIFYING ALL BUTTON SYSTEMS:');
+    
+    // Test Quick Actions
+    const quickActions = ['addFruitQuick', 'scheduleBBQuick', 'logActivityQuick', 'generateReportQuick'];
+    quickActions.forEach(id => {
+        const btn = document.getElementById(id);
+        console.log(`${btn ? '✅' : '❌'} ${id}: ${btn ? 'EXISTS' : 'MISSING'}`);
+    });
+    
+    // Test notification system
+    setTimeout(() => {
+        showNotification('System initialized successfully!', 'success');
+    }, 500);
+}
+
+
+
 
 function verifyEventListeners() {
     console.log('🔍 VERIFYING EVENT LISTENERS:');
@@ -4430,68 +4463,83 @@ setTimeout(debugButtonEvents, 3000);
             }
         }
 
-    function initializeQuickActions() {
-    console.log('🎯 Initializing Quick Actions event listeners...');
+
+        function initializeHeaderAndAdminButtons() {
+    console.log('🎯 INITIALIZING HEADER & ADMIN BUTTONS...');
     
-    // Add Fruit Quick Action
-    const addFruitBtn = document.getElementById('addFruitQuick');
-    if (addFruitBtn) {
-        addFruitBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('➕ Add Fruit Quick Action clicked');
-            showAddFruitModal();
-        });
-        console.log('✅ Add Fruit Quick Action listener attached');
-    } else {
-        console.log('❌ Add Fruit Quick Action button not found');
-    }
+    // Header buttons
+    const headerButtons = {
+        // Options dropdown
+        'syncOptions-test': testSharePointConnection,
+        'syncOptions-export': showExportModal,
+        'syncOptions-import': showImportModal,
+    };
     
-    // Schedule BB Quick Action
-    const scheduleBBBtn = document.getElementById('scheduleBBQuick');
-    if (scheduleBBBtn) {
-        scheduleBBBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('📅 Schedule BB Quick Action clicked');
-            showScheduleModal();
-        });
-        console.log('✅ Schedule BB Quick Action listener attached');
-    } else {
-        console.log('❌ Schedule BB Quick Action button not found');
-    }
+    // Add event listeners to header buttons
+    Object.entries(headerButtons).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log(`🎯 Header Button: ${id}`);
+                handler();
+            });
+        }
+    });
     
-    // Log Activity Quick Action
-    const logActivityBtn = document.getElementById('logActivityQuick');
-    if (logActivityBtn) {
-        logActivityBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('📞 Log Activity Quick Action clicked');
-            showActivityModal();
-        });
-        console.log('✅ Log Activity Quick Action listener attached');
-    } else {
-        console.log('❌ Log Activity Quick Action button not found');
-    }
+    // Admin buttons
+    const adminButtons = {
+        'admin-test-graph': testGraphApiConnection,
+        'admin-test-connection': testSharePointConnection,
+        'admin-add-user': showAddUserModal,
+    };
     
-    // Generate Report Quick Action
-    const generateReportBtn = document.getElementById('generateReportQuick');
-    if (generateReportBtn) {
-        generateReportBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('📊 Generate Report Quick Action clicked');
-            generateReport();
-        });
-        console.log('✅ Generate Report Quick Action listener attached');
-    } else {
-        console.log('❌ Generate Report Quick Action button not found');
-    }
+    Object.entries(adminButtons).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log(`🎯 Admin Button: ${id}`);
+                handler();
+            });
+        }
+    });
     
-    console.log('✅ Quick Actions initialization complete');
+    console.log('✅ Header & Admin buttons initialized');
 }
 
+function initializeQuickActions() {
+    console.log('🎯 INITIALIZING QUICK ACTIONS...');
+    
+    // Direct event listeners for Quick Actions
+    const quickActions = {
+        'addFruitQuick': showAddFruitModal,
+        'scheduleBBQuick': showScheduleModal,
+        'logActivityQuick': showActivityModal,
+        'generateReportQuick': generateReport
+    };
+    
+    Object.entries(quickActions).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            // Remove any existing event listeners
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+            
+            // Add click event listener
+            newButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`🎯 Quick Action: ${id}`);
+                handler();
+            });
+            
+            console.log(`✅ Quick Action: ${id}`);
+        } else {
+            console.log(`❌ Quick Action not found: ${id}`);
+        }
+    });
+}
 
 
 function initializeEventListeners() {
@@ -4646,13 +4694,40 @@ function extractFruitNameFromButton(button, functionName) {
     console.warn('❌ Could not extract fruit name from button:', button);
     return null;
 }
-        
-        // Modal functions
-        function showAddFruitModal() {
-            document.getElementById('addFruitModal').classList.remove('hidden');
-        }
 
-        
+
+// Ensure these are defined at the top level (not inside other functions)
+function showAddFruitModal() {
+    console.log('🎯 Opening Add Fruit Modal');
+    document.getElementById('addFruitModal').classList.remove('hidden');
+}
+
+function showActivityModal() {
+    console.log('🎯 Opening Activity Modal');
+    populateFruitDropdowns();
+    document.getElementById('activityModal').classList.remove('hidden');
+}
+
+function showScheduleModal() {
+    console.log('🎯 Opening Schedule Modal');
+    populateFruitDropdowns();
+    document.getElementById('scheduleModal').classList.remove('hidden');
+}
+
+function showExportModal() {
+    console.log('🎯 Opening Export Modal');
+    document.getElementById('exportModal').classList.remove('hidden');
+}
+
+function showImportModal() {
+    console.log('🎯 Opening Import Modal');
+    document.getElementById('importModal').classList.remove('hidden');
+}
+
+function closeModal(modalId) {
+    console.log('🎯 Closing Modal:', modalId);
+    document.getElementById(modalId).classList.add('hidden');
+}
        
         
         function showExportModal() {
@@ -4693,26 +4768,42 @@ function extractFruitNameFromButton(button, functionName) {
             }
         }
 
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const notificationText = document.getElementById('notificationText');
-            
-            notificationText.textContent = message;
-            
-            // Set color based on type
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50 ${
-                type === 'error' ? 'bg-red-600 text-white' :
-                type === 'warning' ? 'bg-yellow-600 text-white' :
-                type === 'info' ? 'bg-blue-600 text-white' :
-                'bg-green-600 text-white'
-            }`;
-            
-            notification.classList.remove('hidden');
-            
-            setTimeout(() => {
-                notification.classList.add('hidden');
-            }, 3000);
-        }
+        
+function showNotification(message, type = 'success') {
+    console.log('🔔 NOTIFICATION:', message, type);
+    
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notificationText');
+    
+    if (!notification || !notificationText) {
+        console.error('❌ Notification elements not found');
+        return;
+    }
+    
+    // Set message
+    notificationText.textContent = message;
+    
+    // Set color based on type
+    const colors = {
+        'error': 'bg-red-600 text-white',
+        'warning': 'bg-yellow-600 text-white', 
+        'info': 'bg-blue-600 text-white',
+        'success': 'bg-green-600 text-white'
+    };
+    
+    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${colors[type] || colors.success}`;
+    
+    // Show notification
+    notification.classList.remove('hidden');
+    notification.style.display = 'block';
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        notification.classList.add('hidden');
+        notification.style.display = 'none';
+    }, 3000);
+}
+
 
         // Add fruit function
         async function addFruit(event) {
@@ -5111,6 +5202,23 @@ function debugFruitActivities(fruitName) {
     return matchingActivities;
 }
 
+
+// Add this diagnostic to check modal functions
+function diagnoseModalFunctions() {
+    console.log('🔍 DIAGNOSING MODAL FUNCTIONS:');
+    const modalFunctions = [
+        'showAddFruitModal', 'showActivityModal', 'showScheduleModal', 
+        'showExportModal', 'showImportModal', 'closeModal'
+    ];
+    
+    modalFunctions.forEach(funcName => {
+        const exists = typeof window[funcName] === 'function';
+        console.log(`${exists ? '✅' : '❌'} ${funcName}: ${exists ? 'EXISTS' : 'MISSING'}`);
+    });
+}
+
+// Run diagnosis
+setTimeout(diagnoseModalFunctions, 1000);
 
 function showTab(tabName) {
     // Hide all tabs
