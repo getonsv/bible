@@ -1,11 +1,9 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism System</title>
+    <title>Evengelism Reporting Management System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -84,8 +82,8 @@
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-cross text-white text-2xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism FRM</h1>
-                <p class="text-gray-600">Fruit Relationship Management System</p>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">We Are One</h1>
+                <p class="text-gray-600">Evengelism Reporting Management System</p>
             </div>
             
             <div id="googleSignInButton" class="w-full mb-4">
@@ -1229,10 +1227,11 @@
 
    
 // DOMContentLoaded function:
-document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // Check if this is an OAuth callback first
+    // Ensure data is valid before anything else
+    ensureValidData();
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const error = urlParams.get('error');
@@ -1527,19 +1526,21 @@ function showLoginScreen() {
 }
 
 
+
 function initializeUI() {
     console.log('🎨 Initializing UI components...');
     
     // Load data first
     loadLocalData();
     
-    // Initialize event listeners BEFORE updating UI
-    initializeEventListeners();
-    initializeQuickActions();
-    
-    // Then update UI components
+    // Update basic UI components first
     updateConnectionStatus();
     updateStats();
+    
+    // Then initialize event listeners
+    initializeEventListeners();
+    
+    // Then update data-dependent components
     updateRecentActivities();
     updateFruitsGrid();
     populateDropdowns();
@@ -1554,8 +1555,6 @@ function initializeUI() {
     
     console.log('✅ UI initialization complete');
 }
-
-
 
 function testAllButtons() {
     console.log('🧪 TESTING ALL BUTTONS:');
@@ -4176,40 +4175,40 @@ function applyPermissionBasedUI() {
             `).join('');
         }
 
-function updateFruitsGrid() {
+        function updateFruitsGrid() {
     const container = document.getElementById('fruitsGrid');
     if (!container) return;
     
+    console.log('📊 Updating fruits grid with', fruits.length, 'fruits');
+    
     if (fruits.length === 0) {
-        // ... keep the existing empty state code exactly as is ...
-        container.innerHTML = `<div class="grid grid-cols-2 gap-2">
-    <button data-action="view" data-fruit-id="${fruit.id}" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
-        <i class="fas fa-eye mr-1"></i>View Details
-    </button>
-    <button data-action="edit" data-fruit-id="${fruit.id}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
-        <i class="fas fa-edit mr-1"></i>Edit
-    </button>
-    <button data-action="log-activity" data-fruit-name="${fruit.name}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
-        <i class="fas fa-phone mr-1"></i>Log Activity
-    </button>
-    <button data-action="delete" data-fruit-id="${fruit.id}" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors">
-        <i class="fas fa-trash mr-1"></i>Delete
-    </button>
-</div>`;
+        container.innerHTML = `
+            <div class="text-center py-12 col-span-full">
+                <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-users text-gray-400 text-3xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No contacts found</h3>
+                <p class="text-gray-500 mb-4">Start building your ministry database by adding your first contact.</p>
+                <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Add Your First Contact
+                </button>
+            </div>
+        `;
         return;
     }
     
-    container.innerHTML = fruits.map(fruit => {
-        const progressData = getProgressData(fruit.status);
+    container.innerHTML = fruits.map(fruitItem => {
+        // Use fruitItem instead of fruit to avoid variable conflicts
+        const progressData = getProgressData(fruitItem.status);
         return `
         <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
             <div class="flex items-start justify-between mb-4">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-900">${fruit.name}</h3>
-                    <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo || 'Unassigned'}</p>
+                    <h3 class="text-lg font-semibold text-gray-900">${fruitItem.name}</h3>
+                    <p class="text-sm text-gray-600">Assigned to: ${fruitItem.assignedTo || 'Unassigned'}</p>
                 </div>
-                <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}">
-                    ${fruit.status}
+                <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruitItem.status)}">
+                    ${fruitItem.status}
                 </span>
             </div>
             
@@ -4227,32 +4226,31 @@ function updateFruitsGrid() {
             <div class="space-y-2 mb-4">
                 <div class="flex items-center text-sm text-gray-600">
                     <i class="fas fa-phone w-4 mr-2"></i>
-                    ${fruit.phone || 'No phone'}
+                    ${fruitItem.phone || 'No phone'}
                 </div>
                 <div class="flex items-center text-sm text-gray-600">
                     <i class="fas fa-bullhorn w-4 mr-2"></i>
-                    ${fruit.leadSource || 'No lead source'}
+                    ${fruitItem.leadSource || 'No lead source'}
                 </div>
-                ${fruit.campaign ? `
+                ${fruitItem.campaign ? `
                     <div class="flex items-center text-sm text-gray-600">
                         <i class="fas fa-tag w-4 mr-2"></i>
-                        ${fruit.campaign}
+                        ${fruitItem.campaign}
                     </div>
                 ` : ''}
             </div>
             
             <div class="grid grid-cols-2 gap-2">
-                <!-- UPDATED BUTTONS WITH DATA ATTRIBUTES -->
-                <button data-action="view" data-fruit-id="${fruit.id}" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <button data-action="view" data-fruit-id="${fruitItem.id}" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
                     <i class="fas fa-eye mr-1"></i>View Details
                 </button>
-                <button data-action="edit" data-fruit-id="${fruit.id}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <button data-action="edit" data-fruit-id="${fruitItem.id}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
                     <i class="fas fa-edit mr-1"></i>Edit
                 </button>
-                <button data-action="log-activity" data-fruit-name="${fruit.name}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <button data-action="log-activity" data-fruit-name="${fruitItem.name}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
                     <i class="fas fa-phone mr-1"></i>Log Activity
                 </button>
-                <button data-action="delete" data-fruit-id="${fruit.id}" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
+                <button data-action="delete" data-fruit-id="${fruitItem.id}" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
                     <i class="fas fa-trash mr-1"></i>Delete
                 </button>
             </div>
@@ -4260,9 +4258,8 @@ function updateFruitsGrid() {
         `;
     }).join('');
     
-    console.log('✅ Fruit grid updated with data attributes');
-}       
-
+    console.log('✅ Fruit grid updated with', fruits.length, 'items');
+}
 
         function getStatusColor(status) {
             const colors = {
@@ -6810,28 +6807,67 @@ function removeActive(items) {
             localStorage.setItem('crm_sharepoint_mode', isSharePointMode.toString());
         }
 
-        function loadLocalData() {
-            const savedFruits = localStorage.getItem('crm_fruits');
-            const savedActivities = localStorage.getItem('crm_activities');
-            const savedSharePointMode = localStorage.getItem('crm_sharepoint_mode');
-            
-            if (savedFruits) {
-                fruits = JSON.parse(savedFruits);
-            }
-            
-            if (savedActivities) {
-                activities = JSON.parse(savedActivities);
-            }
-            
-            if (savedSharePointMode) {
-                isSharePointMode = savedSharePointMode === 'true';
-            }
-            
-            updateFruitsGrid();
-            updateStats();
-            updateRecentActivities();
-            populateFruitDropdowns();
+
+function loadLocalData() {
+    console.log('📂 Loading local data...');
+    
+    try {
+        const savedFruits = localStorage.getItem('crm_fruits');
+        const savedActivities = localStorage.getItem('crm_activities');
+        const savedSharePointMode = localStorage.getItem('crm_sharepoint_mode');
+        
+        if (savedFruits) {
+            fruits = JSON.parse(savedFruits);
+            console.log('✅ Loaded', fruits.length, 'fruits from local storage');
+        } else {
+            fruits = [];
+            console.log('ℹ️ No fruits found in local storage');
         }
+        
+        if (savedActivities) {
+            activities = JSON.parse(savedActivities);
+            console.log('✅ Loaded', activities.length, 'activities from local storage');
+        } else {
+            activities = [];
+            console.log('ℹ️ No activities found in local storage');
+        }
+        
+        if (savedSharePointMode) {
+            isSharePointMode = savedSharePointMode === 'true';
+            console.log('✅ SharePoint mode:', isSharePointMode);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading local data:', error);
+        // Reset to empty arrays if there's an error
+        fruits = [];
+        activities = [];
+        showNotification('Error loading local data', 'error');
+    }
+}
+
+
+function ensureValidData() {
+    console.log('🔍 Ensuring data validity...');
+    
+    // Ensure fruits is always an array
+    if (!Array.isArray(fruits)) {
+        console.warn('⚠️ fruits was not an array, resetting');
+        fruits = [];
+    }
+    
+    // Ensure activities is always an array
+    if (!Array.isArray(activities)) {
+        console.warn('⚠️ activities was not an array, resetting');
+        activities = [];
+    }
+    
+    // Filter out any invalid items
+    fruits = fruits.filter(fruit => fruit && typeof fruit === 'object');
+    activities = activities.filter(activity => activity && typeof activity === 'object');
+    
+    console.log('✅ Data validity check complete');
+}
 
  function logout() {
     console.log('🚪 User initiated logout...');
