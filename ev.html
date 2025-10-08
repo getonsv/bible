@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -879,7 +880,7 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-2xl font-bold text-gray-800" id="fruitDetailsTitle">Fruit Details</h3>
-                    <button onclick="closeModal('fruitDetailsModal')" class="text-gray-400 hover:text-gray-600">
+                    <button onclick="closeFruitDetailsModal()" class="text-gray-400 hover:text-gray-600">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
@@ -1264,6 +1265,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeUI();
 });
 
+    function closeFruitDetailsModal() {
+        document.getElementById('fruitDetailsModal').classList.add('hidden');
+        currentViewingFruit = null;
+    }
 // Enhanced session validation
 function checkForValidSession() {
     const msToken = sessionStorage.getItem('access_token');
@@ -4159,7 +4164,9 @@ setTimeout(handleStuckLoading, 3000);
             `).join('');
         }
 
-        function updateFruitsGrid() {
+        
+// In your updateFruitsGrid function, ensure buttons have proper onclick attributes
+function updateFruitsGrid() {
     const container = document.getElementById('fruitsGrid');
     if (!container) return;
     
@@ -4240,8 +4247,6 @@ setTimeout(handleStuckLoading, 3000);
     }).join('');
 }
 
-
-
         function getStatusColor(status) {
             const colors = {
                 'Initial Contact': 'bg-gray-100 text-gray-800',
@@ -4311,7 +4316,36 @@ setTimeout(handleStuckLoading, 3000);
     populateAssigneeDropdown();
 }
 
+// Debug function to check if fruits are loading properly
+function debugFruitsLoading() {
+    console.log('=== FRUITS DEBUG INFO ===');
+    console.log('Total fruits:', fruits.length);
+    console.log('Fruit IDs:', fruits.map(f => f.id));
+    console.log('Fruit names:', fruits.map(f => f.name));
+    
+    // Check if the fruits grid is properly populated
+    const fruitsGrid = document.getElementById('fruitsGrid');
+    if (fruitsGrid) {
+        console.log('Fruits grid children:', fruitsGrid.children.length);
+        console.log('Fruits grid HTML:', fruitsGrid.innerHTML.substring(0, 500) + '...');
+    }
+}
 
+// Call this after fruits are loaded
+setTimeout(debugFruitsLoading, 2000);
+
+// Debug function to check button event handlers
+function debugButtonEvents() {
+    console.log('=== BUTTON EVENT DEBUG ===');
+    const buttons = document.querySelectorAll('#fruitsGrid button');
+    buttons.forEach((button, index) => {
+        console.log(`Button ${index}:`, {
+            text: button.textContent,
+            onclick: button.getAttribute('onclick'),
+            disabled: button.disabled
+        });
+    });
+}
         function populateFruitDropdowns() {
             const activityFruitSelect = document.getElementById('activityFruitSelect');
             const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
@@ -4356,6 +4390,24 @@ function initializeEventListeners() {
         const syncOptions = document.getElementById('syncOptions');
         if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
             syncOptions.classList.add('hidden');
+        }
+    });    
+    // Event delegation for dynamically generated fruit card buttons
+    document.addEventListener('click', function(event) {
+        // Handle View Details button
+        if (event.target.closest('button') && event.target.closest('button').textContent.includes('View Details')) {
+            const button = event.target.closest('button');
+            const fruitId = button.getAttribute('onclick').match(/'([^']+)'/)[1];
+            viewFruitDetails(fruitId);
+            event.preventDefault();
+        }
+        
+        // Handle Log Activity button
+        if (event.target.closest('button') && event.target.closest('button').textContent.includes('Log Activity')) {
+            const button = event.target.closest('button');
+            const fruitName = button.getAttribute('onclick').match(/'([^']+)'/)[1];
+            logActivityForFruit(fruitName);
+            event.preventDefault();
         }
     });
 }
@@ -4888,34 +4940,120 @@ function showTab(tabName) {
         }
 
         function logActivityForFruit(fruitName) {
+            console.log('📞 Logging activity for fruit:', fruitName);
+            
+            // Show activity modal
             showActivityModal();
-            // Pre-fill the fruit name
+            
+            // Pre-fill the fruit name after a short delay to ensure modal is rendered
             setTimeout(() => {
                 const fruitSelect = document.getElementById('activityFruitSelect');
                 if (fruitSelect) {
                     fruitSelect.value = fruitName;
+                    console.log('✅ Pre-filled fruit name:', fruitName);
+                } else {
+                    console.error('❌ Activity fruit select not found');
                 }
             }, 100);
         }
 
-        function viewFruitDetails(fruitId) {
-            const fruit = fruits.find(f => f.id === fruitId);
-            if (!fruit) {
-                showNotification('Fruit not found', 'error');
-                return;
-            }
-            
-            currentViewingFruit = fruit;
-            
-            // Show the modal
-            document.getElementById('fruitDetailsModal').classList.remove('hidden');
-            
-            // Populate fruit information
-            populateFruitDetails(fruit);
-            
-            // Load and display activities for this fruit
-            loadFruitActivities(fruit.name);
-        }
+        
+function viewFruitDetails(fruitId) {
+    console.log('🔍 Viewing fruit details for ID:', fruitId);
+    
+    const fruit = fruits.find(f => f.id === fruitId);
+    if (!fruit) {
+        showNotification('Fruit not found', 'error');
+        return;
+    }
+    
+    currentViewingFruit = fruit;
+    
+    // Show the modal
+    const modal = document.getElementById('fruitDetailsModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        console.log('✅ Fruit details modal opened');
+    } else {
+        console.error('❌ Fruit details modal not found');
+        return;
+    }
+    
+    // Populate fruit information
+    populateFruitDetails(fruit);
+    
+    // Load and display activities for this fruit
+    loadFruitActivities(fruit.name);
+}
+
+function populateFruitDetails(fruit) {
+    console.log('📝 Populating fruit details:', fruit.name);
+    
+    // Basic information
+    document.getElementById('fruitDetailsTitle').textContent = `${fruit.name} - Details`;
+    document.getElementById('fruitInitial').textContent = fruit.name.charAt(0).toUpperCase();
+    document.getElementById('fruitName').textContent = fruit.name;
+    document.getElementById('fruitAssignee').textContent = `Assigned to: ${fruit.assignedTo || 'Unassigned'}`;
+    
+    // Status and progress
+    const statusBadge = document.getElementById('fruitStatusBadge');
+    statusBadge.textContent = fruit.status;
+    statusBadge.className = `px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}`;
+    
+    const progressData = getProgressData(fruit.status);
+    document.getElementById('fruitProgress').textContent = `${progressData.percentage}%`;
+    const progressBar = document.getElementById('fruitProgressBar');
+    progressBar.style.width = `${progressData.percentage}%`;
+    progressBar.className = `h-3 rounded-full transition-all duration-500 ${progressData.color}`;
+    
+    // Contact information
+    document.getElementById('fruitPhone').innerHTML = `
+        <i class="fas fa-phone w-5 mr-3 text-blue-600"></i>
+        <span>${fruit.phone || 'No phone number'}</span>
+        ${fruit.phone ? `<a href="tel:${fruit.phone}" class="ml-2 text-blue-600 hover:text-blue-800"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
+    `;
+    
+    document.getElementById('fruitInstagram').innerHTML = `
+        <i class="fab fa-instagram w-5 mr-3 text-pink-600"></i>
+        <span>${fruit.instagram || 'No Instagram'}</span>
+        ${fruit.instagram ? `<a href="https://instagram.com/${fruit.instagram}" target="_blank" class="ml-2 text-pink-600 hover:text-pink-800"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
+    `;
+    
+    document.getElementById('fruitFacebook').innerHTML = `
+        <i class="fab fa-facebook w-5 mr-3 text-blue-600"></i>
+        <span>${fruit.facebook || 'No Facebook'}</span>
+        ${fruit.facebook ? `<a href="https://facebook.com/${fruit.facebook}" target="_blank" class="ml-2 text-blue-600 hover:text-blue-800"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
+    `;
+    
+    document.getElementById('fruitTwitter').innerHTML = `
+        <i class="fab fa-twitter w-5 mr-3 text-blue-400"></i>
+        <span>${fruit.twitter || 'No Twitter'}</span>
+        ${fruit.twitter ? `<a href="https://twitter.com/${fruit.twitter}" target="_blank" class="ml-2 text-blue-400 hover:text-blue-600"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
+    `;
+    
+    // Lead information
+    document.getElementById('fruitLeadSource').textContent = fruit.leadSource || 'Unknown';
+    
+    const campaignDiv = document.getElementById('fruitCampaignDiv');
+    if (fruit.campaign) {
+        campaignDiv.style.display = 'flex';
+        document.getElementById('fruitCampaign').textContent = fruit.campaign;
+    } else {
+        campaignDiv.style.display = 'none';
+    }
+    
+    document.getElementById('fruitCreatedDate').textContent = formatDate(fruit.createdDate);
+    
+    // Notes
+    const notesSection = document.getElementById('fruitNotesSection');
+    if (fruit.notes && fruit.notes.trim()) {
+        notesSection.style.display = 'block';
+        document.getElementById('fruitNotes').textContent = fruit.notes;
+    } else {
+        notesSection.style.display = 'none';
+    }
+}
+
 
         function populateFruitDetails(fruit) {
             // Basic information
