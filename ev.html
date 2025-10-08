@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism Reporting Management System</title>
+    <title>Evengelism System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -83,8 +83,8 @@
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-cross text-white text-2xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">We Are One</h1>
-                <p class="text-gray-600">Evengelism Reporting Management System</p>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism FRM</h1>
+                <p class="text-gray-600">Fruit Relationship Management System</p>
             </div>
             
             <div id="googleSignInButton" class="w-full mb-4">
@@ -1227,251 +1227,28 @@
         ];
 
    
-// DOMContentLoaded function:
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // Check if this is an OAuth callback first
+    // Clear any existing session to ensure fresh start
+    clearSession();
+    
+    // Check if this is an OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
-    const error = urlParams.get('error');
-    
-    if (error) {
-        console.error('❌ OAuth error:', error);
-        showNotification('Authentication failed: ' + error, 'error');
-        // Clean URL and show login
-        window.history.replaceState({}, document.title, window.location.pathname);
-        initializeMicrosoftAuth();
-        return;
-    }
     
     if (authCode) {
-        console.log('🔐 OAuth callback detected - processing...');
+        console.log('🔐 OAuth callback detected');
         processOAuthCallback(authCode, urlParams.get('state'));
-        return;
-    }
-    
-    // Check for existing valid session
-    if (checkForValidSession()) {
-        console.log('🔑 Valid session found - restoring...');
-        restoreSession();
     } else {
-        console.log('🔑 No valid session - showing login screen');
+        console.log('🔧 Showing login screen');
         showLoginScreen();
     }
     
     // Initialize UI components
     initializeUI();
 });
-
-// Enhanced session validation
-function checkForValidSession() {
-    const msToken = sessionStorage.getItem('access_token');
-    const msExpiry = sessionStorage.getItem('token_expiry');
-    const savedUser = sessionStorage.getItem('current_user');
-    
-    console.log('🔍 Session check:', {
-        hasToken: !!msToken,
-        hasExpiry: !!msExpiry,
-        hasUser: !!savedUser,
-        token: msToken ? '***' + msToken.slice(-10) : 'none'
-    });
-    
-    if (msToken && msExpiry && savedUser) {
-        const isTokenValid = Date.now() < parseInt(msExpiry);
-        console.log('🔐 Token validity:', isTokenValid);
-        return isTokenValid;
-    }
-    
-    return false;
-}
-
-// Enhanced session restoration
-function restoreSession() {
-    const msToken = sessionStorage.getItem('access_token');
-    const savedUser = sessionStorage.getItem('current_user');
-    
-    if (msToken && savedUser) {
-        sharePointAccessToken = msToken;
-        isSharePointMode = true;
-        
-        try {
-            currentUser = JSON.parse(savedUser);
-            console.log('👤 Restoring user:', currentUser.name);
-            
-            // Show dashboard immediately
-            showDashboard();
-            
-            // Then load data in background
-            loadDataFromSharePoint().then(() => {
-                console.log('✅ Session data restored successfully');
-                startRealTimeSync();
-                showNotification('Welcome back, ' + currentUser.name + '!');
-            }).catch(error => {
-                console.error('❌ Failed to restore session data:', error);
-                showNotification('Session restored but data loading failed', 'warning');
-                // Dashboard is already shown, just update with local data
-                updateUIComponents();
-            });
-            
-        } catch (error) {
-            console.error('❌ Failed to parse user data:', error);
-            showLoginScreen();
-        }
-    } else {
-        console.log('❌ Insufficient session data for restoration');
-        showLoginScreen();
-    }
-}
-
-// Enhanced dashboard showing with force display
-function showDashboard() {
-    console.log('🔄 Showing dashboard...');
-    
-    const loginScreen = document.getElementById('loginScreen');
-    const dashboard = document.getElementById('dashboard');
-    
-    // Force hide login screen
-    if (loginScreen) {
-        loginScreen.classList.add('hidden');
-        loginScreen.style.display = 'none';
-        console.log('✅ Login screen hidden');
-    }
-    
-    // Force show dashboard
-    if (dashboard) {
-        dashboard.classList.remove('hidden');
-        dashboard.style.display = 'block';
-        console.log('✅ Dashboard shown');
-    }
-    
-    // Update user display
-    updateUserDisplay();
-    
-    // Update all UI components
-    updateUIComponents();
-    
-    console.log('✅ Dashboard fully loaded');
-}
-
-// Enhanced OAuth callback processing
-async function processOAuthCallback(authCode, returnedState) {
-    try {
-        console.log('🔄 Processing OAuth callback...');
-        
-        // Show loading state
-        showNotification('Processing authentication...', 'info');
-        
-        // Process the authentication
-        const tokenData = await exchangeCodeForTokenPKCE(authCode);
-        
-        if (!tokenData.access_token) {
-            throw new Error('No access token received');
-        }
-        
-        // Store token and get user info
-        sharePointAccessToken = tokenData.access_token;
-        sessionStorage.setItem('access_token', tokenData.access_token);
-        sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
-        
-        const userInfo = await getUserInfo(tokenData.access_token);
-        const sharePointUserInfo = await checkUserInSharePointList(userInfo.email, userInfo.name, 'microsoft');
-        
-        if (!sharePointUserInfo) {
-            throw new Error('User not authorized in SharePoint');
-        }
-        
-        currentUser = sharePointUserInfo;
-        sessionStorage.setItem('current_user', JSON.stringify(currentUser));
-        
-        // Clean up URL and session
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show dashboard immediately
-        showDashboard();
-        
-        // Then load data
-        await loadDataFromSharePoint();
-        startRealTimeSync();
-        
-        showNotification(`Welcome ${sharePointUserInfo.name}!`);
-        
-    } catch (error) {
-        console.error('❌ OAuth callback failed:', error);
-        showNotification('Authentication failed: ' + error.message, 'error');
-        
-        // Clean up and show login screen
-        clearSession();
-        showLoginScreen();
-    }
-}
-
-// Enhanced clear session function
-function clearSession() {
-    console.log('🧹 Clearing session data...');
-    
-    // Clear global variables
-    currentUser = null;
-    sharePointAccessToken = null;
-    isSharePointMode = false;
-    
-    // Clear session storage but keep some items for debugging
-    const itemsToKeep = [];
-    const allKeys = Object.keys(sessionStorage);
-    allKeys.forEach(key => {
-        if (!itemsToKeep.includes(key)) {
-            sessionStorage.removeItem(key);
-        }
-    });
-    
-    // Stop any sync
-    stopRealTimeSync();
-}
-
-// Add this function to debug display issues
-function debugDisplayState() {
-    console.log('🎯 CURRENT DISPLAY STATE:');
-    console.log('- Login screen hidden:', document.getElementById('loginScreen').classList.contains('hidden'));
-    console.log('- Dashboard hidden:', document.getElementById('dashboard').classList.contains('hidden'));
-    console.log('- Current user:', currentUser);
-    console.log('- SharePoint mode:', isSharePointMode);
-    console.log('- Has access token:', !!sessionStorage.getItem('access_token'));
-}
-
-// Call this if you're still having issues
-function forceDashboardDisplay() {
-    console.log('🚀 FORCING DASHBOARD DISPLAY');
-    
-    // Hide login screen with multiple methods
-    const loginScreen = document.getElementById('loginScreen');
-    if (loginScreen) {
-        loginScreen.classList.add('hidden');
-        loginScreen.style.display = 'none';
-        loginScreen.style.visibility = 'hidden';
-        loginScreen.style.opacity = '0';
-        loginScreen.style.position = 'absolute';
-    }
-    
-    // Show dashboard with multiple methods
-    const dashboard = document.getElementById('dashboard');
-    if (dashboard) {
-        dashboard.classList.remove('hidden');
-        dashboard.style.display = 'block';
-        dashboard.style.visibility = 'visible';
-        dashboard.style.opacity = '1';
-        dashboard.style.position = 'relative';
-    }
-    
-    debugDisplayState();
-}
-
-// Add this emergency function that you can call from browser console
-window.emergencyShowDashboard = function() {
-    console.log('🚨 EMERGENCY DASHBOARD SHOW');
-    forceDashboardDisplay();
-};   
 
 
 // Clear session completely
@@ -1486,34 +1263,33 @@ function clearSession() {
     // Clear session storage
     sessionStorage.clear();
     
+    // Clear PKCE parameters from localStorage too
+    localStorage.removeItem('pkce_code_verifier');
+    localStorage.removeItem('pkce_state');
+    
     // Stop any sync
     stopRealTimeSync();
 }
 
 
+// Show login screen explicitly
 function showLoginScreen() {
     console.log('🖥️ Showing login screen...');
     
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('dashboard');
     
-    // Force show login screen
+    // Ensure login screen is visible
     if (loginScreen) {
         loginScreen.classList.remove('hidden');
-        loginScreen.style.display = 'flex';
-        loginScreen.style.visibility = 'visible';
-        loginScreen.style.opacity = '1';
-        loginScreen.style.position = 'fixed';
         console.log('✅ Login screen shown');
+    } else {
+        console.error('❌ Login screen element not found');
     }
     
-    // Force hide dashboard
+    // Ensure dashboard is hidden
     if (dashboard) {
         dashboard.classList.add('hidden');
-        dashboard.style.display = 'none';
-        dashboard.style.visibility = 'hidden';
-        dashboard.style.opacity = '0';
-        dashboard.style.position = 'absolute';
         console.log('✅ Dashboard hidden');
     }
     
@@ -1521,8 +1297,7 @@ function showLoginScreen() {
     initializeMicrosoftAuth();
 }
 
-
-// Initialize UI components
+// Add this function to initialize UI components
 function initializeUI() {
     console.log('🎨 Initializing UI components...');
     
@@ -1532,8 +1307,8 @@ function initializeUI() {
     // Update connection status
     updateConnectionStatus();
     
-    // Populate dropdowns
-    populateDropdowns();
+    // Only populate basic dropdowns that don't require SharePoint
+    populateBasicDropdowns();
     
     // Initialize event listeners
     initializeEventListeners();
@@ -1550,6 +1325,41 @@ function initializeUI() {
     console.log('✅ UI initialization complete');
 }
 
+// Populate only basic dropdowns that don't require SharePoint access
+function populateBasicDropdowns() {
+    console.log('📋 Populating basic dropdowns...');
+    
+    // Populate status filter
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
+            STATUS_PROGRESSION.map(status => 
+                `<option value="${status}">${status}</option>`
+            ).join('');
+    }
+
+    // Populate source filter
+    const sourceFilter = document.getElementById('sourceFilter');
+    if (sourceFilter) {
+        sourceFilter.innerHTML = '<option value="">All Sources</option>' + 
+            LEAD_SOURCES.map(source => 
+                `<option value="${source}">${source}</option>`
+            ).join('');
+    }
+
+    // Populate fruit dropdowns in modals from local data
+    populateFruitDropdowns();
+    
+    console.log('✅ Basic dropdowns populated');
+}
+
+// Refresh user dropdown when authentication state changes
+function refreshUserDropdown() {
+    if (sharePointAccessToken) {
+        console.log('🔄 Refreshing user dropdown with SharePoint access...');
+        populateAssigneeDropdown();
+    }
+}
 
 // Add this function to show login screen properly
 function showLoginScreen() {
@@ -2052,6 +1862,14 @@ async function processOAuthCallback(authCode, returnedState) {
         // Show loading state
         showNotification('Processing authentication...', 'info');
         
+        // Debug PKCE state before exchange
+        console.log('🔐 Pre-token exchange PKCE state:');
+        const pkceState = verifyPkceState();
+        
+        if (!pkceState.hasCodeVerifier) {
+            throw new Error('PKCE code verifier missing. Authentication session may have expired.');
+        }
+        
         // Process the authentication
         const tokenData = await exchangeCodeForTokenPKCE(authCode);
         
@@ -2074,7 +1892,9 @@ async function processOAuthCallback(authCode, returnedState) {
         currentUser = sharePointUserInfo;
         sessionStorage.setItem('current_user', JSON.stringify(currentUser));
         
-        // Clean up URL and session
+        // Clean up URL and PKCE parameters from BOTH storage locations
+        localStorage.removeItem('pkce_code_verifier');
+        localStorage.removeItem('pkce_state');
         sessionStorage.removeItem('pkce_code_verifier');
         sessionStorage.removeItem('pkce_state');
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -2083,6 +1903,9 @@ async function processOAuthCallback(authCode, returnedState) {
         await loadDataFromSharePoint();
         showDashboard();
         startRealTimeSync();
+        
+        // IMPORTANT: Populate ALL dropdowns including SharePoint-dependent ones AFTER authentication
+        populateDropdowns();
         
         showNotification(`Welcome ${sharePointUserInfo.name}!`);
         
@@ -2515,6 +2338,49 @@ window.addEventListener('load', function() {
             return base64URLEncode(new Uint8Array(hash));
         }
 
+// Add this function to verify PKCE state
+function verifyPkceState() {
+    // Check localStorage first (persists across redirects)
+    const localStorageVerifier = localStorage.getItem('pkce_code_verifier');
+    const localStorageState = localStorage.getItem('pkce_state');
+    
+    // Check sessionStorage as backup
+    const sessionStorageVerifier = sessionStorage.getItem('pkce_code_verifier');
+    const sessionStorageState = sessionStorage.getItem('pkce_state');
+    
+    // Use localStorage first, fall back to sessionStorage
+    const codeVerifier = localStorageVerifier || sessionStorageVerifier;
+    const state = localStorageState || sessionStorageState;
+    
+    console.log('🔐 PKCE State Verification:', {
+        localStorage: {
+            hasCodeVerifier: !!localStorageVerifier,
+            hasState: !!localStorageState
+        },
+        sessionStorage: {
+            hasCodeVerifier: !!sessionStorageVerifier,
+            hasState: !!sessionStorageState
+        },
+        final: {
+            hasCodeVerifier: !!codeVerifier,
+            hasState: !!state,
+            codeVerifierLength: codeVerifier?.length
+        }
+    });
+    
+    return {
+        hasCodeVerifier: !!codeVerifier,
+        hasState: !!state,
+        codeVerifier: codeVerifier,
+        state: state
+    };
+}
+
+
+// Call this in your processOAuthCallback function to debug
+console.log('🔐 Pre-token exchange PKCE check:');
+console.log(verifyPkceState());
+
         
         async function authenticateWithGoogle() {
     try {
@@ -2597,44 +2463,53 @@ window.addEventListener('load', function() {
             }, 1000);
         }
 
+async function authenticateWithMicrosoft() {
+    try {
+        console.log('🔐 Starting PKCE Microsoft authentication...');
+        showNotification('Redirecting to Microsoft 365...', 'info');
         
+        // Generate PKCE parameters
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        const state = 'auth_' + Date.now();
+        
+        console.log('🔐 PKCE parameters generated:', {
+            verifierLength: codeVerifier.length,
+            challengeLength: codeChallenge.length,
+            state: state
+        });
+        
+        // Store PKCE parameters in localStorage (persists across redirects)
+        localStorage.setItem('pkce_code_verifier', codeVerifier);
+        localStorage.setItem('pkce_state', state);
+        
+        // Also store in sessionStorage as backup
+        sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+        sessionStorage.setItem('pkce_state', state);
+        
+        // Verify storage immediately
+        const storedVerifier = localStorage.getItem('pkce_code_verifier');
+        console.log('🔐 Code verifier stored in localStorage:', !!storedVerifier, 'Length:', storedVerifier?.length);
+        
+        // Build PKCE auth URL
+        const authUrl = buildPKCEAuthUrl(codeChallenge, state);
+        console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
+        
+        // Redirect to Microsoft authentication (same window)
+        window.location.href = authUrl;
+        
+    } catch (error) {
+        console.error('❌ PKCE authentication failed:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
+        
+        // Clean up on failure
+        localStorage.removeItem('pkce_code_verifier');
+        localStorage.removeItem('pkce_state');
+        sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('pkce_state');
+    }
+}
 
-        async function authenticateWithMicrosoft() {
-            try {
-                console.log('🔐 Starting PKCE Microsoft authentication...');
-                showNotification('Redirecting to Microsoft 365...', 'info');
-                
-                // Generate PKCE parameters
-                const codeVerifier = generateCodeVerifier();
-                const codeChallenge = await generateCodeChallenge(codeVerifier);
-                const state = 'auth_' + Date.now();
-                
-                console.log('🔐 PKCE parameters generated:', {
-                    verifierLength: codeVerifier.length,
-                    challengeLength: codeChallenge.length,
-                    state: state
-                });
-                
-                // Store PKCE parameters securely
-                sessionStorage.setItem('pkce_code_verifier', codeVerifier);
-                sessionStorage.setItem('pkce_state', state);
-                
-                // Build PKCE auth URL
-                const authUrl = buildPKCEAuthUrl(codeChallenge, state);
-                console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
-                
-                // Redirect to Microsoft authentication (same window)
-                window.location.href = authUrl;
-                
-            } catch (error) {
-                console.error('❌ PKCE authentication failed:', error);
-                showNotification('Authentication failed: ' + error.message, 'error');
-                
-                // Clean up on failure
-                sessionStorage.removeItem('pkce_code_verifier');
-                sessionStorage.removeItem('pkce_state');
-            }
-        }
 
         function showManualCodeExtractionHelper(popup) {
             const helper = document.createElement('div');
@@ -2794,6 +2669,10 @@ window.addEventListener('load', function() {
                 'https://app.shill.es/ev/',
                 'https://app.shill.es',
                 'https://app.shill.es/',
+                'http://localhost:8000/ev',
+                'http://localhost:8000/ev/',
+                'http://localhost:8000/',
+                'http://localhost:8000',
                 window.location.origin + window.location.pathname,
                 window.location.origin + '/',
                 window.location.origin
@@ -3004,51 +2883,77 @@ window.addEventListener('load', function() {
             });
         }
 
-        async function exchangeCodeForTokenPKCE(authCode) {
-            try {
-                console.log('🔄 PKCE token exchange starting...');
-                
-                const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
-                if (!codeVerifier) {
-                    throw new Error('PKCE code verifier not found');
-                }
-                
-                const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
-                
-                const redirectUri = window.location.origin + window.location.pathname;
-                
-                const body = new URLSearchParams({
-                    client_id: SHAREPOINT_CONFIG.CLIENT_ID,
-                    scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
-                    code: authCode,
-                    redirect_uri: redirectUri,
-                    grant_type: 'authorization_code',
-                    code_verifier: codeVerifier // PKCE proof
-                });
-                
-                const response = await fetch(tokenUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: body.toString()
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error_description || 'PKCE token exchange failed');
-                }
-                
-                const tokenData = await response.json();
-                console.log('✅ PKCE token exchange successful');
-                
-                return tokenData;
-                
-            } catch (error) {
-                console.error('❌ PKCE token exchange failed:', error);
-                throw error;
-            }
+        
+
+async function exchangeCodeForTokenPKCE(authCode) {
+    try {
+        console.log('🔄 PKCE token exchange starting...');
+        
+        // Check both storage locations for code verifier
+        const codeVerifier = localStorage.getItem('pkce_code_verifier') || sessionStorage.getItem('pkce_code_verifier');
+        
+        console.log('🔐 Retrieved code verifier from storage:', {
+            fromLocalStorage: !!localStorage.getItem('pkce_code_verifier'),
+            fromSessionStorage: !!sessionStorage.getItem('pkce_code_verifier'),
+            exists: !!codeVerifier,
+            length: codeVerifier?.length,
+            first10: codeVerifier?.substring(0, 10) + '...'
+        });
+        
+        if (!codeVerifier) {
+            // Debug all storage keys
+            const allLocalKeys = Object.keys(localStorage);
+            const allSessionKeys = Object.keys(sessionStorage);
+            console.log('🔐 All localStorage keys:', allLocalKeys);
+            console.log('🔐 All sessionStorage keys:', allSessionKeys);
+            throw new Error('PKCE code verifier not found in any storage');
         }
+        
+        const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
+        
+        const redirectUri = window.location.origin + window.location.pathname;
+        
+        const body = new URLSearchParams({
+            client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+            scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
+            code: authCode,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code',
+            code_verifier: codeVerifier // PKCE proof
+        });
+        
+        console.log('🔐 Token exchange request body (redacted):', {
+            client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+            code_length: authCode.length,
+            redirect_uri: redirectUri,
+            code_verifier_length: codeVerifier.length
+        });
+        
+        const response = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body.toString()
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Token exchange failed:', response.status, errorText);
+            throw new Error(`PKCE token exchange failed: ${response.status}`);
+        }
+        
+        const tokenData = await response.json();
+        console.log('✅ PKCE token exchange successful');
+        
+        return tokenData;
+        
+    } catch (error) {
+        console.error('❌ PKCE token exchange failed:', error);
+        throw error;
+    }
+}
+
 
         async function getUserInfo(token) {
             try {
@@ -3807,8 +3712,7 @@ async function editFruit(fruitId) {
             }
         }
 
-        // Dashboard functions
-        
+
 function showDashboard() {
     console.log('🔄 Showing dashboard...');
     
@@ -3838,8 +3742,16 @@ function showDashboard() {
     // Update all UI components
     updateUIComponents();
     
+    // Ensure dropdowns are populated with SharePoint data
+    if (sharePointAccessToken) {
+        console.log('🔄 Refreshing dropdowns with SharePoint data...');
+        populateDropdowns();
+    }
+    
     console.log('✅ Dashboard fully loaded');
 }
+
+
 
 function updateUserDisplay() {
     const userAvatar = document.getElementById('userAvatar');
@@ -4285,32 +4197,31 @@ setTimeout(handleStuckLoading, 3000);
         }
 
 
-    function populateDropdowns() {
-    // Populate status filter
-    const statusFilter = document.getElementById('statusFilter');
-    if (statusFilter) {
-        statusFilter.innerHTML = '<option value="">All Statuses</option>' + 
-            STATUS_PROGRESSION.map(status => 
-                `<option value="${status}">${status}</option>`
-            ).join('');
-    }
-
-    // Populate source filter
-    const sourceFilter = document.getElementById('sourceFilter');
-    if (sourceFilter) {
-        sourceFilter.innerHTML = '<option value="">All Sources</option>' + 
-            LEAD_SOURCES.map(source => 
-                `<option value="${source}">${source}</option>`
-            ).join('');
-    }
-
-    // Populate fruit dropdowns in modals
-    populateFruitDropdowns();
+        // Populate ALL dropdowns including SharePoint-dependent ones
+function populateDropdowns() {
+    console.log('📋 Populating ALL dropdowns (including SharePoint)...');
     
-    // Populate assignee dropdown
-    populateAssigneeDropdown();
+    // Populate basic dropdowns
+    populateBasicDropdowns();
+    
+    // Only populate SharePoint-dependent dropdowns if we have access
+    if (sharePointAccessToken) {
+        console.log('🔐 Populating SharePoint-dependent dropdowns...');
+        populateAssigneeDropdown();
+    } else {
+        console.log('⚠️ Skipping SharePoint-dependent dropdowns - no access token');
+        // Set fallback assignee options
+        const assigneeDatalist = document.getElementById('assigneeOptions');
+        if (assigneeDatalist) {
+            const fallbackUsers = currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+            fallbackUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                assigneeDatalist.appendChild(option);
+            });
+        }
+    }
 }
-
 
         function populateFruitDropdowns() {
             const activityFruitSelect = document.getElementById('activityFruitSelect');
@@ -5945,29 +5856,44 @@ async function callSharePointAPI(url, options = {}) {
             }
         }
 
+
+
 // Load users for Assign To dropdown with better Person field handling
 async function loadUsersForDropdown() {
     try {
         console.log('👥 Loading users for Assign To dropdown...');
         
+        // Get fresh access token from multiple sources
+        const accessToken = sessionStorage.getItem('access_token') || sharePointAccessToken;
+        
+        if (!accessToken) {
+            console.error('❌ No SharePoint access token available for loading users');
+            throw new Error('Authentication required to load users');
+        }
+        
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'&$select=id,fields&$top=500`;
+        
+        console.log('🔐 Loading users from SharePoint...');
         
         const response = await fetch(url, {
             headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Authorization': `Bearer ${accessToken}`,
                 'Accept': 'application/json'
             }
         });
         
         if (!response.ok) {
-            console.warn('⚠️ Could not load users list, using current user only');
-            return currentUser ? [currentUser.name] : ['Unassigned'];
+            if (response.status === 401) {
+                console.error('❌ Access token invalid or expired');
+                throw new Error('Authentication expired. Please sign in again.');
+            }
+            throw new Error(`Failed to load users: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
         const userItems = data.value || [];
         
-        console.log('📋 Users loaded for dropdown:', userItems);
+        console.log('📋 Users loaded for dropdown:', userItems.length, 'users found');
         
         // Extract display names with better Person field handling
         const userNames = userItems.map(item => {
@@ -6023,12 +5949,12 @@ async function loadUsersForDropdown() {
         
     } catch (error) {
         console.error('❌ Error loading users for dropdown:', error);
-        // Fallback options
-        return currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+        throw error; // Re-throw to handle in calling function
     }
 }
-   
-        
+
+
+
 // Populate searchable Assign To dropdown
 async function populateAssigneeDropdown() {
     try {
@@ -6039,6 +5965,9 @@ async function populateAssigneeDropdown() {
             console.log('❌ Assignee search elements not found');
             return;
         }
+        
+        // Show loading state
+        showAssigneeLoading();
         
         // Clear existing options
         assigneeDatalist.innerHTML = '';
@@ -6059,8 +5988,26 @@ async function populateAssigneeDropdown() {
         
     } catch (error) {
         console.error('❌ Error populating assignee dropdown:', error);
+        showNotification('Failed to load users list: ' + error.message, 'error');
+        
+        // Fallback: at least show current user and Unassigned
+        const assigneeDatalist = document.getElementById('assigneeOptions');
+        if (assigneeDatalist) {
+            const fallbackUsers = currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+            fallbackUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                assigneeDatalist.appendChild(option);
+            });
+            console.log('✅ Fallback assignee options set');
+        }
+    } finally {
+        hideAssigneeLoading();
     }
-}
+}        
+
+
+
 
 // Enhanced search functionality
 function enhanceAssigneeSearch(inputElement, users) {
@@ -6572,7 +6519,7 @@ async function debugSharePointFields() {
 
 <!-- Simple Version Tag -->
 <div class="fixed bottom-4 right-4 text-xs text-gray-500 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm z-40">
-    ERMS v1.0.7
+    FRMS v1.0.5
 </div>
 
 </body>
