@@ -109,7 +109,7 @@
                         <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center">
                             <i class="fas fa-cross text-white"></i>
                         </div>
-                        <h1 class="text-xl font-bold text-gray-800">Evangelism CRM</h1>
+                        <h1 class="text-xl font-bold text-gray-800">Evengelism Reporting Management System</h1>
                         <div class="flex items-center space-x-2">
                             <div id="connectionStatus" class="flex items-center space-x-1">
                                 <div class="w-2 h-2 bg-gray-400 rounded-full" id="statusIndicator"></div>
@@ -1225,44 +1225,43 @@
             'Other'
         ];
 
-   
-// DOMContentLoaded function:
-    document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Initializing Evangelism CRM...');
+   document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 DOMContentLoaded - Starting proper initialization...');
+    window.domContentLoaded = true;
     
-    // Ensure data is valid before anything else
-    ensureValidData();
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const error = urlParams.get('error');
     
+    // Handle OAuth callback first
+    if (authCode) {
+        console.log('🔐 OAuth callback detected');
+        processOAuthCallback(authCode, urlParams.get('state'));
+        return;
+    }
+    
     if (error) {
         console.error('❌ OAuth error:', error);
         showNotification('Authentication failed: ' + error, 'error');
-        // Clean URL and show login
         window.history.replaceState({}, document.title, window.location.pathname);
         initializeMicrosoftAuth();
         return;
     }
     
-    if (authCode) {
-        console.log('🔐 OAuth callback detected - processing...');
-        processOAuthCallback(authCode, urlParams.get('state'));
-        return;
-    }
-    
-    // Check for existing valid session
+    // Check for valid session
     if (checkForValidSession()) {
-        console.log('🔑 Valid session found - restoring...');
+        console.log('🔑 Valid session found');
         restoreSession();
     } else {
-        console.log('🔑 No valid session - showing login screen');
+        console.log('🔑 No valid session');
         showLoginScreen();
+        initializeMicrosoftAuth();
     }
     
-    // Initialize UI components
+    // Initialize UI components (this should run in both cases)
     initializeUI();
 });
+
 
     function closeFruitDetailsModal() {
         document.getElementById('fruitDetailsModal').classList.add('hidden');
@@ -1526,26 +1525,26 @@ function showLoginScreen() {
 }
 
 
-
 function initializeUI() {
-    console.log('🎨 Initializing UI components...');
+    console.log('🎨 PROPER UI INITIALIZATION STARTING...');
     
-    // Load data first
+    // Load local data first
     loadLocalData();
     
-    // Update basic UI components first
+    // Update basic UI components
     updateConnectionStatus();
     updateStats();
     
-    // Then initialize event listeners
+    // CRITICAL: Initialize event listeners BEFORE anything else
     initializeEventListeners();
     
-    // Then update data-dependent components
+    // Update data-dependent components
     updateRecentActivities();
     updateFruitsGrid();
     populateDropdowns();
+    
+    // Apply permissions (visual only)
     applyPermissionBasedUI();
-    updateAdminStats();
     
     // Set copyright year
     const yearElement = document.getElementById('currentYear');
@@ -1553,8 +1552,36 @@ function initializeUI() {
         yearElement.textContent = new Date().getFullYear();
     }
     
-    console.log('✅ UI initialization complete');
+    console.log('✅ PROPER UI INITIALIZATION COMPLETE');
+    
+    // Verify event listeners are working
+    setTimeout(verifyEventListeners, 500);
 }
+
+function verifyEventListeners() {
+    console.log('🔍 VERIFYING EVENT LISTENERS:');
+    
+    const quickActions = ['addFruitQuick', 'scheduleBBQuick', 'logActivityQuick', 'generateReportQuick'];
+    let workingCount = 0;
+    
+    quickActions.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn && btn.onclick) {
+            console.log(`✅ ${id}: HAS onclick handler`);
+            workingCount++;
+        } else {
+            console.log(`❌ ${id}: MISSING onclick handler`);
+        }
+    });
+    
+    console.log(`📊 Event listeners: ${workingCount}/${quickActions.length} working`);
+    
+    if (workingCount === 0) {
+        console.log('🚨 CRITICAL: No event listeners working - applying emergency fix');
+        initializeEventListenersEmergency();
+    }
+}
+
 
 function testAllButtons() {
     console.log('🧪 TESTING ALL BUTTONS:');
@@ -4468,111 +4495,108 @@ setTimeout(debugButtonEvents, 3000);
 
 
 function initializeEventListeners() {
-    console.log('🎯 Initializing event listeners...');
+    console.log('🎯 PROPER EVENT LISTENER INITIALIZATION...');
     
-    // Initialize Quick Actions
-    initializeQuickActions();
+    // Remove any existing listeners first to avoid duplicates
+    const oldListeners = window._existingListeners || [];
+    oldListeners.forEach(listener => {
+        document.removeEventListener('click', listener);
+    });
     
-    // Fruit search functionality
+    // Quick Actions - Direct event listeners (most reliable)
+    const quickActions = {
+        'addFruitQuick': showAddFruitModal,
+        'scheduleBBQuick': showScheduleModal,
+        'logActivityQuick': showActivityModal,
+        'generateReportQuick': generateReport
+    };
+    
+    Object.entries(quickActions).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            // Remove any existing listeners
+            button.replaceWith(button.cloneNode(true));
+            const newButton = document.getElementById(id);
+            
+            // Add click handler
+            newButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`🎯 Quick Action: ${id}`);
+                handler();
+            });
+            
+            console.log(`✅ Quick Action listener: ${id}`);
+        }
+    });
+    
+    // Global event delegation for dynamic content
+    const globalHandler = function(event) {
+        const button = event.target.closest('button');
+        if (!button) return;
+        
+        // Handle data-action buttons
+        const action = button.getAttribute('data-action');
+        const fruitId = button.getAttribute('data-fruit-id');
+        const fruitName = button.getAttribute('data-fruit-name');
+        
+        if (action) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            switch(action) {
+                case 'view':
+                    if (fruitId) viewFruitDetails(fruitId);
+                    break;
+                case 'edit':
+                    if (fruitId) editFruit(fruitId);
+                    break;
+                case 'delete':
+                    if (fruitId) deleteFruit(fruitId);
+                    break;
+                case 'log-activity':
+                    if (fruitName) logActivityForFruit(fruitName);
+                    break;
+            }
+        }
+    };
+    
+    document.addEventListener('click', globalHandler);
+    window._existingListeners = [globalHandler];
+    
+    // Other event listeners
     const fruitSearch = document.getElementById('fruitSearch');
     if (fruitSearch) {
         fruitSearch.addEventListener('input', filterFruits);
     }
+    
+    console.log('✅ PROPER EVENT LISTENERS INITIALIZED');
+}
 
-    // Handle fruit form submission
-    const fruitForm = document.querySelector('#addFruitModal form');
-    if (fruitForm) {
-        fruitForm.onsubmit = function(event) {
-            const isEditing = this.getAttribute('data-editing-id');
-            if (isEditing) {
-                updateFruit(event);
-            } else {
-                addFruit(event);
-            }
-        };
-    }
 
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
-        const syncOptions = document.getElementById('syncOptions');
-        if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
-            syncOptions.classList.add('hidden');
+function initializeEventListenersEmergency() {
+    console.log('🚨 EMERGENCY EVENT LISTENER INITIALIZATION...');
+    
+    // Direct DOM manipulation - bypass any framework issues
+    const quickActions = {
+        'addFruitQuick': showAddFruitModal,
+        'scheduleBBQuick': showScheduleModal,
+        'logActivityQuick': showActivityModal,
+        'generateReportQuick': generateReport
+    };
+    
+    Object.entries(quickActions).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            button.onclick = function(e) {
+                e.preventDefault();
+                console.log(`🚨 EMERGENCY CLICK: ${id}`);
+                handler();
+                return false;
+            };
+            console.log(`🚨 Emergency listener: ${id}`);
         }
     });
-    
-    document.addEventListener('click', function(event) {
-        const button = event.target.closest('button');
-        if (!button) return;
-        
-    console.log('🔍 Button clicked:', {
-        text: button.textContent,
-        id: button.id,
-        class: button.className
-    });
-    
-    // Handle data attribute buttons (new system)
-    const action = button.getAttribute('data-action');
-    const fruitId = button.getAttribute('data-fruit-id');
-    const fruitName = button.getAttribute('data-fruit-name');
-    
-    if (action) {
-        event.preventDefault();
-        event.stopPropagation();
-        
-        switch(action) {
-            case 'view':
-                if (fruitId) {
-                    console.log('👁️ Viewing details for fruit:', fruitId);
-                    viewFruitDetails(fruitId);
-                }
-                break;
-            case 'edit':
-                if (fruitId) {
-                    console.log('✏️ Editing fruit:', fruitId);
-                    editFruit(fruitId);
-                }
-                break;
-            case 'delete':
-                if (fruitId) {
-                    console.log('🗑️ Deleting fruit:', fruitId);
-                    deleteFruit(fruitId);
-                }
-                break;
-            case 'log-activity':
-                if (fruitName) {
-                    console.log('📞 Logging activity for fruit:', fruitName);
-                    logActivityForFruit(fruitName);
-                }
-                break;
-        }
-        return;
-    }
-    
-    // Handle legacy onclick buttons (fallback)
-    const onclick = button.getAttribute('onclick');
-    if (onclick) {
-        // Let the native onclick handler work
-        return;
-    }
-    
-    // Handle Quick Actions by text content (fallback)
-    const buttonText = button.textContent.trim();
-    const quickActions = button.closest('.grid-cols-4');
-    if (quickActions) {
-        event.preventDefault();
-        if (buttonText.includes('Add Fruit') || buttonText.includes('Add Your First Contact')) {
-            showAddFruitModal();
-        } else if (buttonText.includes('Schedule BB')) {
-            showScheduleModal();
-        } else if (buttonText.includes('Log Activity')) {
-            showActivityModal();
-        } else if (buttonText.includes('Generate Report')) {
-            generateReport();
-        }
-    }
-});
-    
-    console.log('✅ Event listeners initialized');
 }
 
 // Helper functions to extract parameters from buttons
@@ -7002,6 +7026,42 @@ async function debugSharePointFields() {
         const authCode = urlParams.get('code');
         const returnedState = urlParams.get('state');
 
+
+// Add this diagnostic code at the very top of your JavaScript (after the constants)
+console.log('🔍 ROOT CAUSE ANALYSIS STARTING...');
+
+// Track the execution flow
+const executionLog = [];
+const originalConsoleLog = console.log;
+console.log = function(...args) {
+    executionLog.push(args[0]);
+    originalConsoleLog.apply(console, args);
+};
+
+// Check what's actually running
+function diagnoseInitialization() {
+    console.log('📊 DIAGNOSIS REPORT:');
+    console.log('Execution log:', executionLog.filter(msg => 
+        msg && typeof msg === 'string' && 
+        (msg.includes('Initializing') || msg.includes('initialize') || msg.includes('DOMContentLoaded'))
+    ));
+    
+    console.log('🔍 CHECKING CRITICAL FUNCTIONS:');
+    console.log('- DOMContentLoaded event:', !!window.domContentLoaded);
+    console.log('- initializeUI called:', executionLog.some(msg => msg && msg.includes('🎨 Initializing UI')));
+    console.log('- initializeEventListeners called:', executionLog.some(msg => msg && msg.includes('🎯 Initializing event listeners')));
+    console.log('- showDashboard called:', executionLog.some(msg => msg && msg.includes('🔄 Showing dashboard')));
+    console.log('- Current user:', currentUser);
+    console.log('- SharePoint mode:', isSharePointMode);
+    
+    // Check if we're stuck in OAuth flow
+    const urlParams = new URLSearchParams(window.location.search);
+    console.log('- URL has auth code:', !!urlParams.get('code'));
+    console.log('- URL has state:', !!urlParams.get('state'));
+}
+
+// Run diagnosis after 3 seconds
+setTimeout(diagnoseInitialization, 3000);
 
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
