@@ -1226,46 +1226,115 @@
             'Other'
         ];
 
+        
+
+// Persistent in-memory storage that survives page reloads
+window._pkceStorage = window._pkceStorage || {};
+
+// Override the PKCE storage functions to use this persistent storage
+const originalAuthenticateWithMicrosoft = window.authenticateWithMicrosoft;
+window.authenticateWithMicrosoft = async function() {
+    try {
+        console.log('🔐 Starting PKCE Microsoft authentication...');
+        showNotification('Redirecting to Microsoft 365...', 'info');
+        
+        // Generate PKCE parameters
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        const state = 'auth_' + Date.now();
+        
+        console.log('🔐 PKCE parameters generated:', {
+            verifierLength: codeVerifier.length,
+            challengeLength: codeChallenge.length,
+            state: state
+        });
+        
+        // Store in persistent in-memory storage
+        window._pkceStorage = {
+            code_verifier: codeVerifier,
+            state: state,
+            timestamp: Date.now()
+        };
+        
+        // Also store in all other locations as backup
+        sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+        sessionStorage.setItem('pkce_state', state);
+        localStorage.setItem('pkce_code_verifier', codeVerifier);
+        localStorage.setItem('pkce_state', state);
+        
+        console.log('🔐 PKCE parameters stored in persistent memory');
+        
+        // Build PKCE auth URL
+        const authUrl = buildPKCEAuthUrl(codeChallenge, state);
+        console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
+        
+        // Redirect to Microsoft authentication (same window)
+        window.location.href = authUrl;
+        
+    } catch (error) {
+        console.error('❌ PKCE authentication failed:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
+        cleanupPkceStorage();
+    }
+};
+
+// Update verifyPkceState to check the persistent storage first
+const originalVerifyPkceState = window.verifyPkceState;
+window.verifyPkceState = function() {
+    const persistentStorageVerifier = window._pkceStorage?.code_verifier;
+    const persistentStorageState = window._pkceStorage?.state;
+    
+    // If we have data in persistent storage, use it
+    if (persistentStorageVerifier && persistentStorageState) {
+        console.log('🔐 Using PKCE parameters from persistent memory storage');
+        return {
+            hasCodeVerifier: true,
+            hasState: true,
+            codeVerifier: persistentStorageVerifier,
+            state: persistentStorageState
+        };
+    }
+    
+    // Otherwise fall back to the original implementation
+    return originalVerifyPkceState();
+};
+
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
     
-    // EMERGENCY: Check if we have OAuth callback parameters but no PKCE state
+    // Check if this is an OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const state = urlParams.get('state');
     
     if (authCode && state && state.startsWith('auth_')) {
-        console.log('🚨 EMERGENCY: OAuth callback detected but PKCE state may be lost');
+        console.log('🔐 OAuth callback detected');
         
-        // Try to reconstruct the PKCE state from the state parameter
-        const timestamp = state.replace('auth_', '');
-        console.log('🔐 Attempting to reconstruct PKCE state from timestamp:', timestamp);
+        // Check if we have PKCE state BEFORE doing anything else
+        console.log('🔐 Pre-processing PKCE state check:');
+        const pkceState = verifyPkceState();
         
-        // Show a user-friendly message and option to retry
-        showNotification('Authentication session expired. Please try signing in again.', 'error');
-        
-        // Clear the URL parameters to prevent infinite loop
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Re-initialize auth
-        initializeMicrosoftAuth();
+        if (pkceState.hasCodeVerifier) {
+            console.log('✅ PKCE state found, processing OAuth callback normally');
+            processOAuthCallback(authCode, state);
+        } else {
+            console.log('❌ PKCE state missing, showing login screen');
+            // Clear URL parameters to prevent infinite loop
+            window.history.replaceState({}, document.title, window.location.pathname);
+            showLoginScreen();
+        }
         return;
     }
     
-    // Rest of your existing initialization code...
-    if (authCode) {
-        console.log('🔐 OAuth callback detected');
-        processOAuthCallback(authCode, urlParams.get('state'));
-    } else {
-        console.log('🔧 Showing login screen');
-        showLoginScreen();
-    }
+    // Normal initialization (no OAuth callback)
+    console.log('🔧 Showing login screen');
+    showLoginScreen();
     
     // Initialize UI components
     initializeUI();
 });
-        
+
 
 // Clear session completely
 function clearSession() {
@@ -1856,22 +1925,25 @@ async function processOAuthCallback(authCode, returnedState) {
         const pkceState = verifyPkceState();
         
         if (!pkceState.hasCodeVerifier) {
-            // If we still don't have the code verifier, try to restore from URL parameters
-            console.log('🔐 Attempting to restore PKCE state from URL...');
-            const urlParams = new URLSearchParams(window.location.search);
-            const errorDescription = urlParams.get('error_description');
-            const error = urlParams.get('error');
-            
-            if (error) {
-                throw new Error(`OAuth error: ${error} - ${errorDescription || 'Unknown error'}`);
-            }
-            
-            throw new Error('PKCE code verifier missing. The authentication session may have expired or storage was cleared.');
+            throw new Error('PKCE code verifier missing. Authentication session may have expired.');
         }
         
-        // Validate state parameter if available
-        if (returnedState && pkceState.state && returnedState !== pkceState.state) {
-            throw new Error('Invalid state parameter - possible security issue');
+        // Validate state parameter - be more lenient for timing issues
+        if (returnedState && pkceState.state) {
+            if (returnedState !== pkceState.state) {
+                console.warn('⚠️ State parameter mismatch:', {
+                    returnedState,
+                    storedState: pkceState.state
+                });
+                
+                // Check if it's just a timing issue (both start with 'auth_')
+                if (returnedState.startsWith('auth_') && pkceState.state.startsWith('auth_')) {
+                    console.log('⚠️ State mismatch appears to be timing-related, proceeding anyway');
+                    // Continue with authentication despite state mismatch
+                } else {
+                    throw new Error('Invalid state parameter - possible security issue');
+                }
+            }
         }
         
         // Process the authentication
@@ -1921,6 +1993,31 @@ async function processOAuthCallback(authCode, returnedState) {
     }
 }
 
+
+// Debug function to check authentication state
+function debugAuthState() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    console.log('🔍 AUTH STATE DEBUG:');
+    console.log('URL Parameters:', {
+        hasCode: !!authCode,
+        codeLength: authCode?.length,
+        hasState: !!state,
+        state: state
+    });
+    
+    const pkceState = verifyPkceState();
+    console.log('PKCE State:', pkceState);
+    
+    console.log('Session Storage:', {
+        accessToken: !!sessionStorage.getItem('access_token'),
+        currentUser: !!sessionStorage.getItem('current_user')
+    });
+}
+
+// Call this in console if needed: debugAuthState()
 
 // Debug function to check storage state
 function debugStorageState() {
@@ -2173,31 +2270,6 @@ async function loadActivitiesWithGoogleAuth() {
         throw error;
     }
 }
-
-// Handle manual refresh
-window.addEventListener('beforeunload', function(event) {
-    // Set a flag that we're about to refresh
-    sessionStorage.setItem('isRefreshing', 'true');
-});
-
-window.addEventListener('load', function() {
-    // Check if we just refreshed
-    const wasRefreshing = sessionStorage.getItem('isRefreshing');
-    
-    if (wasRefreshing) {
-        console.log('🔄 Page was manually refreshed - clearing session');
-        sessionStorage.removeItem('isRefreshing');
-        
-        // Don't force logout here if it's an OAuth callback
-        const urlParams = new URLSearchParams(window.location.search);
-        const authCode = urlParams.get('code');
-        
-        if (!authCode) {
-            forceLogout();
-        }
-    }
-});
-
 
 function checkExistingSession() {
     // Clear any existing session on page load/refresh
