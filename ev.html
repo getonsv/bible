@@ -41,6 +41,38 @@
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
         }
+
+        /* Enhanced dropdown styles */
+        #assigneeSuggestions {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f7fafc;
+        }
+
+        #assigneeSuggestions::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #assigneeSuggestions::-webkit-scrollbar-track {
+            background: #f7fafc;
+            border-radius: 0 0 8px 8px;
+        }
+
+        #assigneeSuggestions::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        #assigneeSuggestions::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Loading state for dropdown */
+        .loading-assignees {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' stroke='%23cbd5e0' stroke-width='4'%3E%3C/circle%3E%3Cpath fill='%233b82f6' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px 16px;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -51,8 +83,8 @@
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-cross text-white text-2xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">ERMS</h1>
-                <p class="text-gray-600">Evengelism Reporting Management System</p>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Evengelism Reporting Management System</h1>
+                <p class="text-gray-600">Track the progress of your fruit</p>
             </div>
             
             <div id="googleSignInButton" class="w-full mb-4">
@@ -497,13 +529,26 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
-                        <select name="assignee" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="assigneeSelect">
-                            <option value="">Select team member...</option>
+                        <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            name="assignee" 
+                            list="assigneeOptions"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                            placeholder="Type to search users..."
+                            autocomplete="off"
+                            id="assigneeInput"
+                        >
+                        <datalist id="assigneeOptions">
                             <!-- Options will be populated by JavaScript -->
-                        </select>
+                        </datalist>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400"></i>
+                        </div>
                     </div>
-                    
+                </div>              
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                         <input type="tel" name="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
@@ -605,10 +650,8 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Fruit</label>
-                        <select name="fruitName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="activityFruitSelect">
-                            <option value="">Select fruit...</option>
-                            <!-- Options will be populated by JavaScript -->
-                        </select>
+                        <input list="activityFruitOptions" id="activityFruitSelect" name="fruitName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Search fruits...">
+                        <datalist id="activityFruitOptions"></datalist>
                     </div>
                     
                     <div>
@@ -1182,45 +1225,197 @@
         ];
 
         
+
+// Persistent in-memory storage that survives page reloads
+window._pkceStorage = window._pkceStorage || {};
+
+// Override the PKCE storage functions to use this persistent storage
+const originalAuthenticateWithMicrosoft = window.authenticateWithMicrosoft;
+window.authenticateWithMicrosoft = async function() {
+    try {
+        console.log('🔐 Starting PKCE Microsoft authentication...');
+        showNotification('Redirecting to Microsoft 365...', 'info');
+        
+        // Generate PKCE parameters
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        const state = 'auth_' + Date.now();
+        
+        console.log('🔐 PKCE parameters generated:', {
+            verifierLength: codeVerifier.length,
+            challengeLength: codeChallenge.length,
+            state: state
+        });
+        
+        // Store in persistent in-memory storage
+        window._pkceStorage = {
+            code_verifier: codeVerifier,
+            state: state,
+            timestamp: Date.now()
+        };
+        
+        // Also store in all other locations as backup
+        sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+        sessionStorage.setItem('pkce_state', state);
+        localStorage.setItem('pkce_code_verifier', codeVerifier);
+        localStorage.setItem('pkce_state', state);
+        
+        console.log('🔐 PKCE parameters stored in persistent memory');
+        
+        // Build PKCE auth URL
+        const authUrl = buildPKCEAuthUrl(codeChallenge, state);
+        console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
+        
+        // Redirect to Microsoft authentication (same window)
+        window.location.href = authUrl;
+        
+    } catch (error) {
+        console.error('❌ PKCE authentication failed:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
+        cleanupPkceStorage();
+    }
+};
+
+// Update verifyPkceState to check the persistent storage first
+const originalVerifyPkceState = window.verifyPkceState;
+window.verifyPkceState = function() {
+    const persistentStorageVerifier = window._pkceStorage?.code_verifier;
+    const persistentStorageState = window._pkceStorage?.state;
+    
+    // If we have data in persistent storage, use it
+    if (persistentStorageVerifier && persistentStorageState) {
+        console.log('🔐 Using PKCE parameters from persistent memory storage');
+        return {
+            hasCodeVerifier: true,
+            hasState: true,
+            codeVerifier: persistentStorageVerifier,
+            state: persistentStorageState
+        };
+    }
+    
+    // Otherwise fall back to the original implementation
+    return originalVerifyPkceState();
+};
+
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initializing Evangelism CRM...');
-    console.log('🔍 Initial URL:', window.location.href);
     
-    // First, check if this is an OAuth callback
+    // Check if this is an OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
-    const returnedState = urlParams.get('state');
-    const error = urlParams.get('error');
+    const state = urlParams.get('state');
     
-    if (authCode) {
-        console.log('🔐 OAuth callback detected - processing authentication');
-        processOAuthCallback(authCode, returnedState);
-    } else if (error) {
-        console.error('❌ OAuth error:', error);
-        showNotification('Authentication failed: ' + error, 'error');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        showLoginScreen();
-    } else {
-        console.log('🔧 No OAuth callback - checking session state');
+    if (authCode && state && state.startsWith('auth_')) {
+        console.log('🔐 OAuth callback detected');
         
-        // Check if we have a valid session
-        const hasValidSession = checkForValidSession();
+        // Check if we have PKCE state BEFORE doing anything else
+        console.log('🔐 Pre-processing PKCE state check:');
+        const pkceState = verifyPkceState();
         
-        if (hasValidSession) {
-            console.log('✅ Valid session found - restoring dashboard');
-            restoreSession();
+        if (pkceState.hasCodeVerifier) {
+            console.log('✅ PKCE state found, processing OAuth callback normally');
+            processOAuthCallback(authCode, state);
         } else {
-            console.log('❌ No valid session - showing login screen');
+            console.log('❌ PKCE state missing, showing login screen');
+            // Clear URL parameters to prevent infinite loop
+            window.history.replaceState({}, document.title, window.location.pathname);
             showLoginScreen();
         }
+        return;
     }
+    
+    // Normal initialization (no OAuth callback)
+    console.log('🔧 Showing login screen');
+    showLoginScreen();
     
     // Initialize UI components
     initializeUI();
-    
-    // Initial dashboard state check
-    setTimeout(checkAndFixDashboard, 500);
 });
+
+
+// Clear session completely
+function clearSession() {
+    console.log('🧹 Clearing session data...');
+    
+    // Clear global variables
+    currentUser = null;
+    sharePointAccessToken = null;
+    isSharePointMode = false;
+    
+    // Clear session storage
+    sessionStorage.clear();
+    
+    // Clear PKCE parameters from localStorage too
+    localStorage.removeItem('pkce_code_verifier');
+    localStorage.removeItem('pkce_state');
+    
+    // Stop any sync
+    stopRealTimeSync();
+}
+
+
+// Show login screen explicitly
+function showLoginScreen() {
+    console.log('🖥️ Showing login screen...');
+    
+    const loginScreen = document.getElementById('loginScreen');
+    const dashboard = document.getElementById('dashboard');
+    
+    // Ensure login screen is visible
+    if (loginScreen) {
+        loginScreen.classList.remove('hidden');
+        console.log('✅ Login screen shown');
+    } else {
+        console.error('❌ Login screen element not found');
+    }
+    
+    // Ensure dashboard is hidden
+    if (dashboard) {
+        dashboard.classList.add('hidden');
+        console.log('✅ Dashboard hidden');
+    }
+    
+    // Initialize authentication UI
+    initializeMicrosoftAuth();
+}
+
+
+// Add this function to initialize UI components
+function initializeUI() {
+    console.log('🎨 Initializing UI components...');
+    
+    // Load local data (fruits, activities)
+    loadLocalData();
+    
+    // Update connection status
+    updateConnectionStatus();
+    
+    // Only populate basic dropdowns that don't require SharePoint
+    populateBasicDropdowns();
+    
+    // Initialize event listeners
+    initializeEventListeners();
+    
+    // Set copyright year
+    const yearElement = document.getElementById('currentYear');
+    if (yearElement) {
+        yearElement.textContent = new Date().getFullYear();
+    }
+    
+    // Initialize version tag
+    initializeVersionTag();
+    
+    console.log('✅ UI initialization complete');
+}
+
+// Refresh user dropdown when authentication state changes
+function refreshUserDropdown() {
+    if (sharePointAccessToken) {
+        console.log('🔄 Refreshing user dropdown with SharePoint access...');
+        populateAssigneeDropdown();
+    }
+}
 
 // Add this function to show login screen properly
 function showLoginScreen() {
@@ -1314,6 +1509,38 @@ function checkForValidSession() {
     
     return false;
 }
+
+// Show loading state while fetching users
+function showAssigneeLoading() {
+    const assigneeInput = document.getElementById('assigneeInput');
+    if (assigneeInput) {
+        assigneeInput.classList.add('loading-assignees');
+        assigneeInput.placeholder = 'Loading users...';
+    }
+}
+
+// Hide loading state
+function hideAssigneeLoading() {
+    const assigneeInput = document.getElementById('assigneeInput');
+    if (assigneeInput) {
+        assigneeInput.classList.remove('loading-assignees');
+        assigneeInput.placeholder = 'Type to search users...';
+    }
+}
+
+// Update populateAssigneeDropdown to show loading
+async function populateAssigneeDropdown() {
+    showAssigneeLoading();
+    
+    try {
+        // ... existing code ...
+    } catch (error) {
+        // ... existing error handling ...
+    } finally {
+        hideAssigneeLoading();
+    }
+}
+
 
 function restoreSession() {
     const msToken = sessionStorage.getItem('access_token');
@@ -1472,31 +1699,109 @@ function restoreSession() {
             }
         }
 
+        
+
 function initializeMicrosoftAuth() {
-    console.log('🔧 Initializing Microsoft authentication...');
+    console.log('🔧 Initializing Microsoft authentication UI...');
     
     const buttonContainer = document.getElementById('googleSignInButton');
-    if (buttonContainer) {
-        buttonContainer.innerHTML = `
-            <div class="space-y-4">
-                <button onclick="authenticateWithMicrosoft()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                    <i class="fab fa-microsoft text-xl"></i>
-                    <span>Sign in with Microsoft 365</span>
-                </button>
-                
-                <div class="text-center">
-                    <p class="text-xs text-gray-500">
-                        <i class="fas fa-shield-alt text-green-500 mr-1"></i>
-                        Secure authentication with your organization account
-                    </p>
-                </div>
-            </div>
-        `;
+    if (!buttonContainer) {
+        console.error('❌ Google Sign In button container not found');
+        return;
     }
     
-    console.log('✅ Microsoft authentication initialized');
-}        
+    // Clear any loading state and show the sign-in button
+    buttonContainer.innerHTML = `
+        <div class="space-y-4">
+            <button onclick="startMicrosoftAuth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                <i class="fab fa-microsoft text-xl"></i>
+                <span>Sign in with Microsoft 365</span>
+            </button>
+            
+            <div class="text-center">
+                <p class="text-xs text-gray-500">
+                    <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+                    Secure authentication with your organization account
+                </p>
+            </div>
+        </div>
+    `;
+    
+    console.log('✅ Microsoft authentication UI ready');
+}
 
+// Separate function to start auth (to avoid any event issues)
+function startMicrosoftAuth() {
+    console.log('🚀 Starting Microsoft authentication...');
+    authenticateWithMicrosoft();
+}
+
+
+
+
+// Emergency function to force show login screen
+function forceShowLoginScreen() {
+    console.log('🚨 FORCING LOGIN SCREEN DISPLAY');
+    
+    // Clear everything
+    clearSession();
+    
+    // Hide dashboard with multiple methods
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard) {
+        dashboard.classList.add('hidden');
+        dashboard.style.display = 'none';
+    }
+    
+    // Show login screen with multiple methods
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen) {
+        loginScreen.classList.remove('hidden');
+        loginScreen.style.display = 'flex';
+    }
+    
+    // Re-initialize auth UI
+    initializeMicrosoftAuth();
+    
+    console.log('✅ Login screen should be visible now');
+}
+
+// Call this if login screen still doesn't show
+// forceShowLoginScreen();
+
+
+// Check CSS and display properties
+function checkElementVisibility() {
+    console.log('👀 Checking element visibility...');
+    
+    const loginScreen = document.getElementById('loginScreen');
+    const dashboard = document.getElementById('dashboard');
+    
+    if (loginScreen) {
+        console.log('Login screen:', {
+            hiddenClass: loginScreen.classList.contains('hidden'),
+            displayStyle: loginScreen.style.display,
+            computedDisplay: window.getComputedStyle(loginScreen).display,
+            opacity: window.getComputedStyle(loginScreen).opacity,
+            visibility: window.getComputedStyle(loginScreen).visibility
+        });
+    }
+    
+    if (dashboard) {
+        console.log('Dashboard:', {
+            hiddenClass: dashboard.classList.contains('hidden'),
+            displayStyle: dashboard.style.display,
+            computedDisplay: window.getComputedStyle(dashboard).display
+        });
+    }
+}
+
+// Call this in console: checkElementVisibility()
+
+
+
+
+        
 function handleAuthError(error) {
     console.error('❌ Authentication error:', error);
     
@@ -1608,111 +1913,126 @@ function checkForOAuthCallback() {
 
 async function processOAuthCallback(authCode, returnedState) {
     try {
-        console.log('🔄 Processing Microsoft OAuth callback...');
-        console.log('🔍 Current URL:', window.location.href);
+        console.log('🔄 Processing OAuth callback...');
         
         // Show loading state
-        showNotification('Completing authentication...', 'info');
+        showNotification('Processing authentication...', 'info');
         
-        // Validate state parameter
-        const storedState = sessionStorage.getItem('pkce_state');
-        if (returnedState && storedState && returnedState !== storedState) {
-            throw new Error('Invalid state parameter - possible security issue');
+        // Debug PKCE state before exchange
+        console.log('🔐 Pre-token exchange PKCE state:');
+        const pkceState = verifyPkceState();
+        
+        if (!pkceState.hasCodeVerifier) {
+            throw new Error('PKCE code verifier missing. Authentication session may have expired.');
         }
         
-        // Check if we already processed this callback
-        if (sessionStorage.getItem('oauth_processed')) {
-            console.log('⚠️ OAuth callback already processed, redirecting to dashboard...');
-            window.history.replaceState({}, document.title, window.location.pathname);
-            showDashboard(); // Force show dashboard
-            return;
+        // Validate state parameter - be more lenient for timing issues
+        if (returnedState && pkceState.state) {
+            if (returnedState !== pkceState.state) {
+                console.warn('⚠️ State parameter mismatch:', {
+                    returnedState,
+                    storedState: pkceState.state
+                });
+                
+                // Check if it's just a timing issue (both start with 'auth_')
+                if (returnedState.startsWith('auth_') && pkceState.state.startsWith('auth_')) {
+                    console.log('⚠️ State mismatch appears to be timing-related, proceeding anyway');
+                    // Continue with authentication despite state mismatch
+                } else {
+                    throw new Error('Invalid state parameter - possible security issue');
+                }
+            }
         }
         
-        // Mark as processed to prevent duplicate processing
-        sessionStorage.setItem('oauth_processed', 'true');
-        
-        // Exchange code for token
-        console.log('🔄 Exchanging code for token...');
+        // Process the authentication
         const tokenData = await exchangeCodeForTokenPKCE(authCode);
         
         if (!tokenData.access_token) {
             throw new Error('No access token received from Microsoft');
         }
         
+        // Store token and get user info
         sharePointAccessToken = tokenData.access_token;
-        isSharePointMode = true;
-        
-        // Store token with expiration
         sessionStorage.setItem('access_token', tokenData.access_token);
         sessionStorage.setItem('token_expiry', Date.now() + ((tokenData.expires_in || 3600) * 1000));
         
-        // Get user info from Microsoft
-        console.log('🔄 Getting user info from Microsoft...');
-        const basicUserInfo = await getUserInfo(tokenData.access_token);
+        const userInfo = await getUserInfo(tokenData.access_token);
+        const sharePointUserInfo = await checkUserInSharePointList(userInfo.email, userInfo.name, 'microsoft');
         
-        console.log('👤 Microsoft user authenticated:', basicUserInfo.email);
-        
-        // Check if user exists in SharePoint Users list and get their role
-        console.log('🔄 Checking user in SharePoint list...');
-        const userInfo = await checkUserInSharePointList(basicUserInfo.email, basicUserInfo.name, 'microsoft');
-        
-        if (!userInfo) {
+        if (!sharePointUserInfo) {
             throw new Error('User not authorized in SharePoint');
         }
         
-        // Set current user with SharePoint-defined permissions
-        currentUser = userInfo;
+        currentUser = sharePointUserInfo;
         sessionStorage.setItem('current_user', JSON.stringify(currentUser));
         
-        // Clean up PKCE parameters and processing flag
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
-        sessionStorage.removeItem('oauth_processed');
-        
-        // Clean URL - IMPORTANT: Remove OAuth parameters from URL
-        console.log('🔄 Cleaning URL and showing dashboard...');
+        // Clean up URL and PKCE parameters from ALL storage locations
+        cleanupPkceStorage();
         window.history.replaceState({}, document.title, window.location.pathname);
-        console.log('🔍 URL after cleanup:', window.location.href);
         
-        // Load data from SharePoint
-        console.log('🔄 Loading data from SharePoint...');
+        // Load data and show dashboard
         await loadDataFromSharePoint();
-        
-        // FORCE SHOW DASHBOARD
-        console.log('🎯 FORCING DASHBOARD DISPLAY');
         showDashboard();
         startRealTimeSync();
         
-        showNotification(`Welcome ${userInfo.name}! Authentication successful.`);
+        // IMPORTANT: Populate ALL dropdowns including SharePoint-dependent ones AFTER authentication
+        populateDropdowns();
         
-        // Double-check dashboard is visible
-        setTimeout(() => {
-            const dashboard = document.getElementById('dashboard');
-            const loginScreen = document.getElementById('loginScreen');
-            console.log('🔍 Final state check:');
-            console.log(' - Dashboard hidden:', dashboard?.classList.contains('hidden'));
-            console.log(' - Login screen hidden:', loginScreen?.classList.contains('hidden'));
-            console.log(' - Current user:', currentUser);
-        }, 1000);
+        showNotification(`Welcome ${sharePointUserInfo.name}!`);
         
     } catch (error) {
-        console.error('❌ OAuth callback processing failed:', error);
+        console.error('❌ OAuth callback failed:', error);
         showNotification('Authentication failed: ' + error.message, 'error');
         
-        // Clean up on failure
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
-        sessionStorage.removeItem('oauth_processed');
-        sessionStorage.removeItem('pending_google_user');
-        
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show login screen again
+        // Clean up and show login screen
+        cleanupPkceStorage();
+        clearSession();
         showLoginScreen();
     }
 }
 
+
+// Debug function to check authentication state
+function debugAuthState() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    console.log('🔍 AUTH STATE DEBUG:');
+    console.log('URL Parameters:', {
+        hasCode: !!authCode,
+        codeLength: authCode?.length,
+        hasState: !!state,
+        state: state
+    });
+    
+    const pkceState = verifyPkceState();
+    console.log('PKCE State:', pkceState);
+    
+    console.log('Session Storage:', {
+        accessToken: !!sessionStorage.getItem('access_token'),
+        currentUser: !!sessionStorage.getItem('current_user')
+    });
+}
+
+// Call this in console if needed: debugAuthState()
+
+// Debug function to check storage state
+function debugStorageState() {
+    console.log('🔍 STORAGE DEBUG INFO:');
+    console.log('LocalStorage PKCE:', {
+        verifier: localStorage.getItem('pkce_code_verifier')?.substring(0, 20) + '...',
+        state: localStorage.getItem('pkce_state')
+    });
+    console.log('SessionStorage PKCE:', {
+        verifier: sessionStorage.getItem('pkce_code_verifier')?.substring(0, 20) + '...',
+        state: sessionStorage.getItem('pkce_state')
+    });
+    console.log('TempStorage PKCE:', window.tempPkceStorage);
+    console.log('URL Parameters:', Object.fromEntries(new URLSearchParams(window.location.search)));
+}
+
+// Call this in console if needed: debugStorageState()
 
 function checkAndFixDashboard() {
     console.log('🔧 Checking dashboard state...');
@@ -1794,7 +2114,18 @@ async function loadFruitsWithGoogleAuth() {
             instagram: item.fields.Instagram || '',
             facebook: item.fields.Facebook || '',
             twitter: item.fields.Twitter || '',
-            leadSource: item.fields.LeadSource || '',
+            // robustly normalise LeadSource (handles string, array, person/object shapes)
+            leadSource: (function(raw) {
+                if (!raw) return '';
+                if (typeof raw === 'string') return raw;
+                if (Array.isArray(raw)) {
+                    return raw.map(x => x?.displayName || x?.Title || x?.Value || x?.value || (typeof x === 'string' ? x : '')).filter(Boolean).join(', ');
+                }
+                if (typeof raw === 'object') {
+                    return raw.displayName || raw.Title || raw.Value || raw.value || raw.Label || raw.Name || raw.name || JSON.stringify(raw);
+                }
+                return String(raw);
+            })(item.fields.LeadSource || item.fields.LeadSourceId || item.fields.Source || ''),
             campaign: item.fields.Campaign || '',
             status: item.fields.Status || 'Initial Contact',
             notes: item.fields.Notes || '',
@@ -1948,31 +2279,6 @@ async function loadActivitiesWithGoogleAuth() {
         throw error;
     }
 }
-
-// Handle manual refresh
-window.addEventListener('beforeunload', function(event) {
-    // Set a flag that we're about to refresh
-    sessionStorage.setItem('isRefreshing', 'true');
-});
-
-window.addEventListener('load', function() {
-    // Check if we just refreshed
-    const wasRefreshing = sessionStorage.getItem('isRefreshing');
-    
-    if (wasRefreshing) {
-        console.log('🔄 Page was manually refreshed - clearing session');
-        sessionStorage.removeItem('isRefreshing');
-        
-        // Don't force logout here if it's an OAuth callback
-        const urlParams = new URLSearchParams(window.location.search);
-        const authCode = urlParams.get('code');
-        
-        if (!authCode) {
-            forceLogout();
-        }
-    }
-});
-
 
 function checkExistingSession() {
     // Clear any existing session on page load/refresh
@@ -2214,44 +2520,132 @@ window.addEventListener('load', function() {
             }, 1000);
         }
 
-        
 
-        async function authenticateWithMicrosoft() {
-            try {
-                console.log('🔐 Starting PKCE Microsoft authentication...');
-                showNotification('Redirecting to Microsoft 365...', 'info');
-                
-                // Generate PKCE parameters
-                const codeVerifier = generateCodeVerifier();
-                const codeChallenge = await generateCodeChallenge(codeVerifier);
-                const state = 'auth_' + Date.now();
-                
-                console.log('🔐 PKCE parameters generated:', {
-                    verifierLength: codeVerifier.length,
-                    challengeLength: codeChallenge.length,
-                    state: state
-                });
-                
-                // Store PKCE parameters securely
-                sessionStorage.setItem('pkce_code_verifier', codeVerifier);
-                sessionStorage.setItem('pkce_state', state);
-                
-                // Build PKCE auth URL
-                const authUrl = buildPKCEAuthUrl(codeChallenge, state);
-                console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
-                
-                // Redirect to Microsoft authentication (same window)
-                window.location.href = authUrl;
-                
-            } catch (error) {
-                console.error('❌ PKCE authentication failed:', error);
-                showNotification('Authentication failed: ' + error.message, 'error');
-                
-                // Clean up on failure
-                sessionStorage.removeItem('pkce_code_verifier');
-                sessionStorage.removeItem('pkce_state');
-            }
+async function authenticateWithMicrosoft() {
+    try {
+        console.log('🔐 Starting PKCE Microsoft authentication...');
+        showNotification('Redirecting to Microsoft 365...', 'info');
+        
+        // Generate PKCE parameters
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        const state = 'auth_' + Date.now();
+        
+        console.log('🔐 PKCE parameters generated:', {
+            verifierLength: codeVerifier.length,
+            challengeLength: codeChallenge.length,
+            state: state
+        });
+        
+        // Store PKCE parameters in the most persistent way possible
+        // 1. Encode and store in sessionStorage (primary)
+        sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+        sessionStorage.setItem('pkce_state', state);
+        
+        // 2. Store in localStorage as backup
+        localStorage.setItem('pkce_code_verifier', codeVerifier);
+        localStorage.setItem('pkce_state', state);
+        
+        // 3. Store in a cookie as additional backup (persists across redirects)
+        document.cookie = `pkce_code_verifier=${encodeURIComponent(codeVerifier)}; path=/; max-age=300`; // 5 minutes
+        document.cookie = `pkce_state=${state}; path=/; max-age=300`;
+        
+        console.log('🔐 PKCE parameters stored in multiple locations');
+        
+        // Build PKCE auth URL
+        const authUrl = buildPKCEAuthUrl(codeChallenge, state);
+        console.log('🔐 PKCE auth URL built:', authUrl.substring(0, 150) + '...');
+        
+        // Redirect to Microsoft authentication (same window)
+        window.location.href = authUrl;
+        
+    } catch (error) {
+        console.error('❌ PKCE authentication failed:', error);
+        showNotification('Authentication failed: ' + error.message, 'error');
+        
+        // Clean up on failure
+        cleanupPkceStorage();
+    }
+}
+
+
+// Cookie helper functions
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    return null;
+}
+
+function deleteCookie(name) {
+    document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+}
+
+// Clean up PKCE storage from all locations
+function cleanupPkceStorage() {
+    localStorage.removeItem('pkce_code_verifier');
+    localStorage.removeItem('pkce_state');
+    sessionStorage.removeItem('pkce_code_verifier');
+    sessionStorage.removeItem('pkce_state');
+    delete window.tempPkceStorage;
+}
+
+
+// Add this function to verify PKCE state
+function verifyPkceState() {
+    // Check all possible storage locations
+    const localStorageVerifier = localStorage.getItem('pkce_code_verifier');
+    const localStorageState = localStorage.getItem('pkce_state');
+    
+    const sessionStorageVerifier = sessionStorage.getItem('pkce_code_verifier');
+    const sessionStorageState = sessionStorage.getItem('pkce_state');
+    
+    const cookieVerifier = getCookie('pkce_code_verifier');
+    const cookieState = getCookie('pkce_state');
+    
+    const tempStorageVerifier = window.tempPkceStorage?.code_verifier;
+    const tempStorageState = window.tempPkceStorage?.state;
+    
+    // Use the first available verifier (cookies are most reliable for redirects)
+    const codeVerifier = cookieVerifier || localStorageVerifier || sessionStorageVerifier || tempStorageVerifier;
+    const state = cookieState || localStorageState || sessionStorageState || tempStorageState;
+    
+    console.log('🔐 PKCE State Verification:', {
+        cookies: {
+            hasCodeVerifier: !!cookieVerifier,
+            hasState: !!cookieState
+        },
+        localStorage: {
+            hasCodeVerifier: !!localStorageVerifier,
+            hasState: !!localStorageState
+        },
+        sessionStorage: {
+            hasCodeVerifier: !!sessionStorageVerifier,
+            hasState: !!sessionStorageState
+        },
+        tempStorage: {
+            hasCodeVerifier: !!tempStorageVerifier,
+            hasState: !!tempStorageState
+        },
+        final: {
+            hasCodeVerifier: !!codeVerifier,
+            hasState: !!state,
+            codeVerifierLength: codeVerifier?.length,
+            source: codeVerifier === cookieVerifier ? 'cookie' : 
+                   codeVerifier === localStorageVerifier ? 'localStorage' : 
+                   codeVerifier === sessionStorageVerifier ? 'sessionStorage' : 
+                   codeVerifier === tempStorageVerifier ? 'tempStorage' : 'none'
         }
+    });
+    
+    return {
+        hasCodeVerifier: !!codeVerifier,
+        hasState: !!state,
+        codeVerifier: codeVerifier,
+        state: state
+    };
+}
+
 
         function showManualCodeExtractionHelper(popup) {
             const helper = document.createElement('div');
@@ -2621,51 +3015,87 @@ window.addEventListener('load', function() {
             });
         }
 
-        async function exchangeCodeForTokenPKCE(authCode) {
-            try {
-                console.log('🔄 PKCE token exchange starting...');
-                
-                const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
-                if (!codeVerifier) {
-                    throw new Error('PKCE code verifier not found');
-                }
-                
-                const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
-                
-                const redirectUri = window.location.origin + window.location.pathname;
-                
-                const body = new URLSearchParams({
-                    client_id: SHAREPOINT_CONFIG.CLIENT_ID,
-                    scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
-                    code: authCode,
-                    redirect_uri: redirectUri,
-                    grant_type: 'authorization_code',
-                    code_verifier: codeVerifier // PKCE proof
-                });
-                
-                const response = await fetch(tokenUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: body.toString()
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error_description || 'PKCE token exchange failed');
-                }
-                
-                const tokenData = await response.json();
-                console.log('✅ PKCE token exchange successful');
-                
-                return tokenData;
-                
-            } catch (error) {
-                console.error('❌ PKCE token exchange failed:', error);
-                throw error;
-            }
+async function exchangeCodeForTokenPKCE(authCode) {
+    try {
+        console.log('🔄 PKCE token exchange starting...');
+        
+        // Check all storage locations for code verifier
+        const codeVerifier = localStorage.getItem('pkce_code_verifier') || 
+                            sessionStorage.getItem('pkce_code_verifier') || 
+                            window.tempPkceStorage?.code_verifier;
+        
+        console.log('🔐 Retrieved code verifier:', {
+            fromLocalStorage: !!localStorage.getItem('pkce_code_verifier'),
+            fromSessionStorage: !!sessionStorage.getItem('pkce_code_verifier'),
+            fromTempStorage: !!window.tempPkceStorage?.code_verifier,
+            exists: !!codeVerifier,
+            length: codeVerifier?.length,
+            first10: codeVerifier?.substring(0, 10) + '...'
+        });
+        
+        if (!codeVerifier) {
+            // Debug all storage keys
+            const allLocalKeys = Object.keys(localStorage);
+            const allSessionKeys = Object.keys(sessionStorage);
+            console.log('🔐 All localStorage keys:', allLocalKeys);
+            console.log('🔐 All sessionStorage keys:', allSessionKeys);
+            console.log('🔐 Window temp storage:', window.tempPkceStorage);
+            
+            throw new Error('PKCE code verifier not found in any storage location');
         }
+        
+        const tokenUrl = `https://login.microsoftonline.com/${SHAREPOINT_CONFIG.TENANT_ID}/oauth2/v2.0/token`;
+        
+        const redirectUri = window.location.origin + window.location.pathname;
+        
+        const body = new URLSearchParams({
+            client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+            scope: 'https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read',
+            code: authCode,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code',
+            code_verifier: codeVerifier // PKCE proof
+        });
+        
+        console.log('🔐 Token exchange request:', {
+            client_id: SHAREPOINT_CONFIG.CLIENT_ID,
+            code_length: authCode.length,
+            redirect_uri: redirectUri,
+            code_verifier_length: codeVerifier.length,
+            token_url: tokenUrl
+        });
+        
+        const response = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body.toString()
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Token exchange failed:', response.status, errorText);
+            
+            // If it's a 400 error, it might be because the code verifier is wrong
+            if (response.status === 400) {
+                throw new Error('Invalid PKCE code verifier. The authentication session may have expired.');
+            }
+            
+            throw new Error(`PKCE token exchange failed: ${response.status}`);
+        }
+        
+        const tokenData = await response.json();
+        console.log('✅ PKCE token exchange successful');
+        
+        return tokenData;
+        
+    } catch (error) {
+        console.error('❌ PKCE token exchange failed:', error);
+        throw error;
+    }
+}
+
 
         async function getUserInfo(token) {
             try {
@@ -2949,14 +3379,12 @@ async function loadFruitsFromSharePoint() {
 }
 
 
-
-
 async function loadActivitiesFromSharePoint() {
     try {
-        // Get all activities with proper field selection
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields&$top=5000`;
+        // Get activities with specific field selection for User
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?$select=id,createdDateTime,fields&$expand=fields($select=Title,ActivityType,Duration,Notes,Outcome,FruitNameLookup,User,Created,CreatedBy)&$top=5000`;
         
-        console.log('📊 Loading activities from SharePoint...');
+        console.log('📊 Loading activities with explicit field selection...');
         
         const response = await fetch(url, {
             headers: {
@@ -2972,61 +3400,146 @@ async function loadActivitiesFromSharePoint() {
         const data = await response.json();
         const items = data.value || [];
         
+        console.log('📦 Activities with User field:', items);
+        
         activities = items.map(item => {
-            // Extract fruit name from different possible fields
+            // Extract fruit name
             let fruitName = '';
             if (item.fields.FruitNameLookup) {
                 fruitName = item.fields.FruitNameLookup;
-            } else if (item.fields.FruitName) {
-                fruitName = item.fields.FruitName;
             } else if (item.fields.Title) {
-                // Try to extract from title "Activity with FruitName"
                 const titleMatch = item.fields.Title.match(/with\s+(.+)$/);
                 fruitName = titleMatch ? titleMatch[1] : item.fields.Title;
             }
             
-            // Extract user from different possible fields
-            let user = 'Unknown';
-            if (item.fields.User) {
-                if (typeof item.fields.User === 'object') {
-                    user = item.fields.User.displayName || 
-                           item.fields.User.title || 
-                           item.fields.User.email || 
-                           'Unknown User';
-                } else {
-                    user = item.fields.User;
-                }
-            } else if (item.fields.CreatedBy) {
-                user = item.fields.CreatedBy.displayName || 'Unknown';
-            }
+            // Extract user with multiple fallback methods
+            let user = extractUserName(item.fields);
             
             const activity = {
                 id: item.id.toString(),
                 fruitName: fruitName.trim(),
                 type: item.fields.ActivityType || 'Activity',
-                duration: item.fields.Duration || item.fields.DurationMinutes || '0',
+                duration: item.fields.Duration || '0',
                 notes: item.fields.Notes || '',
                 outcome: item.fields.Outcome || '',
                 user: user,
-                createdDate: item.fields.Created || item.fields.CreatedDateTime || item.createdDateTime
+                createdDate: item.fields.Created || item.createdDateTime
             };
             
             return activity;
         });
         
-        console.log('📊 Total activities loaded:', activities.length);
-        
-        // Refresh Activities tab if it's currently active
-        if (currentTab === 'activities') {
-            updateActivityTimeline();
-        }
+        console.log('📊 Activities loaded with users:', activities);
         
     } catch (error) {
-        console.error('❌ Error loading activities from SharePoint:', error);
+        console.error('❌ Error loading activities:', error);
         activities = [];
     }
 }
 
+
+// Robust user name extractor for Person fields (handles many Graph/SharePoint shapes)
+function extractUserName(fields) {
+    console.log('🔍 Extracting user from fields:', fields);
+
+    // potential field candidates (check these in order)
+    const candidates = [
+        fields.User,
+        fields.CreatedByUser,
+        fields.CreatedBy,
+        fields.Author,
+        fields.Editor,
+        fields.ModifiedBy,
+        fields['User/0'],
+        fields['Author/0'],
+        fields['Editor/0']
+    ];
+
+    for (const cand of candidates) {
+        if (!cand) continue;
+
+        // string
+        if (typeof cand === 'string' && cand.trim()) return cand.trim();
+
+        // array
+        if (Array.isArray(cand) && cand.length) {
+            const names = cand.map(x => x?.displayName || x?.Title || x?.name || x?.email || x?.Mail || x?.value || '').filter(Boolean);
+            if (names.length) return names.join(', ');
+        }
+
+        // object
+        if (typeof cand === 'object') {
+            // attempt common properties returned by Graph/SharePoint
+            const name = cand.displayName || cand.title || cand.Name || cand.Mail || cand.email || cand.userPrincipalName || cand.Value || cand.value;
+            if (name) return name;
+            // sometimes Person field nests as { '0': {...} }
+            if (cand[0] && typeof cand[0] === 'object') {
+                const n = cand[0].displayName || cand[0].title || cand[0].Name || cand[0].email || cand[0].Mail;
+                if (n) return n;
+            }
+        }
+    }
+
+    // Last resort: try Created or CreatedBy fields text
+    if (fields.CreatedBy && typeof fields.CreatedBy === 'string' && fields.CreatedBy.trim()) return fields.CreatedBy.trim();
+    if (fields.Created && typeof fields.Created === 'string' && fields.Created.trim()) return fields.Created.trim();
+
+    return 'Unknown';
+}
+
+
+// Format user name - clean up email addresses, etc.
+function formatUserName(userString) {
+    if (!userString) return 'Unknown User';
+    
+    // If it's an email, extract the username part
+    if (userString.includes('@')) {
+        return userString.split('@')[0];
+    }
+    
+    // Capitalize first letter of each word
+    return userString.split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+}
+
+
+// Debug function to check User field structure
+async function debugUserFieldStructure() {
+    try {
+        console.log('🔍 Debugging User field structure...');
+        
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?$top=1&$expand=fields,fields/User`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.value && data.value.length > 0) {
+                const sampleActivity = data.value[0];
+                console.log('📋 Sample activity User field:', sampleActivity.fields.User);
+                console.log('📋 Full activity fields:', sampleActivity.fields);
+                
+                // Check all properties of the User object
+                if (sampleActivity.fields.User && typeof sampleActivity.fields.User === 'object') {
+                    console.log('🔍 User object properties:');
+                    Object.keys(sampleActivity.fields.User).forEach(key => {
+                        console.log(`  - ${key}:`, sampleActivity.fields.User[key]);
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error debugging user field:', error);
+    }
+}
+
+// Call this in console: debugUserFieldStructure()
 
         async function addFruitToSharePoint(fruitData) {
             try {
@@ -3075,7 +3588,7 @@ async function loadActivitiesFromSharePoint() {
         }
 
      
-    async function addActivityToSharePoint(activityData) {
+async function addActivityToSharePoint(activityData) {
     try {
         // Find the fruit to get its ID for the lookup
         const fruit = fruits.find(f => f.name === activityData.fruitName);
@@ -3091,21 +3604,12 @@ async function loadActivitiesFromSharePoint() {
                 ActivityType: activityData.type,
                 Duration: parseInt(activityData.duration) || 0,
                 Notes: activityData.notes,
-                Outcome: activityData.outcome
+                Outcome: activityData.outcome,
+                FruitNameLookupId: parseInt(fruit.id)
             }
         };
         
-        // Add FruitNameLookupId if we have the fruit ID
-        if (fruit.id) {
-            requestBody.fields.FruitNameLookupId = parseInt(fruit.id);
-        }
-        
-        // Add User field - this should map to your Person field
-        if (activityData.user) {
-            requestBody.fields.User = activityData.user;
-        }
-        
-        console.log('Creating activity with data:', requestBody);
+        console.log('🔄 Creating activity with data:', requestBody);
         
         const response = await fetch(url, {
             method: 'POST',
@@ -3123,14 +3627,15 @@ async function loadActivitiesFromSharePoint() {
         }
         
         const result = await response.json();
-        console.log('Activity created successfully:', result);
+        console.log('✅ Activity created successfully:', result);
         return result;
         
     } catch (error) {
-        console.error('Error adding activity to SharePoint:', error);
+        console.error('❌ Error adding activity to SharePoint:', error);
         throw error;
     }
 }
+
 
 
 async function updateFruitInSharePoint(fruitId, fruitData) {
@@ -3259,15 +3764,13 @@ function debugEditFlow(fruitId) {
     console.log('User permissions:', userPermissions);
 }
 
-// Update your editFruit function to include debugging
+// Update the editFruit function to work with searchable input
 async function editFruit(fruitId) {
     // Check permissions first
     if (!userPermissions.canEdit) {
         showPermissionMessage('edit');
         return;
     }
-    
-    debugEditFlow(fruitId); // Add this line temporarily
     
     const fruit = fruits.find(f => f.id === fruitId);
     if (!fruit) {
@@ -3285,7 +3788,13 @@ async function editFruit(fruitId) {
             console.log('🔄 Populating form with fruit data:', fruit);
             
             form.querySelector('[name="name"]').value = fruit.name || '';
-            form.querySelector('[name="assignee"]').value = fruit.assignedTo || '';
+            
+            // Use the search input for assignee
+            const assigneeInput = document.getElementById('assigneeInput');
+            if (assigneeInput) {
+                assigneeInput.value = fruit.assignedTo || '';
+            }
+            
             form.querySelector('[name="phone"]').value = fruit.phone || '';
             form.querySelector('[name="instagram"]').value = fruit.instagram || '';
             form.querySelector('[name="facebook"]').value = fruit.facebook || '';
@@ -3315,7 +3824,6 @@ async function editFruit(fruitId) {
         }
     }, 100);
 }
-
         async function deleteFruitFromSharePoint(fruitId) {
             try {
                 console.log('📊 Deleting fruit from SharePoint:', fruitId);
@@ -3345,8 +3853,8 @@ async function editFruit(fruitId) {
             }
         }
 
-        // Dashboard functions
         
+
 function showDashboard() {
     console.log('🔄 Showing dashboard...');
     
@@ -3376,8 +3884,15 @@ function showDashboard() {
     // Update all UI components
     updateUIComponents();
     
+    // Ensure dropdowns are populated with SharePoint data
+    if (sharePointAccessToken) {
+        console.log('🔄 Refreshing dropdowns with SharePoint data...');
+        populateDropdowns();
+    }
+    
     console.log('✅ Dashboard fully loaded');
 }
+
 
 function updateUserDisplay() {
     const userAvatar = document.getElementById('userAvatar');
@@ -3823,7 +4338,10 @@ setTimeout(handleStuckLoading, 3000);
         }
 
 
-    function populateDropdowns() {
+// Populate only basic dropdowns that don't require SharePoint access
+function populateBasicDropdowns() {
+    console.log('📋 Populating basic dropdowns...');
+    
     // Populate status filter
     const statusFilter = document.getElementById('statusFilter');
     if (statusFilter) {
@@ -3842,30 +4360,65 @@ setTimeout(handleStuckLoading, 3000);
             ).join('');
     }
 
-    // Populate fruit dropdowns in modals
+    // Populate fruit dropdowns in modals from local data
     populateFruitDropdowns();
     
-    // Populate assignee dropdown
-    populateAssigneeDropdown();
+    console.log('✅ Basic dropdowns populated');
 }
 
 
-        function populateFruitDropdowns() {
-            const activityFruitSelect = document.getElementById('activityFruitSelect');
-            const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
-            
-            const fruitOptions = fruits.map(fruit => 
-                `<option value="${fruit.name}">${fruit.name}</option>`
-            ).join('');
-            
-            if (activityFruitSelect) {
-                activityFruitSelect.innerHTML = '<option value="">Select fruit...</option>' + fruitOptions;
-            }
-            
-            if (scheduleFruitSelect) {
-                scheduleFruitSelect.innerHTML = '<option value="">Select fruit...</option>' + fruitOptions;
-            }
+// Populate ALL dropdowns including SharePoint-dependent ones
+function populateDropdowns() {
+    console.log('📋 Populating ALL dropdowns (including SharePoint)...');
+    
+    // Populate basic dropdowns
+    populateBasicDropdowns();
+    
+    // Only populate SharePoint-dependent dropdowns if we have access
+    if (sharePointAccessToken) {
+        console.log('🔐 Populating SharePoint-dependent dropdowns...');
+        populateAssigneeDropdown();
+    } else {
+        console.log('⚠️ Skipping SharePoint-dependent dropdowns - no access token');
+        // Set fallback assignee options
+        const assigneeDatalist = document.getElementById('assigneeOptions');
+        if (assigneeDatalist) {
+            const fallbackUsers = currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+            fallbackUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                assigneeDatalist.appendChild(option);
+            });
         }
+    }
+}
+
+
+// helper to escape values inserted as HTML attributes
+function escapeHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function populateFruitDropdowns() {
+    const activityInput = document.getElementById('activityFruitSelect');
+    const activityDatalist = document.getElementById('activityFruitOptions');
+    const scheduleFruitSelect = document.getElementById('scheduleFruitSelect');
+
+    // build datalist options (for search input)
+    if (activityDatalist) {
+        activityDatalist.innerHTML = fruits.map(f => `<option value="${escapeHtml(f.name)}">`).join('');
+    }
+    if (activityInput) {
+        activityInput.value = ''; // reset input when reopening modal
+    }
+
+    // keep schedule select as before (dropdown)
+    if (scheduleFruitSelect) {
+        scheduleFruitSelect.innerHTML = '<option value="">Select fruit...</option>' +
+            fruits.map(f => `<option value="${escapeHtml(f.name)}">${escapeHtml(f.name)}</option>`).join('');
+    }
+}
+
 
     
 // Add this to your initializeEventListeners function
@@ -5483,41 +6036,75 @@ async function callSharePointAPI(url, options = {}) {
             }
         }
 
+        
 
-        // Load users for Assign To dropdown
+// Load users for Assign To dropdown with better Person field handling
 async function loadUsersForDropdown() {
     try {
         console.log('👥 Loading users for Assign To dropdown...');
         
+        // Get fresh access token from multiple sources
+        const accessToken = sessionStorage.getItem('access_token') || sharePointAccessToken;
+        
+        if (!accessToken) {
+            console.error('❌ No SharePoint access token available for loading users');
+            throw new Error('Authentication required to load users');
+        }
+        
         const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'&$select=id,fields&$top=500`;
+        
+        console.log('🔐 Loading users from SharePoint...');
         
         const response = await fetch(url, {
             headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Authorization': `Bearer ${accessToken}`,
                 'Accept': 'application/json'
             }
         });
         
         if (!response.ok) {
-            console.warn('⚠️ Could not load users list, using current user only');
-            return [currentUser.name];
+            if (response.status === 401) {
+                console.error('❌ Access token invalid or expired');
+                throw new Error('Authentication expired. Please sign in again.');
+            }
+            throw new Error(`Failed to load users: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
         const userItems = data.value || [];
         
-        console.log('📋 Users loaded for dropdown:', userItems.length);
+        console.log('📋 Users loaded for dropdown:', userItems.length, 'users found');
         
-        // Extract display names from Person field
+        // Extract display names with better Person field handling
         const userNames = userItems.map(item => {
-            // Handle Person field - it might be an object with displayName
-            if (item.fields.DisplayName && typeof item.fields.DisplayName === 'object') {
-                return item.fields.DisplayName.displayName || 
-                       item.fields.DisplayName.title || 
-                       item.fields.DisplayName.email || 
-                       'Unknown User';
+            const fields = item.fields;
+            
+            // Try different field names for Person/DisplayName
+            let displayName = '';
+            
+            // Method 1: Direct DisplayName field
+            if (fields.DisplayName) {
+                if (typeof fields.DisplayName === 'object') {
+                    displayName = fields.DisplayName.displayName || 
+                                 fields.DisplayName.title || 
+                                 fields.DisplayName.email || 
+                                 '';
+                } else {
+                    displayName = fields.DisplayName;
+                }
             }
-            return item.fields.DisplayName || 'Unknown User';
+            
+            // Method 2: Title field as fallback
+            if (!displayName && fields.Title) {
+                displayName = fields.Title;
+            }
+            
+            // Method 3: Email field as last resort
+            if (!displayName && fields.Email) {
+                displayName = fields.Email.split('@')[0]; // Use username part of email
+            }
+            
+            return displayName || 'Unknown User';
         }).filter(name => name && name !== 'Unknown User');
         
         // Add current user if not in list
@@ -5525,106 +6112,241 @@ async function loadUsersForDropdown() {
             userNames.push(currentUser.name);
         }
         
+        // Add "Unassigned" option
+        if (!userNames.includes('Unassigned')) {
+            userNames.unshift('Unassigned');
+        }
+        
         // Remove duplicates and sort
-        const uniqueUserNames = [...new Set(userNames)].sort();
+        const uniqueUserNames = [...new Set(userNames)].sort((a, b) => {
+            if (a === 'Unassigned') return -1;
+            if (b === 'Unassigned') return 1;
+            return a.localeCompare(b);
+        });
         
         console.log('✅ Available users for assignment:', uniqueUserNames);
         return uniqueUserNames;
         
     } catch (error) {
         console.error('❌ Error loading users for dropdown:', error);
-        // Fallback to current user only
-        return currentUser ? [currentUser.name] : [];
+        throw error; // Re-throw to handle in calling function
     }
 }
 
-// Populate Assign To dropdown
+   
+// Populate searchable Assign To dropdown
 async function populateAssigneeDropdown() {
     try {
-        const assigneeSelect = document.getElementById('assigneeSelect');
-        if (!assigneeSelect) {
-            console.log('❌ Assignee dropdown not found');
+        const assigneeInput = document.getElementById('assigneeInput');
+        const assigneeDatalist = document.getElementById('assigneeOptions');
+        
+        if (!assigneeInput || !assigneeDatalist) {
+            console.log('❌ Assignee search elements not found');
             return;
         }
         
-        // Clear existing options except the first one
-        while (assigneeSelect.options.length > 1) {
-            assigneeSelect.remove(1);
-        }
+        // Show loading state
+        showAssigneeLoading();
+        
+        // Clear existing options
+        assigneeDatalist.innerHTML = '';
         
         const users = await loadUsersForDropdown();
         
-        // Add users to dropdown
+        // Add users to datalist
         users.forEach(user => {
             const option = document.createElement('option');
             option.value = user;
-            option.textContent = user;
-            assigneeSelect.appendChild(option);
+            assigneeDatalist.appendChild(option);
         });
         
         console.log('✅ Assignee dropdown populated with', users.length, 'users');
         
+        // Add enhanced search functionality
+        enhanceAssigneeSearch(assigneeInput, users);
+        
     } catch (error) {
         console.error('❌ Error populating assignee dropdown:', error);
+        showNotification('Failed to load users list: ' + error.message, 'error');
+        
+        // Fallback: at least show current user and Unassigned
+        const assigneeDatalist = document.getElementById('assigneeOptions');
+        if (assigneeDatalist) {
+            const fallbackUsers = currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+            fallbackUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                assigneeDatalist.appendChild(option);
+            });
+            console.log('✅ Fallback assignee options set');
+        }
+    } finally {
+        hideAssigneeLoading();
     }
 }
 
-        function updateUsersTable() {
-            const tbody = document.getElementById('usersTable');
-            if (!tbody) return;
-            
-            if (authorizedUsers.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
-                            <i class="fas fa-users text-2xl mb-2"></i>
-                            <p>No users found. Add your first user to get started.</p>
-                        </td>
-                    </tr>
-                `;
-                return;
+
+
+// Enhanced search functionality
+function enhanceAssigneeSearch(inputElement, users) {
+    let currentFocus = -1;
+    
+    // Add input event listener for live search
+    inputElement.addEventListener('input', function(e) {
+        const val = this.value.toLowerCase();
+        showDropdownSuggestions(val, users);
+    });
+    
+    // Keyboard navigation
+    inputElement.addEventListener('keydown', function(e) {
+        const items = document.getElementById('assigneeSuggestions');
+        if (!items) return;
+        
+        const itemElements = items.getElementsByTagName('div');
+        
+        if (e.keyCode === 40) { // Down arrow
+            currentFocus++;
+            addActive(itemElements);
+        } else if (e.keyCode === 38) { // Up arrow
+            currentFocus--;
+            addActive(itemElements);
+        } else if (e.keyCode === 13) { // Enter
+            e.preventDefault();
+            if (currentFocus > -1) {
+                if (itemElements) itemElements[currentFocus].click();
             }
-            
-            tbody.innerHTML = authorizedUsers.map(user => `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 h-10 w-10">
-                                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
-                                    ${user.displayName.charAt(0).toUpperCase()}
-                                </div>
-                            </div>
-                            <div class="ml-4">
-                                <div class="text-sm font-medium text-gray-900">${user.displayName}</div>
-                                <div class="text-sm text-gray-500">${user.email}</div>
-                                ${user.department ? `<div class="text-xs text-gray-400">${user.department}</div>` : ''}
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        hideDropdownSuggestions();
+    });
+}
+
+// Show dropdown suggestions
+function showDropdownSuggestions(filter, users) {
+    hideDropdownSuggestions();
+    
+    if (!filter) return;
+    
+    const inputElement = document.getElementById('assigneeInput');
+    const container = inputElement.parentElement;
+    
+    // Filter users based on input
+    const filteredUsers = users.filter(user => 
+        user.toLowerCase().includes(filter)
+    );
+    
+    if (filteredUsers.length === 0) return;
+    
+    // Create suggestions container
+    const suggestions = document.createElement('div');
+    suggestions.id = 'assigneeSuggestions';
+    suggestions.className = 'absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto';
+    suggestions.style.top = '100%';
+    suggestions.style.left = '0';
+    
+    // Add suggestions
+    filteredUsers.forEach(user => {
+        const suggestion = document.createElement('div');
+        suggestion.className = 'px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0';
+        suggestion.textContent = user;
+        suggestion.addEventListener('click', function() {
+            inputElement.value = user;
+            hideDropdownSuggestions();
+        });
+        suggestions.appendChild(suggestion);
+    });
+    
+    container.appendChild(suggestions);
+}
+
+// Hide dropdown suggestions
+function hideDropdownSuggestions() {
+    const existing = document.getElementById('assigneeSuggestions');
+    if (existing) {
+        existing.remove();
+    }
+}
+
+// Add active class to suggestions
+function addActive(items) {
+    if (!items) return false;
+    removeActive(items);
+    if (currentFocus >= items.length) currentFocus = 0;
+    if (currentFocus < 0) currentFocus = (items.length - 1);
+    items[currentFocus].classList.add('bg-blue-100');
+}
+
+// Remove active class from suggestions
+function removeActive(items) {
+    for (let i = 0; i < items.length; i++) {
+        items[i].classList.remove('bg-blue-100');
+    }
+}
+
+
+function updateUsersTable() {
+    const tbody = document.getElementById('usersTable');
+    if (!tbody) return;
+
+    if (authorizedUsers.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                    <i class="fas fa-users text-2xl mb-2"></i>
+                    <p>No users found. Add your first user to get started.</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = authorizedUsers.map(user => {
+        const actions = userPermissions.isAdmin
+            ? `<button onclick="editUser('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3"><i class="fas fa-edit"></i></button>
+               <button onclick="deleteUser('${user.id}')" class="text-red-600 hover:text-red-900"><i class="fas fa-trash"></i></button>`
+            : `<span class="text-sm text-gray-500">Restricted</span>`;
+
+        return `
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                                ${user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
                             </div>
                         </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}">
-                            ${user.role}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(user.status)}">
-                            ${user.status}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="editUser('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="deleteUser('${user.id}')" class="text-red-600 hover:text-red-900">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-900">${user.displayName}</div>
+                            <div class="text-sm text-gray-500">${user.email}</div>
+                            ${user.department ? `<div class="text-xs text-gray-400">${user.department}</div>` : ''}
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}">
+                        ${user.role}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(user.status)}">
+                        ${user.status}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    ${actions}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+
 
         function getRoleBadgeColor(role) {
             const colors = {
@@ -5748,9 +6470,119 @@ async function populateAssigneeDropdown() {
             }
         }
 
+        
         async function editUser(userId) {
-            showNotification('User editing coming soon!', 'info');
+    if (!userPermissions.isAdmin) {
+        showNotification('Only administrators can edit users', 'error');
+        return;
+    }
+
+    const user = authorizedUsers.find(u => u.id === userId);
+    if (!user) {
+        showNotification('User not found', 'error');
+        return;
+    }
+
+    showAddUserModal();
+
+    setTimeout(() => {
+        const form = document.querySelector('#addUserModal form');
+        if (!form) return;
+
+        form.querySelector('[name="displayName"]').value = user.displayName || '';
+        form.querySelector('[name="email"]').value = user.email || '';
+        form.querySelector('[name="role"]').value = user.role || 'User';
+        form.querySelector('[name="status"]').value = user.status || 'Active';
+        form.querySelector('[name="department"]').value = user.department || '';
+        form.querySelector('[name="notes"]').value = user.notes || '';
+
+        // mark modal as editing
+        form.setAttribute('data-editing-id', userId);
+
+        // replace submit handler to update
+        form.onsubmit = function(e) {
+            updateUser(e);
+        };
+
+        // update modal title/button
+        const title = document.querySelector('#addUserModal h3');
+        if (title) title.textContent = 'Edit User';
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.textContent = 'Update User';
+            submitBtn.classList.remove('bg-green-600');
+            submitBtn.classList.add('bg-blue-600');
         }
+    }, 120);
+}
+
+
+async function updateUser(event) {
+    event.preventDefault();
+
+    if (!userPermissions.isAdmin) {
+        showNotification('Only administrators can update users', 'error');
+        return;
+    }
+
+    const form = event.target;
+    const userId = form.getAttribute('data-editing-id');
+    if (!userId) {
+        showNotification('No user selected for update', 'error');
+        return;
+    }
+
+    const fd = new FormData(form);
+    const updatedUser = {
+        id: userId,
+        email: fd.get('email') || '',
+        displayName: fd.get('displayName') || '',
+        role: fd.get('role') || 'User',
+        status: fd.get('status') || 'Active',
+        department: fd.get('department') || '',
+        notes: fd.get('notes') || '',
+        lastLogin: (authorizedUsers.find(u => u.id === userId) || {}).lastLogin || 'Never'
+    };
+
+    try {
+        if (isSharePointMode && sharePointAccessToken) {
+            const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items/${userId}/fields`;
+            const resp = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${sharePointAccessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    DisplayName: updatedUser.displayName,
+                    Email: updatedUser.email,
+                    Role: updatedUser.role,
+                    Status: updatedUser.status,
+                    Department: updatedUser.department,
+                    Notes: updatedUser.notes
+                })
+            });
+
+            if (!resp.ok) {
+                const t = await resp.text().catch(()=>'');
+                throw new Error('SharePoint update failed: ' + resp.status + ' ' + t);
+            }
+        }
+
+        // update local copy
+        const idx = authorizedUsers.findIndex(u => u.id === userId);
+        if (idx > -1) authorizedUsers[idx] = updatedUser;
+
+        updateUsersTable();
+        updateUserStats();
+        closeModal('addUserModal');
+        showNotification('User updated successfully!');
+    } catch (err) {
+        console.error('❌ Failed to update user:', err);
+        showNotification('Failed to update user: ' + (err.message || err), 'error');
+    }
+}
+
 
         async function deleteUser(userId) {
             if (!userPermissions.isAdmin) {
@@ -5976,11 +6808,10 @@ async function debugSharePointFields() {
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 
-<!-- Version Display -->
-<div id="versionInfo" class="fixed bottom-4 right-4 text-xs text-gray-400 bg-white bg-opacity-80 px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
-    v1.0.2
+<!-- Simple Version Tag -->
+<div class="fixed bottom-4 right-4 text-xs text-gray-500 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm z-40">
+    ERMS v1.0.5
 </div>
-
 
 </body>
 </html>
