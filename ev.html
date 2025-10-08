@@ -9,6 +9,12 @@
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Suppress Tailwind CDN warning for development
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = window.tailwind.config || {};
+        window.tailwind.config.safelist = ['*'];
+    </script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -6241,7 +6247,6 @@ async function loadUsersForDropdown() {
 }
 
 
-
 // Populate searchable Assign To dropdown
 async function populateAssigneeDropdown() {
     try {
@@ -6291,8 +6296,7 @@ async function populateAssigneeDropdown() {
     } finally {
         hideAssigneeLoading();
     }
-}        
-
+}
 
 
 
