@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1 Evengelism Reporting Management System</title>
+    <title>Evengelism Reporting Management System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -109,7 +110,7 @@
                         <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center">
                             <i class="fas fa-cross text-white"></i>
                         </div>
-                        <h1 class="text-xl font-bold text-gray-800">Evengelism Reporting Management System</h1>
+                        <h1 class="text-xl font-bold text-gray-800">Evangelism CRM</h1>
                         <div class="flex items-center space-x-2">
                             <div id="connectionStatus" class="flex items-center space-x-1">
                                 <div class="w-2 h-2 bg-gray-400 rounded-full" id="statusIndicator"></div>
@@ -234,19 +235,19 @@
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button id="addFruitQuick" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
                         <i class="fas fa-user-plus text-2xl"></i>
                         <span class="text-sm font-medium">Add Fruit</span>
                     </button>
-                    <button id="scheduleBBQuick" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                    <button onclick="showScheduleModal()" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
                         <i class="fas fa-calendar-plus text-2xl"></i>
                         <span class="text-sm font-medium">Schedule BB</span>
                     </button>
-                    <button id="logActivityQuick" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                    <button onclick="showActivityModal()" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
                         <i class="fas fa-phone-alt text-2xl"></i>
                         <span class="text-sm font-medium">Log Activity</span>
                     </button>
-                    <button id="generateReportQuick" class="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
+                    <button onclick="generateReport()" class="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-colors">
                         <i class="fas fa-file-alt text-2xl"></i>
                         <span class="text-sm font-medium">Generate Report</span>
                     </button>
@@ -878,7 +879,7 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-2xl font-bold text-gray-800" id="fruitDetailsTitle">Fruit Details</h3>
-                    <button onclick="closeFruitDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                    <button onclick="closeModal('fruitDetailsModal')" class="text-gray-400 hover:text-gray-600">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
@@ -1225,53 +1226,44 @@
             'Other'
         ];
 
-
-
-
-
+   
+// DOMContentLoaded function:
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ DOMContentLoaded FIRED');
+    console.log('🔧 Initializing Evangelism CRM...');
     
+    // Check if this is an OAuth callback first
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const error = urlParams.get('error');
     
-    console.log('Auth check:', { authCode: !!authCode, error: !!error });
+    if (error) {
+        console.error('❌ OAuth error:', error);
+        showNotification('Authentication failed: ' + error, 'error');
+        // Clean URL and show login
+        window.history.replaceState({}, document.title, window.location.pathname);
+        initializeMicrosoftAuth();
+        return;
+    }
     
-    // If we have an auth code, process it
     if (authCode) {
-        console.log('🔐 Processing OAuth callback');
+        console.log('🔐 OAuth callback detected - processing...');
         processOAuthCallback(authCode, urlParams.get('state'));
         return;
     }
     
-    // If auth error
-    if (error) {
-        console.error('❌ OAuth error:', error);
-        showLoginScreen();
-        return;
-    }
-    
-    // Check for existing session
+    // Check for existing valid session
     if (checkForValidSession()) {
-        console.log('🔑 Restoring existing session');
+        console.log('🔑 Valid session found - restoring...');
         restoreSession();
     } else {
-        console.log('🔑 No valid session - showing login');
+        console.log('🔑 No valid session - showing login screen');
         showLoginScreen();
     }
     
-    // ALWAYS initialize UI (both login and dashboard need this)
-    console.log('🎨 Initializing UI components');
+    // Initialize UI components
     initializeUI();
 });
 
-
-
-    function closeFruitDetailsModal() {
-        document.getElementById('fruitDetailsModal').classList.add('hidden');
-        currentViewingFruit = null;
-    }
 // Enhanced session validation
 function checkForValidSession() {
     const msToken = sessionStorage.getItem('access_token');
@@ -1332,29 +1324,35 @@ function restoreSession() {
     }
 }
 
-
-
+// Enhanced dashboard showing with force display
 function showDashboard() {
-    console.log('🔄 showDashboard called');
+    console.log('🔄 Showing dashboard...');
     
-    // Hide login, show dashboard
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('dashboard');
     
-    if (loginScreen) loginScreen.classList.add('hidden');
-    if (dashboard) dashboard.classList.remove('hidden');
+    // Force hide login screen
+    if (loginScreen) {
+        loginScreen.classList.add('hidden');
+        loginScreen.style.display = 'none';
+        console.log('✅ Login screen hidden');
+    }
     
-    // Update user info
+    // Force show dashboard
+    if (dashboard) {
+        dashboard.classList.remove('hidden');
+        dashboard.style.display = 'block';
+        console.log('✅ Dashboard shown');
+    }
+    
+    // Update user display
     updateUserDisplay();
     
-    // CRITICAL: Initialize the UI
-    console.log('🎨 Initializing UI from showDashboard');
-    initializeUI();
+    // Update all UI components
+    updateUIComponents();
     
-    console.log('✅ Dashboard shown');
+    console.log('✅ Dashboard fully loaded');
 }
-
-
 
 // Enhanced OAuth callback processing
 async function processOAuthCallback(authCode, returnedState) {
@@ -1524,24 +1522,21 @@ function showLoginScreen() {
 }
 
 
+// Initialize UI components
 function initializeUI() {
-    console.log('🎨 COMPREHENSIVE UI INITIALIZATION...');
+    console.log('🎨 Initializing UI components...');
     
-    // Load data first
+    // Load local data (fruits, activities)
     loadLocalData();
     
-    // Initialize ALL button systems in order
-    initializeQuickActions();
-    initializeHeaderAndAdminButtons();
-    
-    // Update UI components
+    // Update connection status
     updateConnectionStatus();
-    updateStats();
-    updateRecentActivities();
-    updateFruitsGrid();
+    
+    // Populate dropdowns
     populateDropdowns();
-    applyPermissionBasedUI();
-    updateAdminStats();
+    
+    // Initialize event listeners
+    initializeEventListeners();
     
     // Set copyright year
     const yearElement = document.getElementById('currentYear');
@@ -1549,109 +1544,11 @@ function initializeUI() {
         yearElement.textContent = new Date().getFullYear();
     }
     
-    console.log('✅ COMPREHENSIVE UI INITIALIZATION COMPLETE');
+    // Initialize version tag
+    initializeVersionTag();
     
-    // Verify everything is working
-    setTimeout(verifyAllButtons, 1000);
+    console.log('✅ UI initialization complete');
 }
-
-
-// In your Reports tab initialization, make sure this exists:
-function initializeReportButtons() {
-    const exportBtn = document.querySelector('#reportsTab button[onclick*="exportReport"]');
-    if (exportBtn) {
-        exportBtn.onclick = function(e) {
-            e.preventDefault();
-            console.log('🎯 Report Export clicked');
-            exportReport();
-        };
-    }
-}
-
-// Call this in your UI initialization
-
-
-function verifyAllButtons() {
-    console.log('🔍 VERIFYING ALL BUTTON SYSTEMS:');
-    
-    // Test Quick Actions
-    const quickActions = ['addFruitQuick', 'scheduleBBQuick', 'logActivityQuick', 'generateReportQuick'];
-    quickActions.forEach(id => {
-        const btn = document.getElementById(id);
-        console.log(`${btn ? '✅' : '❌'} ${id}: ${btn ? 'EXISTS' : 'MISSING'}`);
-    });
-    
-    // Test notification system
-    setTimeout(() => {
-        showNotification('System initialized successfully!', 'success');
-    }, 500);
-}
-
-
-
-
-function verifyEventListeners() {
-    console.log('🔍 VERIFYING EVENT LISTENERS:');
-    
-    const quickActions = ['addFruitQuick', 'scheduleBBQuick', 'logActivityQuick', 'generateReportQuick'];
-    let workingCount = 0;
-    
-    quickActions.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn && btn.onclick) {
-            console.log(`✅ ${id}: HAS onclick handler`);
-            workingCount++;
-        } else {
-            console.log(`❌ ${id}: MISSING onclick handler`);
-        }
-    });
-    
-    console.log(`📊 Event listeners: ${workingCount}/${quickActions.length} working`);
-    
-    if (workingCount === 0) {
-        console.log('🚨 CRITICAL: No event listeners working - applying emergency fix');
-        initializeEventListenersEmergency();
-    }
-}
-
-
-function testAllButtons() {
-    console.log('🧪 TESTING ALL BUTTONS:');
-    
-    // Test Quick Actions
-    const quickActions = ['addFruitQuick', 'scheduleBBQuick', 'logActivityQuick', 'generateReportQuick'];
-    quickActions.forEach(id => {
-        const btn = document.getElementById(id);
-        console.log(`Quick Action ${id}:`, btn ? 'FOUND' : 'MISSING');
-    });
-    
-    // Test fruit grid buttons
-    const fruitButtons = document.querySelectorAll('#fruitsGrid button');
-    console.log(`Fruit grid buttons: ${fruitButtons.length} found`);
-    
-    // Test modal buttons
-    const modalButtons = document.querySelectorAll('.modal button');
-    console.log(`Modal buttons: ${modalButtons.length} found`);
-    
-    // Test navigation tabs
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    console.log(`Tab buttons: ${tabButtons.length} found`);
-}
-
-
-// Call this in browser console to test
-window.debugButtons = function() {
-    testAllButtons();
-    initializeQuickActions();
-    initializeEventListeners();
-    console.log('🔄 Button system reinitialized');
-};
-
-// Auto-test after page load
-setTimeout(() => {
-    testAllButtons();
-}, 2000);
-
 
 
 // Add this function to show login screen properly
@@ -2006,53 +1903,6 @@ function forceShowLoginScreen() {
 // Call this if login screen still doesn't show
 // forceShowLoginScreen();
 
-// =============================================
-// 🚨 IMMEDIATE ROOT CAUSE DETECTION
-// =============================================
-
-console.log('🚨 STARTING ROOT CAUSE DETECTION');
-
-// Track every step of initialization
-const executionTrace = [];
-function trace(step) {
-    executionTrace.push(step);
-    console.log(`🔍 ${step}`);
-}
-
-// Override console.log to capture initialization
-const originalLog = console.log;
-console.log = function(...args) {
-    if (args[0] && typeof args[0] === 'string') {
-        if (args[0].includes('Initializing') || args[0].includes('initialize') || 
-            args[0].includes('DOMContentLoaded') || args[0].includes('showDashboard') ||
-            args[0].includes('showLogin') || args[0].includes('OAuth')) {
-            executionTrace.push(args[0]);
-        }
-    }
-    originalLog.apply(console, args);
-};
-
-// Check what actually runs
-setTimeout(() => {
-    console.log('📊 EXECUTION TRACE ANALYSIS:');
-    console.log('Full trace:', executionTrace);
-    console.log('Current URL:', window.location.href);
-    console.log('Has auth code:', !!new URLSearchParams(window.location.search).get('code'));
-    console.log('Dashboard visible:', document.getElementById('dashboard') && !document.getElementById('dashboard').classList.contains('hidden'));
-    console.log('Login visible:', document.getElementById('loginScreen') && !document.getElementById('loginScreen').classList.contains('hidden'));
-    
-    // Check if critical functions exist
-    console.log('Critical functions:');
-    console.log('- initializeUI:', typeof initializeUI);
-    console.log('- initializeEventListeners:', typeof initializeEventListeners);
-    console.log('- showAddFruitModal:', typeof showAddFruitModal);
-    
-    // Check if we're stuck in auth flow
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('code')) {
-        console.log('🚨 STUCK IN AUTH FLOW - URL has code parameter');
-    }
-}, 2000);
 
 // Check CSS and display properties
 function checkElementVisibility() {
@@ -2082,207 +1932,7 @@ function checkElementVisibility() {
 
 // Call this in console: checkElementVisibility()
 
-// =============================================
-// 🚀 FORCED INITIALIZATION - RUNS NO MATTER WHAT
-// =============================================
 
-function forcedInitialization() {
-    console.log('🚀 FORCED INITIALIZATION STARTING');
-    
-    // Check current state
-    const dashboard = document.getElementById('dashboard');
-    const loginScreen = document.getElementById('loginScreen');
-    
-    console.log('Current state:');
-    console.log('- Dashboard hidden:', dashboard?.classList.contains('hidden'));
-    console.log('- Login screen hidden:', loginScreen?.classList.contains('hidden'));
-    
-    // Force show dashboard if we have a user
-    if (currentUser || sessionStorage.getItem('current_user')) {
-        console.log('🚀 Force showing dashboard');
-        if (dashboard) dashboard.classList.remove('hidden');
-        if (loginScreen) loginScreen.classList.add('hidden');
-    } else {
-        console.log('🚀 Force showing login screen');
-        if (dashboard) dashboard.classList.add('hidden');
-        if (loginScreen) loginScreen.classList.remove('hidden');
-    }
-    
-    // FORCE initialize UI components
-    console.log('🚀 Force initializing UI');
-    forceInitializeUI();
-}
-
-function forceInitializeUI() {
-    console.log('🚀 FORCE INITIALIZING UI COMPONENTS');
-    
-    try {
-        // Force load data
-        if (typeof loadLocalData === 'function') {
-            loadLocalData();
-            console.log('✅ Local data loaded');
-        }
-        
-        // Force initialize event listeners
-        if (typeof initializeEventListeners === 'function') {
-            initializeEventListeners();
-            console.log('✅ Event listeners initialized');
-        } else {
-            console.log('❌ initializeEventListeners not found - using emergency');
-            emergencyEventListeners();
-        }
-        
-        // Force update UI
-        if (typeof updateConnectionStatus === 'function') updateConnectionStatus();
-        if (typeof updateStats === 'function') updateStats();
-        if (typeof updateFruitsGrid === 'function') updateFruitsGrid();
-        
-        console.log('✅ Force UI initialization complete');
-        
-    } catch (error) {
-        console.error('❌ Force initialization failed:', error);
-        emergencyFallback();
-    }
-}
-
-function emergencyEventListeners() {
-    console.log('🚨 EMERGENCY EVENT LISTENERS');
-    
-    // Quick Actions - direct onclick assignment
-    const quickActions = {
-        'addFruitQuick': () => {
-            console.log('🎯 Emergency: Add Fruit');
-            document.getElementById('addFruitModal')?.classList.remove('hidden');
-        },
-        'scheduleBBQuick': () => {
-            console.log('🎯 Emergency: Schedule BB');
-            document.getElementById('scheduleModal')?.classList.remove('hidden');
-        },
-        'logActivityQuick': () => {
-            console.log('🎯 Emergency: Log Activity');
-            document.getElementById('activityModal')?.classList.remove('hidden');
-        },
-        'generateReportQuick': () => {
-            console.log('🎯 Emergency: Generate Report');
-            alert('Report generation would happen here');
-        }
-    };
-    
-    Object.entries(quickActions).forEach(([id, handler]) => {
-        const button = document.getElementById(id);
-        if (button) {
-            button.onclick = handler;
-            console.log(`✅ Emergency listener: ${id}`);
-        }
-    });
-    
-    // Navigation tabs
-    document.querySelectorAll('.tab-btn').forEach(button => {
-        const onclick = button.getAttribute('onclick');
-        if (onclick && onclick.includes('showTab')) {
-            const tabName = onclick.match(/showTab\('([^']+)'\)/)?.[1];
-            if (tabName) {
-                button.onclick = () => {
-                    console.log(`🎯 Emergency tab: ${tabName}`);
-                    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-                    document.querySelectorAll('.tab-btn').forEach(btn => {
-                        btn.classList.remove('border-blue-600', 'text-blue-600');
-                        btn.classList.add('border-transparent', 'text-gray-500');
-                    });
-                    document.getElementById(tabName + 'Tab')?.classList.remove('hidden');
-                    button.classList.remove('border-transparent', 'text-gray-500');
-                    button.classList.add('border-blue-600', 'text-blue-600');
-                };
-            }
-        }
-    });
-}
-
-function emergencyFallback() {
-    console.log('🚨 ULTIMATE EMERGENCY FALLBACK');
-    
-    // Create visible test buttons that WILL work
-    const testPanel = document.createElement('div');
-    testPanel.innerHTML = `
-        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; background: white; padding: 20px; border: 3px solid red; border-radius: 10px;">
-            <h3 style="color: red;">🚨 EMERGENCY MODE</h3>
-            <p>Main initialization failed. These test buttons WILL work:</p>
-            <button onclick="document.getElementById('addFruitModal').classList.remove('hidden'); console.log('✅ Test button worked!');" 
-                    style="background: green; color: white; padding: 10px; margin: 5px; border-radius: 5px;">
-                TEST Add Fruit Modal
-            </button>
-            <button onclick="alert('Test button works!');" 
-                    style="background: blue; color: white; padding: 10px; margin: 5px; border-radius: 5px;">
-                TEST Alert
-            </button>
-            <button onclick="document.querySelector('.tab-btn').click();" 
-                    style="background: orange; color: white; padding: 10px; margin: 5px; border-radius: 5px;">
-                TEST Tab Switch
-            </button>
-        </div>
-    `;
-    document.body.appendChild(testPanel);
-}
-
-
-// =============================================
-// 🚨 IMMEDIATE ROOT CAUSE DETECTION
-// =============================================
-
-console.log('🚨 STARTING ROOT CAUSE DETECTION');
-
-// Track every step of initialization
-const executionTrace = [];
-function trace(step) {
-    executionTrace.push(step);
-    console.log(`🔍 ${step}`);
-}
-
-// Override console.log to capture initialization
-const originalLog = console.log;
-console.log = function(...args) {
-    if (args[0] && typeof args[0] === 'string') {
-        if (args[0].includes('Initializing') || args[0].includes('initialize') || 
-            args[0].includes('DOMContentLoaded') || args[0].includes('showDashboard') ||
-            args[0].includes('showLogin') || args[0].includes('OAuth')) {
-            executionTrace.push(args[0]);
-        }
-    }
-    originalLog.apply(console, args);
-};
-
-// Check what actually runs
-setTimeout(() => {
-    console.log('📊 EXECUTION TRACE ANALYSIS:');
-    console.log('Full trace:', executionTrace);
-    console.log('Current URL:', window.location.href);
-    console.log('Has auth code:', !!new URLSearchParams(window.location.search).get('code'));
-    console.log('Dashboard visible:', document.getElementById('dashboard') && !document.getElementById('dashboard').classList.contains('hidden'));
-    console.log('Login visible:', document.getElementById('loginScreen') && !document.getElementById('loginScreen').classList.contains('hidden'));
-    
-    // Check if critical functions exist
-    console.log('Critical functions:');
-    console.log('- initializeUI:', typeof initializeUI);
-    console.log('- initializeEventListeners:', typeof initializeEventListeners);
-    console.log('- showAddFruitModal:', typeof showAddFruitModal);
-    
-    // Check if we're stuck in auth flow
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('code')) {
-        console.log('🚨 STUCK IN AUTH FLOW - URL has code parameter');
-    }
-}, 2000);
-
-
-// =============================================
-// 🚀 EXECUTE IMMEDIATELY
-// =============================================
-
-// Run forced initialization immediately
-console.log('🚀 EXECUTING FORCED INITIALIZATION');
-setTimeout(forcedInitialization, 100);
-setTimeout(forcedInitialization, 1000);
-setTimeout(forcedInitialization, 3000);
 
 
         
@@ -3144,8 +2794,6 @@ window.addEventListener('load', function() {
                 'https://app.shill.es/ev/',
                 'https://app.shill.es',
                 'https://app.shill.es/',
-                'http://localhost:8000/',
-                'http://localhost:8000',
                 window.location.origin + window.location.pathname,
                 window.location.origin + '/',
                 window.location.origin
@@ -4317,41 +3965,71 @@ setTimeout(handleStuckLoading, 3000);
 // Call this after a short delay
 setTimeout(handleStuckLoading, 3000);
 
-function applyPermissionBasedUI() {
-    console.log('🔐 Applying permission-based UI restrictions...');
-    
-    // Only apply visual changes, don't break event handlers
-    const addFruitButtons = document.querySelectorAll('[onclick*="showAddFruitModal"], [data-action]');
-    const editButtons = document.querySelectorAll('[onclick*="editFruit"], [data-action="edit"]');
-    const deleteButtons = document.querySelectorAll('[onclick*="deleteFruit"], [data-action="delete"]');
-    
-    // Visual changes only
-    if (!userPermissions.canAdd) {
-        addFruitButtons.forEach(button => {
-            button.disabled = true;
-            button.classList.add('opacity-50', 'cursor-not-allowed');
-            button.title = 'You do not have permission to add items';
-        });
-    }
-    
-    if (!userPermissions.canEdit) {
-        editButtons.forEach(button => {
-            button.disabled = true;
-            button.classList.add('opacity-50', 'cursor-not-allowed');
-            button.title = 'You do not have permission to edit items';
-        });
-    }
-    
-    if (!userPermissions.canDelete) {
-        deleteButtons.forEach(button => {
-            button.disabled = true;
-            button.classList.add('opacity-50', 'cursor-not-allowed');
-            button.title = 'You do not have permission to delete items';
-        });
-    }
-    
-    console.log('✅ Permission-based UI applied (visual only)');
-}
+        function applyPermissionBasedUI() {
+            console.log('🔐 Applying permission-based UI restrictions...');
+            
+            // Get all action buttons
+            const addFruitButtons = document.querySelectorAll('[onclick*="showAddFruitModal"]');
+            const addActivityButtons = document.querySelectorAll('[onclick*="showActivityModal"]');
+            const scheduleButtons = document.querySelectorAll('[onclick*="showScheduleModal"]');
+            const editButtons = document.querySelectorAll('[onclick*="editFruit"]');
+            const deleteButtons = document.querySelectorAll('[onclick*="deleteFruit"]');
+            
+            // Apply add permissions
+            addFruitButtons.forEach(button => {
+                if (!userPermissions.canAdd) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to add fruits';
+                    // Replace onclick with permission message
+                    button.setAttribute('onclick', 'showPermissionMessage("add")');
+                }
+            });
+            
+            addActivityButtons.forEach(button => {
+                if (!userPermissions.canAdd) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to log activities';
+                    button.setAttribute('onclick', 'showPermissionMessage("add")');
+                }
+            });
+            
+            scheduleButtons.forEach(button => {
+                if (!userPermissions.canAdd) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to schedule sessions';
+                    button.setAttribute('onclick', 'showPermissionMessage("add")');
+                }
+            });
+            
+            // Apply edit permissions
+            editButtons.forEach(button => {
+                if (!userPermissions.canEdit) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to edit fruits';
+                    button.setAttribute('onclick', 'showPermissionMessage("edit")');
+                }
+            });
+            
+            // Apply delete permissions
+            deleteButtons.forEach(button => {
+                if (!userPermissions.canDelete) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.title = 'You do not have permission to delete items';
+                    button.setAttribute('onclick', 'showPermissionMessage("delete")');
+                }
+            });
+            
+            // Show permission status in navigation
+            updatePermissionStatus();
+            
+            console.log('✅ Permission-based UI applied');
+        }
+
         function updatePermissionStatus() {
             // Add permission indicator to navigation
             const statusContainer = document.querySelector('#connectionStatus').parentElement;
@@ -4485,8 +4163,6 @@ function applyPermissionBasedUI() {
     const container = document.getElementById('fruitsGrid');
     if (!container) return;
     
-    console.log('📊 Updating fruits grid with', fruits.length, 'fruits');
-    
     if (fruits.length === 0) {
         container.innerHTML = `
             <div class="text-center py-12 col-span-full">
@@ -4503,18 +4179,17 @@ function applyPermissionBasedUI() {
         return;
     }
     
-    container.innerHTML = fruits.map(fruitItem => {
-        // Use fruitItem instead of fruit to avoid variable conflicts
-        const progressData = getProgressData(fruitItem.status);
+    container.innerHTML = fruits.map(fruit => {
+        const progressData = getProgressData(fruit.status);
         return `
         <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
             <div class="flex items-start justify-between mb-4">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-900">${fruitItem.name}</h3>
-                    <p class="text-sm text-gray-600">Assigned to: ${fruitItem.assignedTo || 'Unassigned'}</p>
+                    <h3 class="text-lg font-semibold text-gray-900">${fruit.name}</h3>
+                    <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo || 'Unassigned'}</p>
                 </div>
-                <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruitItem.status)}">
-                    ${fruitItem.status}
+                <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}">
+                    ${fruit.status}
                 </span>
             </div>
             
@@ -4532,40 +4207,40 @@ function applyPermissionBasedUI() {
             <div class="space-y-2 mb-4">
                 <div class="flex items-center text-sm text-gray-600">
                     <i class="fas fa-phone w-4 mr-2"></i>
-                    ${fruitItem.phone || 'No phone'}
+                    ${fruit.phone || 'No phone'}
                 </div>
                 <div class="flex items-center text-sm text-gray-600">
                     <i class="fas fa-bullhorn w-4 mr-2"></i>
-                    ${fruitItem.leadSource || 'No lead source'}
+                    ${fruit.leadSource || 'No lead source'}
                 </div>
-                ${fruitItem.campaign ? `
+                ${fruit.campaign ? `
                     <div class="flex items-center text-sm text-gray-600">
                         <i class="fas fa-tag w-4 mr-2"></i>
-                        ${fruitItem.campaign}
+                        ${fruit.campaign}
                     </div>
                 ` : ''}
             </div>
             
             <div class="grid grid-cols-2 gap-2">
-                <button data-action="view" data-fruit-id="${fruitItem.id}" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <button onclick="viewFruitDetails('${fruit.id}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
                     <i class="fas fa-eye mr-1"></i>View Details
                 </button>
-                <button data-action="edit" data-fruit-id="${fruitItem.id}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <button onclick="editFruit('${fruit.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
                     <i class="fas fa-edit mr-1"></i>Edit
                 </button>
-                <button data-action="log-activity" data-fruit-name="${fruitItem.name}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <button onclick="logActivityForFruit('${fruit.name}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
                     <i class="fas fa-phone mr-1"></i>Log Activity
                 </button>
-                <button data-action="delete" data-fruit-id="${fruitItem.id}" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
+                <button onclick="deleteFruit('${fruit.id}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
                     <i class="fas fa-trash mr-1"></i>Delete
                 </button>
             </div>
         </div>
         `;
     }).join('');
-    
-    console.log('✅ Fruit grid updated with', fruits.length, 'items');
 }
+
+
 
         function getStatusColor(status) {
             const colors = {
@@ -4636,61 +4311,6 @@ function applyPermissionBasedUI() {
     populateAssigneeDropdown();
 }
 
-// Debug function to check if fruits are loading properly
-function debugFruitsLoading() {
-    console.log('=== FRUITS DEBUG INFO ===');
-    console.log('Total fruits:', fruits.length);
-    console.log('Fruit IDs:', fruits.map(f => f.id));
-    console.log('Fruit names:', fruits.map(f => f.name));
-    
-    // Check if the fruits grid is properly populated
-    const fruitsGrid = document.getElementById('fruitsGrid');
-    if (fruitsGrid) {
-        console.log('Fruits grid children:', fruitsGrid.children.length);
-        console.log('Fruits grid HTML:', fruitsGrid.innerHTML.substring(0, 500) + '...');
-    }
-}
-
-// Call this after fruits are loaded
-setTimeout(debugFruitsLoading, 2000);
-
-            // Debug function to check button event handlers
-            function debugButtonEvents() {
-                console.log('=== BUTTON EVENT DEBUG ===');
-                const buttons = document.querySelectorAll('#fruitsGrid button');
-                buttons.forEach((button, index) => {
-                    console.log(`Button ${index}:`, {
-                        text: button.textContent,
-                        onclick: button.getAttribute('onclick'),
-                        disabled: button.disabled
-                    });
-                });
-                console.log('=== BUTTON EVENT DEBUG ===');
-                
-                // Check Quick Actions
-                const quickActions = document.querySelectorAll('.grid-cols-4 button');
-                console.log('Quick Actions buttons:', quickActions.length);
-                quickActions.forEach((btn, i) => {
-                    console.log(`Quick Action ${i}:`, btn.textContent, 'onclick:', btn.getAttribute('onclick'));
-                });
-                
-                // Check Fruit Cards
-                const fruitCards = document.querySelectorAll('#fruitsGrid .bg-white');
-                console.log('Fruit cards:', fruitCards.length);
-                fruitCards.forEach((card, i) => {
-                    const buttons = card.querySelectorAll('button');
-                    console.log(`Card ${i} buttons:`, buttons.length);
-                    buttons.forEach((btn, j) => {
-                        console.log(`  Button ${j}:`, btn.textContent, 'onclick:', btn.getAttribute('onclick'));
-                    });
-                });
-            }
-
-// Call this after fruits are loaded
-setTimeout(debugButtonEvents, 3000);
-
-
-
 
         function populateFruitDropdowns() {
             const activityFruitSelect = document.getElementById('activityFruitSelect');
@@ -4709,273 +4329,60 @@ setTimeout(debugButtonEvents, 3000);
             }
         }
 
-
-        function initializeHeaderAndAdminButtons() {
-    console.log('🎯 INITIALIZING HEADER & ADMIN BUTTONS...');
     
-    // Header buttons
-    const headerButtons = {
-        // Options dropdown
-        'syncOptions-test': testSharePointConnection,
-        'syncOptions-export': showExportModal,
-        'syncOptions-import': showImportModal,
-    };
-    
-    // Add event listeners to header buttons
-    Object.entries(headerButtons).forEach(([id, handler]) => {
-        const button = document.getElementById(id);
-        if (button) {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                console.log(`🎯 Header Button: ${id}`);
-                handler();
-            });
-        }
-    });
-    
-    // Admin buttons
-    const adminButtons = {
-        'admin-test-graph': testGraphApiConnection,
-        'admin-test-connection': testSharePointConnection,
-        'admin-add-user': showAddUserModal,
-    };
-    
-    Object.entries(adminButtons).forEach(([id, handler]) => {
-        const button = document.getElementById(id);
-        if (button) {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                console.log(`🎯 Admin Button: ${id}`);
-                handler();
-            });
-        }
-    });
-    
-    console.log('✅ Header & Admin buttons initialized');
-}
-
-function initializeQuickActions() {
-    console.log('🎯 INITIALIZING QUICK ACTIONS...');
-    
-    // Direct event listeners for Quick Actions
-    const quickActions = {
-        'addFruitQuick': showAddFruitModal,
-        'scheduleBBQuick': showScheduleModal,
-        'logActivityQuick': showActivityModal,
-        'generateReportQuick': generateReport
-    };
-    
-    Object.entries(quickActions).forEach(([id, handler]) => {
-        const button = document.getElementById(id);
-        if (button) {
-            // Remove any existing event listeners
-            const newButton = button.cloneNode(true);
-            button.parentNode.replaceChild(newButton, button);
-            
-            // Add click event listener
-            newButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log(`🎯 Quick Action: ${id}`);
-                handler();
-            });
-            
-            console.log(`✅ Quick Action: ${id}`);
-        } else {
-            console.log(`❌ Quick Action not found: ${id}`);
-        }
-    });
-}
-
-
+// Add this to your initializeEventListeners function
 function initializeEventListeners() {
-    console.log('🎯 PROPER EVENT LISTENER INITIALIZATION...');
-    
-    // Remove any existing listeners first to avoid duplicates
-    const oldListeners = window._existingListeners || [];
-    oldListeners.forEach(listener => {
-        document.removeEventListener('click', listener);
-    });
-    
-    // Quick Actions - Direct event listeners (most reliable)
-    const quickActions = {
-        'addFruitQuick': showAddFruitModal,
-        'scheduleBBQuick': showScheduleModal,
-        'logActivityQuick': showActivityModal,
-        'generateReportQuick': generateReport
-    };
-    
-    Object.entries(quickActions).forEach(([id, handler]) => {
-        const button = document.getElementById(id);
-        if (button) {
-            // Remove any existing listeners
-            button.replaceWith(button.cloneNode(true));
-            const newButton = document.getElementById(id);
-            
-            // Add click handler
-            newButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log(`🎯 Quick Action: ${id}`);
-                handler();
-            });
-            
-            console.log(`✅ Quick Action listener: ${id}`);
-        }
-    });
-    
-    // Global event delegation for dynamic content
-    const globalHandler = function(event) {
-        const button = event.target.closest('button');
-        if (!button) return;
-        
-        // Handle data-action buttons
-        const action = button.getAttribute('data-action');
-        const fruitId = button.getAttribute('data-fruit-id');
-        const fruitName = button.getAttribute('data-fruit-name');
-        
-        if (action) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            switch(action) {
-                case 'view':
-                    if (fruitId) viewFruitDetails(fruitId);
-                    break;
-                case 'edit':
-                    if (fruitId) editFruit(fruitId);
-                    break;
-                case 'delete':
-                    if (fruitId) deleteFruit(fruitId);
-                    break;
-                case 'log-activity':
-                    if (fruitName) logActivityForFruit(fruitName);
-                    break;
-            }
-        }
-    };
-    
-    document.addEventListener('click', globalHandler);
-    window._existingListeners = [globalHandler];
-    
-    // Other event listeners
+    // Fruit search functionality
     const fruitSearch = document.getElementById('fruitSearch');
     if (fruitSearch) {
         fruitSearch.addEventListener('input', filterFruits);
     }
-    
-    console.log('✅ PROPER EVENT LISTENERS INITIALIZED');
-}
 
+    // Handle fruit form submission
+    const fruitForm = document.getElementById('addFruitForm');
+    if (fruitForm) {
+        fruitForm.addEventListener('submit', function(event) {
+            const isEditing = this.getAttribute('data-editing-id');
+            if (isEditing) {
+                updateFruit(event);
+            } else {
+                addFruit(event);
+            }
+        });
+    }
 
-function initializeEventListenersEmergency() {
-    console.log('🚨 EMERGENCY EVENT LISTENER INITIALIZATION...');
-    
-    // Direct DOM manipulation - bypass any framework issues
-    const quickActions = {
-        'addFruitQuick': showAddFruitModal,
-        'scheduleBBQuick': showScheduleModal,
-        'logActivityQuick': showActivityModal,
-        'generateReportQuick': generateReport
-    };
-    
-    Object.entries(quickActions).forEach(([id, handler]) => {
-        const button = document.getElementById(id);
-        if (button) {
-            button.onclick = function(e) {
-                e.preventDefault();
-                console.log(`🚨 EMERGENCY CLICK: ${id}`);
-                handler();
-                return false;
-            };
-            console.log(`🚨 Emergency listener: ${id}`);
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        const syncOptions = document.getElementById('syncOptions');
+        if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
+            syncOptions.classList.add('hidden');
         }
     });
 }
 
-// Helper functions to extract parameters from buttons
-function extractFruitIdFromButton(button, functionName) {
-    // Try to get from onclick attribute first
-    const onclick = button.getAttribute('onclick');
-    if (onclick && onclick.includes(functionName)) {
-        const match = onclick.match(/'([^']+)'/);
-        if (match && match[1]) {
-            return match[1];
+
+// Temporary debug function - remove after fixing
+function debugEditFruit(fruitId) {
+    console.log('🔧 DEBUG editFruit called with ID:', fruitId);
+    const fruit = fruits.find(f => f.id === fruitId);
+    console.log('🔧 Found fruit:', fruit);
+    console.log('🔧 All fruit IDs:', fruits.map(f => f.id));
+}
+        // Modal functions
+        function showAddFruitModal() {
+            document.getElementById('addFruitModal').classList.remove('hidden');
         }
-    }
-    
-    // Fallback: try to get from data attributes or parent context
-    const card = button.closest('.bg-white');
-    if (card) {
-        // You might need to store fruit ID in a data attribute for more reliability
-        const fruitNameElement = card.querySelector('h3');
-        if (fruitNameElement) {
-            const fruitName = fruitNameElement.textContent;
-            const fruit = fruits.find(f => f.name === fruitName);
-            return fruit ? fruit.id : null;
+
+        function showActivityModal() {
+            populateFruitDropdowns(); // Refresh fruit list
+            document.getElementById('activityModal').classList.remove('hidden');
         }
-    }
-    
-    console.warn('❌ Could not extract fruit ID from button:', button);
-    return null;
-}
 
-function extractFruitNameFromButton(button, functionName) {
-    // Try to get from onclick attribute first
-    const onclick = button.getAttribute('onclick');
-    if (onclick && onclick.includes(functionName)) {
-        const match = onclick.match(/'([^']+)'/);
-        if (match && match[1]) {
-            return match[1];
+        function showScheduleModal() {
+            populateFruitDropdowns(); // Refresh fruit list
+            document.getElementById('scheduleModal').classList.remove('hidden');
         }
-    }
-    
-    // Fallback: get from card context
-    const card = button.closest('.bg-white');
-    if (card) {
-        const fruitNameElement = card.querySelector('h3');
-        return fruitNameElement ? fruitNameElement.textContent : null;
-    }
-    
-    console.warn('❌ Could not extract fruit name from button:', button);
-    return null;
-}
 
-
-// Ensure these are defined at the top level (not inside other functions)
-function showAddFruitModal() {
-    console.log('🎯 Opening Add Fruit Modal');
-    document.getElementById('addFruitModal').classList.remove('hidden');
-}
-
-function showActivityModal() {
-    console.log('🎯 Opening Activity Modal');
-    populateFruitDropdowns();
-    document.getElementById('activityModal').classList.remove('hidden');
-}
-
-function showScheduleModal() {
-    console.log('🎯 Opening Schedule Modal');
-    populateFruitDropdowns();
-    document.getElementById('scheduleModal').classList.remove('hidden');
-}
-
-function showExportModal() {
-    console.log('🎯 Opening Export Modal');
-    document.getElementById('exportModal').classList.remove('hidden');
-}
-
-function showImportModal() {
-    console.log('🎯 Opening Import Modal');
-    document.getElementById('importModal').classList.remove('hidden');
-}
-
-function closeModal(modalId) {
-    console.log('🎯 Closing Modal:', modalId);
-    document.getElementById(modalId).classList.add('hidden');
-}
-       
-        
         function showExportModal() {
             // Update the item counts in the modal
             const modal = document.getElementById('exportModal');
@@ -5014,42 +4421,26 @@ function closeModal(modalId) {
             }
         }
 
-        
-function showNotification(message, type = 'success') {
-    console.log('🔔 NOTIFICATION:', message, type);
-    
-    const notification = document.getElementById('notification');
-    const notificationText = document.getElementById('notificationText');
-    
-    if (!notification || !notificationText) {
-        console.error('❌ Notification elements not found');
-        return;
-    }
-    
-    // Set message
-    notificationText.textContent = message;
-    
-    // Set color based on type
-    const colors = {
-        'error': 'bg-red-600 text-white',
-        'warning': 'bg-yellow-600 text-white', 
-        'info': 'bg-blue-600 text-white',
-        'success': 'bg-green-600 text-white'
-    };
-    
-    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${colors[type] || colors.success}`;
-    
-    // Show notification
-    notification.classList.remove('hidden');
-    notification.style.display = 'block';
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
-        notification.classList.add('hidden');
-        notification.style.display = 'none';
-    }, 3000);
-}
-
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            
+            // Set color based on type
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg notification z-50 ${
+                type === 'error' ? 'bg-red-600 text-white' :
+                type === 'warning' ? 'bg-yellow-600 text-white' :
+                type === 'info' ? 'bg-blue-600 text-white' :
+                'bg-green-600 text-white'
+            }`;
+            
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
 
         // Add fruit function
         async function addFruit(event) {
@@ -5449,23 +4840,6 @@ function debugFruitActivities(fruitName) {
 }
 
 
-// Add this diagnostic to check modal functions
-function diagnoseModalFunctions() {
-    console.log('🔍 DIAGNOSING MODAL FUNCTIONS:');
-    const modalFunctions = [
-        'showAddFruitModal', 'showActivityModal', 'showScheduleModal', 
-        'showExportModal', 'showImportModal', 'closeModal'
-    ];
-    
-    modalFunctions.forEach(funcName => {
-        const exists = typeof window[funcName] === 'function';
-        console.log(`${exists ? '✅' : '❌'} ${funcName}: ${exists ? 'EXISTS' : 'MISSING'}`);
-    });
-}
-
-// Run diagnosis
-setTimeout(diagnoseModalFunctions, 1000);
-
 function showTab(tabName) {
     // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(tab => {
@@ -5514,120 +4888,34 @@ function showTab(tabName) {
         }
 
         function logActivityForFruit(fruitName) {
-            console.log('📞 Logging activity for fruit:', fruitName);
-            
-            // Show activity modal
             showActivityModal();
-            
-            // Pre-fill the fruit name after a short delay to ensure modal is rendered
+            // Pre-fill the fruit name
             setTimeout(() => {
                 const fruitSelect = document.getElementById('activityFruitSelect');
                 if (fruitSelect) {
                     fruitSelect.value = fruitName;
-                    console.log('✅ Pre-filled fruit name:', fruitName);
-                } else {
-                    console.error('❌ Activity fruit select not found');
                 }
             }, 100);
         }
 
-        
-function viewFruitDetails(fruitId) {
-    console.log('🔍 Viewing fruit details for ID:', fruitId);
-    
-    const fruit = fruits.find(f => f.id === fruitId);
-    if (!fruit) {
-        showNotification('Fruit not found', 'error');
-        return;
-    }
-    
-    currentViewingFruit = fruit;
-    
-    // Show the modal
-    const modal = document.getElementById('fruitDetailsModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        console.log('✅ Fruit details modal opened');
-    } else {
-        console.error('❌ Fruit details modal not found');
-        return;
-    }
-    
-    // Populate fruit information
-    populateFruitDetails(fruit);
-    
-    // Load and display activities for this fruit
-    loadFruitActivities(fruit.name);
-}
-
-function populateFruitDetails(fruit) {
-    console.log('📝 Populating fruit details:', fruit.name);
-    
-    // Basic information
-    document.getElementById('fruitDetailsTitle').textContent = `${fruit.name} - Details`;
-    document.getElementById('fruitInitial').textContent = fruit.name.charAt(0).toUpperCase();
-    document.getElementById('fruitName').textContent = fruit.name;
-    document.getElementById('fruitAssignee').textContent = `Assigned to: ${fruit.assignedTo || 'Unassigned'}`;
-    
-    // Status and progress
-    const statusBadge = document.getElementById('fruitStatusBadge');
-    statusBadge.textContent = fruit.status;
-    statusBadge.className = `px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}`;
-    
-    const progressData = getProgressData(fruit.status);
-    document.getElementById('fruitProgress').textContent = `${progressData.percentage}%`;
-    const progressBar = document.getElementById('fruitProgressBar');
-    progressBar.style.width = `${progressData.percentage}%`;
-    progressBar.className = `h-3 rounded-full transition-all duration-500 ${progressData.color}`;
-    
-    // Contact information
-    document.getElementById('fruitPhone').innerHTML = `
-        <i class="fas fa-phone w-5 mr-3 text-blue-600"></i>
-        <span>${fruit.phone || 'No phone number'}</span>
-        ${fruit.phone ? `<a href="tel:${fruit.phone}" class="ml-2 text-blue-600 hover:text-blue-800"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
-    `;
-    
-    document.getElementById('fruitInstagram').innerHTML = `
-        <i class="fab fa-instagram w-5 mr-3 text-pink-600"></i>
-        <span>${fruit.instagram || 'No Instagram'}</span>
-        ${fruit.instagram ? `<a href="https://instagram.com/${fruit.instagram}" target="_blank" class="ml-2 text-pink-600 hover:text-pink-800"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
-    `;
-    
-    document.getElementById('fruitFacebook').innerHTML = `
-        <i class="fab fa-facebook w-5 mr-3 text-blue-600"></i>
-        <span>${fruit.facebook || 'No Facebook'}</span>
-        ${fruit.facebook ? `<a href="https://facebook.com/${fruit.facebook}" target="_blank" class="ml-2 text-blue-600 hover:text-blue-800"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
-    `;
-    
-    document.getElementById('fruitTwitter').innerHTML = `
-        <i class="fab fa-twitter w-5 mr-3 text-blue-400"></i>
-        <span>${fruit.twitter || 'No Twitter'}</span>
-        ${fruit.twitter ? `<a href="https://twitter.com/${fruit.twitter}" target="_blank" class="ml-2 text-blue-400 hover:text-blue-600"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
-    `;
-    
-    // Lead information
-    document.getElementById('fruitLeadSource').textContent = fruit.leadSource || 'Unknown';
-    
-    const campaignDiv = document.getElementById('fruitCampaignDiv');
-    if (fruit.campaign) {
-        campaignDiv.style.display = 'flex';
-        document.getElementById('fruitCampaign').textContent = fruit.campaign;
-    } else {
-        campaignDiv.style.display = 'none';
-    }
-    
-    document.getElementById('fruitCreatedDate').textContent = formatDate(fruit.createdDate);
-    
-    // Notes
-    const notesSection = document.getElementById('fruitNotesSection');
-    if (fruit.notes && fruit.notes.trim()) {
-        notesSection.style.display = 'block';
-        document.getElementById('fruitNotes').textContent = fruit.notes;
-    } else {
-        notesSection.style.display = 'none';
-    }
-}
-
+        function viewFruitDetails(fruitId) {
+            const fruit = fruits.find(f => f.id === fruitId);
+            if (!fruit) {
+                showNotification('Fruit not found', 'error');
+                return;
+            }
+            
+            currentViewingFruit = fruit;
+            
+            // Show the modal
+            document.getElementById('fruitDetailsModal').classList.remove('hidden');
+            
+            // Populate fruit information
+            populateFruitDetails(fruit);
+            
+            // Load and display activities for this fruit
+            loadFruitActivities(fruit.name);
+        }
 
         function populateFruitDetails(fruit) {
             // Basic information
@@ -6171,22 +5459,9 @@ function resetAddFruitModal() {
     }
 }
         
-        function showScheduleModal() {
-            console.log('📅 Opening schedule modal');
-            populateFruitDropdowns();
-            document.getElementById('scheduleModal').classList.remove('hidden');
-        }
-
-        function showActivityModal() {
-            console.log('📞 Opening activity modal');
-            populateFruitDropdowns();
-            document.getElementById('activityModal').classList.remove('hidden');
-        }
 
         function generateReport() {
-            console.log('📊 Generating report');
-            showNotification('Report generation feature coming soon!', 'info');
-            // Add your report generation logic here
+            showNotification('Report generation coming soon!', 'info');
         }
 
         function exportReport() {
@@ -6670,20 +5945,12 @@ async function callSharePointAPI(url, options = {}) {
             }
         }
 
+// Load users for Assign To dropdown with better Person field handling
 async function loadUsersForDropdown() {
     try {
         console.log('👥 Loading users for Assign To dropdown...');
         
-        // First, check if we have SharePoint access
-        if (!sharePointAccessToken) {
-            console.log('⚠️ No SharePoint access token, using fallback options');
-            return getFallbackUserOptions();
-        }
-
-        // Try a simpler query first - just get all users without filters
-        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?$expand=fields&$top=100`;
-        
-        console.log('🔍 Fetching users from:', url);
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'&$select=id,fields&$top=500`;
         
         const response = await fetch(url, {
             headers: {
@@ -6693,115 +5960,74 @@ async function loadUsersForDropdown() {
         });
         
         if (!response.ok) {
-            console.warn(`⚠️ SharePoint users request failed: ${response.status} ${response.statusText}`);
-            console.log('🔄 Trying alternative Users List ID...');
-            return tryAlternativeUsersList();
+            console.warn('⚠️ Could not load users list, using current user only');
+            return currentUser ? [currentUser.name] : ['Unassigned'];
         }
         
         const data = await response.json();
         const userItems = data.value || [];
         
-        console.log('📋 Users loaded from SharePoint:', userItems.length);
+        console.log('📋 Users loaded for dropdown:', userItems);
         
-        if (userItems.length === 0) {
-            console.log('ℹ️ No users found in SharePoint, using fallback');
-            return getFallbackUserOptions();
-        }
-        
-        // Extract display names safely
+        // Extract display names with better Person field handling
         const userNames = userItems.map(item => {
-            const fields = item.fields || {};
+            const fields = item.fields;
             
-            // Try different field names in order of priority
-            return fields.DisplayName || 
-                   fields.Title || 
-                   fields.Email?.split('@')[0] || 
-                   'Unknown User';
+            // Try different field names for Person/DisplayName
+            let displayName = '';
+            
+            // Method 1: Direct DisplayName field
+            if (fields.DisplayName) {
+                if (typeof fields.DisplayName === 'object') {
+                    displayName = fields.DisplayName.displayName || 
+                                 fields.DisplayName.title || 
+                                 fields.DisplayName.email || 
+                                 '';
+                } else {
+                    displayName = fields.DisplayName;
+                }
+            }
+            
+            // Method 2: Title field as fallback
+            if (!displayName && fields.Title) {
+                displayName = fields.Title;
+            }
+            
+            // Method 3: Email field as last resort
+            if (!displayName && fields.Email) {
+                displayName = fields.Email.split('@')[0]; // Use username part of email
+            }
+            
+            return displayName || 'Unknown User';
         }).filter(name => name && name !== 'Unknown User');
         
-        // Add current user and default options
-        const finalUsers = addDefaultUserOptions(userNames);
+        // Add current user if not in list
+        if (currentUser && currentUser.name && !userNames.includes(currentUser.name)) {
+            userNames.push(currentUser.name);
+        }
         
-        console.log('✅ Available users for assignment:', finalUsers);
-        return finalUsers;
+        // Add "Unassigned" option
+        if (!userNames.includes('Unassigned')) {
+            userNames.unshift('Unassigned');
+        }
+        
+        // Remove duplicates and sort
+        const uniqueUserNames = [...new Set(userNames)].sort((a, b) => {
+            if (a === 'Unassigned') return -1;
+            if (b === 'Unassigned') return 1;
+            return a.localeCompare(b);
+        });
+        
+        console.log('✅ Available users for assignment:', uniqueUserNames);
+        return uniqueUserNames;
         
     } catch (error) {
         console.error('❌ Error loading users for dropdown:', error);
-        return getFallbackUserOptions();
+        // Fallback options
+        return currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
     }
 }
-
-// Helper functions
-function getFallbackUserOptions() {
-    const options = ['Unassigned'];
-    if (currentUser && currentUser.name) {
-        options.push(currentUser.name);
-    }
-    console.log('🔄 Using fallback user options:', options);
-    return options;
-}
-
-function addDefaultUserOptions(userNames) {
-    const options = [...userNames];
-    
-    // Add current user if not in list
-    if (currentUser && currentUser.name && !options.includes(currentUser.name)) {
-        options.push(currentUser.name);
-    }
-    
-    // Add "Unassigned" at the beginning
-    if (!options.includes('Unassigned')) {
-        options.unshift('Unassigned');
-    }
-    
-    // Remove duplicates and sort
-    return [...new Set(options)].sort((a, b) => {
-        if (a === 'Unassigned') return -1;
-        if (b === 'Unassigned') return 1;
-        return a.localeCompare(b);
-    });
-}
-
-async function tryAlternativeUsersList() {
-    console.log('🔄 Attempting to find correct Users List...');
-    
-    // Try to get all lists to find the correct Users list
-    try {
-        const listsUrl = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists`;
-        
-        const response = await fetch(listsUrl, {
-            headers: {
-                'Authorization': `Bearer ${sharePointAccessToken}`,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            const lists = data.value || [];
-            
-            console.log('📋 Available SharePoint lists:');
-            lists.forEach(list => {
-                console.log(`- ${list.name} (${list.id}): ${list.displayName}`);
-            });
-            
-            // Look for a list that might be the users list
-            const usersList = lists.find(list => 
-                list.name.toLowerCase().includes('user') || 
-                list.displayName.toLowerCase().includes('user')
-            );
-            
-            if (usersList) {
-                console.log(`✅ Found potential Users list: ${usersList.displayName} (${usersList.id})`);
-                // You could update SHAREPOINT_CONFIG.USERS_LIST_ID here if needed
-            }
-        }
-    } catch (error) {
-        console.log('❌ Could not retrieve list of lists');
-    }
-    
-    return getFallbackUserOptions();
-}
+   
         
 // Populate searchable Assign To dropdown
 async function populateAssigneeDropdown() {
@@ -7234,67 +6460,28 @@ function removeActive(items) {
             localStorage.setItem('crm_sharepoint_mode', isSharePointMode.toString());
         }
 
-
-function loadLocalData() {
-    console.log('📂 Loading local data...');
-    
-    try {
-        const savedFruits = localStorage.getItem('crm_fruits');
-        const savedActivities = localStorage.getItem('crm_activities');
-        const savedSharePointMode = localStorage.getItem('crm_sharepoint_mode');
-        
-        if (savedFruits) {
-            fruits = JSON.parse(savedFruits);
-            console.log('✅ Loaded', fruits.length, 'fruits from local storage');
-        } else {
-            fruits = [];
-            console.log('ℹ️ No fruits found in local storage');
+        function loadLocalData() {
+            const savedFruits = localStorage.getItem('crm_fruits');
+            const savedActivities = localStorage.getItem('crm_activities');
+            const savedSharePointMode = localStorage.getItem('crm_sharepoint_mode');
+            
+            if (savedFruits) {
+                fruits = JSON.parse(savedFruits);
+            }
+            
+            if (savedActivities) {
+                activities = JSON.parse(savedActivities);
+            }
+            
+            if (savedSharePointMode) {
+                isSharePointMode = savedSharePointMode === 'true';
+            }
+            
+            updateFruitsGrid();
+            updateStats();
+            updateRecentActivities();
+            populateFruitDropdowns();
         }
-        
-        if (savedActivities) {
-            activities = JSON.parse(savedActivities);
-            console.log('✅ Loaded', activities.length, 'activities from local storage');
-        } else {
-            activities = [];
-            console.log('ℹ️ No activities found in local storage');
-        }
-        
-        if (savedSharePointMode) {
-            isSharePointMode = savedSharePointMode === 'true';
-            console.log('✅ SharePoint mode:', isSharePointMode);
-        }
-        
-    } catch (error) {
-        console.error('❌ Error loading local data:', error);
-        // Reset to empty arrays if there's an error
-        fruits = [];
-        activities = [];
-        showNotification('Error loading local data', 'error');
-    }
-}
-
-
-function ensureValidData() {
-    console.log('🔍 Ensuring data validity...');
-    
-    // Ensure fruits is always an array
-    if (!Array.isArray(fruits)) {
-        console.warn('⚠️ fruits was not an array, resetting');
-        fruits = [];
-    }
-    
-    // Ensure activities is always an array
-    if (!Array.isArray(activities)) {
-        console.warn('⚠️ activities was not an array, resetting');
-        activities = [];
-    }
-    
-    // Filter out any invalid items
-    fruits = fruits.filter(fruit => fruit && typeof fruit === 'object');
-    activities = activities.filter(activity => activity && typeof activity === 'object');
-    
-    console.log('✅ Data validity check complete');
-}
 
  function logout() {
     console.log('🚪 User initiated logout...');
@@ -7379,46 +6566,14 @@ async function debugSharePointFields() {
         const urlParams = new URLSearchParams(window.location.search);
         const authCode = urlParams.get('code');
         const returnedState = urlParams.get('state');
-
-
-// Add this diagnostic code at the very top of your JavaScript (after the constants)
-console.log('🔍 ROOT CAUSE ANALYSIS STARTING...');
-
-// Track the execution flow
-const executionLog = [];
-const originalConsoleLog = console.log;
-console.log = function(...args) {
-    executionLog.push(args[0]);
-    originalConsoleLog.apply(console, args);
-};
-
-// Check what's actually running
-function diagnoseInitialization() {
-    console.log('📊 DIAGNOSIS REPORT:');
-    console.log('Execution log:', executionLog.filter(msg => 
-        msg && typeof msg === 'string' && 
-        (msg.includes('Initializing') || msg.includes('initialize') || msg.includes('DOMContentLoaded'))
-    ));
-    
-    console.log('🔍 CHECKING CRITICAL FUNCTIONS:');
-    console.log('- DOMContentLoaded event:', !!window.domContentLoaded);
-    console.log('- initializeUI called:', executionLog.some(msg => msg && msg.includes('🎨 Initializing UI')));
-    console.log('- initializeEventListeners called:', executionLog.some(msg => msg && msg.includes('🎯 Initializing event listeners')));
-    console.log('- showDashboard called:', executionLog.some(msg => msg && msg.includes('🔄 Showing dashboard')));
-    console.log('- Current user:', currentUser);
-    console.log('- SharePoint mode:', isSharePointMode);
-    
-    // Check if we're stuck in OAuth flow
-    const urlParams = new URLSearchParams(window.location.search);
-    console.log('- URL has auth code:', !!urlParams.get('code'));
-    console.log('- URL has state:', !!urlParams.get('state'));
-}
-
-// Run diagnosis after 3 seconds
-setTimeout(diagnoseInitialization, 3000);
-
+        
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+
+<!-- Simple Version Tag -->
+<div class="fixed bottom-4 right-4 text-xs text-gray-500 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm z-40">
+    ERMS v1.0.7
+</div>
 
 </body>
 </html>
