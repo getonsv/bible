@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evengelism System</title>
+    <title>Evengelism Reporting Management System</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
@@ -84,7 +84,7 @@
                     <i class="fas fa-cross text-white text-2xl"></i>
                 </div>
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism FRM</h1>
-                <p class="text-gray-600">Fruit Relationship Management System</p>
+                <p class="text-gray-600">Evengelism Reporting Management System</p>
             </div>
             
             <div id="googleSignInButton" class="w-full mb-4">
@@ -2501,7 +2501,8 @@ console.log(verifyPkceState());
             }, 1000);
         }
 
-        async function authenticateWithMicrosoft() {
+
+async function authenticateWithMicrosoft() {
     try {
         console.log('🔐 Starting PKCE Microsoft authentication...');
         showNotification('Redirecting to Microsoft 365...', 'info');
@@ -2517,21 +2518,18 @@ console.log(verifyPkceState());
             state: state
         });
         
-        // Store PKCE parameters in multiple locations for redundancy
-        // 1. localStorage (persists across redirects)
-        localStorage.setItem('pkce_code_verifier', codeVerifier);
-        localStorage.setItem('pkce_state', state);
-        
-        // 2. sessionStorage
+        // Store PKCE parameters in the most persistent way possible
+        // 1. Encode and store in sessionStorage (primary)
         sessionStorage.setItem('pkce_code_verifier', codeVerifier);
         sessionStorage.setItem('pkce_state', state);
         
-        // 3. Temporary in-memory storage as backup
-        window.tempPkceStorage = {
-            code_verifier: codeVerifier,
-            state: state,
-            timestamp: Date.now()
-        };
+        // 2. Store in localStorage as backup
+        localStorage.setItem('pkce_code_verifier', codeVerifier);
+        localStorage.setItem('pkce_state', state);
+        
+        // 3. Store in a cookie as additional backup (persists across redirects)
+        document.cookie = `pkce_code_verifier=${encodeURIComponent(codeVerifier)}; path=/; max-age=300`; // 5 minutes
+        document.cookie = `pkce_state=${state}; path=/; max-age=300`;
         
         console.log('🔐 PKCE parameters stored in multiple locations');
         
@@ -2550,6 +2548,7 @@ console.log(verifyPkceState());
         cleanupPkceStorage();
     }
 }
+
 
 // Clean up PKCE storage from all locations
 function cleanupPkceStorage() {
@@ -6579,7 +6578,7 @@ async function debugSharePointFields() {
 
 <!-- Simple Version Tag -->
 <div class="fixed bottom-4 right-4 text-xs text-gray-500 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm z-40">
-    FRMS v1.0.5
+    ERMS v1.0.5
 </div>
 
 </body>
