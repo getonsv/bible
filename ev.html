@@ -1262,6 +1262,19 @@
         
         // Initialize UI components
         initializeUI();
+
+        // Check for valid session
+        if (checkForValidSession() && window.location.pathname === '/') {
+            console.log('✅ Valid session detected, ensuring dashboard is visible');
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+                if (document.getElementById('loginScreen') && 
+                    !document.getElementById('loginScreen').classList.contains('hidden')) {
+                    console.log('🔄 Auto-redirecting to dashboard...');
+                    showDashboard();
+                }
+            }, 100);
+        }
     });
 
     // Enhanced session validation
@@ -1430,6 +1443,51 @@
         stopRealTimeSync();
     }
 
+
+    async function handleSharePointError(error, operation) {
+        console.error(`❌ SharePoint ${operation} failed:`, error);
+        
+        if (error.message.includes('401') || error.message.includes('403')) {
+            showNotification('Authentication expired. Please sign in again.', 'error');
+            logout();
+        } else if (error.message.includes('429')) {
+            showNotification('Too many requests. Please wait a moment.', 'warning');
+        } else if (error.message.includes('500') || error.message.includes('503')) {
+            showNotification('SharePoint service unavailable. Please try again later.', 'error');
+        } else {
+            showNotification(`${operation} failed: ${error.message}`, 'error');
+        }
+    }
+
+    // Use it in your SharePoint functions:
+    async function safeSharePointOperation(operation, apiCall) {
+        try {
+            return await apiCall();
+        } catch (error) {
+            handleSharePointError(error, operation);
+            throw error;
+        }
+    }
+
+
+    let userActivityTimeout;
+
+    function resetUserActivityTimer() {
+        clearTimeout(userActivityTimeout);
+        // Auto-logout after 2 hours of inactivity
+        userActivityTimeout = setTimeout(() => {
+            if (currentUser && isSharePointMode) {
+                showNotification('You have been logged out due to inactivity.', 'info');
+                logout();
+            }
+        }, 2 * 60 * 60 * 1000); // 2 hours
+    }
+
+// Track user activity
+['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
+    document.addEventListener(event, resetUserActivityTimer, { passive: true });
+});
+
     // Add this function to debug display issues
     function debugDisplayState() {
         console.log('🎯 CURRENT DISPLAY STATE:');
@@ -1522,32 +1580,19 @@
     }
 
 
-    // Initialize UI components
     function initializeUI() {
-        console.log('🎨 Initializing UI components...');
-        
-        // Load local data (fruits, activities)
         loadLocalData();
-        
-        // Update connection status
         updateConnectionStatus();
-        
-        // Populate dropdowns
         populateDropdowns();
-        
-        // Initialize event listeners
         initializeEventListeners();
+        monitorConnection(); // Add this
+        resetUserActivityTimer(); // Add this
         
         // Set copyright year
         const yearElement = document.getElementById('currentYear');
         if (yearElement) {
             yearElement.textContent = new Date().getFullYear();
         }
-        
-        // Initialize version tag
-        initializeVersionTag();
-        
-        console.log('✅ UI initialization complete');
     }
 
 
@@ -1865,10 +1910,11 @@
     }
 
     // Separate function to start auth (to avoid any event issues)
-    function startMicrosoftAuth() {
-        console.log('🚀 Starting Microsoft authentication...');
-        authenticateWithMicrosoft();
-    }
+        function startMicrosoftAuth() {
+            console.log('🚀 Starting Microsoft authentication...');
+            showAuthLoading('Redirecting to Microsoft 365...');
+            authenticateWithMicrosoft();
+        }
 
 
 
@@ -4159,88 +4205,119 @@
                 `).join('');
             }
 
-            function updateFruitsGrid() {
-        const container = document.getElementById('fruitsGrid');
-        if (!container) return;
-        
-        if (fruits.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-12 col-span-full">
-                    <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-users text-gray-400 text-3xl"></i>
-                    </div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">No contacts found</h3>
-                    <p class="text-gray-500 mb-4">Start building your ministry database by adding your first contact.</p>
-                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Add Your First Contact
-                    </button>
+function updateFruitsGrid() {
+    const container = document.getElementById('fruitsGrid');
+    if (!container) {
+        console.error('❌ Fruits grid container not found');
+        return;
+    }
+    
+    if (fruits.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12 col-span-full">
+                <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-users text-gray-400 text-3xl"></i>
                 </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = fruits.map(fruit => {
-            const progressData = getProgressData(fruit.status);
-            return `
-            <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
-                <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900">${fruit.name}</h3>
-                        <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo || 'Unassigned'}</p>
-                    </div>
-                    <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}">
-                        ${fruit.status}
-                    </span>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No contacts found</h3>
+                <p class="text-gray-500 mb-4">Start building your ministry database by adding your first contact.</p>
+                <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Add Your First Contact
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    console.log('🔄 Updating fruits grid with', fruits.length, 'fruits');
+    
+    container.innerHTML = fruits.map(fruit => {
+        const progressData = getProgressData(fruit.status);
+        return `
+        <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">${fruit.name}</h3>
+                    <p class="text-sm text-gray-600">Assigned to: ${fruit.assignedTo || 'Unassigned'}</p>
                 </div>
-                
-                <!-- Progress Bar -->
-                <div class="mb-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-gray-700">Evangelism Progress</span>
-                        <span class="text-sm text-gray-600">${progressData.percentage}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div class="progress-bar h-2.5 rounded-full ${progressData.color}" style="width: ${progressData.percentage}%"></div>
-                    </div>
+                <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}">
+                    ${fruit.status}
+                </span>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">Evangelism Progress</span>
+                    <span class="text-sm text-gray-600">${progressData.percentage}%</span>
                 </div>
-                
-                <div class="space-y-2 mb-4">
-                    <div class="flex items-center text-sm text-gray-600">
-                        <i class="fas fa-phone w-4 mr-2"></i>
-                        ${fruit.phone || 'No phone'}
-                    </div>
-                    <div class="flex items-center text-sm text-gray-600">
-                        <i class="fas fa-bullhorn w-4 mr-2"></i>
-                        ${fruit.leadSource || 'No lead source'}
-                    </div>
-                    ${fruit.campaign ? `
-                        <div class="flex items-center text-sm text-gray-600">
-                            <i class="fas fa-tag w-4 mr-2"></i>
-                            ${fruit.campaign}
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="viewFruitDetails('${fruit.id}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
-                        <i class="fas fa-eye mr-1"></i>View Details
-                    </button>
-                    <button onclick="editFruit('${fruit.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
-                        <i class="fas fa-edit mr-1"></i>Edit
-                    </button>
-                    <button onclick="logActivityForFruit('${fruit.name}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
-                        <i class="fas fa-phone mr-1"></i>Log Activity
-                    </button>
-                    <button onclick="deleteFruit('${fruit.id}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors" title="Delete fruit">
-                        <i class="fas fa-trash mr-1"></i>Delete
-                    </button>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="progress-bar h-2.5 rounded-full ${progressData.color}" style="width: ${progressData.percentage}%"></div>
                 </div>
             </div>
-            `;
-        }).join('');
+            
+            <div class="space-y-2 mb-4">
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-phone w-4 mr-2"></i>
+                    ${fruit.phone || 'No phone'}
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-bullhorn w-4 mr-2"></i>
+                    ${fruit.leadSource || 'No lead source'}
+                </div>
+                ${fruit.campaign ? `
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-tag w-4 mr-2"></i>
+                        ${fruit.campaign}
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="viewFruitDetails('${fruit.id}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                    <i class="fas fa-eye mr-1"></i>View Details
+                </button>
+                <button onclick="editFruit('${fruit.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                    <i class="fas fa-edit mr-1"></i>Edit
+                </button>
+                <button onclick="logActivityForFruit('${fruit.name}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                    <i class="fas fa-phone mr-1"></i>Log Activity
+                </button>
+                <button onclick="deleteFruit('${fruit.id}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                    <i class="fas fa-trash mr-1"></i>Delete
+                </button>
+            </div>
+        </div>
+        `;
+    }).join('');
+    
+    console.log('✅ Fruits grid updated successfully');
+}
+
+
+// Debug function to test button functionality
+function debugButtonFunctions() {
+    console.log('🐛 DEBUG: Testing button functions');
+    console.log('Fruits available:', fruits.length);
+    
+    if (fruits.length > 0) {
+        const firstFruit = fruits[0];
+        console.log('First fruit:', firstFruit);
+        console.log('Testing viewFruitDetails:', typeof viewFruitDetails);
+        console.log('Testing logActivityForFruit:', typeof logActivityForFruit);
+        console.log('Testing editFruit:', typeof editFruit);
+        console.log('Testing deleteFruit:', typeof deleteFruit);
+        
+        // Test if functions exist globally
+        console.log('Global functions:');
+        console.log('- window.viewFruitDetails:', typeof window.viewFruitDetails);
+        console.log('- window.logActivityForFruit:', typeof window.logActivityForFruit);
+        console.log('- window.editFruit:', typeof window.editFruit);
+        console.log('- window.deleteFruit:', typeof window.deleteFruit);
     }
+}
 
-
+// Call this in browser console to test
+window.debugButtons = debugButtonFunctions;
 
             function getStatusColor(status) {
                 const colors = {
@@ -4329,36 +4406,194 @@
                 }
             }
 
-        
-    // Add this to your initializeEventListeners function
-    function initializeEventListeners() {
-        // Fruit search functionality
-        const fruitSearch = document.getElementById('fruitSearch');
-        if (fruitSearch) {
-            fruitSearch.addEventListener('input', filterFruits);
-        }
+        function initializeEventListeners() {
+    console.log('🎯 Initializing event listeners...');
+    
+    // Fruit search functionality
+    const fruitSearch = document.getElementById('fruitSearch');
+    if (fruitSearch) {
+        fruitSearch.addEventListener('input', filterFruits);
+    }
 
-        // Handle fruit form submission
-        const fruitForm = document.getElementById('addFruitForm');
-        if (fruitForm) {
-            fruitForm.addEventListener('submit', function(event) {
-                const isEditing = this.getAttribute('data-editing-id');
-                if (isEditing) {
-                    updateFruit(event);
-                } else {
-                    addFruit(event);
+    // Status filter
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterFruits);
+    }
+
+    // Source filter
+    const sourceFilter = document.getElementById('sourceFilter');
+    if (sourceFilter) {
+        sourceFilter.addEventListener('change', filterFruits);
+    }
+
+    // Event delegation for dynamically created buttons in fruits grid
+    document.addEventListener('click', function(event) {
+        const target = event.target;
+        
+        console.log('🔍 Click event detected on:', target);
+        
+        // Handle View Details button - multiple ways to catch the click
+        if (target.closest('button[onclick*="viewFruitDetails"]') || 
+            target.closest('button')?.textContent?.includes('View Details') ||
+            target.closest('button')?.innerHTML?.includes('fa-eye')) {
+            
+            const button = target.closest('button');
+            console.log('👁️ View Details button clicked:', button);
+            
+            // Extract fruit ID from onclick attribute
+            const onclickAttr = button.getAttribute('onclick');
+            if (onclickAttr) {
+                const match = onclickAttr.match(/viewFruitDetails\('([^']+)'\)/);
+                if (match && match[1]) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log('🎯 Calling viewFruitDetails with ID:', match[1]);
+                    viewFruitDetails(match[1]);
+                    return;
+                }
+            }
+            
+            // Alternative: try to find fruit ID from parent element
+            const fruitCard = button.closest('.bg-white');
+            if (fruitCard) {
+                const fruitNameElement = fruitCard.querySelector('h3');
+                if (fruitNameElement) {
+                    const fruitName = fruitNameElement.textContent;
+                    const fruit = fruits.find(f => f.name === fruitName);
+                    if (fruit) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        console.log('🎯 Calling viewFruitDetails with found ID:', fruit.id);
+                        viewFruitDetails(fruit.id);
+                        return;
+                    }
+                }
+            }
+        }
+        
+        // Handle Log Activity button
+        if (target.closest('button[onclick*="logActivityForFruit"]') || 
+            target.closest('button')?.textContent?.includes('Log Activity') ||
+            target.closest('button')?.innerHTML?.includes('fa-phone')) {
+            
+            const button = target.closest('button');
+            console.log('📝 Log Activity button clicked:', button);
+            
+            const onclickAttr = button.getAttribute('onclick');
+            if (onclickAttr) {
+                const match = onclickAttr.match(/logActivityForFruit\('([^']+)'\)/);
+                if (match && match[1]) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log('🎯 Calling logActivityForFruit with name:', match[1]);
+                    logActivityForFruit(match[1]);
+                    return;
+                }
+            }
+            
+            // Alternative: find fruit name from card
+            const fruitCard = button.closest('.bg-white');
+            if (fruitCard) {
+                const fruitNameElement = fruitCard.querySelector('h3');
+                if (fruitNameElement) {
+                    const fruitName = fruitNameElement.textContent;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log('🎯 Calling logActivityForFruit with found name:', fruitName);
+                    logActivityForFruit(fruitName);
+                    return;
+                }
+            }
+        }
+        
+        // Handle Edit button
+        if (target.closest('button[onclick*="editFruit"]') || 
+            target.closest('button')?.textContent?.includes('Edit') ||
+            target.closest('button')?.innerHTML?.includes('fa-edit')) {
+            
+            const button = target.closest('button');
+            console.log('✏️ Edit button clicked:', button);
+            
+            const onclickAttr = button.getAttribute('onclick');
+            if (onclickAttr) {
+                const match = onclickAttr.match(/editFruit\('([^']+)'\)/);
+                if (match && match[1]) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log('🎯 Calling editFruit with ID:', match[1]);
+                    editFruit(match[1]);
+                    return;
+                }
+            }
+        }
+        
+        // Handle Delete button
+        if (target.closest('button[onclick*="deleteFruit"]') || 
+            target.closest('button')?.textContent?.includes('Delete') ||
+            target.closest('button')?.innerHTML?.includes('fa-trash')) {
+            
+            const button = target.closest('button');
+            console.log('🗑️ Delete button clicked:', button);
+            
+            const onclickAttr = button.getAttribute('onclick');
+            if (onclickAttr) {
+                const match = onclickAttr.match(/deleteFruit\('([^']+)'\)/);
+                if (match && match[1]) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log('🎯 Calling deleteFruit with ID:', match[1]);
+                    deleteFruit(match[1]);
+                    return;
+                }
+            }
+        }
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        const syncOptions = document.getElementById('syncOptions');
+        if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
+            syncOptions.classList.add('hidden');
+        }
+    });
+
+    // Modal close handlers
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal-overlay') || 
+            event.target.closest('.modal-close')) {
+            const modal = event.target.closest('.fixed.inset-0') || event.target;
+            if (modal && modal.id) {
+                closeModal(modal.id);
+            }
+        }
+    });
+
+    // Escape key to close modals
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const openModals = document.querySelectorAll('.fixed.inset-0:not(.hidden)');
+            openModals.forEach(modal => {
+                if (modal.id && modal.id.includes('Modal')) {
+                    closeModal(modal.id);
                 }
             });
         }
+    });
 
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            const syncOptions = document.getElementById('syncOptions');
-            if (!event.target.closest('.relative') && !event.target.closest('#syncOptions')) {
-                syncOptions.classList.add('hidden');
-            }
+    // Initialize assignee search functionality
+    const assigneeInput = document.getElementById('assigneeInput');
+    if (assigneeInput) {
+        assigneeInput.addEventListener('focus', function() {
+            populateAssigneeDropdown();
         });
     }
+
+    console.log('✅ Event listeners initialized successfully');
+}
+
+
+
 
 
     // Temporary debug function - remove after fixing
@@ -4412,14 +4647,36 @@
                 document.getElementById('importModal').classList.remove('hidden');
             }
 
-            function closeModal(modalId) {
-                document.getElementById(modalId).classList.add('hidden');
-                
-                // Reset add fruit modal if it was being used for editing
-                if (modalId === 'addFruitModal') {
-                    resetAddFruitModal();
-                }
+
+// Enhanced closeModal function
+function closeModal(modalId) {
+    console.log('🚪 Closing modal:', modalId);
+    
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        // Add closing animation
+        modal.style.opacity = '0';
+        modal.style.transform = 'scale(0.95)';
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.style.opacity = '';
+            modal.style.transform = '';
+            
+            // Reset current viewing fruit if closing details modal
+            if (modalId === 'fruitDetailsModal') {
+                currentViewingFruit = null;
             }
+            
+            // Reset add fruit modal if it was used for editing
+            if (modalId === 'addFruitModal') {
+                resetAddFruitModal();
+            }
+            
+        }, 300);
+    }
+}
+
 
             function showNotification(message, type = 'success') {
                 const notification = document.getElementById('notification');
@@ -4898,7 +5155,302 @@
                 }, 100);
             }
 
-            function viewFruitDetails(fruitId) {
+
+
+function viewFruitDetails(fruitId) {
+    console.log('🔍 Viewing fruit details for ID:', fruitId);
+    
+    // Validate input
+    if (!fruitId) {
+        console.error('❌ No fruit ID provided');
+        showNotification('Error: No fruit ID provided', 'error');
+        return;
+    }
+    
+    // Find the fruit
+    const fruit = fruits.find(f => f.id === fruitId);
+    if (!fruit) {
+        console.error('❌ Fruit not found with ID:', fruitId);
+        showNotification('Fruit not found', 'error');
+        return;
+    }
+    
+    console.log('✅ Found fruit:', fruit.name);
+    
+    // Set current viewing fruit
+    currentViewingFruit = fruit;
+    
+    // Show the modal
+    const modal = document.getElementById('fruitDetailsModal');
+    if (!modal) {
+        console.error('❌ Fruit details modal not found');
+        showNotification('Error: Could not open details view', 'error');
+        return;
+    }
+    
+    modal.classList.remove('hidden');
+    console.log('✅ Fruit details modal opened');
+    
+    // Populate fruit information
+    populateFruitDetails(fruit);
+    
+    // Load and display activities for this fruit
+    loadFruitActivities(fruit.name);
+    
+    // Add animation for better UX
+    setTimeout(() => {
+        modal.style.opacity = '1';
+        modal.style.transform = 'scale(1)';
+    }, 10);
+}
+
+// Enhanced populateFruitDetails function
+function populateFruitDetails(fruit) {
+    console.log('📋 Populating fruit details for:', fruit.name);
+    
+    if (!fruit) {
+        console.error('❌ No fruit data provided');
+        return;
+    }
+    
+    try {
+        // Basic information
+        document.getElementById('fruitDetailsTitle').textContent = `${fruit.name} - Details`;
+        document.getElementById('fruitInitial').textContent = fruit.name.charAt(0).toUpperCase();
+        document.getElementById('fruitName').textContent = fruit.name;
+        document.getElementById('fruitAssignee').textContent = `Assigned to: ${fruit.assignedTo || 'Unassigned'}`;
+        
+        // Status and progress
+        const statusBadge = document.getElementById('fruitStatusBadge');
+        if (statusBadge) {
+            statusBadge.textContent = fruit.status;
+            statusBadge.className = `px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(fruit.status)}`;
+        }
+        
+        const progressData = getProgressData(fruit.status);
+        document.getElementById('fruitProgress').textContent = `${progressData.percentage}%`;
+        
+        const progressBar = document.getElementById('fruitProgressBar');
+        if (progressBar) {
+            progressBar.style.width = `${progressData.percentage}%`;
+            progressBar.className = `h-3 rounded-full transition-all duration-500 ${progressData.color}`;
+        }
+        
+        // Contact information
+        const phoneElement = document.getElementById('fruitPhone');
+        if (phoneElement) {
+            phoneElement.innerHTML = `
+                <i class="fas fa-phone w-5 mr-3 text-blue-600"></i>
+                <span>${fruit.phone || 'No phone number'}</span>
+                ${fruit.phone ? `<a href="tel:${fruit.phone}" class="ml-2 text-blue-600 hover:text-blue-800" title="Call ${fruit.phone}"><i class="fas fa-phone-alt text-xs"></i></a>` : ''}
+            `;
+        }
+        
+        const instagramElement = document.getElementById('fruitInstagram');
+        if (instagramElement) {
+            instagramElement.innerHTML = `
+                <i class="fab fa-instagram w-5 mr-3 text-pink-600"></i>
+                <span>${fruit.instagram || 'No Instagram'}</span>
+                ${fruit.instagram ? `<a href="https://instagram.com/${fruit.instagram.replace('@', '')}" target="_blank" class="ml-2 text-pink-600 hover:text-pink-800" title="Open Instagram"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
+            `;
+        }
+        
+        const facebookElement = document.getElementById('fruitFacebook');
+        if (facebookElement) {
+            facebookElement.innerHTML = `
+                <i class="fab fa-facebook w-5 mr-3 text-blue-600"></i>
+                <span>${fruit.facebook || 'No Facebook'}</span>
+                ${fruit.facebook ? `<a href="https://facebook.com/${fruit.facebook}" target="_blank" class="ml-2 text-blue-600 hover:text-blue-800" title="Open Facebook"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
+            `;
+        }
+        
+        const twitterElement = document.getElementById('fruitTwitter');
+        if (twitterElement) {
+            twitterElement.innerHTML = `
+                <i class="fab fa-twitter w-5 mr-3 text-blue-400"></i>
+                <span>${fruit.twitter || 'No Twitter'}</span>
+                ${fruit.twitter ? `<a href="https://twitter.com/${fruit.twitter.replace('@', '')}" target="_blank" class="ml-2 text-blue-400 hover:text-blue-600" title="Open Twitter"><i class="fas fa-external-link-alt text-xs"></i></a>` : ''}
+            `;
+        }
+        
+        // Lead information
+        document.getElementById('fruitLeadSource').textContent = fruit.leadSource || 'Unknown';
+        
+        const campaignDiv = document.getElementById('fruitCampaignDiv');
+        if (campaignDiv) {
+            if (fruit.campaign) {
+                campaignDiv.style.display = 'flex';
+                document.getElementById('fruitCampaign').textContent = fruit.campaign;
+            } else {
+                campaignDiv.style.display = 'none';
+            }
+        }
+        
+        document.getElementById('fruitCreatedDate').textContent = formatDate(fruit.createdDate);
+        
+        // Notes
+        const notesSection = document.getElementById('fruitNotesSection');
+        if (notesSection) {
+            if (fruit.notes && fruit.notes.trim()) {
+                notesSection.style.display = 'block';
+                document.getElementById('fruitNotes').textContent = fruit.notes;
+            } else {
+                notesSection.style.display = 'none';
+            }
+        }
+        
+        console.log('✅ Fruit details populated successfully');
+        
+    } catch (error) {
+        console.error('❌ Error populating fruit details:', error);
+        showNotification('Error displaying fruit details', 'error');
+    }
+}
+
+// Enhanced loadFruitActivities function
+function loadFruitActivities(fruitName) {
+    console.log('📊 Loading activities for fruit:', fruitName);
+    
+    if (!fruitName) {
+        console.log('❌ No fruit name provided for activities');
+        return;
+    }
+    
+    console.log('📊 Total activities available:', activities.length);
+    
+    // More flexible matching for fruit names
+    const fruitActivities = activities.filter(activity => {
+        if (!activity.fruitName) {
+            console.log('⚠️ Activity missing fruitName:', activity);
+            return false;
+        }
+        
+        const activityFruit = activity.fruitName.toString().trim();
+        const targetFruit = fruitName.toString().trim();
+        
+        // Multiple matching strategies
+        const matches = activityFruit === targetFruit || 
+                       activityFruit.toLowerCase() === targetFruit.toLowerCase() ||
+                       activityFruit.includes(targetFruit) ||
+                       targetFruit.includes(activityFruit);
+        
+        return matches;
+    }).sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+    
+    console.log('🎯 Found matching activities:', fruitActivities.length);
+    
+    // Update activity stats
+    const activityCountElement = document.getElementById('activityCount');
+    const totalActivitiesElement = document.getElementById('totalActivities');
+    const totalMinutesElement = document.getElementById('totalMinutes');
+    const lastActivityElement = document.getElementById('lastActivity');
+    
+    if (activityCountElement) {
+        activityCountElement.textContent = `${fruitActivities.length} activities`;
+    }
+    
+    if (totalActivitiesElement) {
+        totalActivitiesElement.textContent = fruitActivities.length;
+    }
+    
+    if (totalMinutesElement) {
+        const totalMinutes = fruitActivities.reduce((sum, activity) => 
+            sum + (parseInt(activity.duration) || 0), 0
+        );
+        totalMinutesElement.textContent = totalMinutes;
+    }
+    
+    if (lastActivityElement) {
+        const lastActivityDate = fruitActivities.length > 0 ? 
+            formatRelativeDate(fruitActivities[0].createdDate) : 'Never';
+        lastActivityElement.textContent = lastActivityDate;
+    }
+    
+    // Populate activities list with timeline
+    displayActivitiesTimeline(fruitActivities, fruitName);
+}
+
+// Make sure these functions are available globally
+window.viewFruitDetails = viewFruitDetails;
+window.logActivityForFruit = logActivityForFruit;
+window.editFruit = editFruit;
+window.deleteFruit = deleteFruit;
+
+
+
+function logActivityForFruit(fruitName) {
+    console.log('📝 Logging activity for fruit:', fruitName);
+    
+    if (!fruitName) {
+        showNotification('No fruit selected', 'error');
+        return;
+    }
+    
+    showActivityModal();
+    
+    // Pre-fill the fruit name with a small delay to ensure modal is open
+    setTimeout(() => {
+        const fruitSelect = document.getElementById('activityFruitSelect');
+        if (fruitSelect) {
+            fruitSelect.value = fruitName;
+            console.log('✅ Pre-filled fruit name:', fruitName);
+        } else {
+            console.error('❌ Activity fruit select not found');
+        }
+    }, 100);
+}
+
+// Enhanced delete function with better error handling
+function deleteFruit(fruitId) {
+    console.log('🗑️ Deleting fruit with ID:', fruitId);
+    
+    // Check permissions first
+    if (!userPermissions.canDelete) {
+        showPermissionMessage('delete');
+        return;
+    }
+    
+    const fruit = fruits.find(f => f.id === fruitId);
+    if (!fruit) {
+        showNotification('Fruit not found', 'error');
+        return;
+    }
+    
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to delete "${fruit.name}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    // Call the existing delete function
+    deleteFruitFromSystem(fruitId);
+}
+
+// Wrapper function for delete operation
+async function deleteFruitFromSystem(fruitId) {
+    try {
+        if (isSharePointMode && sharePointAccessToken) {
+            await deleteFruitFromSharePoint(fruitId);
+            showNotification('Fruit deleted from SharePoint successfully!');
+        } else {
+            showNotification('Fruit deleted locally');
+        }
+        
+        // Remove from local array
+        const fruitIndex = fruits.findIndex(f => f.id === fruitId);
+        if (fruitIndex > -1) {
+            fruits.splice(fruitIndex, 1);
+        }
+        
+        saveLocalData();
+        updateFruitsGrid();
+        updateStats();
+        populateFruitDropdowns();
+        
+    } catch (error) {
+        console.error('❌ Failed to delete fruit:', error);
+        showNotification('Failed to delete fruit: ' + error.message, 'error');
+    }
+}
                 const fruit = fruits.find(f => f.id === fruitId);
                 if (!fruit) {
                     showNotification('Fruit not found', 'error');
@@ -6610,6 +7162,55 @@ function initializeVersion() {
     }
 }
 
+
+function showAuthLoading(message = 'Authenticating...') {
+    const buttonContainer = document.getElementById('googleSignInButton');
+    if (buttonContainer) {
+        buttonContainer.innerHTML = `
+            <div class="w-full bg-gray-100 text-gray-600 font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span>${message}</span>
+            </div>
+        `;
+    }
+}
+
+
+function monitorConnection() {
+    const statusIndicator = document.getElementById('statusIndicator');
+    const statusText = document.getElementById('statusText');
+    
+    if (!navigator.onLine) {
+        statusIndicator.className = 'w-2 h-2 bg-red-500 rounded-full';
+        statusText.textContent = 'Offline';
+        showNotification('You are offline. Some features may not work.', 'warning');
+    } else if (isSharePointMode && sharePointAccessToken) {
+        statusIndicator.className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
+        statusText.textContent = 'Live Sync Active';
+    }
+}
+
+// Monitor connection status
+window.addEventListener('online', monitorConnection);
+window.addEventListener('offline', monitorConnection);
+setInterval(monitorConnection, 30000);
+
+
+function checkTokenExpiry() {
+    const expiry = sessionStorage.getItem('token_expiry');
+    if (expiry && Date.now() >= parseInt(expiry)) {
+        console.log('🔐 Token expired, logging out...');
+        showNotification('Your session has expired. Please sign in again.', 'warning');
+        logout();
+        return false;
+    }
+    return true;
+}
+
+// Check token expiry every minute
+setInterval(checkTokenExpiry, 60000);
+
+
 // Show version details modal
 function showVersionDetails() {
     const details = `
@@ -6632,10 +7233,6 @@ function showVersionDetails() {
     showNotification(details, 'info', 5000);
 }
 
-// Call this in your DOMContentLoaded
-initializeVersion();
-
-
 
         </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98a654123732b4dc',t:'MTc1OTc2NTk3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
@@ -6643,7 +7240,7 @@ initializeVersion();
 <!-- Version Display -->
 <div id="versionInfo" class="fixed bottom-4 right-4 text-xs text-gray-400 bg-white bg-opacity-90 px-3 py-2 rounded-lg border border-gray-200 shadow-sm backdrop-blur-sm flex items-center space-x-2">
     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse" id="statusDot"></div>
-    <span id="versionText">FRMS v1.0.0</span>
+    <span id="versionText">FRMS v1.1.0</span>
     <span class="text-gray-500" id="environment">PROD</span>
 </div>
 
