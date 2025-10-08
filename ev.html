@@ -1225,42 +1225,47 @@
             'Other'
         ];
 
-   document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 DOMContentLoaded - Starting proper initialization...');
-    window.domContentLoaded = true;
+
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ DOMContentLoaded FIRED');
     
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const error = urlParams.get('error');
     
-    // Handle OAuth callback first
+    console.log('Auth check:', { authCode: !!authCode, error: !!error });
+    
+    // If we have an auth code, process it
     if (authCode) {
-        console.log('🔐 OAuth callback detected');
+        console.log('🔐 Processing OAuth callback');
         processOAuthCallback(authCode, urlParams.get('state'));
         return;
     }
     
+    // If auth error
     if (error) {
         console.error('❌ OAuth error:', error);
-        showNotification('Authentication failed: ' + error, 'error');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        initializeMicrosoftAuth();
+        showLoginScreen();
         return;
     }
     
-    // Check for valid session
+    // Check for existing session
     if (checkForValidSession()) {
-        console.log('🔑 Valid session found');
+        console.log('🔑 Restoring existing session');
         restoreSession();
     } else {
-        console.log('🔑 No valid session');
+        console.log('🔑 No valid session - showing login');
         showLoginScreen();
-        initializeMicrosoftAuth();
     }
     
-    // Initialize UI components (this should run in both cases)
+    // ALWAYS initialize UI (both login and dashboard need this)
+    console.log('🎨 Initializing UI components');
     initializeUI();
 });
+
 
 
     function closeFruitDetailsModal() {
@@ -1327,35 +1332,29 @@ function restoreSession() {
     }
 }
 
-// Enhanced dashboard showing with force display
+
+
 function showDashboard() {
-    console.log('🔄 Showing dashboard...');
+    console.log('🔄 showDashboard called');
     
+    // Hide login, show dashboard
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('dashboard');
     
-    // Force hide login screen
-    if (loginScreen) {
-        loginScreen.classList.add('hidden');
-        loginScreen.style.display = 'none';
-        console.log('✅ Login screen hidden');
-    }
+    if (loginScreen) loginScreen.classList.add('hidden');
+    if (dashboard) dashboard.classList.remove('hidden');
     
-    // Force show dashboard
-    if (dashboard) {
-        dashboard.classList.remove('hidden');
-        dashboard.style.display = 'block';
-        console.log('✅ Dashboard shown');
-    }
-    
-    // Update user display
+    // Update user info
     updateUserDisplay();
     
-    // Update all UI components
-    updateUIComponents();
+    // CRITICAL: Initialize the UI
+    console.log('🎨 Initializing UI from showDashboard');
+    initializeUI();
     
-    console.log('✅ Dashboard fully loaded');
+    console.log('✅ Dashboard shown');
 }
+
+
 
 // Enhanced OAuth callback processing
 async function processOAuthCallback(authCode, returnedState) {
@@ -2007,6 +2006,53 @@ function forceShowLoginScreen() {
 // Call this if login screen still doesn't show
 // forceShowLoginScreen();
 
+// =============================================
+// 🚨 IMMEDIATE ROOT CAUSE DETECTION
+// =============================================
+
+console.log('🚨 STARTING ROOT CAUSE DETECTION');
+
+// Track every step of initialization
+const executionTrace = [];
+function trace(step) {
+    executionTrace.push(step);
+    console.log(`🔍 ${step}`);
+}
+
+// Override console.log to capture initialization
+const originalLog = console.log;
+console.log = function(...args) {
+    if (args[0] && typeof args[0] === 'string') {
+        if (args[0].includes('Initializing') || args[0].includes('initialize') || 
+            args[0].includes('DOMContentLoaded') || args[0].includes('showDashboard') ||
+            args[0].includes('showLogin') || args[0].includes('OAuth')) {
+            executionTrace.push(args[0]);
+        }
+    }
+    originalLog.apply(console, args);
+};
+
+// Check what actually runs
+setTimeout(() => {
+    console.log('📊 EXECUTION TRACE ANALYSIS:');
+    console.log('Full trace:', executionTrace);
+    console.log('Current URL:', window.location.href);
+    console.log('Has auth code:', !!new URLSearchParams(window.location.search).get('code'));
+    console.log('Dashboard visible:', document.getElementById('dashboard') && !document.getElementById('dashboard').classList.contains('hidden'));
+    console.log('Login visible:', document.getElementById('loginScreen') && !document.getElementById('loginScreen').classList.contains('hidden'));
+    
+    // Check if critical functions exist
+    console.log('Critical functions:');
+    console.log('- initializeUI:', typeof initializeUI);
+    console.log('- initializeEventListeners:', typeof initializeEventListeners);
+    console.log('- showAddFruitModal:', typeof showAddFruitModal);
+    
+    // Check if we're stuck in auth flow
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('code')) {
+        console.log('🚨 STUCK IN AUTH FLOW - URL has code parameter');
+    }
+}, 2000);
 
 // Check CSS and display properties
 function checkElementVisibility() {
@@ -2036,7 +2082,207 @@ function checkElementVisibility() {
 
 // Call this in console: checkElementVisibility()
 
+// =============================================
+// 🚀 FORCED INITIALIZATION - RUNS NO MATTER WHAT
+// =============================================
 
+function forcedInitialization() {
+    console.log('🚀 FORCED INITIALIZATION STARTING');
+    
+    // Check current state
+    const dashboard = document.getElementById('dashboard');
+    const loginScreen = document.getElementById('loginScreen');
+    
+    console.log('Current state:');
+    console.log('- Dashboard hidden:', dashboard?.classList.contains('hidden'));
+    console.log('- Login screen hidden:', loginScreen?.classList.contains('hidden'));
+    
+    // Force show dashboard if we have a user
+    if (currentUser || sessionStorage.getItem('current_user')) {
+        console.log('🚀 Force showing dashboard');
+        if (dashboard) dashboard.classList.remove('hidden');
+        if (loginScreen) loginScreen.classList.add('hidden');
+    } else {
+        console.log('🚀 Force showing login screen');
+        if (dashboard) dashboard.classList.add('hidden');
+        if (loginScreen) loginScreen.classList.remove('hidden');
+    }
+    
+    // FORCE initialize UI components
+    console.log('🚀 Force initializing UI');
+    forceInitializeUI();
+}
+
+function forceInitializeUI() {
+    console.log('🚀 FORCE INITIALIZING UI COMPONENTS');
+    
+    try {
+        // Force load data
+        if (typeof loadLocalData === 'function') {
+            loadLocalData();
+            console.log('✅ Local data loaded');
+        }
+        
+        // Force initialize event listeners
+        if (typeof initializeEventListeners === 'function') {
+            initializeEventListeners();
+            console.log('✅ Event listeners initialized');
+        } else {
+            console.log('❌ initializeEventListeners not found - using emergency');
+            emergencyEventListeners();
+        }
+        
+        // Force update UI
+        if (typeof updateConnectionStatus === 'function') updateConnectionStatus();
+        if (typeof updateStats === 'function') updateStats();
+        if (typeof updateFruitsGrid === 'function') updateFruitsGrid();
+        
+        console.log('✅ Force UI initialization complete');
+        
+    } catch (error) {
+        console.error('❌ Force initialization failed:', error);
+        emergencyFallback();
+    }
+}
+
+function emergencyEventListeners() {
+    console.log('🚨 EMERGENCY EVENT LISTENERS');
+    
+    // Quick Actions - direct onclick assignment
+    const quickActions = {
+        'addFruitQuick': () => {
+            console.log('🎯 Emergency: Add Fruit');
+            document.getElementById('addFruitModal')?.classList.remove('hidden');
+        },
+        'scheduleBBQuick': () => {
+            console.log('🎯 Emergency: Schedule BB');
+            document.getElementById('scheduleModal')?.classList.remove('hidden');
+        },
+        'logActivityQuick': () => {
+            console.log('🎯 Emergency: Log Activity');
+            document.getElementById('activityModal')?.classList.remove('hidden');
+        },
+        'generateReportQuick': () => {
+            console.log('🎯 Emergency: Generate Report');
+            alert('Report generation would happen here');
+        }
+    };
+    
+    Object.entries(quickActions).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            button.onclick = handler;
+            console.log(`✅ Emergency listener: ${id}`);
+        }
+    });
+    
+    // Navigation tabs
+    document.querySelectorAll('.tab-btn').forEach(button => {
+        const onclick = button.getAttribute('onclick');
+        if (onclick && onclick.includes('showTab')) {
+            const tabName = onclick.match(/showTab\('([^']+)'\)/)?.[1];
+            if (tabName) {
+                button.onclick = () => {
+                    console.log(`🎯 Emergency tab: ${tabName}`);
+                    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+                    document.querySelectorAll('.tab-btn').forEach(btn => {
+                        btn.classList.remove('border-blue-600', 'text-blue-600');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    document.getElementById(tabName + 'Tab')?.classList.remove('hidden');
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                    button.classList.add('border-blue-600', 'text-blue-600');
+                };
+            }
+        }
+    });
+}
+
+function emergencyFallback() {
+    console.log('🚨 ULTIMATE EMERGENCY FALLBACK');
+    
+    // Create visible test buttons that WILL work
+    const testPanel = document.createElement('div');
+    testPanel.innerHTML = `
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; background: white; padding: 20px; border: 3px solid red; border-radius: 10px;">
+            <h3 style="color: red;">🚨 EMERGENCY MODE</h3>
+            <p>Main initialization failed. These test buttons WILL work:</p>
+            <button onclick="document.getElementById('addFruitModal').classList.remove('hidden'); console.log('✅ Test button worked!');" 
+                    style="background: green; color: white; padding: 10px; margin: 5px; border-radius: 5px;">
+                TEST Add Fruit Modal
+            </button>
+            <button onclick="alert('Test button works!');" 
+                    style="background: blue; color: white; padding: 10px; margin: 5px; border-radius: 5px;">
+                TEST Alert
+            </button>
+            <button onclick="document.querySelector('.tab-btn').click();" 
+                    style="background: orange; color: white; padding: 10px; margin: 5px; border-radius: 5px;">
+                TEST Tab Switch
+            </button>
+        </div>
+    `;
+    document.body.appendChild(testPanel);
+}
+
+
+// =============================================
+// 🚨 IMMEDIATE ROOT CAUSE DETECTION
+// =============================================
+
+console.log('🚨 STARTING ROOT CAUSE DETECTION');
+
+// Track every step of initialization
+const executionTrace = [];
+function trace(step) {
+    executionTrace.push(step);
+    console.log(`🔍 ${step}`);
+}
+
+// Override console.log to capture initialization
+const originalLog = console.log;
+console.log = function(...args) {
+    if (args[0] && typeof args[0] === 'string') {
+        if (args[0].includes('Initializing') || args[0].includes('initialize') || 
+            args[0].includes('DOMContentLoaded') || args[0].includes('showDashboard') ||
+            args[0].includes('showLogin') || args[0].includes('OAuth')) {
+            executionTrace.push(args[0]);
+        }
+    }
+    originalLog.apply(console, args);
+};
+
+// Check what actually runs
+setTimeout(() => {
+    console.log('📊 EXECUTION TRACE ANALYSIS:');
+    console.log('Full trace:', executionTrace);
+    console.log('Current URL:', window.location.href);
+    console.log('Has auth code:', !!new URLSearchParams(window.location.search).get('code'));
+    console.log('Dashboard visible:', document.getElementById('dashboard') && !document.getElementById('dashboard').classList.contains('hidden'));
+    console.log('Login visible:', document.getElementById('loginScreen') && !document.getElementById('loginScreen').classList.contains('hidden'));
+    
+    // Check if critical functions exist
+    console.log('Critical functions:');
+    console.log('- initializeUI:', typeof initializeUI);
+    console.log('- initializeEventListeners:', typeof initializeEventListeners);
+    console.log('- showAddFruitModal:', typeof showAddFruitModal);
+    
+    // Check if we're stuck in auth flow
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('code')) {
+        console.log('🚨 STUCK IN AUTH FLOW - URL has code parameter');
+    }
+}, 2000);
+
+
+// =============================================
+// 🚀 EXECUTE IMMEDIATELY
+// =============================================
+
+// Run forced initialization immediately
+console.log('🚀 EXECUTING FORCED INITIALIZATION');
+setTimeout(forcedInitialization, 100);
+setTimeout(forcedInitialization, 1000);
+setTimeout(forcedInitialization, 3000);
 
 
         
