@@ -862,6 +862,19 @@
     </div>
 
     <script>
+        // Direct configuration - no secrets needed for PKCE flow
+        const SHAREPOINT_CONFIG = {
+            CLIENT_ID: 'abe0be20-9dc7-493f-a28a-cc3b013f7f98',
+            TENANT_ID: '46ba01de-8f81-4731-9062-36cc2dbf48bb',
+            TENANT: 'getonasia.onmicrosoft.com',
+            SITE_ID: 'getonasia.sharepoint.com,5790e3b0-0575-4dcb-a345-bef1af2d9a2b,756a3114-aab1-4d05-9c80-a4ce86bce4b7',
+            SITE_URL: 'https://getonasia.sharepoint.com/sites/frms/',
+            FRUITS_LIST_ID: '139125e5-1bd9-4172-a7d9-ddf3a1dd8586',
+            ACTIVITIES_LIST_ID: '6dfb4043-9d8c-4d38-b2ce-7a2fb7ae4f79',
+            USERS_LIST_ID: 'BFA74452-66DA-4A02-BD4D-D1F3E091DDF0',
+            REPORTS_LIST_ID: '1E4E56C0-52F1-44B4-9AC6-1C2574DC9E11', // Fruit Meeting Reports
+            GRAPH_API_URL: 'https://graph.microsoft.com/v1.0'
+        };
         // Global variables
         let currentUser = null;
         let fruits = [];
@@ -965,40 +978,230 @@
             }
         }
 
-        // SharePoint Data Management
-        function loadSharePointData() {
-            showNotification('Loading', 'Connecting to SharePoint...', 'info');
-            
-            // Simulate loading data from SharePoint
-            setTimeout(() => {
-                // Simulate fruits data
-                sharePointData.fruits = [
-                    { id: 1, name: 'Alice Johnson', phone: '+1234567890', status: 'New', source: 'Personal Contact', notes: 'Met at community event', assignedTo: 'John Doe' },
-                    { id: 2, name: 'Bob Smith', phone: '+1234567891', status: 'Contacted', source: 'Referral', notes: 'Referred by Alice', assignedTo: 'Jane Smith' },
-                    { id: 3, name: 'Carol Davis', phone: '+1234567892', status: 'Interested', source: 'Social Media', notes: 'Responded to Facebook ad', assignedTo: 'John Doe' },
-                    { id: 4, name: 'David Wilson', phone: '+1234567893', status: 'Baptized', source: 'Event', notes: 'Attended Bible study', assignedTo: 'Jane Smith' }
-                ];
-                
-                // Simulate activities data
-                sharePointData.activities = [
-                    { id: 1, fruitName: 'Alice Johnson', type: 'Phone Call', date: '2023-10-15', notes: 'Initial contact, very receptive' },
-                    { id: 2, fruitName: 'Bob Smith', type: 'Text Message', date: '2023-10-16', notes: 'Sent Bible study materials' },
-                    { id: 3, fruitName: 'Carol Davis', type: 'Meeting', date: '2023-10-17', notes: 'Discussed faith questions' },
-                    { id: 4, fruitName: 'David Wilson', type: 'Baptism', date: '2023-10-18', notes: 'Celebrated baptism ceremony' }
-                ];
-                
-                // Simulate assignees
-                assignees = ['John Doe', 'Jane Smith', 'Michael Brown', 'Sarah Johnson'];
-                
-                // Update connection status
-                updateConnectionStatus(true);
-                
-                // Load initial data for overview
-                loadOverviewData();
-                
-                showNotification('Success', 'Data loaded from SharePoint successfully.', 'success');
-            }, 1500);
+// SharePoint Data Management - PRODUCTION MODE
+async function loadSharePointData() {
+    showNotification('Loading', 'Connecting to SharePoint...', 'info');
+    
+    try {
+        // Load data from SharePoint lists
+        await loadFruitsFromSharePoint();
+        await loadActivitiesFromSharePoint();
+        await loadAssigneesFromSharePoint();
+        
+        // Update connection status
+        updateConnectionStatus(true);
+        
+        // Load initial data for overview
+        loadOverviewData();
+        
+        showNotification('Success', 'Data loaded from SharePoint successfully.', 'success');
+    } catch (error) {
+        console.error('Error loading SharePoint data:', error);
+        showNotification('Error', 'Failed to load data from SharePoint. Please check your connection.', 'error');
+        updateConnectionStatus(false);
+    }
+}
+
+// Load fruits from SharePoint
+async function loadFruitsFromSharePoint() {
+    try {
+        if (!sharePointAccessToken) {
+            throw new Error('No SharePoint access token available');
         }
+
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items?expand=fields`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const items = data.value || [];
+        
+        // Transform SharePoint data to our format
+        sharePointData.fruits = items.map(item => ({
+            id: item.id.toString(),
+            name: item.fields.Title || '',
+            phone: item.fields.Phone || '',
+            status: item.fields.Status || 'New',
+            source: item.fields.LeadSource || 'Other',
+            notes: item.fields.Notes || '',
+            assignedTo: item.fields.AssignedTo || currentUser.name,
+            createdDate: item.fields.Created || item.createdDateTime
+        }));
+        
+        console.log('Loaded', sharePointData.fruits.length, 'fruits from SharePoint');
+        
+    } catch (error) {
+        console.error('Error loading fruits from SharePoint:', error);
+        sharePointData.fruits = [];
+        throw error;
+    }
+}
+
+// Load activities from SharePoint
+async function loadActivitiesFromSharePoint() {
+    try {
+        if (!sharePointAccessToken) {
+            throw new Error('No SharePoint access token available');
+        }
+
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.ACTIVITIES_LIST_ID}/items?expand=fields`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const items = data.value || [];
+        
+        // Transform SharePoint data to our format
+        sharePointData.activities = items.map(item => {
+            let fruitName = '';
+            if (item.fields.FruitNameLookup) {
+                fruitName = item.fields.FruitNameLookup;
+            } else if (item.fields.Title) {
+                const titleMatch = item.fields.Title.match(/with\s+(.+)$/);
+                fruitName = titleMatch ? titleMatch[1] : item.fields.Title;
+            }
+            
+            return {
+                id: item.id.toString(),
+                fruitName: fruitName.trim(),
+                type: item.fields.ActivityType || 'Activity',
+                date: item.fields.Created || item.createdDateTime,
+                notes: item.fields.Notes || '',
+                user: extractUserName(item.fields) || 'Unknown'
+            };
+        });
+        
+        console.log('Loaded', sharePointData.activities.length, 'activities from SharePoint');
+        
+    } catch (error) {
+        console.error('Error loading activities from SharePoint:', error);
+        sharePointData.activities = [];
+        throw error;
+    }
+}
+
+// Load assignees from SharePoint Users list
+async function loadAssigneesFromSharePoint() {
+    try {
+        if (!sharePointAccessToken) {
+            throw new Error('No SharePoint access token available');
+        }
+
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.USERS_LIST_ID}/items?expand=fields&$filter=fields/Status eq 'Active'`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const items = data.value || [];
+        
+        // Extract assignee names
+        assignees = items.map(item => {
+            const fields = item.fields;
+            let displayName = '';
+            
+            if (fields.DisplayName) {
+                if (typeof fields.DisplayName === 'object') {
+                    displayName = fields.DisplayName.displayName || 
+                                 fields.DisplayName.title || 
+                                 fields.DisplayName.email || 
+                                 '';
+                } else {
+                    displayName = fields.DisplayName;
+                }
+            }
+            
+            if (!displayName && fields.Title) {
+                displayName = fields.Title;
+            }
+            
+            if (!displayName && fields.Email) {
+                displayName = fields.Email.split('@')[0];
+            }
+            
+            return displayName || 'Unknown User';
+        }).filter(name => name && name !== 'Unknown User');
+        
+        // Add current user if not in list
+        if (currentUser && currentUser.name && !assignees.includes(currentUser.name)) {
+            assignees.push(currentUser.name);
+        }
+        
+        // Add "Unassigned" option
+        if (!assignees.includes('Unassigned')) {
+            assignees.unshift('Unassigned');
+        }
+        
+        console.log('Loaded', assignees.length, 'assignees from SharePoint');
+        
+    } catch (error) {
+        console.error('Error loading assignees from SharePoint:', error);
+        assignees = currentUser ? [currentUser.name, 'Unassigned'] : ['Unassigned'];
+    }
+}
+
+// Helper function to extract user name from SharePoint fields
+function extractUserName(fields) {
+    const candidates = [
+        fields.User,
+        fields.CreatedByUser,
+        fields.CreatedBy,
+        fields.Author,
+        fields.Editor
+    ];
+
+    for (const cand of candidates) {
+        if (!cand) continue;
+
+        // string
+        if (typeof cand === 'string' && cand.trim()) return cand.trim();
+
+        // array
+        if (Array.isArray(cand) && cand.length) {
+            const names = cand.map(x => x?.displayName || x?.Title || x?.name || x?.email || x?.Mail || x?.value || '').filter(Boolean);
+            if (names.length) return names.join(', ');
+        }
+
+        // object
+        if (typeof cand === 'object') {
+            const name = cand.displayName || cand.title || cand.Name || cand.Mail || cand.email || cand.userPrincipalName || cand.Value || cand.value;
+            if (name) return name;
+            if (cand[0] && typeof cand[0] === 'object') {
+                const n = cand[0].displayName || cand[0].title || cand[0].Name || cand[0].email || cand[0].Mail;
+                if (n) return n;
+            }
+        }
+    }
+
+    return 'Unknown User';
+}
+        
 
         function updateConnectionStatus(connected) {
             isOnline = connected;
@@ -1143,17 +1346,17 @@
             
             if (filteredFruits.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-12 col-span-full">
-                        <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-search text-gray-400 text-3xl"></i>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No fruits found</h3>
-                        <p class="text-gray-500 mb-4">Try adjusting your search or filters.</p>
-                        <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                            Add New Fruit
-                        </button>
+                <div class="text-center py-12 col-span-full">
+                    <div class="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-users text-gray-400 text-3xl"></i>
                     </div>
-                `;
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No fruits found in SharePoint</h3>
+                    <p class="text-gray-500 mb-4">Try adjusting your search or add your first fruit.</p>
+                    <button onclick="showAddFruitModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        Add New Fruit
+                    </button>
+                </div>
+            `;
                 return;
             }
             
@@ -1365,49 +1568,98 @@
             document.getElementById('activityModal').classList.add('hidden');
         }
 
-        function saveFruit() {
-            const name = document.getElementById('fruitName').value;
-            const phone = document.getElementById('fruitPhone').value;
-            const status = document.getElementById('fruitStatus').value;
-            const source = document.getElementById('fruitSource').value;
-            const notes = document.getElementById('fruitNotes').value;
-            const assignedTo = document.getElementById('assigneeInput').value || currentUser.name;
-            
-            if (!name || !phone) {
-                showNotification('Error', 'Please fill in all required fields.', 'error');
-                return;
-            }
-            
-            // Generate a new ID (in a real app, this would be handled by SharePoint)
-            const newId = Math.max(...sharePointData.fruits.map(f => f.id), 0) + 1;
-            
-            // Add the new fruit
-            const newFruit = {
-                id: newId,
-                name,
-                phone,
-                status,
-                source,
-                notes,
-                assignedTo
-            };
-            
-            sharePointData.fruits.push(newFruit);
-            
-            // Show success message
-            showNotification('Success', 'Fruit added successfully.', 'success');
-            
-            // Close modal
-            hideAddFruitModal();
-            
-            // Refresh fruits list if we're on that tab
-            if (!document.getElementById('fruitsTab').classList.contains('hidden')) {
-                loadFruits();
-            }
-            
-            // Refresh overview stats
-            loadOverviewData();
+        
+        async function saveFruit() {
+    const name = document.getElementById('fruitName').value;
+    const phone = document.getElementById('fruitPhone').value;
+    const status = document.getElementById('fruitStatus').value;
+    const source = document.getElementById('fruitSource').value;
+    const notes = document.getElementById('fruitNotes').value;
+    const assignedTo = document.getElementById('assigneeInput').value || currentUser.name;
+    
+    if (!name || !phone) {
+        showNotification('Error', 'Please fill in all required fields.', 'error');
+        return;
+    }
+    
+    try {
+        if (!sharePointAccessToken) {
+            throw new Error('No SharePoint access available');
         }
+
+        // Add to SharePoint
+        const result = await addFruitToSharePoint({
+            name,
+            phone,
+            status,
+            source,
+            notes,
+            assignedTo
+        });
+        
+        // Add the SharePoint ID to our local object
+        const newFruit = {
+            id: result.id.toString(),
+            name,
+            phone,
+            status,
+            source,
+            notes,
+            assignedTo,
+            createdDate: new Date().toISOString()
+        };
+        
+        sharePointData.fruits.push(newFruit);
+        
+        // Show success message
+        showNotification('Success', 'Fruit added to SharePoint successfully.', 'success');
+        
+        // Close modal
+        hideAddFruitModal();
+        
+        // Refresh fruits list if we're on that tab
+        if (!document.getElementById('fruitsTab').classList.contains('hidden')) {
+            loadFruits();
+        }
+        
+        // Refresh overview stats
+        loadOverviewData();
+        
+    } catch (error) {
+        console.error('Error saving fruit to SharePoint:', error);
+        showNotification('Error', 'Failed to save fruit to SharePoint: ' + error.message, 'error');
+    }
+}
+
+// Add fruit to SharePoint
+async function addFruitToSharePoint(fruitData) {
+    const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/${SHAREPOINT_CONFIG.FRUITS_LIST_ID}/items`;
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${sharePointAccessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            fields: {
+                Title: fruitData.name,
+                Phone: fruitData.phone,
+                Status: fruitData.status,
+                LeadSource: fruitData.source,
+                Notes: fruitData.notes,
+                AssignedTo: fruitData.assignedTo
+            }
+        })
+    });
+    
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to add fruit: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+}
 
         // Notification System
         function showNotification(title, message, type = 'info') {
@@ -2010,27 +2262,54 @@
                 }
             }
             
-            function saveReportToSharePoint(title, date, description, participants, observations, takeaways) {
-                showNotification('Saving', 'Saving report to SharePoint...', 'info');
-                
-                // Prepare data for SharePoint
-                const reportData = {
+
+            
+
+            async function saveReportToSharePoint(title, date, description, participants, observations, takeaways) {
+    showNotification('Saving', 'Saving report to SharePoint...', 'info');
+    
+    try {
+        if (!sharePointAccessToken) {
+            throw new Error('No SharePoint access available');
+        }
+
+        const url = `${SHAREPOINT_CONFIG.GRAPH_API_URL}/sites/${SHAREPOINT_CONFIG.SITE_ID}/lists/1E4E56C0-52F1-44B4-9AC6-1C2574DC9E11/items`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${sharePointAccessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                fields: {
                     Title: title,
                     MeetingDate: date,
                     Description: description,
                     Participants: JSON.stringify(participants),
                     Observations: JSON.stringify(observations),
-                    KeyTakeaways: JSON.stringify(takeaways),
-                    CreatedBy: currentUser.name
-                };
-                
-                // Simulate saving to SharePoint
-                setTimeout(() => {
-                    // In a real implementation, this would call the SharePoint API
-                    // For now, we'll just show a success message
-                    showNotification('Success', 'Report saved to SharePoint successfully.', 'success');
-                }, 2000);
-            }
+                    KeyTakeaways: JSON.stringify(takeaways)
+                    // CreatedBy will be auto-filled by SharePoint
+                }
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to save report: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Report saved to SharePoint:', result);
+        
+        showNotification('Success', 'Report saved to SharePoint successfully.', 'success');
+        
+    } catch (error) {
+        console.error('Error saving report to SharePoint:', error);
+        showNotification('Error', 'Failed to save report to SharePoint: ' + error.message, 'error');
+    }
+}
+
         }
     </script>
 </body>
