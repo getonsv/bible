@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Evengelism Reporting Management System</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/webp" href="https://www.geton.asia/web/image/2823-560fecd3/9.webp">
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- MSAL (Microsoft Authentication Library) -->
+    <script src="https://alcdn.msauth.net/browser/2.36.0/js/msal-browser.min.js"></script>
+
+    <style>
+        /* ---------- EV base styles (kept from original) ---------- */
+        body { box-sizing: border-box; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0);} }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .progress-bar { transition: width 0.5s ease; }
+        .notification { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%);} to { transform: translateX(0);} }
+        /* dropdown enhanced */
+        #assigneeSuggestions { scrollbar-width: thin; scrollbar-color: #cbd5e0 #f7fafc; }
+        #assigneeSuggestions::-webkit-scrollbar { width: 6px; }
+        #assigneeSuggestions::-webkit-scrollbar-track { background: #f7fafc; border-radius: 0 0 8px 8px; }
+        #assigneeSuggestions::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 3px; }
+        #assigneeSuggestions::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+
+        /* ---------- Embedded FruitReport styles (kept from FruitReport.html, slight adjustments) ---------- */
+        /* Scoped under #fruitReportSection so it won't clash with EV's global styles */
+        #fruitReportSection { --primary: #0F4761; --primary-light: #1a5c7c; --secondary: #f0f7ff; --accent: #2E8B57; --text: #333; --light-text: #595959; --border: #c5d9f1; --success: #27ae60; --danger: #e74c3c; }
+        #fruitReportSection * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #fruitReportSection .container { display: flex; flex-direction: column; gap: 30px; max-width: 1200px; margin: 0 auto; padding: 12px; }
+        #fruitReportSection .generator-section, #fruitReportSection .report-section { background: white; box-shadow: 0 5px 25px rgba(0,0,0,0.08); border-radius: 12px; padding: 20px; transition: all 0.3s ease; }
+        #fruitReportSection h1,#fruitReportSection h2,#fruitReportSection h3{ color: var(--primary); margin-bottom: 12px; }
+        #fruitReportSection h1{ font-size: 26px; text-align: center; margin-bottom: 15px; position: relative; padding-bottom: 10px;}
+        #fruitReportSection h1:after{ content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:60px; height:4px; background:var(--accent); border-radius:2px; }
+        #fruitReportSection label { display:block; margin-bottom:8px; font-weight:600; color:var(--primary);}
+        #fruitReportSection input, #fruitReportSection textarea, #fruitReportSection select { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:15px; transition: all .2s;}
+        #fruitReportSection input:focus, #fruitReportSection textarea:focus, #fruitReportSection select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(15,71,97,0.06); }
+        #fruitReportSection .btn { background-color:var(--primary); color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600; display:inline-flex; gap:8px; align-items:center; }
+        #fruitReportSection .btn-secondary { background-color:var(--accent); }
+        #fruitReportSection .participant-form { border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px; background-color:var(--secondary); }
+        #fruitReportSection .participant-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:10px; }
+        #fruitReportSection .observation-table { width:100%; border-collapse:collapse; margin: 12px 0; }
+        #fruitReportSection .key-takeaways { background:var(--secondary); border-left:4px solid var(--primary); padding:14px; margin:14px 0; border-radius:6px; }
+        #fruitReportSection .footer { text-align:center; margin-top:14px; color:var(--light-text); font-size:13px; }
+
+        /* small screens */
+        @media (max-width:768px){
+            #fruitReportSection .container{ padding:8px; }
+        }
+    </style>
+
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+
+<!-- LOGIN / LANDING (keeps original) -->
+<div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-cross text-white text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Evangelism Reporting Management System</h1>
+            <p class="text-gray-600">Track the progress of your fruit</p>
+        </div>
+
+        <div id="msSignInButton" class="w-full mb-4">
+            <button id="btnSignIn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                <i class="fab fa-microsoft"></i>
+                <span>Sign in with Microsoft</span>
+            </button>
+        </div>
+
+        <div class="mt-6 text-center">
+            <p class="text-xs text-gray-400 mt-2">Copyright <span id="currentYearFooter"></span> • System by GetOn</p>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN DASHBOARD (hidden until login) -->
+<div id="dashboard" class="hidden">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-10 h-10 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cross text-white"></i>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-800">Evangelism CRM</h1>
+                    <div class="flex items-center space-x-2">
+                        <div id="connectionStatus" class="flex items-center space-x-1">
+                            <div class="w-2 h-2 bg-green-500 rounded-full" id="statusIndicator"></div>
+                            <span class="text-xs text-gray-500" id="statusText">Connected</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm" id="userAvatar">U</div>
+                        <span id="userName" class="text-gray-700 hidden sm:inline">User</span>
+                    </div>
+                    <button id="btnSignOut" onclick="logout()" class="text-gray-500 hover:text-gray-700 hidden">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Tab Navigation -->
+    <div class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex space-x-8 overflow-x-auto">
+                <button onclick="showTab('overview')" class="tab-btn py-4 px-2 border-b-2 border-blue-600 text-blue-600 font-medium whitespace-nowrap">
+                    <i class="fas fa-chart-line mr-2"></i>Overview
+                </button>
+                <button onclick="showTab('fruits')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                    <i class="fas fa-users mr-2"></i>Fruits
+                </button>
+                <button onclick="showTab('activities')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                    <i class="fas fa-phone mr-2"></i>Activities
+                </button>
+                <button onclick="showTab('reports')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                    <i class="fas fa-chart-bar mr-2"></i>Reports
+                </button>
+
+                <!-- NEW: Fruit Report Tab -->
+                <button id="fruitReportTabBtn" onclick="showTab('fruitreport')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap hidden">
+                    <i class="fas fa-file-signature mr-2"></i>Fruit Report
+                </button>
+
+                <button id="adminTabBtn" onclick="showTab('admin')" class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap hidden">
+                    <i class="fas fa-cog mr-2"></i>Admin
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENT SECTIONS (only Overview and Fruits are stubbed; FruitReport included fully) -->
+    <div id="overviewTab" class="tab-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-lg font-semibold">Overview</h2>
+            <p class="text-sm text-gray-600">Dashboard content...</p>
+        </div>
+    </div>
+
+    <div id="fruitsTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-lg font-semibold">Fruits Management</h2>
+            <p class="text-sm text-gray-600">Fruits list and interactions...</p>
+        </div>
+    </div>
+
+    <!-- Fruit Report Tab (merged FruitReport.html content here) -->
+    <div id="fruitreportTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div id="fruitReportSection" class="container">
+            <!-- Generator -->
+            <div class="generator-section">
+                <h1>Fruit Meeting Report Generator</h1>
+
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-4">
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="autoSaveToggle">
+                            <span class="text-sm text-gray-600">Auto-save reports to SharePoint</span>
+                        </label>
+                        <button id="saveToSPBtn" class="btn ml-2">Save to SharePoint</button>
+                    </div>
+
+                    <div>
+                        <label class="text-sm text-gray-600">Auto-save uses your current session setting.</label>
+                    </div>
+                </div>
+
+                <div id="step1" class="tab-content active">
+                    <div class="section-header mb-2 flex justify-between items-center pb-2 border-b">
+                        <h2 class="text-lg">Meeting Information</h2>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="meetingTitle">Meeting Title</label>
+                        <input type="text" id="meetingTitle" placeholder="Enter meeting title">
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="meetingDate">Meeting Date</label>
+                        <input type="date" id="meetingDate">
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="meetingDescription">Meeting Description (Optional)</label>
+                        <textarea id="meetingDescription" placeholder="Brief description of the meeting"></textarea>
+                    </div>
+
+                    <div class="action-buttons mt-4">
+                        <button id="nextToStep2" class="btn">Next: Add Participants →</button>
+                    </div>
+                </div>
+
+                <div id="step2" class="tab-content hidden">
+                    <div class="section-header mb-2 flex justify-between items-center pb-2 border-b">
+                        <h2 class="text-lg">Participants</h2>
+                        <button id="addParticipant" class="btn btn-secondary">+ Add Participant</button>
+                    </div>
+
+                    <div id="participantsContainer"></div>
+
+                    <div class="action-buttons mt-4 flex gap-2">
+                        <button id="backToStep1" class="btn btn-secondary">← Back</button>
+                        <button id="nextToStep3" class="btn">Next: Add Observations →</button>
+                    </div>
+                </div>
+
+                <div id="step3" class="tab-content hidden">
+                    <div class="section-header mb-2 flex justify-between items-center pb-2 border-b">
+                        <h2 class="text-lg">Observations</h2>
+                        <button id="addObservation" class="btn btn-secondary">+ Add Observation</button>
+                    </div>
+
+                    <div id="observationsContainer"></div>
+
+                    <div class="action-buttons mt-4 flex gap-2">
+                        <button id="backToStep2" class="btn btn-secondary">← Back</button>
+                        <button id="nextToStep4" class="btn">Next: Key Takeaways →</button>
+                    </div>
+                </div>
+
+                <div id="step4" class="tab-content hidden">
+                    <div class="section-header mb-2 flex justify-between items-center pb-2 border-b">
+                        <h2 class="text-lg">Key Takeaways</h2>
+                        <button id="addTakeaway" class="btn btn-secondary">+ Add Takeaway</button>
+                    </div>
+
+                    <div id="takeawaysContainer"></div>
+
+                    <div class="action-buttons mt-4 flex gap-2">
+                        <button id="backToStep3" class="btn btn-secondary">← Back</button>
+                        <button id="generateReportBtn" class="btn">Generate Report</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Preview -->
+            <div id="reportSection" class="report-section" style="display:none;">
+                <div id="reportPreview"></div>
+                <div class="action-buttons mt-4">
+                    <button id="downloadPdfBtn" class="btn">Download PDF</button>
+                    <button id="regenerateBtn" class="btn btn-secondary">Regenerate</button>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Report generator saved to SharePoint as structured data (Meeting Title, Date, Participants, Observations, Takeaways).</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Tab content stub -->
+    <div id="adminTab" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-lg font-semibold">Admin</h2>
+            <p class="text-sm text-gray-600">SharePoint & Graph settings are auto-populated from this page in your environment.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* ---------- Configuration variables (edit if needed) ---------- */
+/* Client & Tenant IDs you confirmed */
+const MS_CLIENT_ID = '45862fea-24e9-413e-b075-a4d5b4f898a9'; // Microsoft Entra App Client ID
+const MS_TENANT_ID = '46ba01de-8f81-4731-9062-36cc2dbf48bb'; // Tenant ID
+const SITE_ID = 'getonasia.sharepoint.com,5790e3b0-0575-4dcb-a345-bef1af2d9a2b,756a3114-aab1-4d05-9c80-a4ce86bce4b7'; // siteId used in your EV admin
+const FRUITS_LIST_ID = '139125e5-1bd9-4172-a7d9-ddf3a1dd8586'; // Fruits list
+const REPORTS_LIST_ID = '1E4E56C0-52F1-44B4-9AC6-1C2574DC9E11'; // FruitMeetingReports list
+
+/* Graph scopes */
+const GRAPH_SCOPES = ["User.Read", "Sites.Read.All", "Sites.ReadWrite.All", "offline_access", "openid", "profile"];
+
+/* MSAL initialization */
+const msalConfig = {
+    auth: {
+        clientId: MS_CLIENT_ID,
+        authority: `https://login.microsoftonline.com/${MS_TENANT_ID}`,
+        redirectUri: window.location.origin + window.location.pathname
+    },
+    cache: {
+        cacheLocation: "localStorage",
+        storeAuthStateInCookie: false
+    }
+};
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+/* UI elements */
+const btnSignIn = document.getElementById('btnSignIn');
+const btnSignOut = document.getElementById('btnSignOut');
+const loginScreen = document.getElementById('loginScreen');
+const dashboard = document.getElementById('dashboard');
+const userNameEl = document.getElementById('userName');
+const userAvatar = document.getElementById('userAvatar');
+const fruitReportTabBtn = document.getElementById('fruitReportTabBtn');
+const autoSaveToggle = document.getElementById('autoSaveToggle');
+const saveToSPBtn = document.getElementById('saveToSPBtn');
+
+/* Application state */
+let account = null;
+let accessToken = null;
+let fruitsCache = []; // loaded fruit names for autocomplete
+
+/* Helpers: show/hide tabs */
+function hideAllTabs() {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+}
+function showTab(name) {
+    hideAllTabs();
+    // show the tab with id name + 'Tab' or direct id
+    if (name === 'fruitreport') {
+        document.getElementById('fruitreportTab').classList.remove('hidden');
+        // ensure preview hidden until generated
+        document.getElementById('reportSection').style.display = 'none';
+    } else if (name === 'overview') {
+        document.getElementById('overviewTab').classList.remove('hidden');
+    } else if (name === 'fruits') {
+        document.getElementById('fruitsTab').classList.remove('hidden');
+    } else if (name === 'activities') {
+        document.getElementById('activitiesTab').classList.remove('hidden');
+    } else if (name === 'reports') {
+        document.getElementById('reportsTab')?.classList.remove('hidden');
+    } else if (name === 'admin') {
+        document.getElementById('adminTab')?.classList.remove('hidden');
+    }
+}
+
+/* ---------- Authentication & Graph helpers ---------- */
+async function login() {
+    try {
+        const loginResponse = await msalInstance.loginPopup({
+            scopes: GRAPH_SCOPES
+        });
+        account = loginResponse.account;
+        // update UI
+        onLoginSuccess();
+        await acquireToken(); // fetch token
+        await loadFruits(); // pre-load fruit names
+    } catch (err) {
+        console.error('Login error', err);
+        alert('Sign-in failed: ' + (err && err.message ? err.message : err));
+    }
+}
+
+async function acquireToken() {
+    try {
+        const result = await msalInstance.acquireTokenSilent({
+            account: msalInstance.getAllAccounts()[0],
+            scopes: GRAPH_SCOPES
+        });
+        accessToken = result.accessToken;
+        return accessToken;
+    } catch (silentError) {
+        // fallback to interactive
+        try {
+            const result = await msalInstance.acquireTokenPopup({
+                scopes: GRAPH_SCOPES
+            });
+            accessToken = result.accessToken;
+            return accessToken;
+        } catch (err) {
+            console.error('Acquire token failed', err);
+            throw err;
+        }
+    }
+}
+
+function logout() {
+    const currentAccount = msalInstance.getAllAccounts()[0];
+    if (currentAccount) {
+        msalInstance.logoutPopup({ account: currentAccount }).then(() => {
+            account = null;
+            accessToken = null;
+            updateSignedInUI(false);
+            showLoginScreen();
+        }).catch(e => {
+            console.error(e);
+            alert('Logout failed');
+        });
+    } else {
+        updateSignedInUI(false);
+        showLoginScreen();
+    }
+}
+
+function onLoginSuccess() {
+    const acct = msalInstance.getAllAccounts()[0];
+    if (!acct) return;
+    account = acct;
+    document.getElementById('userName').textContent = acct.name || acct.username || 'User';
+    document.getElementById('userAvatar').textContent = (acct.name && acct.name[0]) ? acct.name[0].toUpperCase() : 'U';
+    updateSignedInUI(true);
+}
+
+/* UI toggle */
+function updateSignedInUI(isSignedIn) {
+    if (isSignedIn) {
+        loginScreen.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+        btnSignOut.classList.remove('hidden');
+        fruitReportTabBtn.classList.remove('hidden');
+    } else {
+        loginScreen.classList.remove('hidden');
+        dashboard.classList.add('hidden');
+        btnSignOut.classList.add('hidden');
+        fruitReportTabBtn.classList.add('hidden');
+    }
+}
+function showLoginScreen() {
+    updateSignedInUI(false);
+}
+
+/* ---------- Graph request helper ---------- */
+async function graphFetch(endpoint, method='GET', body=null) {
+    if (!accessToken) await acquireToken();
+    const url = `https://graph.microsoft.com/v1.0${endpoint}`;
+    const options = {
+        method,
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        }
+    };
+    if (body) options.body = JSON.stringify(body);
+    const res = await fetch(url, options);
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Graph request failed ${res.status}: ${text}`);
+    }
+    return res.json();
+}
+
+/* ---------- SharePoint interactions ---------- */
+async function loadFruits() {
+    // Load fruit items (fields) from the Fruits list and cache names for autocomplete
+    try {
+        // Expand fields to get item fields
+        const endpoint = `/sites/${SITE_ID}/lists/${FRUITS_LIST_ID}/items?$expand=fields&$top=500`;
+        const data = await graphFetch(endpoint);
+        fruitsCache = [];
+        (data.value || []).forEach(it => {
+            const fields = it.fields || {};
+            // attempt multiple common field names
+            const name = fields.Title || fields.Title0 || fields.Name || fields.name || fields.FullName || fields.Full_x0020_Name || null;
+            if (name) fruitsCache.push(name);
+        });
+        // populate existing participant datalist
+        attachFruitDatalist();
+    } catch (err) {
+        console.error('Failed to load fruits', err);
+    }
+}
+
+function attachFruitDatalist() {
+    // remove existing datalist if present
+    const existing = document.getElementById('fruitNamesDatalist');
+    if (existing) existing.remove();
+    const d = document.createElement('datalist');
+    d.id = 'fruitNamesDatalist';
+    fruitsCache.forEach(name => {
+        const o = document.createElement('option');
+        o.value = name;
+        d.appendChild(o);
+    });
+    document.body.appendChild(d);
+
+    // ensure new participant inputs will attach this datalist
+    document.querySelectorAll('.participant-name-input').forEach(inp => {
+        inp.setAttribute('list','fruitNamesDatalist');
+    });
+}
+
+/* Create a list item in FruitMeetingReports - saves structured fields */
+async function saveReportToSharePoint(structuredData) {
+    // structuredData: { title, meetingDate, description, participants, observations, takeaways }
+    try {
+        const fieldsPayload = {
+            // Basic required Title field for SharePoint
+            Title: structuredData.title || 'Untitled Meeting',
+            MeetingDate: structuredData.meetingDate || null,
+            Description: structuredData.description || '',
+            Participants: JSON.stringify(structuredData.participants || []),
+            Observations: JSON.stringify(structuredData.observations || []),
+            KeyTakeaways: JSON.stringify(structuredData.takeaways || []),
+            CreatedBy: account && (account.username || account.name) ? (account.name || account.username) : ''
+        };
+        const endpoint = `/sites/${SITE_ID}/lists/${REPORTS_LIST_ID}/items`;
+        const body = { fields: fieldsPayload };
+        const result = await graphFetch(endpoint, 'POST', body);
+        return result;
+    } catch (err) {
+        console.error('Error saving report', err);
+        throw err;
+    }
+}
+
+/* ---------- Report builder UI logic (merged from FruitReport.html) ---------- */
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('currentYearFooter').textContent = new Date().getFullYear();
+
+    // Sign-in events
+    btnSignIn.addEventListener('click', async () => {
+        await login();
+    });
+
+    // if already signed in (MSAL persisted account), restore session
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts && accounts.length > 0) {
+        // try to silently acquire token and set UI
+        acquireToken().then(() => {
+            onLoginSuccess();
+            loadFruits();
+        }).catch(() => {
+            // not signed in silently
+            updateSignedInUI(false);
+        });
+    }
+
+    // Save button and toggle
+    saveToSPBtn.addEventListener('click', async () => {
+        await handleSaveFlow();
+    });
+
+    // Tab navigation within generator
+    const stepsEls = {1: document.getElementById('step1'), 2: document.getElementById('step2'), 3: document.getElementById('step3'), 4: document.getElementById('step4')};
+    function navigateToStep(step) {
+        Object.keys(stepsEls).forEach(k => stepsEls[k].classList.add('hidden'));
+        stepsEls[step].classList.remove('hidden');
+    }
+
+    document.getElementById('nextToStep2').addEventListener('click', () => navigateToStep(2));
+    document.getElementById('backToStep1').addEventListener('click', () => navigateToStep(1));
+    document.getElementById('nextToStep3').addEventListener('click', () => navigateToStep(3));
+    document.getElementById('backToStep2').addEventListener('click', () => navigateToStep(2));
+    document.getElementById('nextToStep4').addEventListener('click', () => navigateToStep(4));
+    document.getElementById('backToStep3').addEventListener('click', () => navigateToStep(3));
+
+    // dynamic forms: participants, observations, takeaways
+    const participantsContainer = document.getElementById('participantsContainer');
+    const observationsContainer = document.getElementById('observationsContainer');
+    const takeawaysContainer = document.getElementById('takeawaysContainer');
+
+    function createParticipantElement(defaults={}) {
+        const id = `p-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'participant-form';
+        wrapper.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-sm font-semibold">Participant</h3>
+                <button type="button" class="remove-participant btn btn-danger" style="background:var(--danger); padding:6px 8px; border-radius:6px;">Remove</button>
+            </div>
+            <div class="form-group mb-2">
+                <label>Name</label>
+                <input type="text" class="participant-name-input" placeholder="Enter participant name" value="${defaults.name||''}" list="fruitNamesDatalist">
+            </div>
+            <div class="form-group mb-2">
+                <label>Role</label>
+                <select class="participant-role-select">
+                    <option value="🧑‍🏫 Instructor">🧑‍🏫 Instructor</option>
+                    <option value="🍎 Fruit">🍎 Fruit</option>
+                    <option value="🍃 Leaf">🍃 Leaf</option>
+                </select>
+            </div>
+            <div class="form-group mb-2">
+                <label>Notes</label>
+                <input type="text" class="participant-notes-input" placeholder="Optional notes" value="${defaults.notes||''}">
+            </div>
+        `;
+        wrapper.querySelector('.remove-participant').addEventListener('click', () => {
+            if (participantsContainer.children.length > 1) wrapper.remove();
+            else alert('You need at least one participant.');
+        });
+        return wrapper;
+    }
+
+    function createObservationElement(defaults={}) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'participant-form';
+        wrapper.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-sm font-semibold">Observation</h3>
+                <button type="button" class="remove-observation btn btn-danger" style="background:var(--danger); padding:6px 8px; border-radius:6px;">Remove</button>
+            </div>
+            <div class="form-group mb-2">
+                <label>Topic</label>
+                <input type="text" class="observation-topic-input" placeholder="Observation topic" value="${defaults.topic||''}">
+            </div>
+            <div class="form-group mb-2">
+                <label>Details</label>
+                <textarea class="observation-details-input" placeholder="Write observation details...">${defaults.details||''}</textarea>
+            </div>
+        `;
+        wrapper.querySelector('.remove-observation').addEventListener('click', () => {
+            if (observationsContainer.children.length > 1) wrapper.remove();
+            else alert('You need at least one observation.');
+        });
+        return wrapper;
+    }
+
+    function createTakeawayElement(defaults={}) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'participant-form';
+        wrapper.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-sm font-semibold">Takeaway</h3>
+                <button type="button" class="remove-takeaway btn btn-danger" style="background:var(--danger); padding:6px 8px; border-radius:6px;">Remove</button>
+            </div>
+            <div class="form-group mb-2">
+                <label>Participant (Optional)</label>
+                <input type="text" class="takeaway-participant-input" placeholder="Participant name" value="${defaults.participant||''}" list="fruitNamesDatalist">
+            </div>
+            <div class="form-group mb-2">
+                <label>Takeaway</label>
+                <textarea class="takeaway-text-input" placeholder="Key takeaway...">${defaults.text||''}</textarea>
+            </div>
+        `;
+        wrapper.querySelector('.remove-takeaway').addEventListener('click', () => {
+            if (takeawaysContainer.children.length > 1) wrapper.remove();
+            else alert('You need at least one takeaway.');
+        });
+        return wrapper;
+    }
+
+    // initial items
+    participantsContainer.appendChild(createParticipantElement());
+    observationsContainer.appendChild(createObservationElement());
+    takeawaysContainer.appendChild(createTakeawayElement());
+
+    // wire add buttons
+    document.getElementById('addParticipant').addEventListener('click', () => {
+        const el = createParticipantElement();
+        participantsContainer.appendChild(el);
+        attachFruitDatalist();
+    });
+    document.getElementById('addObservation').addEventListener('click', () => {
+        observationsContainer.appendChild(createObservationElement());
+    });
+    document.getElementById('addTakeaway').addEventListener('click', () => {
+        takeawaysContainer.appendChild(createTakeawayElement());
+        attachFruitDatalist();
+    });
+
+    // generate report preview and optionally auto-save
+    document.getElementById('generateReportBtn').addEventListener('click', async () => {
+        const structured = collectStructuredData();
+        buildReportPreview(structured);
+        document.getElementById('reportSection').style.display = 'block';
+
+        // if auto-save is checked for session, save automatically
+        if (autoSaveToggle.checked) {
+            try {
+                await saveReportToSharePoint(structured);
+                alert('Report auto-saved to SharePoint.');
+            } catch (err) {
+                alert('Auto-save failed. You can try Save to SharePoint manually.');
+            }
+        }
+    });
+
+    // regenerate btn re-opens generator views
+    document.getElementById('regenerateBtn').addEventListener('click', () => {
+        document.getElementById('reportSection').style.display = 'none';
+        // return to step1 for edits
+        navigateToStep(1);
+    });
+
+    // (Optional) PDF download — quick approach: open printable window
+    document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+        const html = document.getElementById('reportPreview').innerHTML;
+        const w = window.open('', '_blank');
+        w.document.write(`
+            <html>
+            <head>
+                <title>Report</title>
+                <style>
+                    body{ font-family: Arial, sans-serif; padding:20px; color:#222; }
+                    h1{ color:${getComputedStyle(document.documentElement).getPropertyValue('--primary') || '#0F4761'}; }
+                </style>
+            </head>
+            <body>${html}</body>
+            </html>
+        `);
+        w.document.close();
+        w.print();
+    });
+
+    // Save to SharePoint manual flow
+    async function handleSaveFlow() {
+        const structured = collectStructuredData();
+        try {
+            const res = await saveReportToSharePoint(structured);
+            alert('Saved to SharePoint successfully.');
+        } catch (err) {
+            alert('Save failed: ' + (err && err.message ? err.message : err));
+        }
+    }
+
+    // Save button also triggers handleSaveFlow
+    saveToSPBtn.addEventListener('click', handleSaveFlow);
+
+    // Collect structured data from form
+    function collectStructuredData() {
+        const title = document.getElementById('meetingTitle').value || 'Untitled Meeting';
+        const meetingDate = document.getElementById('meetingDate').value || null;
+        const description = document.getElementById('meetingDescription').value || '';
+
+        // participants
+        const participants = Array.from(participantsContainer.querySelectorAll('.participant-form')).map(node => {
+            return {
+                name: node.querySelector('.participant-name-input')?.value || '',
+                role: node.querySelector('.participant-role-select')?.value || '',
+                notes: node.querySelector('.participant-notes-input')?.value || ''
+            };
+        });
+
+        // observations
+        const observations = Array.from(observationsContainer.querySelectorAll('.participant-form')).map(node => {
+            return {
+                topic: node.querySelector('.observation-topic-input')?.value || '',
+                details: node.querySelector('.observation-details-input')?.value || ''
+            };
+        });
+
+        // takeaways
+        const takeaways = Array.from(takeawaysContainer.querySelectorAll('.participant-form')).map(node => {
+            return {
+                participant: node.querySelector('.takeaway-participant-input')?.value || '',
+                text: node.querySelector('.takeaway-text-input')?.value || ''
+            };
+        });
+
+        return { title, meetingDate, description, participants, observations, takeaways };
+    }
+
+    // Build the preview HTML visually similar to FruitReport.html
+    function buildReportPreview(structured) {
+        const { title, meetingDate, description, participants, observations, takeaways } = structured;
+        const preview = document.getElementById('reportPreview');
+        const formattedDate = meetingDate ? new Date(meetingDate).toLocaleDateString('en-GB') : '—';
+        let html = `
+            <div style="padding:16px;">
+                <h1 style="font-size:22px;color:var(--primary);margin-bottom:6px;">${escapeHtml(title)}</h1>
+                <div style="color:#666;font-size:14px;margin-bottom:12px;">Date: ${formattedDate}</div>
+                <div style="margin-bottom:12px;color:#333;">${escapeHtml(description)}</div>
+                <h3 style="color:var(--primary);margin-top:12px;">Participants</h3>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;margin:8px 0;">
+        `;
+        participants.forEach(p => {
+            html += `<div style="background:#f7fbff;padding:10px;border-radius:8px;border:1px solid #e6f0fb;min-width:160px;">
+                        <div style="font-weight:700;color:var(--primary);">${escapeHtml(p.name)}</div>
+                        <div style="font-size:13px;color:#666;">${escapeHtml(p.role)}</div>
+                        <div style="font-size:13px;color:#444;margin-top:6px;">${escapeHtml(p.notes)}</div>
+                    </div>`;
+        });
+        html += `</div>`;
+
+        // observations
+        html += `<h3 style="color:var(--primary);margin-top:14px;">Observations</h3>`;
+        if (observations.length) {
+            html += `<table style="width:100%;border-collapse:collapse;margin-top:8px;">`;
+            html += `<thead><tr style="background:var(--primary);color:#fff;"><th style="padding:8px;text-align:left">Topic</th><th style="padding:8px;text-align:left">Details</th></tr></thead><tbody>`;
+            observations.forEach(obs => {
+                html += `<tr><td style="padding:8px;border-bottom:1px solid #eee;width:30%">${escapeHtml(obs.topic)}</td><td style="padding:8px;border-bottom:1px solid #eee">${escapeHtml(obs.details)}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+        } else {
+            html += `<div class="empty-state"><p>No observations added.</p></div>`;
+        }
+
+        // takeaways
+        html += `<div class="key-takeaways" style="margin-top:14px;padding:12px;background:#f0f7ff;border-left:4px solid:var(--primary)">
+                    <h3 style="margin-bottom:8px;">Key Takeaways</h3>`;
+        takeaways.forEach(t => {
+            html += `<div style="margin-bottom:8px;"><strong>${escapeHtml(t.participant)}</strong> — ${escapeHtml(t.text)}</div>`;
+        });
+        html += `</div>`;
+
+        html += `<div style="margin-top:16px;color:#777;font-size:13px;">Generated by ${escapeHtml(account ? account.name : 'Unknown')} on ${new Date().toLocaleString()}</div>`;
+        html += `</div>`;
+
+        preview.innerHTML = html;
+    }
+
+    // simple HTML escape
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'", '&#39;');
+    }
+
+    // attach datalist if fruits loaded later
+    attachFruitDatalist();
+
+}); // end DOMContentLoaded
+</script>
+
+</body>
+</html>
