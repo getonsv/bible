@@ -1,0 +1,100 @@
+<select id="languageSelector" onchange="updateIframe()">
+  <option value="https://www.youtube.com/embed/ksu-zTG9HHg" selected="">🇬🇧 English</option>
+  <option value="https://www.youtube.com/embed/pbsdOC-JPTk">🇮🇩 Indonesian</option>
+  <option value="https://www.youtube.com/embed/rZr1o_SQbLA">🇮🇳 Tamil</option>
+  <option value="https://www.youtube.com/embed/3vJY4kZxbFY">🇨🇳 Cantonese</option>
+  <option value="https://www.youtube.com/embed/2v464ypI2xY">🇵🇭 Tagalog</option>
+  <option value="https://www.youtube.com/embed/SGb1Awp54tk">🇨🇳 Mandarin</option>
+  <option value="https://www.youtube.com/embed/VG6wFDNwUd0">🇰🇷 Korean</option>
+  <option value="https://www.youtube.com/embed/mXGcLvaYvRI">🇧🇩 Bengali</option>
+  <option value="https://www.youtube.com/embed/krS0vCGKMwA">🇻🇳 Vietnamese</option>
+  <option value="https://www.youtube.com/embed/lW5dyucN3kM">🇮🇳 Hindi</option>
+  <option value="https://www.youtube.com/embed/9o-ye5C1QDM">🇰🇭 Khmer</option>
+  <option value="https://www.youtube.com/embed/MU1EH1H4pg8">🇪🇸 Spanish</option>
+  <option value="https://www.youtube.com/embed/QdcBG0kxWpE">🇨🇳 Putonghua Mandarin</option>
+  <option value="https://www.youtube.com/embed/bNdRTMf4xws">🇹🇭 Thai</option>
+  <option value="https://www.youtube.com/embed/0nHO0dbefX4">🇸🇦 Arabic</option>
+  <option value="https://www.youtube.com/embed/Yvh5Tn3iynE">🇵🇱 Polish</option>
+  <option value="https://www.youtube.com/embed/yNKKrs3WBSU">🇮🇷 Farsi</option>
+  <option value="https://www.youtube.com/embed/T_gbQ2LYumg">🇷🇺 Russian</option>
+  <option value="https://www.youtube.com/embed/aUOzH5CsJw4">🇩🇪 German</option>
+  <option value="https://www.youtube.com/embed/QdSA40wTXQs">🇳🇵 Nepali</option>
+  <option value="https://www.youtube.com/embed/nbZYyhGepkQ">🇲🇾 Bahasa</option>
+  <option value="https://www.youtube.com/embed/S4aLzMG6-B8">🇵🇰 Urdu</option>
+  <option value="https://www.youtube.com/embed/UP2YNIAiqK0">🇪🇸 Castilian</option>
+  <option value="https://www.youtube.com/embed/zb4H2Im0_As">🇷🇸 Serbian</option>
+  <option value="https://www.youtube.com/embed/qaG9oROgJns">🇵🇹 Portuguese</option>
+  <option value="https://www.youtube.com/embed/MyqGb_RBzO0">🇺🇦 Ukrainian</option>
+  <option value="https://www.youtube.com/embed/A1EtNA1B-mw">🇬🇪 Georgian</option>
+  <option value="https://www.youtube.com/embed/RlceelKs3ug">🇨🇳 Hmong</option>
+  <option value="https://www.youtube.com/embed/9mpCHcfxl3M">🇲🇲 Burmese</option>
+  <option value="https://www.youtube.com/embed/V_vS_AGEZ4s">🇹🇷 Turkish</option>
+</select>
+
+<iframe id="videoIframe" width="560" height="315" src="https://www.youtube.com/embed/ksu-zTG9HHg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe>
+
+<script>
+  function updateIframe() {
+    const selector = document.getElementById('languageSelector');
+    const iframe = document.getElementById('videoIframe');
+    iframe.src = selector.value;
+  }
+</script>
+
+<style>
+
+  /* Styling the language selector */
+  #languageSelector {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: #fff;    
+    background-position: left 17px top 6px, calc(100% - 10px);
+    background-repeat: no-repeat;
+    -webkit-background-size: 14px, 10px;
+    background-size: 14px, 10px;
+    border: 1px solid #ccc;
+    border-radius: 50px;
+    color: #252525;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 300;
+    height: 40px;
+    line-height: 1;
+    margin-bottom: 30px;
+    outline: 0;
+    padding: 8px 0 8px 40px;
+    position: relative;
+    transition: all .1s ease-in-out;
+    width: 100%;
+    max-width: 250px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Hover or focus styles for the dropdown */
+  #languageSelector:focus,
+  #languageSelector:hover {
+    background-color: #d3edfe;
+  }
+
+  /* Styling iframe for video */
+  #videoIframe {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+  }
+
+    #videoIframe {
+      width: 100%;
+      max-width: 800px;
+      height: 500px;
+
+
+    }
+  }
+</style>
