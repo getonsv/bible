@@ -1,0 +1,53 @@
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bible - NIV 1984</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/getonsv/bible@refs/heads/main/Style.css">
+  <script src="https://cdn.jsdelivr.net/gh/getonsv/bible@refs/heads/main/html2canvas.min.js"></script>
+
+
+  <div class="bible-container">
+    <div class="bible-dashboard">
+      <div class="search-range-container">
+        <input type="text" id="rangeSearchInput" placeholder="Enter e.g. Gen 1:1-2, Genesis 1:1-2:2, John 1 - Acts 2, or even John 1:1,3,5">
+        <button onclick="searchQuery()">Go</button>
+        <button onclick="generateRangeImage()">📤</button>
+        <button id="openProjectionBtn" onclick="openProjection()">🖥️</button>
+        <button id="prevProjection" onclick="previousProjection()">◀</button>
+        <button id="nextProjection" onclick="nextProjection()">▶</button>
+      </div>
+      <p id="verseDisplay"></p>
+    </div>
+    <div class="bible-main-content">
+      <div class="mini-projection" id="miniProjection">
+        <p>Mini Projection Screen</p>
+      </div>
+      
+      <div id="pinnedVersesContainer"></div>
+      
+      <div id="pinnedControls" style="margin-bottom:10px;">
+        <button onclick="unpinAllVerses()">Unpin All Verses</button>
+        <button onclick="clearAllPinnedNotes()">Clear All Notes</button>
+      </div>
+      
+      <h5>Search the Bible</h5>
+      <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Enter keyword to begin search...">
+        <button onclick="searchBible()">Search</button>
+      </div>
+      <div id="highlightToolbar" class="collapsed" onmouseleave="collapseHighlightToolbar()">
+        <button id="highlightToggle" onclick="toggleHighlightToolbar(event)">🖍️</button>
+        <div id="highlightOptions">
+          <button style="background-color:#FFB3BA" onclick="highlightSelection('#FFB3BA')"></button>
+          <button style="background-color:#FFDFBA" onclick="highlightSelection('#FFDFBA')"></button>
+          <button style="background-color:#FFFFBA" onclick="highlightSelection('#FFFFBA')"></button>
+          <button style="background-color:#BAFFC9" onclick="highlightSelection('#BAFFC9')"></button>
+          <button style="background-color:#BAE1FF" onclick="highlightSelection('#BAE1FF')"></button>
+          <button style="background-color:#D0BAFF" onclick="highlightSelection('#D0BAFF')"></button>
+          <button onclick="eraseHighlight()">🧽</button>
+          <button onclick="clearHighlights()">❌</button>
+        </div>
+      </div>
+      <div id="searchResults"></div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/gh/getonsv/bible@refs/heads/main/Query.js"></script>
