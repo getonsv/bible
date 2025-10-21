@@ -1,0 +1,13 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projection Screen</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/getonsv/bible@refs/heads/main/Projection.css">
+    <div id="projectionContent">
+      <p>Projection Screen</p>
+    </div>
+    
+    <script>
+        window.addEventListener("message", function(event) {
+        document.getElementById("projectionContent").innerHTML = event.data;
+      });
+    </script>
