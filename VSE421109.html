@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
  <head>
@@ -185,6 +186,85 @@
       transform: translateY(-2px);
     }
 
+    .password-screen {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .password-box {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 3rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .password-title {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 0.5rem;
+    }
+
+    .password-subtitle {
+      font-size: 1rem;
+      color: #6b7280;
+      margin-bottom: 2rem;
+    }
+
+    .password-input {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      font-family: 'Georgia', serif;
+      transition: border-color 0.3s;
+    }
+
+    .password-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .error-message {
+      color: #ef4444;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      min-height: 1.5rem;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .password-button {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      background: #667eea;
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Georgia', serif;
+    }
+
+    .password-button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+
     @media (max-width: 640px) {
       .container {
         padding: 1rem;
@@ -206,6 +286,14 @@
       .answer-text {
         font-size: 1rem;
       }
+
+      .password-box {
+        padding: 2rem;
+      }
+
+      .password-title {
+        font-size: 1.5rem;
+      }
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
@@ -213,7 +301,22 @@
   <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
  </head>
  <body>
-  <div class="container">
+  <div class="password-screen" id="password-screen">
+   <div class="password-box">
+    <div class="password-title">
+     🔒 Enter Password
+    </div>
+    <div class="password-subtitle">
+     Please enter the password to access the quiz
+    </div>
+    <form id="password-form"><input type="password" id="password-input" class="password-input" placeholder="Enter password" autocomplete="off">
+     <div class="error-message" id="error-message">
+      Incorrect password. Please try again.
+     </div><button type="submit" class="password-button">Unlock Quiz</button>
+    </form>
+   </div>
+  </div>
+  <div class="container" id="quiz-container" style="display: none;">
    <div class="header">
     <div class="title" id="quiz-title">
      Verifying Sealing Exam - 421109
@@ -303,9 +406,31 @@
     ];
 
     let currentQuestion = 0;
+    const CORRECT_PASSWORD = '#pink42';
+
+    document.getElementById('password-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const passwordInput = document.getElementById('password-input');
+      const errorMessage = document.getElementById('error-message');
+      const enteredPassword = passwordInput.value;
+
+      if (enteredPassword === CORRECT_PASSWORD) {
+        document.getElementById('password-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
+        passwordInput.value = '';
+      } else {
+        errorMessage.classList.add('show');
+        passwordInput.value = '';
+        passwordInput.focus();
+        
+        setTimeout(() => {
+          errorMessage.classList.remove('show');
+        }, 3000);
+      }
+    });
 
     const defaultConfig = {
-      quiz_title: "Revelation Quiz Cards",
+      quiz_title: "Verifying Sealing Exam - 421109",
       progress_label: "Question",
       previous_button: "Previous",
       next_button: "Next",
@@ -385,5 +510,5 @@
 
     updateCard();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99b2858b87b10c6d',t:'MTc2MjU3ODE4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99b2a1493375473c',t:'MTc2MjU3OTMxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
