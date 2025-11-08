@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revelation Quiz Cards</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Georgia', serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+      padding: 2rem;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress {
+      font-size: 1.1rem;
+      color: #e0e7ff;
+    }
+
+    .card-container {
+      perspective: 1000px;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      width: 100%;
+      min-height: 400px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+      cursor: pointer;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      min-height: 400px;
+      backface-visibility: hidden;
+      border-radius: 20px;
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-front {
+      background: #ffffff;
+      color: #1f2937;
+    }
+
+    .card-back {
+      background: #1f2937;
+      color: #ffffff;
+      transform: rotateY(180deg);
+    }
+
+    .question-number {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 1rem;
+    }
+
+    .card-back .question-number {
+      color: #a5b4fc;
+    }
+
+    .question-text {
+      font-size: 1.3rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .points {
+      font-size: 0.9rem;
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .card-back .points {
+      color: #9ca3af;
+    }
+
+    .answer-label {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #10b981;
+      margin-bottom: 1rem;
+    }
+
+    .answer-text {
+      font-size: 1.1rem;
+      line-height: 1.8;
+    }
+
+    .answer-text ul {
+      margin: 0.5rem 0;
+      padding-left: 1.5rem;
+    }
+
+    .answer-text li {
+      margin: 0.5rem 0;
+    }
+
+    .flip-hint {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #e0e7ff;
+      margin-bottom: 1.5rem;
+    }
+
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .nav-button {
+      flex: 1;
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Georgia', serif;
+    }
+
+    .nav-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .prev-button {
+      background: #ffffff;
+      color: #667eea;
+    }
+
+    .prev-button:hover:not(:disabled) {
+      background: #f3f4f6;
+      transform: translateY(-2px);
+    }
+
+    .next-button {
+      background: #10b981;
+      color: #ffffff;
+    }
+
+    .next-button:hover:not(:disabled) {
+      background: #059669;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .title {
+        font-size: 1.5rem;
+      }
+
+      .card-face {
+        padding: 2rem;
+        min-height: 350px;
+      }
+
+      .question-text {
+        font-size: 1.1rem;
+      }
+
+      .answer-text {
+        font-size: 1rem;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="container">
+   <div class="header">
+    <div class="title" id="quiz-title">
+     Revelation Quiz Cards
+    </div>
+    <div class="progress" id="progress">
+     Question 1 of 10
+    </div>
+   </div>
+   <div class="flip-hint" id="flip-hint">
+    Click card to flip
+   </div>
+   <div class="card-container">
+    <div class="card" id="card">
+     <div class="card-face card-front">
+      <div class="question-number" id="front-number">
+       Question 1
+      </div>
+      <div class="question-text" id="question"></div>
+      <div class="points" id="points"></div>
+     </div>
+     <div class="card-face card-back">
+      <div class="question-number" id="back-number">
+       Question 1
+      </div>
+      <div class="answer-label">
+       Answer:
+      </div>
+      <div class="answer-text" id="answer"></div>
+     </div>
+    </div>
+   </div>
+   <div class="navigation"><button class="nav-button prev-button" id="prev-btn">Previous</button> <button class="nav-button next-button" id="next-btn">Next</button>
+   </div>
+  </div>
+  <script>
+    const questions = [
+      {
+        question: "① What is a believer's destination? ② When is eternal life fulfilled?",
+        points: "[10 points (5 points per sub-question)]",
+        answer: "① The world of the paradise where there is eternal life in Rv 21<br>② When God comes with the kingdom of heaven and the food of eternal life"
+      },
+      {
+        question: "① What is the very first thing Jesus says when he returns? He says this because of the existence of someone at the time of Revelation's fulfillment. ② Who is it? Thus, he says this because a certain event takes place. ③ What is it?",
+        points: "[12 points (4 points per sub-question)]",
+        answer: "① To overcome<br>② Someone who must be fought (an enemy)<br>③ A spiritual war"
+      },
+      {
+        question: "In the Bible, there is ① food that God's pastor gives and ② food that the devil's pastor gives. Write what these two kinds of food are in Revelation, including their references.",
+        points: "[10 points (5 points per sub-question)]",
+        answer: "① The food God's pastor gives (3 references):<br>Rv 2:17, the hidden manna; Rv 10, the revealed word; Rv 22, the fruit of the tree of life<br><br>② The food the devil's pastor gives (2 references):<br>Rv 17:2, Rv 18:3, the wine of adulteries"
+      },
+      {
+        question: "What does it mean where it says in Rv 3:12 that the name of God, the name of the Holy City, New Jerusalem, and Jesus' new name will be written on the one who overcomes?",
+        points: "[10 points]",
+        answer: "That God, the kingdom of heaven, and Jesus come to the one who overcomes"
+      },
+      {
+        question: "What must people believe in when Revelation is fulfilled?",
+        points: "[10 points]",
+        answer: "The actual entities that have been fulfilled according to the word"
+      },
+      {
+        question: "What proves that the seals have been removed from Revelation?",
+        points: "[10 points]",
+        answer: "The actual entities recorded inside of it appearing"
+      },
+      {
+        question: "Jesus was the Savior and was from Nazareth. What is a Korean saying/proverb related to this?",
+        points: "[10 points]",
+        answer: "There is a royal emissary hidden (disguised) among beggars."
+      },
+      {
+        question: "According to the four gospels, when are the prophecies in the New Covenant, Revelation, fulfilled? Include a verse reference.",
+        points: "[10 points]",
+        answer: "After the gospel of the kingdom of heaven (the prophecies) is preached in the whole world, Mt 24:14"
+      },
+      {
+        question: "Rv 15:4-5 says that all nations will come to worship at the temple of the tabernacle of the testimony. Rv 2-3 say that something is given that is the same as this. What is given that is the same as this?",
+        points: "[10 points]",
+        answer: "The iron scepter with which to rule all nations"
+      },
+      {
+        question: "Write Rv 22:18-19.",
+        points: "[8 points]",
+        answer: "I warn everyone who hears the words of the prophecy of this book: If anyone adds anything to them, God will add to him the plagues described in this book. And if anyone takes words away from this book of prophecy, God will take away from him his share in the tree of life and in the holy city, which are described in this book."
+      }
+    ];
+
+    let currentQuestion = 0;
+
+    const defaultConfig = {
+      quiz_title: "Revelation Quiz Cards",
+      progress_label: "Question",
+      previous_button: "Previous",
+      next_button: "Next",
+      flip_instruction: "Click card to flip"
+    };
+
+    const config = {};
+
+    function updateCard() {
+      const card = document.getElementById('card');
+      const question = questions[currentQuestion];
+      
+      card.classList.remove('flipped');
+      
+      document.getElementById('front-number').textContent = `Question ${currentQuestion + 1}`;
+      document.getElementById('back-number').textContent = `Question ${currentQuestion + 1}`;
+      document.getElementById('question').textContent = question.question;
+      document.getElementById('points').textContent = question.points;
+      document.getElementById('answer').innerHTML = question.answer;
+      
+      const progressLabel = config.progress_label || defaultConfig.progress_label;
+      document.getElementById('progress').textContent = `${progressLabel} ${currentQuestion + 1} of ${questions.length}`;
+      
+      document.getElementById('prev-btn').disabled = currentQuestion === 0;
+      document.getElementById('next-btn').disabled = currentQuestion === questions.length - 1;
+    }
+
+    document.getElementById('card').addEventListener('click', function() {
+      this.classList.toggle('flipped');
+    });
+
+    document.getElementById('prev-btn').addEventListener('click', function() {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        updateCard();
+      }
+    });
+
+    document.getElementById('next-btn').addEventListener('click', function() {
+      if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
+        updateCard();
+      }
+    });
+
+    async function onConfigChange(newConfig) {
+      Object.assign(config, newConfig);
+      
+      document.getElementById('quiz-title').textContent = config.quiz_title || defaultConfig.quiz_title;
+      document.getElementById('flip-hint').textContent = config.flip_instruction || defaultConfig.flip_instruction;
+      document.getElementById('prev-btn').textContent = config.previous_button || defaultConfig.previous_button;
+      document.getElementById('next-btn').textContent = config.next_button || defaultConfig.next_button;
+      
+      const progressLabel = config.progress_label || defaultConfig.progress_label;
+      document.getElementById('progress').textContent = `${progressLabel} ${currentQuestion + 1} of ${questions.length}`;
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig: defaultConfig,
+        onConfigChange: onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["quiz_title", config.quiz_title || defaultConfig.quiz_title],
+          ["progress_label", config.progress_label || defaultConfig.progress_label],
+          ["previous_button", config.previous_button || defaultConfig.previous_button],
+          ["next_button", config.next_button || defaultConfig.next_button],
+          ["flip_instruction", config.flip_instruction || defaultConfig.flip_instruction]
+        ])
+      });
+    }
+
+    updateCard();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99b2858b87b10c6d',t:'MTc2MjU3ODE4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
