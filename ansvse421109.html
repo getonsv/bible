@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revelation Fill In The Blanks Quiz</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Georgia', serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      overflow-y: auto;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .password-screen {
+      width: 100%;
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .password-box {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 3rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .password-title {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 0.5rem;
+    }
+
+    .password-subtitle {
+      font-size: 1rem;
+      color: #6b7280;
+      margin-bottom: 2rem;
+    }
+
+    .password-input {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      font-family: 'Georgia', serif;
+      transition: border-color 0.3s;
+    }
+
+    .password-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .error-message {
+      color: #ef4444;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      min-height: 1.5rem;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .password-button {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      background: #667eea;
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Georgia', serif;
+    }
+
+    .password-button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: none;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .title {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: #e0e7ff;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .control-button {
+      padding: 0.875rem 2rem;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Georgia', serif;
+    }
+
+    .check-btn {
+      background: #10b981;
+      color: #ffffff;
+    }
+
+    .check-btn:hover {
+      background: #059669;
+      transform: translateY(-2px);
+    }
+
+    .show-btn {
+      background: #f59e0b;
+      color: #ffffff;
+    }
+
+    .show-btn:hover {
+      background: #d97706;
+      transform: translateY(-2px);
+    }
+
+    .reset-btn {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    .reset-btn:hover {
+      background: #dc2626;
+      transform: translateY(-2px);
+    }
+
+    .question-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .question-number {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .question-points {
+      font-size: 0.9rem;
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .question-text {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #1f2937;
+      margin-bottom: 1.5rem;
+    }
+
+    .answer-section {
+      background: #f9fafb;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 2px solid #e5e7eb;
+    }
+
+    .answer-line {
+      margin-bottom: 1rem;
+      line-height: 1.8;
+      font-size: 1rem;
+    }
+
+    .blank-input {
+      display: inline-block;
+      min-width: 150px;
+      padding: 0.5rem;
+      border: none;
+      border-bottom: 2px solid #667eea;
+      background: #ffffff;
+      font-family: 'Georgia', serif;
+      font-size: 1rem;
+      transition: all 0.3s;
+      margin: 0 0.25rem;
+    }
+
+    .blank-input:focus {
+      outline: none;
+      border-bottom-color: #764ba2;
+      background: #fef3c7;
+    }
+
+    .blank-input.correct {
+      border-bottom-color: #10b981;
+      background: #d1fae5;
+    }
+
+    .blank-input.incorrect {
+      border-bottom-color: #ef4444;
+      background: #fee2e2;
+    }
+
+    .blank-input.revealed {
+      border-bottom-color: #f59e0b;
+      background: #fef3c7;
+      color: #d97706;
+      font-weight: bold;
+    }
+
+    .feedback-icon {
+      display: inline-block;
+      margin-left: 0.5rem;
+      font-size: 1.2rem;
+    }
+
+    .score-display {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      display: none;
+    }
+
+    .score-display.show {
+      display: block;
+    }
+
+    .score-text {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .score-details {
+      font-size: 1rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .title {
+        font-size: 1.8rem;
+      }
+
+      .question-card {
+        padding: 1.5rem;
+      }
+
+      .blank-input {
+        min-width: 120px;
+        font-size: 0.9rem;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      .control-button {
+        width: 100%;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="password-screen" id="password-screen">
+   <div class="password-box">
+    <div class="password-title">
+     🔒 Enter Password
+    </div>
+    <div class="password-subtitle">
+     Please enter the password to access the quiz
+    </div>
+    <form id="password-form"><input type="password" id="password-input" class="password-input" placeholder="Enter password" autocomplete="off">
+     <div class="error-message" id="error-message">
+      Incorrect password. Please try again.
+     </div><button type="submit" class="password-button">Unlock Quiz</button>
+    </form>
+   </div>
+  </div>
+  <div class="container" id="quiz-container">
+   <header class="header">
+    <h1 class="title" id="quiz-title">Revelation Fill-in-the-Blanks Quiz</h1>
+    <p class="subtitle">Fill in the missing words and check your answers</p>
+   </header>
+   <div class="controls"><button class="control-button check-btn" id="check-btn">Check Answers</button> <button class="control-button show-btn" id="show-btn">Show All Answers</button> <button class="control-button reset-btn" id="reset-btn">Reset Quiz</button>
+   </div>
+   <div class="score-display" id="score-display">
+    <div class="score-text" id="score-text"></div>
+    <div class="score-details" id="score-details"></div>
+   </div>
+   <main id="questions-container"></main>
+  </div>
+  <script>
+    const CORRECT_PASSWORD = '#pink42';
+
+    const questions = [
+      {
+        number: 1,
+        question: "① What is a believer's destination? ② When is eternal life fulfilled?",
+        points: "[10 points (5 points per sub-question)]",
+        template: "① The world of the {paradise} where there is {eternal life} in Rv {21}<br>② When God comes with the {kingdom of heaven} and the food of {eternal life}",
+        blanks: ["paradise", "eternal life", "21", "kingdom of heaven", "eternal life"]
+      },
+      {
+        number: 2,
+        question: "① What is the very first thing Jesus says when he returns? ② Who is it? ③ What is it?",
+        points: "[12 points (4 points per sub-question)]",
+        template: "① To {overcome}<br>② Someone who must be {fought} (an {enemy})<br>③ A {spiritual war}",
+        blanks: ["overcome", "fought", "enemy", "spiritual war"]
+      },
+      {
+        number: 3,
+        question: "In the Bible, there is ① food that God's pastor gives and ② food that the devil's pastor gives. Write what these two kinds of food are in Revelation, including their references.",
+        points: "[10 points (5 points per sub-question)]",
+        template: "① The food God's pastor gives (3 references):<br>Rv {2:17}, the {hidden manna}; Rv {10}, the {revealed word}; Rv {22}, the fruit of the {tree of life}<br><br>② The food the devil's pastor gives (2 references):<br>Rv {17:2}, Rv {18:3}, the wine of {adulteries}",
+        blanks: ["2:17", "hidden manna", "10", "revealed word", "22", "tree of life", "17:2", "18:3", "adulteries"]
+      },
+      {
+        number: 4,
+        question: "What does it mean where it says in Rv 3:12 that the name of God, the name of the Holy City, New Jerusalem, and Jesus' new name will be written on the one who overcomes?",
+        points: "[10 points]",
+        template: "That {God}, the {kingdom of heaven}, and {Jesus} come to the one who {overcomes}",
+        blanks: ["God", "kingdom of heaven", "Jesus", "overcomes"]
+      },
+      {
+        number: 5,
+        question: "What must people believe in when Revelation is fulfilled?",
+        points: "[10 points]",
+        template: "The {actual entities} that have been {fulfilled} according to the {word}",
+        blanks: ["actual entities", "fulfilled", "word"]
+      },
+      {
+        number: 6,
+        question: "What proves that the seals have been removed from Revelation?",
+        points: "[10 points]",
+        template: "The {actual entities} recorded inside of it {appearing}",
+        blanks: ["actual entities", "appearing"]
+      },
+      {
+        number: 7,
+        question: "Jesus was the Savior and was from Nazareth. What is a Korean saying/proverb related to this?",
+        points: "[10 points]",
+        template: "There is a {royal emissary} hidden (disguised) among {beggars}.",
+        blanks: ["royal emissary", "beggars"]
+      },
+      {
+        number: 8,
+        question: "According to the four gospels, when are the prophecies in the New Covenant, Revelation, fulfilled? Include a verse reference.",
+        points: "[10 points]",
+        template: "After the {gospel of the kingdom of heaven} (the prophecies) is preached in the {whole world}, Mt {24:14}",
+        blanks: ["gospel of the kingdom of heaven", "whole world", "24:14"]
+      },
+      {
+        number: 9,
+        question: "Rv 15:4-5 says that all nations will come to worship at the temple of the tabernacle of the testimony. Rv 2-3 say that something is given that is the same as this. What is given that is the same as this?",
+        points: "[10 points]",
+        template: "The {iron scepter} with which to {rule} all {nations}",
+        blanks: ["iron scepter", "rule", "nations"]
+      },
+      {
+        number: 10,
+        question: "Write Rv 22:18-19.",
+        points: "[8 points]",
+        template: "I warn everyone who hears the words of the {prophecy} of this book: If anyone {adds} anything to them, God will add to him the {plagues} described in this book. And if anyone {takes words away} from this book of prophecy, God will take away from him his share in the {tree of life} and in the {holy city}, which are described in this book.",
+        blanks: ["prophecy", "adds", "plagues", "takes words away", "tree of life", "holy city"]
+      }
+    ];
+
+    let userAnswers = {};
+
+    document.getElementById('password-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const passwordInput = document.getElementById('password-input');
+      const errorMessage = document.getElementById('error-message');
+      const enteredPassword = passwordInput.value;
+
+      if (enteredPassword === CORRECT_PASSWORD) {
+        document.getElementById('password-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
+        passwordInput.value = '';
+        renderQuestions();
+      } else {
+        errorMessage.classList.add('show');
+        passwordInput.value = '';
+        passwordInput.focus();
+        
+        setTimeout(() => {
+          errorMessage.classList.remove('show');
+        }, 3000);
+      }
+    });
+
+    function renderQuestions() {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+
+      questions.forEach((q, qIndex) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+
+        const header = document.createElement('div');
+        header.className = 'question-header';
+        header.innerHTML = `
+          <div class="question-number">Question ${q.number}</div>
+          <div class="question-points">${q.points}</div>
+        `;
+
+        const questionText = document.createElement('div');
+        questionText.className = 'question-text';
+        questionText.textContent = q.question;
+
+        const answerSection = document.createElement('div');
+        answerSection.className = 'answer-section';
+
+        let templateWithInputs = q.template;
+        q.blanks.forEach((blank, blankIndex) => {
+          const inputId = `q${qIndex}-b${blankIndex}`;
+          const inputHtml = `<input type="text" class="blank-input" id="${inputId}" data-answer="${blank}" data-question="${qIndex}" data-blank="${blankIndex}" placeholder="___________">`;
+          templateWithInputs = templateWithInputs.replace(`{${blank}}`, inputHtml);
+        });
+
+        answerSection.innerHTML = `<div class="answer-line">${templateWithInputs}</div>`;
+
+        card.appendChild(header);
+        card.appendChild(questionText);
+        card.appendChild(answerSection);
+        container.appendChild(card);
+      });
+
+      document.querySelectorAll('.blank-input').forEach(input => {
+        input.addEventListener('input', function() {
+          this.classList.remove('correct', 'incorrect', 'revealed');
+          const nextIcon = this.nextElementSibling;
+          if (nextIcon && nextIcon.classList.contains('feedback-icon')) {
+            nextIcon.remove();
+          }
+        });
+      });
+    }
+
+    function normalizeAnswer(answer) {
+      return answer.toLowerCase().trim().replace(/[^\w\s:]/g, '');
+    }
+
+    document.getElementById('check-btn').addEventListener('click', function() {
+      let correct = 0;
+      let total = 0;
+
+      document.querySelectorAll('.blank-input').forEach(input => {
+        if (input.classList.contains('revealed')) return;
+
+        total++;
+        const userAnswer = normalizeAnswer(input.value);
+        const correctAnswer = normalizeAnswer(input.dataset.answer);
+
+        const existingIcon = input.nextElementSibling;
+        if (existingIcon && existingIcon.classList.contains('feedback-icon')) {
+          existingIcon.remove();
+        }
+
+        if (userAnswer === correctAnswer) {
+          input.classList.remove('incorrect');
+          input.classList.add('correct');
+          const icon = document.createElement('span');
+          icon.className = 'feedback-icon';
+          icon.textContent = '✓';
+          icon.style.color = '#10b981';
+          input.parentNode.insertBefore(icon, input.nextSibling);
+          correct++;
+        } else if (userAnswer !== '') {
+          input.classList.remove('correct');
+          input.classList.add('incorrect');
+          const icon = document.createElement('span');
+          icon.className = 'feedback-icon';
+          icon.textContent = '✗';
+          icon.style.color = '#ef4444';
+          input.parentNode.insertBefore(icon, input.nextSibling);
+        }
+      });
+
+      const scoreDisplay = document.getElementById('score-display');
+      const scoreText = document.getElementById('score-text');
+      const scoreDetails = document.getElementById('score-details');
+
+      const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+      scoreText.textContent = `Score: ${percentage}%`;
+      scoreDetails.textContent = `${correct} out of ${total} blanks correct`;
+      scoreDisplay.classList.add('show');
+
+      scoreDisplay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    document.getElementById('show-btn').addEventListener('click', function() {
+      document.querySelectorAll('.blank-input').forEach(input => {
+        if (!input.classList.contains('correct')) {
+          input.value = input.dataset.answer;
+          input.classList.remove('correct', 'incorrect');
+          input.classList.add('revealed');
+          
+          const existingIcon = input.nextElementSibling;
+          if (existingIcon && existingIcon.classList.contains('feedback-icon')) {
+            existingIcon.remove();
+          }
+        }
+      });
+
+      const scoreDisplay = document.getElementById('score-display');
+      scoreDisplay.classList.remove('show');
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', function() {
+      document.querySelectorAll('.blank-input').forEach(input => {
+        input.value = '';
+        input.classList.remove('correct', 'incorrect', 'revealed');
+        
+        const existingIcon = input.nextElementSibling;
+        if (existingIcon && existingIcon.classList.contains('feedback-icon')) {
+          existingIcon.remove();
+        }
+      });
+
+      const scoreDisplay = document.getElementById('score-display');
+      scoreDisplay.classList.remove('show');
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    const defaultConfig = {
+      quiz_title: "Revelation Fill-in-the-Blanks Quiz",
+      check_button: "Check Answers",
+      show_button: "Show All Answers",
+      reset_button: "Reset Quiz"
+    };
+
+    const config = {};
+
+    async function onConfigChange(newConfig) {
+      Object.assign(config, newConfig);
+      
+      document.getElementById('quiz-title').textContent = config.quiz_title || defaultConfig.quiz_title;
+      document.getElementById('check-btn').textContent = config.check_button || defaultConfig.check_button;
+      document.getElementById('show-btn').textContent = config.show_button || defaultConfig.show_button;
+      document.getElementById('reset-btn').textContent = config.reset_button || defaultConfig.reset_button;
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig: defaultConfig,
+        onConfigChange: onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["quiz_title", config.quiz_title || defaultConfig.quiz_title],
+          ["check_button", config.check_button || defaultConfig.check_button],
+          ["show_button", config.show_button || defaultConfig.show_button],
+          ["reset_button", config.reset_button || defaultConfig.reset_button]
+        ])
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99b6024d661b14eb',t:'MTc2MjYxNDc1MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
