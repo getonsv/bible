@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Steven — Logicalis Interview Cheat Sheet</title>
+<style>
+  :root{--accent:#6b46c1;--muted:#6b7280;--bg:#fbfbfc;--card:#ffffff;}
+  body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#111; margin:18px;}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+  .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#60a5fa);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;}
+  h1{margin:0;font-size:20px;}
+  small{color:var(--muted);}
+  .controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  input.search{flex:1;padding:10px 12px;border-radius:8px;border:1px solid #e6e6f0;min-width:220px;}
+  .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .tag{background:#eef2ff;color:#3730a3;padding:6px 8px;border-radius:999px;font-size:13px;cursor:pointer;border:1px solid rgba(59,130,246,0.08)}
+  .tag.active{background:var(--accent);color:#fff}
+  .container{display:grid;grid-template-columns:1fr 380px;gap:16px;margin-top:14px;}
+  .card{background:var(--card);border-radius:12px;padding:14px;border:1px solid #edf2f7;box-shadow:0 6px 18px rgba(11,15,30,0.02)}
+  .section-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .section-title h2{margin:0;font-size:16px}
+  .pill{font-size:12px;color:var(--muted);padding:6px 8px;border-radius:999px;background:#f8fafc}
+  .content p{margin:8px 0;color:#222}
+  .keywords{font-weight:600;color:var(--muted);font-size:13px}
+  .row{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  .chip{padding:6px 10px;background:#f3f4f6;border-radius:8px;border:1px solid #e9ecef;font-size:13px}
+  .collapse{border-radius:8px;overflow:hidden;margin-top:10px}
+  summary{list-style:none;cursor:pointer;padding:10px;background:linear-gradient(90deg,#fff,#fbfbff);display:flex;align-items:center;justify-content:space-between;border:1px solid #eef2ff;border-radius:8px}
+  details[open] summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+  .answer{padding:10px 12px;border-top:1px dashed #eef0fa;background:#fff}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left;font-size:13px}
+  .small{font-size:12px;color:var(--muted)}
+  .actions{display:flex;gap:8px}
+  button.btn{background:var(--accent);border:none;color:white;padding:8px 10px;border-radius:8px;cursor:pointer}
+  button.ghost{background:#f8fafc;border:1px solid #e6e6f0;color:var(--muted)}
+  footer{margin-top:12px;color:var(--muted);font-size:13px}
+  code.k{background:#f8fafc;padding:2px 6px;border-radius:6px;font-family:monospace}
+  .right-col .card{position:sticky;top:18px}
+  mark{background:#fff59d}
+  .highlight{background:linear-gradient(90deg,#fff3cd,#fff);padding:4px 6px;border-radius:4px}
+  @media (max-width:920px){.container{grid-template-columns:1fr;}.right-col .card{position:static}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SA</div>
+  <div>
+    <h1>Steven — Logicalis Interview Kit</h1>
+    <small>Developer Specialist (Microsoft Power Platform) — Quick searchable HTML</small>
+    <div class="controls">
+      <input id="searchInput" class="search" placeholder="Search keywords, tags, questions... (eg. 'delegation', 'approval', 'Dataverse')" />
+      <div class="actions">
+        <button id="clearBtn" class="ghost">Clear</button>
+        <button id="printBtn" class="btn">Print / Save PDF</button>
+      </div>
+    </div>
+    <div class="tags" id="tagList">
+      <!-- tags inserted by JS -->
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <main>
+    <section class="card" id="elevator">
+      <div class="section-title">
+        <h2>1-Minute Elevator Pitch</h2>
+        <span class="pill">Quick open</span>
+      </div>
+      <div class="content">
+        <p id="pitchShort">“Good morning, I’m <strong>Shilles Steven Albert</strong>. I have experience with Microsoft Power Platform — Power Apps, Power Automate, and Power BI. I build apps and automation that improve efficiency, streamline processes, and provide actionable insights. I recently developed a multi-department approval Canvas app with Power Automate and a Power BI dashboard that reduced processing time by <strong>40%</strong> and increased adoption through clear training.”</p>
+        <p class="small">Source: Resume.  [oai_citation:0‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</p>
+      </div>
+    </section>
+
+    <section class="card" id="cheatsheet">
+      <div class="section-title">
+        <h2>Super Condensed Cheat Sheet (glanceable)</h2>
+        <span class="pill">Use during interview</span>
+      </div>
+      <div class="content">
+        <div class="row">
+          <div class="chip"><strong>Core:</strong> Power Apps, Power Automate, Power BI</div>
+          <div class="chip"><strong>Key skills:</strong> Dataverse, SharePoint, SQL, Integrations</div>
+          <div class="chip"><strong>ALM:</strong> Dev/Test/Prod, Solutions, Azure DevOps</div>
+        </div>
+
+        <details class="collapse" open>
+          <summary>Quick bullets (read < 30s)</summary>
+          <div class="answer">
+            <ul>
+              <li><strong>Canvas vs Model-Driven:</strong> Canvas = UI flexibility; Model-Driven = data/relational, enterprise.</li>
+              <li><strong>Delegation:</strong> Use delegable queries, Dataverse views, pre-filter data, collections.</li>
+              <li><strong>Flows:</strong> Modular, scopes, run-after, retry & logging.</li>
+              <li><strong>Integrations:</strong> Custom connectors, REST, Azure Functions, Key Vault for secrets.</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="card" id="projects">
+      <div class="section-title">
+        <h2>Projects (Quick Reference)</h2>
+        <span class="pill">STAR-ready</span>
+      </div>
+      <div class="content">
+        <table>
+          <thead><tr><th>Project</th><th>Platform / Key Features</th><th>Result / Impact</th></tr></thead>
+          <tbody>
+            <tr><td>Multi-Department Approval App</td><td>Canvas App + Power Automate + Dataverse + Power BI</td><td>Approval cycle ↓ 40% — improved adoption. (See resume).  [oai_citation:1‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</td></tr>
+            <tr><td>Sales Dashboard & Analytics</td><td>Power BI, SQL/SharePoint/Dataverse sources, KPIs</td><td>Reporting time from 2 days → real-time; better decision-making.  [oai_citation:2‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</td></tr>
+            <tr><td>Employee Leave Automation</td><td>Power Automate + SharePoint + Teams; escalation rules</td><td>Approval cycle ↓ 50%; fewer errors.  [oai_citation:3‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</td></tr>
+            <tr><td>Inventory / Retail Apps (Gamification)</td><td>Model-Driven & Canvas, Dataverse, RPA (UiPath)</td><td>Gamified app reduced manual tasks 30%; RPA saved 20+ hours/month & 95% error reduction.  [oai_citation:4‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</td></tr>
+          </tbody>
+        </table>
+
+        <details class="collapse">
+          <summary>Project story template (fill quickly)</summary>
+          <div class="answer">
+            <ol>
+              <li><strong>S</strong>: Business issue (what and why)</li>
+              <li><strong>T</strong>: Your responsibility</li>
+              <li><strong>A</strong>: Actions — tech used (Power Apps / Dataverse / Flows / Connectors)</li>
+              <li><strong>R</strong>: Result — metrics (time saved, errors reduced, adoption) — pull from resume.  [oai_citation:5‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</li>
+            </ol>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="card" id="faq">
+      <div class="section-title">
+        <h2>Technical FAQ (short answers)</h2>
+        <span class="pill">Practice answers</span>
+      </div>
+      <div class="content">
+        <details class="collapse" open>
+          <summary>Canvas vs Model-Driven — quick answer</summary>
+          <div class="answer">
+            Canvas: best for bespoke UI & multi-source apps. Model-Driven: when data model is primary — many relationships, business rules and enterprise scale. Mention licensing trade-off and maintenance. (Use example: Inventory app on resume).  [oai_citation:6‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)
+          </div>
+        </details>
+
+        <details class="collapse">
+          <summary>Handling delegation and performance</summary>
+          <div class="answer">
+            Use delegable functions, pre-filter in server, replace non-delegable queries with Dataverse or SQL, use collections to cache, reduce controls and nested galleries, use App Checker & Monitor.
+          </div>
+        </details>
+
+        <details class="collapse">
+          <summary>Power Automate best practices</summary>
+          <div class="answer">
+            Modular flows, meaningful names, scopes with run-after for error handling, retry policies, centralised logging (SharePoint / Log table / Azure Monitor), test in sandbox. Mention you built 95+ flows in past role.  [oai_citation:7‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)
+          </div>
+        </details>
+
+        <details class="collapse">
+          <summary>Third-party integration</summary>
+          <div class="answer">
+            Build custom connector (OpenAPI/Swagger), auth via OAuth or API key, transform payload using Azure Functions or Logic Apps if complex, store secrets in Key Vault or environment variables.
+          </div>
+        </details>
+
+        <details class="collapse">
+          <summary>ALM / Governance</summary>
+          <div class="answer">
+            Dev / Test / Prod environments, use managed solutions for Prod, version control in Git/Azure DevOps, pipelines with Power Platform Build Tools, CoE Starter Kit for monitoring & best practices.
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="card" id="star-template">
+      <div class="section-title"><h2>STAR Templates (ready to paste)</h2><span class="pill">Use verbatim</span></div>
+      <div class="content">
+        <p class="small">Prep 2–3 stories: use metrics from resume (95+ flows, 15+ Power Apps modules, RPA metrics).  [oai_citation:8‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</p>
+        <pre style="background:#f8fafc;padding:10px;border-radius:8px;font-size:13px;white-space:pre-wrap">
+Situation: Retail frontliners had manual approval & reporting causing delays across 3 departments.
+Task: Build a digital approval and tracking solution to reduce time and errors.
+Action: Designed a Canvas app with Dataverse; built Power Automate flows for conditional approvals; added Power BI dashboards for managers; trained users.
+Result: Approval cycle ↓ 40% and adoption increased. (See resume for RPA and other impacts.)  [oai_citation:9‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)
+        </pre>
+      </div>
+    </section>
+
+  </main>
+
+  <aside class="right-col">
+    <div class="card">
+      <div class="section-title"><h2>Your Resume Snapshot</h2><span class="pill">At-a-glance</span></div>
+      <div class="content">
+        <p class="small"><strong>Name:</strong> <span style="font-weight:600">Shilles Steven Albert</span></p>
+        <p class="small"><strong>Role / Title:</strong> Senior Business Analyst & Low-Code Solutions Expert (Retail Ops & Compliance). Source: resume.  [oai_citation:10‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</p>
+        <p class="small"><strong>Highlights:</strong></p>
+        <ul class="small">
+          <li>Built <strong>95+ Power Automate flows</strong> and <strong>15+ Power Apps modules</strong>.  [oai_citation:11‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</li>
+          <li>Delivered gamified retail app, shift module, mini inbox, helpdesk and dashboards.  [oai_citation:12‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</li>
+          <li>RPA (UiPath) saved 20+ hours/month and achieved 95% error reduction.  [oai_citation:13‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</li>
+          <li>Experience: Maxis (BI Specialist) — digital transformation across 100+ outlets.  [oai_citation:14‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</li>
+        </ul>
+        <div style="margin-top:8px">
+          <button id="copyPitch" class="btn" title="Copy 1-min pitch">Copy 1-min pitch</button>
+          <button id="downloadCSV" class="ghost" title="Download projects CSV">Download projects (CSV)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="section-title"><h2>Top Questions to Ask</h2><span class="pill">End of interview</span></div>
+      <div class="content small">
+        <ol>
+          <li>What does success look like for this role in 6 months?</li>
+          <li>What types of APAC projects will I work on?</li>
+          <li>How is the Power Platform CoE / governance organised at Logicalis?</li>
+          <li>What growth paths exist for this role?</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="section-title"><h2>Quick Tags</h2><span class="pill">Tap to filter</span></div>
+      <div class="content" id="quickTags">
+        <!-- tags injected -->
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="section-title"><h2>Source & Notes</h2><span class="pill">Citation</span></div>
+      <div class="content small">
+        <p>All resume facts above taken from your uploaded resume. Source: Resume (uploaded file).  [oai_citation:15‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)</p>
+        <p class="small">Tip: Keep this page open in browser tab for quick search during interview. Use <code class="k">Ctrl+F</code> as a second-level search.</p>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<footer class="small card" style="margin-top:18px">
+  This HTML is interactive and local-only (no external server). You can save it, print to PDF, or open on your phone. If you want, I can package this as a downloadable file for you.
+</footer>
+
+<script>
+/* ---------- Data (tags & searchable content) ---------- */
+const nodes = [
+  {id:'elevator', title:'1-Minute Elevator Pitch', text:document.getElementById('pitchShort').innerText, tags:['pitch','elevator','introduce','power platform']},
+  {id:'cheatsheet', title:'Cheat Sheet', text:'Canvas vs Model-Driven, Delegation, Flows, Integration, ALM', tags:['cheatsheet','delegation','flows','alm']},
+  {id:'projects', title:'Projects', text:'Multi-Dept Approval App, Sales Dashboard, Employee Leave Automation, Inventory Tracking, Gamification, RPA', tags:['projects','approval','dataverse','powerbi','rpa']},
+  {id:'faq', title:'Technical FAQ', text:'Canvas vs Model-Driven; Delegation; Performance; Power Automate; Integrations; ALM', tags:['faq','integration','performance','automate']},
+  {id:'star-template', title:'STAR Templates', text:'Situation Task Action Result; use metrics: 95+ flows, 15+ apps', tags:['star','stories','metrics']},
+];
+
+const allTags = Array.from(new Set(nodes.flatMap(n=>n.tags))).sort();
+
+/* ---------- Render tags ---------- */
+const tagList = document.getElementById('tagList');
+const quickTags = document.getElementById('quickTags');
+allTags.forEach(t=>{
+  const btn = document.createElement('button');
+  btn.className='tag';
+  btn.innerText = t;
+  btn.onclick = ()=>toggleTag(t, btn);
+  tagList.appendChild(btn);
+
+  const btn2 = btn.cloneNode(true);
+  btn2.onclick = ()=>toggleTag(t, btn2);
+  quickTags.appendChild(btn2);
+});
+
+/* ---------- Search functionality ---------- */
+const searchInput = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearBtn');
+let activeTags = [];
+
+searchInput.addEventListener('input',()=>applyFilters());
+clearBtn.addEventListener('click',()=>{searchInput.value='';activeTags=[];document.querySelectorAll('.tag').forEach(el=>el.classList.remove('active'));applyFilters()});
+
+function toggleTag(tag, el){
+  const idx = activeTags.indexOf(tag);
+  if(idx === -1){ activeTags.push(tag); el.classList.add('active'); } else { activeTags.splice(idx,1); el.classList.remove('active'); }
+  // Sync top tags visual
+  document.querySelectorAll('#tagList .tag').forEach(b=>{ if(b.innerText===tag) b.classList.toggle('active') });
+  applyFilters();
+}
+
+function applyFilters(){
+  const q = searchInput.value.trim().toLowerCase();
+  nodes.forEach(n=>{
+    const el = document.getElementById(n.id);
+    let visible = true;
+    if(q){
+      visible = (n.title.toLowerCase().includes(q) || n.text.toLowerCase().includes(q) || n.tags.join(' ').includes(q));
+    }
+    if(activeTags.length){
+      visible = visible && activeTags.every(t=>n.tags.includes(t));
+    }
+    el.style.display = visible ? 'block' : 'none';
+  });
+}
+
+/* ---------- Copy pitch ---------- */
+document.getElementById('copyPitch').addEventListener('click', async ()=>{
+  const txt = document.getElementById('pitchShort').innerText;
+  try{ await navigator.clipboard.writeText(txt); alert('Pitch copied to clipboard'); }
+  catch(e){ alert('Copy failed — select and copy manually'); }
+});
+
+/* ---------- Download projects CSV ---------- */
+document.getElementById('downloadCSV').addEventListener('click',()=>{
+  const rows = [
+    ['Project','Platform / Key Features','Result / Impact'],
+    ['Multi-Dept Approval App','Canvas + Power Automate + Dataverse + Power BI','Approval cycle ↓ 40% (resume).  [oai_citation:16‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)'],
+    ['Sales Dashboard & Analytics','Power BI, SQL/SharePoint/Dataverse','Reporting time → real-time (resume).  [oai_citation:17‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)'],
+    ['Employee Leave Automation','Power Automate + SharePoint + Teams','Approval cycle ↓ 50% (resume).  [oai_citation:18‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)'],
+    ['Inventory / Gamification App','Model-Driven & Canvas, Dataverse, RPA','Manual tasks ↓30%; RPA saved 20+ hours/month (resume).  [oai_citation:19‡4210_Resume_Steven.pdf](sediment://file_000000005c6872078749d36945ff0ba8)']
+  ];
+  const csvContent = rows.map(r=>r.map(c=>`"${c.replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='steven_projects.csv'; a.click(); URL.revokeObjectURL(url);
+});
+
+/* ---------- Print button ---------- */
+document.getElementById('printBtn').addEventListener('click',()=>window.print());
+
+/* ---------- Initial filter state ---------- */
+applyFilters();
+</script>
+
+</body>
+</html>
