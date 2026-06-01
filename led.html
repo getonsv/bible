@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>LED Scroller – Custom Digital Sign Board</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none; /* avoid accidental text selection on controls */
+    }
+
+    body {
+      background: linear-gradient(145deg, #1a2a3a 0%, #0f1a24 100%);
+      font-family: 'Segoe UI', 'Poppins', 'Roboto', system-ui, -apple-system, 'Inter', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    /* Main LED sign board container */
+    .led-app {
+      max-width: 1300px;
+      width: 100%;
+      background: rgba(10, 20, 28, 0.75);
+      backdrop-filter: blur(2px);
+      border-radius: 3rem;
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      padding: 1.8rem 2rem 2.2rem;
+      transition: all 0.2s ease;
+    }
+
+    h1 {
+      margin: 0 0 0.25rem 0;
+      font-size: 2rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #e0f2fe, #7dd3fc);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: -0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 small {
+      font-size: 0.8rem;
+      background: rgba(255,255,240,0.15);
+      padding: 4px 12px;
+      border-radius: 40px;
+      color: #b9e6ff;
+      font-weight: normal;
+      letter-spacing: normal;
+    }
+
+    .sub {
+      color: #8ba0ae;
+      margin-bottom: 2rem;
+      border-left: 3px solid #2dd4bf;
+      padding-left: 12px;
+      font-size: 0.9rem;
+    }
+
+    /* LED PANEL (the actual scroller) */
+    .led-panel {
+      background: #03070c;
+      border-radius: 2rem;
+      padding: 1rem;
+      box-shadow: inset 0 0 0 2px #2c3e44, 0 20px 35px -10px black, 0 0 0 6px #1e2f38;
+      margin-bottom: 2rem;
+    }
+
+    .led-screen {
+      background-color: #000000;
+      border-radius: 1.2rem;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 0 20px rgba(0,255,255,0.2), 0 0 0 1px rgba(90,210,255,0.3);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: black;
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+
+    /* control cockpit */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      justify-content: space-between;
+      align-items: flex-end;
+      background: rgba(18, 28, 35, 0.7);
+      border-radius: 2rem;
+      padding: 1.5rem 1.8rem;
+      backdrop-filter: blur(8px);
+      margin-top: 0.5rem;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-width: 130px;
+    }
+
+    .control-group label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #9ab3c7;
+    }
+
+    input, select, button {
+      background: #0f1a1f;
+      border: 1px solid #2e4a5c;
+      color: #f0f9ff;
+      padding: 10px 14px;
+      border-radius: 60px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    input:focus, select:focus, button:focus {
+      outline: none;
+      border-color: #2dd4bf;
+      box-shadow: 0 0 0 2px rgba(45,212,191,0.3);
+    }
+
+    input[type="color"] {
+      width: 56px;
+      height: 48px;
+      padding: 4px;
+      border-radius: 30px;
+      cursor: pointer;
+      background: #101e26;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      background: #1f343f;
+      border-radius: 20px;
+      height: 5px;
+    }
+
+    input[type="range"]:focus {
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #2dd4bf;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 5px #5eead4;
+      border: none;
+    }
+
+    button {
+      background: #1f3e4c;
+      border-color: #3c798e;
+      cursor: pointer;
+      font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      background: #2a596e;
+      border-color: #6bc5d9;
+      transform: scale(0.98);
+    }
+
+    .speed-value, .fontsize-value {
+      display: inline-block;
+      background: #010a0e;
+      padding: 2px 8px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      margin-left: 8px;
+      font-family: monospace;
+    }
+
+    .row-flex {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      width: 100%;
+    }
+
+    .text-input-group {
+      flex: 3;
+      min-width: 200px;
+    }
+
+    .text-input-group input {
+      width: 100%;
+      background: #051218;
+      border-radius: 60px;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    footer {
+      margin-top: 1.8rem;
+      text-align: center;
+      font-size: 0.7rem;
+      color: #4e6b7a;
+    }
+
+    @media (max-width: 780px) {
+      .led-app {
+        padding: 1rem;
+      }
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .control-group {
+        width: 100%;
+      }
+      .action-buttons {
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="led-app">
+  <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;">
+    <h1>⚡ LED SCROLLER <small>digital marquee</small></h1>
+    <div style="font-size: 0.75rem; background: #00000055; padding: 4px 12px; border-radius: 40px;">✨ real-time LED effect</div>
+  </div>
+  <div class="sub">Type any message – customize speed, colors & glow – like a real LED sign board</div>
+
+  <!-- LED sign display -->
+  <div class="led-panel">
+    <div class="led-screen">
+      <canvas id="ledCanvas" width="1000" height="140" style="width:100%; height:auto; aspect-ratio:1000/140"></canvas>
+    </div>
+  </div>
+
+  <!-- control panel -->
+  <div class="controls">
+    <div class="text-input-group control-group">
+      <label>📝 SCROLL TEXT</label>
+      <input type="text" id="messageInput" value="✨ WELCOME TO LED SCROLLER  ★  MAKE IT YOUR OWN  ★  SPEED & COLOR  ✨" autocomplete="off">
+    </div>
+
+    <div class="control-group">
+      <label>⏩ SPEED <span id="speedVal" class="speed-value">80</span></label>
+      <input type="range" id="speedSlider" min="20" max="220" value="80" step="2">
+    </div>
+
+    <div class="control-group">
+      <label>🎨 LED COLOR</label>
+      <input type="color" id="textColorPicker" value="#0ff4ce">
+    </div>
+
+    <div class="control-group">
+      <label>🌑 BG COLOR</label>
+      <input type="color" id="bgColorPicker" value="#000000">
+    </div>
+
+    <div class="control-group">
+      <label>🔠 FONT SIZE</label>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="range" id="fontSizeSlider" min="36" max="96" value="68" step="2">
+        <span id="fontSizeVal" class="fontsize-value">68px</span>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button id="resetBtn">⟳ RESET DEFAULTS</button>
+      <button id="applyBtn">▶️ APPLY / RESTART</button>
+    </div>
+  </div>
+  <footer>
+    💡 LED simulation with smooth scrolling • realtime preview • classic marquee experience
+  </footer>
+</div>
+
+<script>
+  (function(){
+    // ----- DOM elements -----
+    const canvas = document.getElementById('ledCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // text content
+    const messageInput = document.getElementById('messageInput');
+    // speed
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValSpan = document.getElementById('speedVal');
+    // colors
+    const textColorPicker = document.getElementById('textColorPicker');
+    const bgColorPicker = document.getElementById('bgColorPicker');
+    // font size
+    const fontSizeSlider = document.getElementById('fontSizeSlider');
+    const fontSizeValSpan = document.getElementById('fontSizeVal');
+    // buttons
+    const resetBtn = document.getElementById('resetBtn');
+    const applyBtn = document.getElementById('applyBtn');
+    
+    // ---- Animation state ----
+    let scrollX = 0;            // current horizontal offset (pixels)
+    let textWidth = 0;          // computed width of current text
+    let animationId = null;
+    let lastTimestamp = 0;
+    let pixelsPerSecond = 80;    // default speed (pixels/sec)
+    let canvasWidth = 1000;
+    let canvasHeight = 140;
+    
+    // configurable drawing props
+    let currentText = messageInput.value;
+    let textColor = textColorPicker.value;
+    let bgColor = bgColorPicker.value;
+    let fontSize = parseInt(fontSizeSlider.value, 10);
+    
+    // LED glow / edge effect intensity 
+    let isScrollingActive = true;
+    
+    // Function to sync UI and restart animation smoothly
+    function syncSettingsFromUI() {
+      currentText = messageInput.value;
+      if (currentText.trim() === "") currentText = "⚡ LED SCROLL ⚡";
+      textColor = textColorPicker.value;
+      bgColor = bgColorPicker.value;
+      fontSize = parseInt(fontSizeSlider.value, 10);
+      pixelsPerSecond = parseInt(speedSlider.value, 10);
+      speedValSpan.innerText = pixelsPerSecond;
+      fontSizeValSpan.innerText = fontSize + "px";
+      
+      // recompute text metrics
+      updateTextMetrics();
+      
+      // reset scroll position to start (far right) for seamless effect
+      // classic behavior: when text changes, reset position to canvas width so text enters from right edge
+      scrollX = canvasWidth;
+      // if the text is too short, we still ensure it loops properly
+    }
+    
+    // measure text width using current font
+    function measureTextWidth() {
+      if (!ctx) return 100;
+      const fontString = `bold ${fontSize}px 'Monaco', 'Courier New', 'Fira Mono', 'SF Mono', monospace`;
+      ctx.font = fontString;
+      return ctx.measureText(currentText).width;
+    }
+    
+    function updateTextMetrics() {
+      const fontString = `bold ${fontSize}px 'Monaco', 'Courier New', 'Fira Mono', 'SF Mono', monospace`;
+      ctx.font = fontString;
+      textWidth = ctx.measureText(currentText).width;
+      // safety: if textWidth is 0 due to empty, fallback
+      if (textWidth < 10) textWidth = 200;
+    }
+    
+    // draw LED-style text with neon glow effect (replicates ledscroller.com aesthetic)
+    function drawLEDScene() {
+      if (!ctx) return;
+      
+      // set canvas dimensions (respect high DPI + crisp)
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const containerWidth = canvas.parentElement.clientWidth;
+      // we keep logical resolution 1000px width, but we scale canvas drawing buffer nicely 
+      // set canvas actual pixel dimensions to keep text sharp
+      const targetLogicalWidth = 1000;
+      const targetLogicalHeight = 140;
+      canvas.width = targetLogicalWidth;
+      canvas.height = targetLogicalHeight;
+      canvasWidth = targetLogicalWidth;
+      canvasHeight = targetLogicalHeight;
+      
+      // 1) clear with dark background + subtle grid (LED matrix effect)
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      
+      // optional: micro led matrix dots (adds LED texture)
+      ctx.fillStyle = `${bgColor === '#000000' ? '#0a141c' : bgColor}`;
+      for (let i = 0; i < canvasWidth; i += 12) {
+        for (let j = 0; j < canvasHeight; j += 12) {
+          ctx.fillStyle = `rgba(255,255,200,0.03)`;
+          ctx.fillRect(i, j, 3, 3);
+        }
+      }
+      
+      // Draw text with LED style
+      const fontString = `bold ${fontSize}px 'Monaco', 'Courier New', 'Fira Mono', 'SF Mono', monospace`;
+      ctx.font = fontString;
+      ctx.shadowBlur = 0;
+      
+      // we need to draw the text possibly twice for seamless infinite scrolling
+      // but the classic approach: draw text at x = scrollX, and also draw a second copy when first is exiting left side.
+      const xPos = scrollX;
+      
+      // LED glow effect: outer glow first
+      ctx.shadowColor = textColor;
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = textColor;
+      // main text
+      ctx.fillText(currentText, xPos, canvasHeight/2 + fontSize*0.35);
+      
+      // second copy (for continuous scrolling) if first text is still within bounds but we want no gap
+      // textWidth + gap ensures continuous loop: if first text end < canvas width, draw another at xPos + textWidth + spacing
+      const spacing = 50; // comfortable gap between repeats
+      if (xPos + textWidth + spacing < canvasWidth) {
+        ctx.fillText(currentText, xPos + textWidth + spacing, canvasHeight/2 + fontSize*0.35);
+      }
+      // also if scrollX is negative enough, we draw a trailing copy to fill left side
+      if (xPos < 0 && (xPos + textWidth) > 0) {
+        // already visible part
+      }
+      // to make perfectly seamless loop when text completely scrolls out, we draw extra left copy if needed
+      if (xPos + textWidth < 0) {
+        // the entire first text left of canvas, then second copy will be at xPos + textWidth + spacing
+        ctx.fillText(currentText, xPos + textWidth + spacing, canvasHeight/2 + fontSize*0.35);
+      }
+      // additionally draw a third copy for ultra long canvas smoothness
+      if (xPos + 2*(textWidth+spacing) < canvasWidth) {
+        ctx.fillText(currentText, xPos + 2*(textWidth+spacing), canvasHeight/2 + fontSize*0.35);
+      }
+      
+      // reset shadow for further drawings
+      ctx.shadowBlur = 0;
+      
+      // add reflective LED front glass effect: tiny highlight
+      ctx.strokeStyle = "rgba(255,255,245,0.12)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(4, 4, canvasWidth-8, canvasHeight-8);
+      
+      // extra 'LED dots' flare (adds digital sign texture)
+      ctx.fillStyle = textColor + "22";
+      for (let k = 0; k < 60; k++) {
+        let fx = (scrollX * 0.3 + k * 23) % canvasWidth;
+        let fy = (k * 7) % canvasHeight;
+        ctx.beginPath();
+        ctx.arc(fx, fy, 1.2, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+    
+    // Animation update using delta time (seconds)
+    let previousFrameTime = null;
+    
+    function animateScroll(nowMs) {
+      if (!isScrollingActive) return;
+      if (!previousFrameTime) {
+        previousFrameTime = nowMs;
+        requestAnimationFrame(animateScroll);
+        drawLEDScene();
+        return;
+      }
+      
+      let deltaMs = Math.min(100, nowMs - previousFrameTime);
+      if (deltaMs > 0) {
+        let deltaSec = deltaMs / 1000;
+        // move left: pixels per second * deltaSec
+        let step = pixelsPerSecond * deltaSec;
+        scrollX -= step;
+        
+        // reset scroll for infinite loop: when text completely scrolls out and next copy also loops.
+        // we decide reset when the first visible text right edge is far left.
+        // better: if scrollX <= -(textWidth + 50), reset scrollX to canvasWidth (or to canvasWidth + something)
+        if (scrollX <= -(textWidth + 100)) {
+          scrollX = canvasWidth;
+        }
+        // also avoid massive negative values, reset if more than threshold
+        if (scrollX < -textWidth * 2) scrollX = canvasWidth;
+      }
+      previousFrameTime = nowMs;
+      
+      // redraw canvas with new scroll
+      drawLEDScene();
+      
+      animationId = requestAnimationFrame(animateScroll);
+    }
+    
+    function startAnimation() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      previousFrameTime = null;
+      isScrollingActive = true;
+      // ensure metrics updated
+      updateTextMetrics();
+      drawLEDScene();
+      animationId = requestAnimationFrame(animateScroll);
+    }
+    
+    function restartAnimationWithNewSettings() {
+      // update settings from UI, reset scroll position to canvasWidth
+      syncSettingsFromUI();
+      // reset scroll to right edge
+      scrollX = canvasWidth;
+      // recalc metrics again after potential text width update
+      updateTextMetrics();
+      // redraw and restart cleanly
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      previousFrameTime = null;
+      isScrollingActive = true;
+      drawLEDScene();
+      animationId = requestAnimationFrame(animateScroll);
+    }
+    
+    // On window resize, we must recalc dimensions to maintain quality
+    function handleResize() {
+      if (!canvas) return;
+      const container = canvas.parentElement;
+      const newLogicalWidth = 1000;
+      const newLogicalHeight = 140;
+      canvas.width = newLogicalWidth;
+      canvas.height = newLogicalHeight;
+      canvasWidth = newLogicalWidth;
+      canvasHeight = newLogicalHeight;
+      updateTextMetrics();
+      // reset scroll a bit to avoid weird jumps
+      if (scrollX > canvasWidth) scrollX = canvasWidth;
+      drawLEDScene();
+    }
+    
+    // event listeners: any change -> restart animation (real-time)
+    function onChangeRestart() {
+      restartAnimationWithNewSettings();
+    }
+    
+    // attach events
+    messageInput.addEventListener('input', () => {
+      restartAnimationWithNewSettings();
+    });
+    speedSlider.addEventListener('input', (e) => {
+      pixelsPerSecond = parseInt(e.target.value, 10);
+      speedValSpan.innerText = pixelsPerSecond;
+      // update speed in realtime, no restart needed but scroll speed dynamic
+      // just update variable, animation uses it.
+    });
+    textColorPicker.addEventListener('input', (e) => {
+      textColor = e.target.value;
+      drawLEDScene();  // immediate redraw, keep scroll position but update color
+    });
+    bgColorPicker.addEventListener('input', (e) => {
+      bgColor = e.target.value;
+      drawLEDScene();
+    });
+    fontSizeSlider.addEventListener('input', (e) => {
+      fontSize = parseInt(e.target.value, 10);
+      fontSizeValSpan.innerText = fontSize + "px";
+      updateTextMetrics();
+      drawLEDScene();
+      // when font size changes drastically, scroll position might cause gap, reinit scroll for best experience
+      scrollX = canvasWidth;
+      drawLEDScene();
+    });
+    
+    // apply button does full restart & re-measure
+    applyBtn.addEventListener('click', () => {
+      restartAnimationWithNewSettings();
+    });
+    
+    // reset to cool default demo
+    resetBtn.addEventListener('click', () => {
+      messageInput.value = "⚡ LED SCROLLER  •  CUSTOM SPEED  •  NEON COLORS  •  INFINITE LOOP ⚡";
+      speedSlider.value = "80";
+      pixelsPerSecond = 80;
+      speedValSpan.innerText = "80";
+      textColorPicker.value = "#0ff4ce";
+      bgColorPicker.value = "#000000";
+      fontSizeSlider.value = "68";
+      fontSize = 68;
+      fontSizeValSpan.innerText = "68px";
+      textColor = "#0ff4ce";
+      bgColor = "#000000";
+      currentText = messageInput.value;
+      updateTextMetrics();
+      scrollX = canvasWidth;
+      restartAnimationWithNewSettings();
+    });
+    
+    // also on slider change that affects speed, we don't restart animation to keep smooth speed transition
+    // but when speed changes, only variable changes – animation picks it up, that's great.
+    // manual call to ensure speed display
+    speedSlider.addEventListener('change', () => {
+      pixelsPerSecond = parseInt(speedSlider.value, 10);
+      speedValSpan.innerText = pixelsPerSecond;
+    });
+    
+    // handle resize / canvas adaptation
+    window.addEventListener('resize', () => {
+      handleResize();
+      drawLEDScene();
+    });
+    
+    // Initial setup
+    function init() {
+      canvas.width = 1000;
+      canvas.height = 140;
+      canvasWidth = 1000;
+      canvasHeight = 140;
+      syncSettingsFromUI();
+      scrollX = canvasWidth;
+      updateTextMetrics();
+      startAnimation();
+    }
+    
+    init();
+  })();
+</script>
+</body>
+</html>
