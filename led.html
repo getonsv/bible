@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>LED Scroller – Custom Digital Sign Board</title>
+  <title>LED Scroller Pro – Fullscreen Digital Marquee</title>
   <style>
     * {
       box-sizing: border-box;
@@ -31,6 +31,30 @@
       box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
       padding: 1.8rem 2rem 2.2rem;
       transition: all 0.2s ease;
+    }
+
+    /* when fullscreen active, we style the container differently */
+    .led-app:fullscreen {
+      max-width: 100%;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      padding: 1rem;
+      background: #030b10;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .led-app:fullscreen .led-panel {
+      flex: 1 1 auto;
+      margin-bottom: 1rem;
+    }
+
+    .led-app:fullscreen .controls {
+      margin-top: 0.5rem;
+      background: rgba(0, 0, 0, 0.75);
     }
 
     h1 {
@@ -72,6 +96,7 @@
       padding: 1rem;
       box-shadow: inset 0 0 0 2px #2c3e44, 0 20px 35px -10px black, 0 0 0 6px #1e2f38;
       margin-bottom: 2rem;
+      transition: all 0.2s;
     }
 
     .led-screen {
@@ -229,6 +254,17 @@
       color: #4e6b7a;
     }
 
+    /* fullscreen button specific style */
+    .fullscreen-btn {
+      background: #1f4d5c;
+      border-color: #2dd4bf;
+      box-shadow: 0 0 6px rgba(45,212,191,0.3);
+    }
+
+    .fullscreen-btn:hover {
+      background: #2f6f82;
+    }
+
     @media (max-width: 780px) {
       .led-app {
         padding: 1rem;
@@ -247,15 +283,15 @@
   </style>
 </head>
 <body>
-<div class="led-app">
+<div class="led-app" id="ledAppContainer">
   <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;">
-    <h1>⚡ LED SCROLLER <small>digital marquee</small></h1>
+    <h1>⚡ LED SCROLLER <small>digital marquee + fullscreen</small></h1>
     <div style="font-size: 0.75rem; background: #00000055; padding: 4px 12px; border-radius: 40px;">✨ real-time LED effect</div>
   </div>
-  <div class="sub">Type any message – customize speed, colors & glow – like a real LED sign board</div>
+  <div class="sub">Type any message – customize speed, colors & glow – click FULLSCREEN for immersive LED board</div>
 
   <!-- LED sign display -->
-  <div class="led-panel">
+  <div class="led-panel" id="ledPanel">
     <div class="led-screen">
       <canvas id="ledCanvas" width="1000" height="140" style="width:100%; height:auto; aspect-ratio:1000/140"></canvas>
     </div>
@@ -265,7 +301,7 @@
   <div class="controls">
     <div class="text-input-group control-group">
       <label>📝 SCROLL TEXT</label>
-      <input type="text" id="messageInput" value="✨ WELCOME TO LED SCROLLER  ★  MAKE IT YOUR OWN  ★  SPEED & COLOR  ✨" autocomplete="off">
+      <input type="text" id="messageInput" value="✨ FULLSCREEN MODE ★ CLICK THE STAR BUTTON ★ CUSTOM SPEED & COLOR ✨" autocomplete="off">
     </div>
 
     <div class="control-group">
@@ -294,10 +330,11 @@
     <div class="action-buttons">
       <button id="resetBtn">⟳ RESET DEFAULTS</button>
       <button id="applyBtn">▶️ APPLY / RESTART</button>
+      <button id="fullscreenBtn" class="fullscreen-btn">🖥️ FULLSCREEN</button>
     </div>
   </div>
   <footer>
-    💡 LED simulation with smooth scrolling • realtime preview • classic marquee experience
+    💡 Real LED simulation • Smooth infinite scroll • Fullscreen mode available • Press ESC to exit fullscreen
   </footer>
 </div>
 
@@ -306,6 +343,8 @@
     // ----- DOM elements -----
     const canvas = document.getElementById('ledCanvas');
     const ctx = canvas.getContext('2d');
+    const appContainer = document.getElementById('ledAppContainer');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
     
     // text content
     const messageInput = document.getElementById('messageInput');
@@ -326,7 +365,7 @@
     let scrollX = 0;            // current horizontal offset (pixels)
     let textWidth = 0;          // computed width of current text
     let animationId = null;
-    let lastTimestamp = 0;
+    let previousFrameTime = null;
     let pixelsPerSecond = 80;    // default speed (pixels/sec)
     let canvasWidth = 1000;
     let canvasHeight = 140;
@@ -337,10 +376,10 @@
     let bgColor = bgColorPicker.value;
     let fontSize = parseInt(fontSizeSlider.value, 10);
     
-    // LED glow / edge effect intensity 
     let isScrollingActive = true;
+    let resizeObserver = null;
     
-    // Function to sync UI and restart animation smoothly
+    // Sync UI values to animation variables
     function syncSettingsFromUI() {
       currentText = messageInput.value;
       if (currentText.trim() === "") currentText = "⚡ LED SCROLL ⚡";
@@ -351,16 +390,10 @@
       speedValSpan.innerText = pixelsPerSecond;
       fontSizeValSpan.innerText = fontSize + "px";
       
-      // recompute text metrics
       updateTextMetrics();
-      
-      // reset scroll position to start (far right) for seamless effect
-      // classic behavior: when text changes, reset position to canvas width so text enters from right edge
-      scrollX = canvasWidth;
-      // if the text is too short, we still ensure it loops properly
+      // reset scroll only when manually applying, but we also use it on restart
     }
     
-    // measure text width using current font
     function measureTextWidth() {
       if (!ctx) return 100;
       const fontString = `bold ${fontSize}px 'Monaco', 'Courier New', 'Fira Mono', 'SF Mono', monospace`;
@@ -372,97 +405,79 @@
       const fontString = `bold ${fontSize}px 'Monaco', 'Courier New', 'Fira Mono', 'SF Mono', monospace`;
       ctx.font = fontString;
       textWidth = ctx.measureText(currentText).width;
-      // safety: if textWidth is 0 due to empty, fallback
       if (textWidth < 10) textWidth = 200;
     }
     
-    // draw LED-style text with neon glow effect (replicates ledscroller.com aesthetic)
+    // Draw LED style with matrix texture + glow
     function drawLEDScene() {
       if (!ctx) return;
       
-      // set canvas dimensions (respect high DPI + crisp)
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const containerWidth = canvas.parentElement.clientWidth;
-      // we keep logical resolution 1000px width, but we scale canvas drawing buffer nicely 
-      // set canvas actual pixel dimensions to keep text sharp
-      const targetLogicalWidth = 1000;
-      const targetLogicalHeight = 140;
-      canvas.width = targetLogicalWidth;
-      canvas.height = targetLogicalHeight;
-      canvasWidth = targetLogicalWidth;
-      canvasHeight = targetLogicalHeight;
+      // maintain logical 1000px width for consistency, but canvas CSS scales perfectly
+      canvas.width = 1000;
+      canvas.height = 140;
+      canvasWidth = 1000;
+      canvasHeight = 140;
       
-      // 1) clear with dark background + subtle grid (LED matrix effect)
+      // 1) background
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
       
-      // optional: micro led matrix dots (adds LED texture)
+      // subtle LED matrix dots (added realism)
       ctx.fillStyle = `${bgColor === '#000000' ? '#0a141c' : bgColor}`;
-      for (let i = 0; i < canvasWidth; i += 12) {
-        for (let j = 0; j < canvasHeight; j += 12) {
-          ctx.fillStyle = `rgba(255,255,200,0.03)`;
-          ctx.fillRect(i, j, 3, 3);
+      for (let i = 0; i < canvasWidth; i += 14) {
+        for (let j = 0; j < canvasHeight; j += 14) {
+          ctx.fillStyle = `rgba(255,255,210,0.04)`;
+          ctx.fillRect(i, j, 2, 2);
         }
       }
       
-      // Draw text with LED style
       const fontString = `bold ${fontSize}px 'Monaco', 'Courier New', 'Fira Mono', 'SF Mono', monospace`;
       ctx.font = fontString;
       ctx.shadowBlur = 0;
-      
-      // we need to draw the text possibly twice for seamless infinite scrolling
-      // but the classic approach: draw text at x = scrollX, and also draw a second copy when first is exiting left side.
       const xPos = scrollX;
+      const spacing = 55; // gap between copies for smooth loop
       
-      // LED glow effect: outer glow first
       ctx.shadowColor = textColor;
       ctx.shadowBlur = 12;
       ctx.fillStyle = textColor;
-      // main text
+      
+      // draw primary text
       ctx.fillText(currentText, xPos, canvasHeight/2 + fontSize*0.35);
       
-      // second copy (for continuous scrolling) if first text is still within bounds but we want no gap
-      // textWidth + gap ensures continuous loop: if first text end < canvas width, draw another at xPos + textWidth + spacing
-      const spacing = 50; // comfortable gap between repeats
+      // second copy (right side) if needed
       if (xPos + textWidth + spacing < canvasWidth) {
         ctx.fillText(currentText, xPos + textWidth + spacing, canvasHeight/2 + fontSize*0.35);
       }
-      // also if scrollX is negative enough, we draw a trailing copy to fill left side
+      // third copy for very wide loops (ensures no gap on fast scroll)
+      if (xPos + 2*(textWidth + spacing) < canvasWidth) {
+        ctx.fillText(currentText, xPos + 2*(textWidth + spacing), canvasHeight/2 + fontSize*0.35);
+      }
+      // extra left copy for negative offset situations
       if (xPos < 0 && (xPos + textWidth) > 0) {
         // already visible part
       }
-      // to make perfectly seamless loop when text completely scrolls out, we draw extra left copy if needed
       if (xPos + textWidth < 0) {
-        // the entire first text left of canvas, then second copy will be at xPos + textWidth + spacing
         ctx.fillText(currentText, xPos + textWidth + spacing, canvasHeight/2 + fontSize*0.35);
       }
-      // additionally draw a third copy for ultra long canvas smoothness
-      if (xPos + 2*(textWidth+spacing) < canvasWidth) {
-        ctx.fillText(currentText, xPos + 2*(textWidth+spacing), canvasHeight/2 + fontSize*0.35);
-      }
       
-      // reset shadow for further drawings
       ctx.shadowBlur = 0;
-      
-      // add reflective LED front glass effect: tiny highlight
+      // add glass edge reflection
       ctx.strokeStyle = "rgba(255,255,245,0.12)";
       ctx.lineWidth = 2;
       ctx.strokeRect(4, 4, canvasWidth-8, canvasHeight-8);
       
-      // extra 'LED dots' flare (adds digital sign texture)
+      // LED sparkling flair
       ctx.fillStyle = textColor + "22";
-      for (let k = 0; k < 60; k++) {
-        let fx = (scrollX * 0.3 + k * 23) % canvasWidth;
-        let fy = (k * 7) % canvasHeight;
+      for (let k = 0; k < 70; k++) {
+        let fx = (scrollX * 0.25 + k * 19) % canvasWidth;
+        let fy = (k * 9) % canvasHeight;
         ctx.beginPath();
-        ctx.arc(fx, fy, 1.2, 0, Math.PI*2);
+        ctx.arc(fx, fy, 1.1, 0, Math.PI*2);
         ctx.fill();
       }
     }
     
-    // Animation update using delta time (seconds)
-    let previousFrameTime = null;
-    
+    // Animation loop (delta time)
     function animateScroll(nowMs) {
       if (!isScrollingActive) return;
       if (!previousFrameTime) {
@@ -475,24 +490,17 @@
       let deltaMs = Math.min(100, nowMs - previousFrameTime);
       if (deltaMs > 0) {
         let deltaSec = deltaMs / 1000;
-        // move left: pixels per second * deltaSec
         let step = pixelsPerSecond * deltaSec;
         scrollX -= step;
         
-        // reset scroll for infinite loop: when text completely scrolls out and next copy also loops.
-        // we decide reset when the first visible text right edge is far left.
-        // better: if scrollX <= -(textWidth + 50), reset scrollX to canvasWidth (or to canvasWidth + something)
+        // reset for infinite seamless loop: when text moves beyond left side fully
         if (scrollX <= -(textWidth + 100)) {
           scrollX = canvasWidth;
         }
-        // also avoid massive negative values, reset if more than threshold
         if (scrollX < -textWidth * 2) scrollX = canvasWidth;
       }
       previousFrameTime = nowMs;
-      
-      // redraw canvas with new scroll
       drawLEDScene();
-      
       animationId = requestAnimationFrame(animateScroll);
     }
     
@@ -503,20 +511,17 @@
       }
       previousFrameTime = null;
       isScrollingActive = true;
-      // ensure metrics updated
       updateTextMetrics();
       drawLEDScene();
       animationId = requestAnimationFrame(animateScroll);
     }
     
-    function restartAnimationWithNewSettings() {
-      // update settings from UI, reset scroll position to canvasWidth
+    function restartAnimationWithNewSettings(resetScrollPosition = true) {
       syncSettingsFromUI();
-      // reset scroll to right edge
-      scrollX = canvasWidth;
-      // recalc metrics again after potential text width update
+      if (resetScrollPosition) {
+        scrollX = canvasWidth;
+      }
       updateTextMetrics();
-      // redraw and restart cleanly
       if (animationId) {
         cancelAnimationFrame(animationId);
         animationId = null;
@@ -527,63 +532,87 @@
       animationId = requestAnimationFrame(animateScroll);
     }
     
-    // On window resize, we must recalc dimensions to maintain quality
-    function handleResize() {
-      if (!canvas) return;
-      const container = canvas.parentElement;
-      const newLogicalWidth = 1000;
-      const newLogicalHeight = 140;
-      canvas.width = newLogicalWidth;
-      canvas.height = newLogicalHeight;
-      canvasWidth = newLogicalWidth;
-      canvasHeight = newLogicalHeight;
+    // handle canvas size changes due to fullscreen / resize
+    function refreshCanvasDimensions() {
+      canvas.width = 1000;
+      canvas.height = 140;
+      canvasWidth = 1000;
+      canvasHeight = 140;
       updateTextMetrics();
-      // reset scroll a bit to avoid weird jumps
       if (scrollX > canvasWidth) scrollX = canvasWidth;
       drawLEDScene();
     }
     
-    // event listeners: any change -> restart animation (real-time)
-    function onChangeRestart() {
-      restartAnimationWithNewSettings();
+    // Fullscreen handling
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        // request fullscreen on the main app container
+        appContainer.requestFullscreen().catch(err => {
+          console.warn(`Fullscreen error: ${err.message}`);
+        }).then(() => {
+          // after fullscreen, we keep canvas logical size but css adapts, we refresh drawing once
+          setTimeout(() => {
+            refreshCanvasDimensions();
+            drawLEDScene();
+          }, 50);
+        });
+      } else {
+        document.exitFullscreen().then(() => {
+          refreshCanvasDimensions();
+          drawLEDScene();
+        });
+      }
     }
     
-    // attach events
-    messageInput.addEventListener('input', () => {
-      restartAnimationWithNewSettings();
+    // Listen to fullscreen change events to redraw correctly
+    document.addEventListener('fullscreenchange', () => {
+      // slight delay to allow CSS adjustments
+      setTimeout(() => {
+        refreshCanvasDimensions();
+        drawLEDScene();
+      }, 100);
     });
+    
+    // Event listeners for UI changes
+    function onChangeRestart() {
+      restartAnimationWithNewSettings(true);
+    }
+    
+    messageInput.addEventListener('input', () => {
+      restartAnimationWithNewSettings(true);
+    });
+    
     speedSlider.addEventListener('input', (e) => {
       pixelsPerSecond = parseInt(e.target.value, 10);
       speedValSpan.innerText = pixelsPerSecond;
-      // update speed in realtime, no restart needed but scroll speed dynamic
-      // just update variable, animation uses it.
+      // speed updated live, no restart needed
     });
+    
     textColorPicker.addEventListener('input', (e) => {
       textColor = e.target.value;
-      drawLEDScene();  // immediate redraw, keep scroll position but update color
+      drawLEDScene();
     });
+    
     bgColorPicker.addEventListener('input', (e) => {
       bgColor = e.target.value;
       drawLEDScene();
     });
+    
     fontSizeSlider.addEventListener('input', (e) => {
       fontSize = parseInt(e.target.value, 10);
       fontSizeValSpan.innerText = fontSize + "px";
       updateTextMetrics();
-      drawLEDScene();
-      // when font size changes drastically, scroll position might cause gap, reinit scroll for best experience
+      // reset scroll to avoid visual cut-off, better UX
       scrollX = canvasWidth;
       drawLEDScene();
     });
     
-    // apply button does full restart & re-measure
     applyBtn.addEventListener('click', () => {
-      restartAnimationWithNewSettings();
+      restartAnimationWithNewSettings(true);
     });
     
-    // reset to cool default demo
     resetBtn.addEventListener('click', () => {
-      messageInput.value = "⚡ LED SCROLLER  •  CUSTOM SPEED  •  NEON COLORS  •  INFINITE LOOP ⚡";
+      messageInput.value = "⭐ FULLSCREEN READY  •  CUSTOM LED COLORS  •  SMOOTH INFINITE SCROLL ⭐";
       speedSlider.value = "80";
       pixelsPerSecond = 80;
       speedValSpan.innerText = "80";
@@ -597,24 +626,18 @@
       currentText = messageInput.value;
       updateTextMetrics();
       scrollX = canvasWidth;
-      restartAnimationWithNewSettings();
+      restartAnimationWithNewSettings(true);
     });
     
-    // also on slider change that affects speed, we don't restart animation to keep smooth speed transition
-    // but when speed changes, only variable changes – animation picks it up, that's great.
-    // manual call to ensure speed display
-    speedSlider.addEventListener('change', () => {
-      pixelsPerSecond = parseInt(speedSlider.value, 10);
-      speedValSpan.innerText = pixelsPerSecond;
-    });
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
     
-    // handle resize / canvas adaptation
+    // ensure smooth canvas on window resize or orientation change
     window.addEventListener('resize', () => {
-      handleResize();
+      refreshCanvasDimensions();
       drawLEDScene();
     });
     
-    // Initial setup
+    // initial setup
     function init() {
       canvas.width = 1000;
       canvas.height = 140;
